@@ -6,9 +6,9 @@ import {
   createObservatoryState,
   formatCost,
   formatDuration,
+  formatTokenBreakdown,
   formatTokenCount,
   reduceObservatoryState,
-  replaceSessionMessages,
   selectObservatorySnapshot,
   type AgentCatalogEntry,
   type AgentUsage,
@@ -27,6 +27,9 @@ const MAX_CHILDREN_TO_HYDRATE = 12;
 const REFRESH_DEBOUNCE_MS = 250;
 const MAX_TOOLS = 50;
 const VISIBLE_TOOLS = 5;
+const VISIBLE_PRIMARY_AGENTS = 4;
+const VISIBLE_SUBAGENTS = 8;
+const VISIBLE_AGENT_TOOLS = 3;
 
 type TogglePreference =
   | 'observatory.enabled'
@@ -34,7 +37,6 @@ type TogglePreference =
   | 'observatory.subAgentsExpanded'
   | 'observatory.toolsExpanded'
   | 'observatory.showCost'
-  | 'observatory.showEmoji'
   | 'observatory.showTools';
 type TuiColor = string;
 
@@ -47,6 +49,7 @@ const COLORS = {
   muted: '#9aa3c7',
   faint: '#6f789c',
   error: '#ff6b8a',
+  busy: '#8bd5ff',
 };
 
 type BooleanSignal = {
@@ -67,22 +70,31 @@ const moduleDefinition: TuiPluginModule = {
     const hydratingSessions = new Set<string>();
     const preferences = {
       enabled: createBooleanPreference(api, 'observatory.enabled', true),
-      availableAgentsExpanded: createBooleanPreference(api, 'observatory.availableAgentsExpanded', false),
-      agentsExpanded: createBooleanPreference(api, 'observatory.subAgentsExpanded', false),
+      availableAgentsExpanded: createBooleanPreference(api, 'observatory.availableAgentsExpanded', true),
+      agentsExpanded: createBooleanPreference(api, 'observatory.subAgentsExpanded', true),
       toolsExpanded: createBooleanPreference(api, 'observatory.toolsExpanded', true),
       showCost: createBooleanPreference(api, 'observatory.showCost', true),
-      showEmoji: createBooleanPreference(api, 'observatory.showEmoji', true),
       showTools: createBooleanPreference(api, 'observatory.showTools', true),
     };
 
     const scheduleRefresh = () => {
-      if (refreshTimer) {
-        clearTimeout(refreshTimer);
-      }
+      if (refreshTimer) clearTimeout(refreshTimer);
       refreshTimer = setTimeout(() => {
         refreshTimer = undefined;
         setRevision((value) => value + 1);
       }, REFRESH_DEBOUNCE_MS);
+    };
+
+    const hydrateAgentCatalog = async () => {
+      if (agentCatalogHydrated) return;
+      agentCatalogHydrated = true;
+      try {
+        const response = await api.client.app.agents({ directory: api.state.path.directory }) as { data?: AgentCatalogEntry[] };
+        setAgentCatalog((response.data ?? []).filter((agent) => !agent.hidden));
+        scheduleRefresh();
+      } catch {
+        agentCatalogHydrated = false;
+      }
     };
 
     const commit = (next: ObservatoryState) => {
@@ -95,17 +107,15 @@ const moduleDefinition: TuiPluginModule = {
     };
 
     const hydrateSession = async (sessionID: string) => {
-      if (hydratingSessions.has(sessionID)) {
-        return;
-      }
+      if (!sessionID || hydratingSessions.has(sessionID)) return;
       hydratingSessions.add(sessionID);
       try {
         setUnavailable(undefined);
-        hydrateSessionFromTuiState(sessionID);
+        hydrateSessionFromTuiState(api, sessionID, ingest);
         const children = await api.client.session.children({ sessionID }) as { data?: SessionLike[] };
         for (const child of (children.data ?? []).slice(0, MAX_CHILDREN_TO_HYDRATE)) {
           ingest({ type: 'session.created', session: child });
-          await hydrateChildSession(child.id);
+          await hydrateChildSession(api, child.id, ingest);
         }
       } catch {
         setUnavailable('Observatory unavailable');
@@ -126,6 +136,7 @@ const moduleDefinition: TuiPluginModule = {
 
     registerEvents(api, ingest);
     registerCommands(api, preferences);
+    void hydrateAgentCatalog();
 
     api.lifecycle.onDispose(() => {
       if (refreshTimer) clearTimeout(refreshTimer);
@@ -144,12 +155,11 @@ const moduleDefinition: TuiPluginModule = {
               hydrateSession={hydrateSession}
               sessionID={props.session_id}
               showCost={preferences.showCost.value}
-              showEmoji={preferences.showEmoji.value}
               showTools={preferences.showTools.value}
               toolsExpanded={preferences.toolsExpanded.value}
               toggleAgents={preferences.agentsExpanded.toggle}
               toggleAvailableAgents={preferences.availableAgentsExpanded.toggle}
-              unavailable={unavailable()}
+              unavailable={unavailable}
             />
           </ErrorBoundary>
         ),
@@ -166,7 +176,6 @@ function AgentObservatoryPanel(props: {
   agentsExpanded: () => boolean;
   toolsExpanded: () => boolean;
   showCost: () => boolean;
-  showEmoji: () => boolean;
   showTools: () => boolean;
   toggleAvailableAgents: () => void;
   toggleAgents: () => void;
@@ -175,27 +184,65 @@ function AgentObservatoryPanel(props: {
   getSnapshot: (sessionID: string) => ObservatorySnapshot;
   sessionID: string;
 }) {
-  createEffect(() => { void props.hydrateSession(props.sessionID); });
+  let lastHydratedSessionID: string | undefined;
+  createEffect(() => {
+    const sessionID = props.sessionID;
+    if (!props.enabled() || !sessionID || sessionID === lastHydratedSessionID) return;
+    lastHydratedSessionID = sessionID;
+    void props.hydrateSession(sessionID);
+  });
   const snapshot = createMemo(() => props.getSnapshot(props.sessionID));
 
   return (
     <Show when={props.enabled()}>
       <box flexDirection="column" paddingTop={0} gap={0}>
         <Show when={!props.unavailable()} fallback={<text fg={COLORS.error}>Observatory unavailable</text>}>
-          <RootModelLine showEmoji={props.showEmoji} snapshot={snapshot()} />
-          <AvailableAgentsSection agents={snapshot().availableAgents} expanded={props.availableAgentsExpanded} onToggle={props.toggleAvailableAgents} showEmoji={props.showEmoji} snapshot={snapshot()} showCost={props.showCost} />
-          <SubAgentsSection agents={snapshot().agents} expanded={props.agentsExpanded} onToggle={props.toggleAgents} showCost={props.showCost} showEmoji={props.showEmoji} showTools={() => props.showTools() && props.toolsExpanded()} />
+          <MainSection snapshot={snapshot()} showCost={props.showCost} />
+          <AvailableAgentsSection agents={snapshot().availableAgents} expanded={props.availableAgentsExpanded} onToggle={props.toggleAvailableAgents} />
+          <SubAgentsSection agents={snapshot().agents} expanded={props.agentsExpanded} onToggle={props.toggleAgents} showCost={props.showCost} showTools={() => props.showTools() && props.toolsExpanded()} totalCost={snapshot().totalCost} totalTokens={snapshot().totalTokens} />
         </Show>
       </box>
     </Show>
   );
 }
 
-function RootModelLine(props: { showEmoji: () => boolean; snapshot: ObservatorySnapshot }) {
+function MainSection(props: { snapshot: ObservatorySnapshot; showCost: () => boolean }) {
+  const root = () => props.snapshot.root;
+  const meta = createMemo(() => compactMeta([
+    root().modelID,
+    root().durationMs ? formatDuration(root().durationMs) : undefined,
+    props.showCost() && root().cost ? formatCost(root().cost) : undefined,
+  ]));
+
   return (
-    <box flexDirection="row" paddingTop={1}>
-      <text fg={COLORS.bullet}>{props.showEmoji() ? '🤖 ' : '• '}</text>
-      <text fg={COLORS.text}>{snapshot().root.name} · {snapshot().totalTokens.total} tok</text>
+    <box flexDirection="column" paddingTop={1} gap={0}>
+      <box flexDirection="row" gap={1}>
+        <Dot color={COLORS.title} />
+        <text fg={COLORS.title}><b>Main</b></text>
+        <text fg={COLORS.faint}>· {formatTokenCount(root().tokens.total)} tok</text>
+      </box>
+      <box flexDirection="row" gap={1}>
+        <text fg={COLORS.faint}>  •</text>
+        <text fg={COLORS.text}>{root().name}</text>
+        <text fg={stateColor(root().state)}>{stateLabel(root().state)}</text>
+      </box>
+      <box flexDirection="row" gap={1}>
+        <text fg={COLORS.faint}>  •</text>
+        <text fg={COLORS.faint}>{formatTokenBreakdown(root().tokens)}</text>
+      </box>
+      <Show when={root().currentAction}>
+        <box flexDirection="row" gap={1}>
+          <text fg={COLORS.busy}>  •</text>
+          <text fg={COLORS.muted}>doing</text>
+          <text fg={COLORS.text}>{root().currentAction}</text>
+        </box>
+      </Show>
+      <Show when={meta()}>
+        <box flexDirection="row" gap={1}>
+          <text fg={COLORS.faint}>  •</text>
+          <text fg={COLORS.faint}>{meta()}</text>
+        </box>
+      </Show>
     </box>
   );
 }
@@ -204,23 +251,39 @@ function AvailableAgentsSection(props: {
   agents: AvailableAgent[];
   expanded: () => boolean;
   onToggle: () => void;
-  showEmoji: () => boolean;
-  snapshot: ObservatorySnapshot;
-  showCost: () => boolean;
 }) {
+  const primaryAgents = createMemo(() => props.agents.filter(agent => agent.mode !== 'subagent'));
+  const subagentCatalog = createMemo(() => props.agents.filter(agent => agent.mode === 'subagent'));
+  const visiblePrimary = createMemo(() => primaryAgents().slice(0, VISIBLE_PRIMARY_AGENTS));
+  const hiddenPrimary = createMemo(() => Math.max(0, primaryAgents().length - visiblePrimary().length));
+
   return (
-    <box flexDirection="column" paddingTop={0} gap={0}>
+    <box flexDirection="column" paddingTop={1} gap={0}>
       <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
-        <text fg={COLORS.title} bold>{props.expanded() ? '▼' : '▶'}</text>
+        <Dot color={props.expanded() ? COLORS.title : COLORS.faint} />
         <text fg={COLORS.title}><b>Agents</b></text>
+        <text fg={COLORS.faint}>· {primaryAgents().length} primary</text>
       </box>
       <Show when={props.expanded()}>
-        <For each={props.agents}>{(agent) => (
+        <For each={visiblePrimary()}>{(agent) => (
           <box flexDirection="row" gap={1}>
-            <text fg={agent.active ? COLORS.success : COLORS.muted}>{props.showEmoji() ? (agent.active ? '🟢' : '⚪') : (agent.active ? '•' : '·')}</text>
-            <text fg={COLORS.text}>{agent.name}</text>
+            <Dot color={agent.active ? COLORS.success : (agent.color || COLORS.faint)} dim={!agent.active} />
+            <text fg={agent.active ? COLORS.text : COLORS.muted}>{agent.name}</text>
+            <Show when={agent.active}><text fg={COLORS.success}>active</text></Show>
           </box>
         )}</For>
+        <Show when={hiddenPrimary() > 0}>
+          <box flexDirection="row" gap={1}>
+            <text fg={COLORS.faint}>  •</text>
+            <text fg={COLORS.faint}>+{hiddenPrimary()} more primary</text>
+          </box>
+        </Show>
+        <Show when={subagentCatalog().length > 0}>
+          <box flexDirection="row" gap={1}>
+            <text fg={COLORS.faint}>  •</text>
+            <text fg={COLORS.faint}>{subagentCatalog().length} subagents available via @</text>
+          </box>
+        </Show>
       </Show>
     </box>
   );
@@ -231,19 +294,152 @@ function SubAgentsSection(props: {
   expanded: () => boolean;
   onToggle: () => void;
   showCost: () => boolean;
-  showEmoji: () => boolean;
   showTools: () => boolean;
+  totalCost?: number;
+  totalTokens: AgentUsage['tokens'];
 }) {
+  const busy = createMemo(() => props.agents.filter(agent => agent.state === 'busy').length);
+  const done = createMemo(() => props.agents.filter(agent => agent.state === 'done').length);
+  const visibleAgents = createMemo(() => [...props.agents].sort(sortAgentsByRelevance).slice(0, VISIBLE_SUBAGENTS));
+  const hiddenAgents = createMemo(() => Math.max(0, props.agents.length - visibleAgents().length));
+
   return (
     <box flexDirection="column" paddingTop={1} gap={0}>
       <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
-        <text fg={COLORS.accent}>{props.showEmoji() ? '🟡' : '•'}</text>
-        <text fg={COLORS.accent}>{props.agents.filter(a => a.state === 'busy').length} running</text>
-        <text fg={COLORS.faint}>·</text>
-        <text fg={COLORS.success}>{props.showEmoji() ? '✅' : '✓'} {props.agents.filter(a => a.state === 'done').length} done</text>
+        <Dot color={props.expanded() ? COLORS.accent : COLORS.faint} />
+        <text fg={COLORS.accent}><b>Subagents</b></text>
+        <text fg={COLORS.faint}>· {subagentSummary(busy(), done())}</text>
       </box>
+      <box flexDirection="row" gap={1}>
+        <text fg={COLORS.faint}>  •</text>
+        <text fg={COLORS.faint}>{formatTokenCount(props.totalTokens.total)} tok total</text>
+        <Show when={props.showCost() && props.totalCost}><text fg={COLORS.faint}>· {formatCost(props.totalCost)}</text></Show>
+      </box>
+      <box flexDirection="row" gap={1}>
+        <text fg={COLORS.faint}>  •</text>
+        <text fg={COLORS.faint}>{formatTokenBreakdown(props.totalTokens)}</text>
+      </box>
+      <Show when={props.expanded()}>
+        <Show when={props.agents.length > 0} fallback={<text fg={COLORS.muted}>  • No subagent sessions yet</text>}>
+          <For each={visibleAgents()}>{(agent) => <AgentLine agent={agent} showCost={props.showCost} showTools={props.showTools} />}</For>
+          <Show when={hiddenAgents() > 0}>
+            <box flexDirection="row" gap={1}>
+              <text fg={COLORS.faint}>  •</text>
+              <text fg={COLORS.faint}>+{hiddenAgents()} older subagents hidden</text>
+            </box>
+          </Show>
+        </Show>
+      </Show>
     </box>
   );
+}
+
+function AgentLine(props: { agent: AgentUsage; showCost: () => boolean; showTools: () => boolean }) {
+  const detail = createMemo(() => compactMeta([
+    props.agent.modelID,
+    props.agent.durationMs ? formatDuration(props.agent.durationMs) : undefined,
+    props.agent.compacted ? 'compacted' : undefined,
+  ]));
+  const metrics = createMemo(() => compactMeta([
+    formatTokenBreakdown(props.agent.tokens),
+    props.agent.completedToolCount > 0 ? `${props.agent.completedToolCount} tools` : undefined,
+    props.showCost() && props.agent.cost ? formatCost(props.agent.cost) : undefined,
+  ]));
+  const visibleTools = createMemo(() => props.agent.tools.slice(0, VISIBLE_AGENT_TOOLS));
+
+  return (
+    <box flexDirection="column" gap={0}>
+      <box flexDirection="row" gap={1}>
+        <Dot color={stateColor(props.agent.state)} />
+        <text fg={COLORS.text}>{props.agent.name}</text>
+        <text fg={stateColor(props.agent.state)}>{stateLabel(props.agent.state)}</text>
+      </box>
+      <Show when={props.agent.objective}>
+        <box flexDirection="row" gap={1}>
+          <text fg={COLORS.faint}>  •</text>
+          <text fg={COLORS.muted}>goal</text>
+          <text fg={COLORS.text}>{props.agent.objective}</text>
+        </box>
+      </Show>
+      <Show when={props.agent.currentAction}>
+        <box flexDirection="row" gap={1}>
+          <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.faint}>  •</text>
+          <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.muted}>{activityLabel(props.agent.state)}</text>
+          <text fg={COLORS.text}>{props.agent.currentAction}</text>
+        </box>
+      </Show>
+      <box flexDirection="row" gap={1}>
+        <text fg={COLORS.faint}>  •</text>
+        <text fg={COLORS.faint}>{formatTokenCount(props.agent.tokens.total)} tok</text>
+        <Show when={metrics()}><text fg={COLORS.faint}>· {metrics()}</text></Show>
+      </box>
+      <Show when={detail()}>
+        <box flexDirection="row" gap={1}>
+          <text fg={COLORS.faint}>  •</text>
+          <text fg={COLORS.faint}>{detail()}</text>
+        </box>
+      </Show>
+      <Show when={props.agent.errorReason}>
+        <box flexDirection="row" gap={1}>
+          <text fg={COLORS.error}>  •</text>
+          <text fg={COLORS.error}>{props.agent.errorReason}</text>
+        </box>
+      </Show>
+      <Show when={props.showTools() && visibleTools().length > 0}>
+        <For each={visibleTools()}>{(tool) => <ToolLine tool={tool} />}</For>
+      </Show>
+    </box>
+  );
+}
+
+function ToolLine(props: { tool: ToolActivity }) {
+  return (
+    <box flexDirection="row" gap={1}>
+      <Dot color={props.tool.status === 'error' ? COLORS.error : COLORS.faint} />
+      <text fg={props.tool.status === 'error' ? COLORS.error : COLORS.muted}>{props.tool.tool}</text>
+      <text fg={COLORS.faint}>{props.tool.status}</text>
+      <Show when={props.tool.title || props.tool.input}><text fg={COLORS.faint}>{props.tool.title || props.tool.input}</text></Show>
+      <Show when={props.tool.durationMs}><text fg={COLORS.faint}>{formatDuration(props.tool.durationMs)}</text></Show>
+    </box>
+  );
+}
+
+function Dot(props: { color: TuiColor; dim?: boolean }) {
+  return <text fg={props.dim ? COLORS.faint : props.color}>•</text>;
+}
+
+function sortAgentsByRelevance(a: AgentUsage, b: AgentUsage): number {
+  const stateRank = (agent: AgentUsage) => agent.state === 'busy' ? 0 : agent.state === 'error' ? 1 : 2;
+  return stateRank(a) - stateRank(b) || (b.updatedAt || 0) - (a.updatedAt || 0);
+}
+
+function compactMeta(values: Array<string | false | undefined>): string {
+  return values.filter(Boolean).join(' · ');
+}
+
+function subagentSummary(busy: number, done: number): string {
+  const parts = [];
+  if (busy > 0) parts.push(`${busy} running`);
+  if (done > 0) parts.push(`${done} done`);
+  return parts.length ? parts.join(' · ') : 'none yet';
+}
+
+function activityLabel(state: AgentUsage['state']): string {
+  return state === 'busy' ? 'doing' : 'last';
+}
+
+function stateColor(state: AgentUsage['state']): TuiColor {
+  if (state === 'error') return COLORS.error;
+  if (state === 'busy') return COLORS.busy;
+  if (state === 'done') return COLORS.success;
+  return COLORS.muted;
+}
+
+function stateLabel(state: AgentUsage['state']): string {
+  if (state === 'busy') return 'running';
+  if (state === 'done') return 'done';
+  if (state === 'error') return 'error';
+  return 'idle';
 }
 
 function createBooleanPreference(api: TuiPluginApi, key: TogglePreference, fallback: boolean): BooleanSignal {
@@ -257,7 +453,10 @@ function registerEvents(api: TuiPluginApi, ingest: (event: ObservatoryEvent) => 
     api.event.on('session.created', (e) => ingest({ type: 'session.created', session: e.properties.info as SessionLike })),
     api.event.on('session.updated', (e) => ingest({ type: 'session.updated', session: e.properties.info as SessionLike })),
     api.event.on('session.status', (e) => ingest({ type: 'session.status', sessionID: e.properties.sessionID, status: e.properties.status })),
+    api.event.on('session.compacted', (e) => ingest({ type: 'session.compacted', sessionID: e.properties.sessionID })),
     api.event.on('message.updated', (e) => ingest({ type: 'message.updated', message: e.properties.info as MessageLike })),
+    api.event.on('message.part.updated', (e) => ingest({ type: 'message.part.updated', part: e.properties.part as PartLike })),
+    api.event.on('message.part.removed', (e) => ingest({ type: 'message.part.removed', partID: e.properties.partID })),
   ];
   for (const d of disposers) api.lifecycle.onDispose(d);
 }
@@ -268,21 +467,35 @@ function registerCommands(api: TuiPluginApi, prefs: Record<string, BooleanSignal
     { title: 'Toggle Agents', value: `${PLUGIN_ID}.toggle-agents`, slash: { name: 'observatory-agents' }, onSelect: prefs.availableAgentsExpanded.toggle },
     { title: 'Toggle Subagents', value: `${PLUGIN_ID}.toggle-subagents`, slash: { name: 'observatory-subagents' }, onSelect: prefs.agentsExpanded.toggle },
     { title: 'Show/Hide Cost', value: `${PLUGIN_ID}.toggle-cost`, slash: { name: 'observatory-cost' }, onSelect: prefs.showCost.toggle },
-    { title: 'Show/Hide Emoji', value: `${PLUGIN_ID}.toggle-emoji`, slash: { name: 'observatory-emoji' }, onSelect: prefs.showEmoji.toggle },
   ];
   const dispose = api.command.register(() => cmds);
   api.lifecycle.onDispose(dispose);
 }
 
-function hydrateSessionFromTuiState(api: TuiPluginApi, sessionID: string) {
-  const messages = Array.from(api.state.session.messages(sessionID) as readonly MessageLike[]);
+function hydrateSessionFromTuiState(api: TuiPluginApi, sessionID: string, ingest: (event: ObservatoryEvent) => void) {
+  const messages = safeArray<MessageLike>(() => api.state.session.messages(sessionID) as readonly MessageLike[]);
   for (const msg of messages) {
-    const parts = Array.from(api.state.part(msg.id) as readonly PartLike[]);
-    // simplified - full version would update state
+    ingest({ type: 'message.updated', message: msg });
+    for (const part of safeArray<PartLike>(() => api.state.part(msg.id) as readonly PartLike[])) {
+      ingest({ type: 'message.part.updated', part });
+    }
   }
 }
 
-async function hydrateChildSession(api: TuiPluginApi, sessionID: string) {
-  const response = await api.client.session.messages({ sessionID, limit: 100 }) as { data?: Array<{ info: MessageLike; parts: PartLike[] }> };
-  // simplified
+async function hydrateChildSession(api: TuiPluginApi, sessionID: string, ingest: (event: ObservatoryEvent) => void) {
+  const response = await api.client.session.messages({ sessionID, limit: 100 }) as { data?: Array<{ info: MessageLike; parts?: PartLike[] }> };
+  for (const entry of response.data ?? []) {
+    if (entry.info) ingest({ type: 'message.updated', message: entry.info });
+    for (const part of entry.parts ?? []) {
+      ingest({ type: 'message.part.updated', part });
+    }
+  }
+}
+
+function safeArray<T>(read: () => readonly T[] | undefined): T[] {
+  try {
+    return Array.from(read() ?? []);
+  } catch {
+    return [];
+  }
 }
