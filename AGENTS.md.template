@@ -1,0 +1,72 @@
+# AGENTS.md
+
+Operational guide for coding agents working in this repository.
+
+## Project Snapshot
+
+- **Stack**: Fill in your stack (e.g., Expo 55, React Native 0.83, TypeScript)
+- **Routing**: Fill in your routing approach (e.g., expo-router file-based routes in app/)
+- **Testing**: Fill in testing framework (e.g., Jest, React Native Testing Library)
+- **Spec workflow**: OpenSpec change artifacts in `openspec/`
+
+## Source Layout
+
+Describe your project source layout here. For example:
+
+- `app/`: route files and screen implementations
+- `src/components/`: reusable UI primitives
+- `src/api/`: API clients and services
+- `tests/`: test suites mirroring app areas
+
+## Required Commands
+
+Run from repository root.
+
+### Install
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### Development
+
+```bash
+npm start
+```
+
+### Validation
+
+```bash
+npm run typecheck
+npm run test
+npm run coverage
+```
+
+## Architecture Rules
+
+1. Keep controllers/handlers thin
+2. Services own business rules
+3. Keep persistence entities out of HTTP contracts
+4. Use constructor injection
+5. Keep transactional scopes narrow
+
+## Testing Expectations
+
+- Add smallest useful tests for changed behavior
+- Test contracts at API level
+- Test business logic at service level
+- Never report tests as passing without command evidence
+
+## OpenSpec Workflow
+
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
+
+## Agent Behavior Guidelines
+
+- Make focused, minimal changes
+- Do not revert unrelated local modifications
+- Run relevant validation before finalizing
+- When asked to commit/push, follow repository branch standards
+- When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
