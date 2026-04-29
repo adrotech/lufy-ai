@@ -298,10 +298,13 @@ function SubAgentsSection(props: {
   totalCost?: number;
   totalTokens: AgentUsage['tokens'];
 }) {
+  const [focusedAgentID, setFocusedAgentID] = createSignal<string | undefined>(undefined);
   const busy = createMemo(() => props.agents.filter(agent => agent.state === 'busy').length);
   const done = createMemo(() => props.agents.filter(agent => agent.state === 'done').length);
   const visibleAgents = createMemo(() => [...props.agents].sort(sortAgentsByRelevance).slice(0, VISIBLE_SUBAGENTS));
   const hiddenAgents = createMemo(() => Math.max(0, props.agents.length - visibleAgents().length));
+  const isAgentExpanded = (agent: AgentUsage) => focusedAgentID() ? focusedAgentID() === agent.sessionID : agent.state === 'busy' || agent.state === 'error';
+  const toggleAgent = (agent: AgentUsage) => setFocusedAgentID(current => current === agent.sessionID ? undefined : agent.sessionID);
 
   return (
     <box flexDirection="column" paddingTop={1} gap={0}>
@@ -321,7 +324,7 @@ function SubAgentsSection(props: {
       </box>
       <Show when={props.expanded()}>
         <Show when={props.agents.length > 0} fallback={<text fg={COLORS.muted}>  • No subagent sessions yet</text>}>
-          <For each={visibleAgents()}>{(agent) => <AgentLine agent={agent} showCost={props.showCost} showTools={props.showTools} />}</For>
+          <For each={visibleAgents()}>{(agent) => <AgentLine agent={agent} expanded={() => isAgentExpanded(agent)} onToggle={() => toggleAgent(agent)} showCost={props.showCost} showTools={props.showTools} />}</For>
           <Show when={hiddenAgents() > 0}>
             <box flexDirection="row" gap={1}>
               <text fg={COLORS.faint}>  •</text>
@@ -334,7 +337,7 @@ function SubAgentsSection(props: {
   );
 }
 
-function AgentLine(props: { agent: AgentUsage; showCost: () => boolean; showTools: () => boolean }) {
+function AgentLine(props: { agent: AgentUsage; expanded: () => boolean; onToggle: () => void; showCost: () => boolean; showTools: () => boolean }) {
   const detail = createMemo(() => compactMeta([
     props.agent.modelID,
     props.agent.durationMs ? formatDuration(props.agent.durationMs) : undefined,
@@ -349,44 +352,53 @@ function AgentLine(props: { agent: AgentUsage; showCost: () => boolean; showTool
 
   return (
     <box flexDirection="column" gap={0}>
-      <box flexDirection="row" gap={1}>
+      <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
         <Dot color={stateColor(props.agent.state)} />
-        <text fg={COLORS.text}>{props.agent.name}</text>
+        <text fg={props.expanded() ? COLORS.text : COLORS.muted}>{props.agent.name}</text>
         <text fg={stateColor(props.agent.state)}>{stateLabel(props.agent.state)}</text>
+        <text fg={COLORS.faint}>· {formatTokenCount(props.agent.tokens.total)} tok</text>
       </box>
-      <Show when={props.agent.objective}>
+      <Show when={!props.expanded() && props.agent.currentAction}>
         <box flexDirection="row" gap={1}>
           <text fg={COLORS.faint}>  •</text>
-          <text fg={COLORS.muted}>goal</text>
-          <text fg={COLORS.text}>{props.agent.objective}</text>
+          <text fg={COLORS.faint}>{compactCollapsedActivity(props.agent)}</text>
         </box>
       </Show>
-      <Show when={props.agent.currentAction}>
-        <box flexDirection="row" gap={1}>
-          <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.faint}>  •</text>
-          <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.muted}>{activityLabel(props.agent.state)}</text>
-          <text fg={COLORS.text}>{props.agent.currentAction}</text>
-        </box>
-      </Show>
-      <box flexDirection="row" gap={1}>
-        <text fg={COLORS.faint}>  •</text>
-        <text fg={COLORS.faint}>{formatTokenCount(props.agent.tokens.total)} tok</text>
-        <Show when={metrics()}><text fg={COLORS.faint}>· {metrics()}</text></Show>
-      </box>
-      <Show when={detail()}>
+      <Show when={props.expanded()}>
+        <Show when={props.agent.objective}>
+          <box flexDirection="row" gap={1}>
+            <text fg={COLORS.faint}>  •</text>
+            <text fg={COLORS.muted}>goal</text>
+            <text fg={COLORS.text}>{props.agent.objective}</text>
+          </box>
+        </Show>
+        <Show when={props.agent.currentAction}>
+          <box flexDirection="row" gap={1}>
+            <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.faint}>  •</text>
+            <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.muted}>{activityLabel(props.agent.state)}</text>
+            <text fg={COLORS.text}>{props.agent.currentAction}</text>
+          </box>
+        </Show>
         <box flexDirection="row" gap={1}>
           <text fg={COLORS.faint}>  •</text>
-          <text fg={COLORS.faint}>{detail()}</text>
+          <text fg={COLORS.faint}>{formatTokenCount(props.agent.tokens.total)} tok</text>
+          <Show when={metrics()}><text fg={COLORS.faint}>· {metrics()}</text></Show>
         </box>
-      </Show>
-      <Show when={props.agent.errorReason}>
-        <box flexDirection="row" gap={1}>
-          <text fg={COLORS.error}>  •</text>
-          <text fg={COLORS.error}>{props.agent.errorReason}</text>
-        </box>
-      </Show>
-      <Show when={props.showTools() && visibleTools().length > 0}>
-        <For each={visibleTools()}>{(tool) => <ToolLine tool={tool} />}</For>
+        <Show when={detail()}>
+          <box flexDirection="row" gap={1}>
+            <text fg={COLORS.faint}>  •</text>
+            <text fg={COLORS.faint}>{detail()}</text>
+          </box>
+        </Show>
+        <Show when={props.agent.errorReason}>
+          <box flexDirection="row" gap={1}>
+            <text fg={COLORS.error}>  •</text>
+            <text fg={COLORS.error}>{props.agent.errorReason}</text>
+          </box>
+        </Show>
+        <Show when={props.showTools() && visibleTools().length > 0}>
+          <For each={visibleTools()}>{(tool) => <ToolLine tool={tool} />}</For>
+        </Show>
       </Show>
     </box>
   );
@@ -422,6 +434,14 @@ function subagentSummary(busy: number, done: number): string {
   if (busy > 0) parts.push(`${busy} running`);
   if (done > 0) parts.push(`${done} done`);
   return parts.length ? parts.join(' · ') : 'none yet';
+}
+
+function compactCollapsedActivity(agent: AgentUsage): string {
+  return compactMeta([
+    agent.state === 'busy' ? 'doing' : 'last',
+    agent.currentAction,
+    agent.durationMs ? formatDuration(agent.durationMs) : undefined,
+  ]);
 }
 
 function activityLabel(state: AgentUsage['state']): string {
