@@ -30,14 +30,14 @@ Hoy el repositorio contiene estas piezas:
 
 ```mermaid
 flowchart LR
-    A["Instalación en proyecto destino"] --> B["`.opencode/` + `AGENTS.md` + `tui.json`"]
-    B --> C["`orchestrator` enruta el trabajo"]
-    C --> D["`/opsx-explore`"]
-    D --> E["`/opsx-propose`"]
-    E --> F["`/opsx-apply`"]
-    F --> G["`/opsx-verify`"]
-    G --> H["`/opsx-archive`"]
-    F --> I["`delivery` para commit / push / PR"]
+    A["Instalacion en proyecto destino"] --> B["Se copian .opencode, AGENTS.md y tui.json"]
+    B --> C["orchestrator enruta el trabajo"]
+    C --> D["opsx-explore"]
+    D --> E["opsx-propose"]
+    E --> F["opsx-apply"]
+    F --> G["opsx-verify"]
+    G --> H["opsx-archive"]
+    F --> I["delivery: commit, push y PR"]
 ```
 
 ### 1. Instalación en un repositorio destino
@@ -91,11 +91,11 @@ flowchart TD
     O --> RE["reviewer"]
     O --> DE["delivery"]
 
-    EX --> P1["análisis de impacto"]
-    IM --> P2["código / tests / docs"]
-    VA --> P3["evidencia de validación"]
+    EX --> P1["analisis de impacto"]
+    IM --> P2["codigo tests docs"]
+    VA --> P3["evidencia de validacion"]
     RE --> P4["riesgo y calidad"]
-    DE --> P5["commit / push / PR"]
+    DE --> P5["commit push PR"]
 ```
 
 ### 3. El ciclo OpenSpec organiza el trabajo
@@ -245,13 +245,13 @@ Un agente Astro-aware debería tender a minimizar JavaScript cliente, reducir hi
 
 ```mermaid
 flowchart TD
-    A["¿Qué tipo de frontend es?"] --> B["React puro"]
+    A["Que tipo de frontend es"] --> B["React puro"]
     A --> C["Next.js App Router"]
     A --> D["Astro"]
 
-    B --> B1["template: frontend-react"]
-    C --> C1["template: frontend-nextjs"]
-    D --> D1["template: frontend-astro"]
+    B --> B1["frontend-react"]
+    C --> C1["frontend-nextjs"]
+    D --> D1["frontend-astro"]
 ```
 
 ## Nuevo subagente recomendado: infraestructura / cloud / SRE
@@ -294,12 +294,12 @@ Archivos típicos bajo su ownership:
 
 ```mermaid
 flowchart TD
-    S["infra-cloud-sre"] --> D1["Docker / Compose"]
+    S["infra-cloud-sre"] --> D1["Docker Compose"]
     S --> D2["NGINX"]
     S --> D3["Kong Gateway"]
-    S --> D4["VPS / VPN"]
+    S --> D4["VPS VPN"]
     S --> D5["GitHub Actions CI/CD"]
-    S --> D6["Runbooks / observabilidad"]
+    S --> D6["Runbooks observabilidad"]
 ```
 
 ## Mapa sugerido de agentes a futuro
