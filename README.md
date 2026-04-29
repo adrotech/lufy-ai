@@ -1,44 +1,58 @@
 # lufy-ai
 
-AI-first workflow kit for OpenCode projects with OpenSpec, specialized agents, delivery policy, and a local observability panel.
+Kit de flujo AI-first para proyectos con OpenCode, OpenSpec, agentes especializados, reglas de delivery y observabilidad local.
 
-## What This Repository Actually Ships
+## Qué entrega realmente este repositorio
 
-This repository is not an app framework by itself. It is a repository-local operating layer that gets copied into another project and gives that project:
+Este repositorio no es un framework de aplicación. Es una capa operativa que se instala dentro de otro proyecto y le agrega:
 
-- a primary `orchestrator` agent plus focused subagents
-- an OpenSpec / spec-driven workflow
-- repository delivery rules
-- slash commands for explore, propose, apply, verify, and archive
-- an Agent Observatory TUI plugin
-- an `AGENTS.md` bootstrap template for project conventions
+- un agente principal `orchestrator` y subagentes especializados
+- un flujo OpenSpec / Spec-Driven Development
+- reglas de delivery y trazabilidad
+- comandos slash para explorar, proponer, implementar, verificar y archivar
+- un panel local de observabilidad de agentes
+- una plantilla `AGENTS.md` para convenciones del proyecto
 
-Today, the repo contains these building blocks:
+Hoy el repositorio contiene estas piezas:
 
 - `.opencode/agents/`: `orchestrator`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`
 - `.opencode/commands/`: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`
-- `.opencode/skills/sdd-workflow/`: OpenSpec lifecycle skills
-- `.opencode/policies/delivery.md`: delivery and traceability policy
-- `.opencode/plugins/agent-observatory.tsx`: local TUI observability plugin
-- `AGENTS.md.template`: project-specific conventions bootstrap
-- `scripts/install.sh`: installer for target repositories
-- `openspec/`: starter OpenSpec structure and config
+- `.opencode/skills/sdd-workflow/`: skills del ciclo OpenSpec
+- `.opencode/policies/delivery.md`: política de delivery y trazabilidad
+- `.opencode/plugins/agent-observatory.tsx`: plugin TUI local de observabilidad
+- `AGENTS.md.template`: base para convenciones específicas del repositorio
+- `scripts/install.sh`: instalador para proyectos destino
+- `openspec/`: estructura inicial y configuración del flujo
 
-## End-to-End Flow
+## Flujo completo
 
-### 1. Install into a target repository
+### Vista general
 
-The installer:
+```mermaid
+flowchart LR
+    A["Instalación en proyecto destino"] --> B["`.opencode/` + `AGENTS.md` + `tui.json`"]
+    B --> C["`orchestrator` enruta el trabajo"]
+    C --> D["`/opsx-explore`"]
+    D --> E["`/opsx-propose`"]
+    E --> F["`/opsx-apply`"]
+    F --> G["`/opsx-verify`"]
+    G --> H["`/opsx-archive`"]
+    F --> I["`delivery` para commit / push / PR"]
+```
 
-1. checks dependencies
-2. warns if `.opencode/` or `AGENTS.md` already exist
-3. tries to detect the project stack
-4. copies the local OpenCode assets into the target project
-5. creates `AGENTS.md` from `AGENTS.md.template` if needed
-6. copies `tui.json`
-7. optionally enables Engram-oriented memory usage if the user already has it installed
+### 1. Instalación en un repositorio destino
 
-Install:
+El instalador hace lo siguiente:
+
+1. valida dependencias
+2. detecta si ya existe `.opencode/` o `AGENTS.md`
+3. intenta detectar el stack del proyecto
+4. copia los assets locales de OpenCode al proyecto destino
+5. crea `AGENTS.md` desde `AGENTS.md.template` si hace falta
+6. copia `tui.json`
+7. ofrece integración orientada a memoria si Engram ya está instalado
+
+Instalación:
 
 ```bash
 git clone https://github.com/adrianrojas/lufy-ai.git /tmp/lufy-ai
@@ -46,202 +60,264 @@ cd /tmp/lufy-ai
 ./scripts/install.sh
 ```
 
-Or:
+O directamente:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adrianrojas/lufy-ai/main/scripts/install.sh | bash
 ```
 
-### 2. Let the orchestrator route the work
+### 2. El `orchestrator` reparte el trabajo
 
-Once installed, OpenCode uses the repository-local agents under `.opencode/agents/`.
+Una vez instalado, OpenCode usa los agentes definidos en `.opencode/agents/`.
 
-Current topology:
+Topología actual:
 
-| Agent | Responsibility |
+| Agente | Responsabilidad |
 | --- | --- |
-| `orchestrator` | Primary router. Chooses the right specialist and enforces minimal-overhead coordination. |
-| `explorer` | Read-only impact analysis, architecture reading, file discovery, and implementation handoff. |
-| `implementer` | Bounded code, tests, docs, and configuration changes. |
-| `validator` | Read-only compile/test evidence and failure diagnosis. |
-| `reviewer` | Read-only code quality, architecture, risk, and missing-test review. |
-| `delivery` | Git / GitHub operations, branch hygiene, push, PR creation, and traceability gates. |
+| `orchestrator` | Enrutador principal. Decide qué especialista debe actuar y mantiene la coordinación mínima necesaria. |
+| `explorer` | Análisis read-only de impacto, arquitectura y archivos relevantes. |
+| `implementer` | Cambios acotados de código, tests, docs y configuración. |
+| `validator` | Evidencia de compilación y tests, sin editar archivos. |
+| `reviewer` | Revisión read-only de calidad, arquitectura, riesgo y cobertura faltante. |
+| `delivery` | Operaciones Git / GitHub, higiene de ramas, push, PR y gates de trazabilidad. |
 
-### 3. Work through the OpenSpec lifecycle
+### Diagrama de agentes
 
-The OpenSpec workflow in this repo is centered on five commands:
+```mermaid
+flowchart TD
+    O["orchestrator"] --> EX["explorer"]
+    O --> IM["implementer"]
+    O --> VA["validator"]
+    O --> RE["reviewer"]
+    O --> DE["delivery"]
 
-- `/opsx-explore`: read-only exploration and requirement clarification
-- `/opsx-propose`: create change artifacts such as `proposal.md`, `design.md`, and `tasks.md`
-- `/opsx-apply`: implement tasks from an active change
-- `/opsx-verify`: verify completeness, correctness, and coherence against the artifacts
-- `/opsx-archive`: archive a completed change
+    EX --> P1["análisis de impacto"]
+    IM --> P2["código / tests / docs"]
+    VA --> P3["evidencia de validación"]
+    RE --> P4["riesgo y calidad"]
+    DE --> P5["commit / push / PR"]
+```
 
-At a repo level, the lifecycle is:
+### 3. El ciclo OpenSpec organiza el trabajo
 
-1. explore the problem or existing code
-2. propose a named change in `openspec/changes/<name>/`
-3. apply tasks with focused implementation
-4. verify with explicit evidence
-5. archive only when the change is complete
+El flujo OpenSpec de este repo gira alrededor de cinco comandos:
 
-### 4. Enforce delivery separately from implementation
+- `/opsx-explore`: exploración read-only y clarificación de requisitos
+- `/opsx-propose`: crea artefactos del cambio como `proposal.md`, `design.md` y `tasks.md`
+- `/opsx-apply`: implementa tareas de un cambio activo
+- `/opsx-verify`: verifica completitud, corrección y coherencia contra los artefactos
+- `/opsx-archive`: archiva un cambio terminado
 
-`implementer` is intentionally not the delivery owner.
+A nivel repositorio, el ciclo esperado es:
 
-Delivery rules live in `.opencode/policies/delivery.md` and establish:
+1. explorar el problema o el código existente
+2. proponer un cambio en `openspec/changes/<nombre>/`
+3. implementar tareas de forma acotada
+4. verificar con evidencia explícita
+5. archivar solo cuando el cambio esté completo
 
-- protected source branches
-- default PR base branch
-- validation tiers for iteration vs final delivery
-- OpenSpec task closure gates
-- GitHub Project sync expectations
-- Spanish as the default language for human-facing delivery artifacts
+### Diagrama del ciclo OpenSpec
 
-This keeps code editing, validation, and Git/GitHub operations clearly separated.
+```mermaid
+flowchart LR
+    X["Explorar"] --> Y["Proponer cambio"]
+    Y --> Z["Implementar tareas"]
+    Z --> W["Verificar evidencia"]
+    W --> Q["Archivar cambio"]
+```
 
-### 5. Observe local agent activity
+### 4. Delivery separado de implementación
 
-The repository ships a local Agent Observatory plugin for the OpenCode TUI. It is loaded through `tui.json` and is explicitly local-only.
+`implementer` no es el dueño del delivery. Esa separación es deliberada.
 
-That gives visibility into:
+Las reglas de delivery viven en `.opencode/policies/delivery.md` y definen:
 
-- current active agents
-- subagent activity
-- tool usage summaries
-- optional cost display
+- ramas protegidas
+- rama base por defecto para PR
+- niveles de validación para iteración vs delivery final
+- reglas de cierre de tareas OpenSpec
+- expectativas de sincronización con GitHub Project
+- español como idioma por defecto para artefactos humanos de delivery
 
-No external telemetry is part of the default design.
+Eso evita mezclar edición de código, validación y operaciones Git/GitHub en un solo agente.
 
-## Current Documentation Drift
+### Diagrama de responsabilidades
 
-This README now reflects the repository as it exists today.
+```mermaid
+flowchart TD
+    A["explorer"] --> A1["lee y analiza"]
+    B["implementer"] --> B1["edita e implementa"]
+    C["validator"] --> C1["ejecuta validaciones"]
+    D["reviewer"] --> D1["revisa riesgos"]
+    E["delivery"] --> E1["publica cambios"]
+```
 
-The previous version had drift in a few places:
+### 5. Observabilidad local de agentes
 
-- it referenced stack template files that are not present in this repository
-- it grouped `React`, `Next.js`, and `Vue` under a single `frontend-react` bucket
-- it documented a `backend-node` template as if it were a first-class direction
-- it linked to documentation files that do not exist in `docs/`
+El repositorio incluye un plugin local llamado Agent Observatory para la TUI de OpenCode. Se carga desde `tui.json` y su diseño es local, no telemétrico.
 
-The sections below describe the recommended direction for stack templates and subagents, without pretending those templates already exist as dedicated files in this repo.
+Permite ver:
 
-## Recommended Stack Template Direction
+- agentes activos
+- actividad de subagentes
+- resúmenes de uso de herramientas
+- costo opcional
 
-After reviewing the current repo and current official documentation, the stack template lineup should be narrower and more opinionated.
+No forma parte del diseño actual enviar telemetría externa.
 
-### Frontend templates that should exist
+## Deriva documental corregida
 
-These should replace the overloaded "frontend-react" idea:
+Este README ahora refleja el estado real del repositorio.
 
-| Template | Why it should be separate | Suggested specialist subagents |
+La versión anterior tenía drift en varios puntos:
+
+- referenciaba templates de stack que no existen como archivos en este repo
+- metía `React`, `Next.js` y `Vue` dentro de un único bucket `frontend-react`
+- documentaba `backend-node` como si fuera una dirección principal
+- enlazaba a archivos de documentación que hoy no existen en `docs/`
+
+Las secciones siguientes proponen una dirección de evolución para templates y subagentes, pero sin venderlas como ya implementadas.
+
+## Dirección recomendada para templates de stack
+
+Después de revisar el repo actual y la documentación oficial vigente de cada stack, conviene separar mejor los templates.
+
+### Templates frontend que deberían existir
+
+Estos deberían reemplazar la idea demasiado amplia de `frontend-react`:
+
+| Template | Por qué debería ser independiente | Subagentes sugeridos |
 | --- | --- | --- |
-| `frontend-react` | Pure React projects still need their own conventions around component boundaries, hooks, state, accessibility, and render performance. | `react-ui`, `react-state-performance`, `react-testing-a11y` |
-| `frontend-nextjs` | Next.js App Router adds server/client component boundaries, route handlers, caching, streaming, and deployment/runtime decisions that deserve their own agent behavior. | `nextjs-app-router`, `nextjs-server-runtime`, `nextjs-data-cache` |
-| `frontend-astro` | Astro has a very different model: islands architecture, content collections, integrations, adapters, and static/hybrid/server rendering modes. | `astro-islands-content`, `astro-integrations`, `astro-ssr-adapter` |
+| `frontend-react` | Un proyecto React puro necesita criterios propios para componentes, hooks, estado, accesibilidad y performance de render. | `react-ui`, `react-state-performance`, `react-testing-a11y` |
+| `frontend-nextjs` | Next.js App Router agrega límites server/client, route handlers, caché, streaming y decisiones de runtime que merecen comportamiento específico. | `nextjs-app-router`, `nextjs-server-runtime`, `nextjs-data-cache` |
+| `frontend-astro` | Astro tiene un modelo distinto: islands architecture, content collections, integrations, adapters y modos static/hybrid/server. | `astro-islands-content`, `astro-integrations`, `astro-ssr-adapter` |
 
-### Templates that should stay
-
-These still make sense as separate tracks:
+### Templates que deberían quedarse
 
 - `mobile-expo`
 - `backend-spring`
 
-### Template that should be removed
-
-This should stop being documented as a target template:
+### Template que debería salir
 
 - `backend-node`
 
-If a repository is Node-based, that should usually be expressed through a more concrete stack profile such as `frontend-nextjs`, `frontend-react`, or a future explicit backend profile with stronger boundaries than "Node.js".
+Si un repositorio usa Node, eso debería expresarse normalmente a través de un stack más concreto como `frontend-nextjs`, `frontend-react` o un futuro backend explícito mejor definido que "Node.js".
 
-## Why These Frontend Splits Matter
+## Por qué conviene separar React, Next.js y Astro
 
 ### React
 
-The React docs currently recommend starting new React apps with a framework, and `Create React App` is deprecated. Even so, a non-Next React template still makes sense for projects using a lighter stack or custom architecture. The agent posture should focus on:
+La documentación oficial de React hoy recomienda iniciar apps nuevas con un framework, y `Create React App` ya quedó deprecado. Aun así, sigue teniendo sentido un template `frontend-react` para proyectos que no necesitan Next.js ni el modelo completo de un meta-framework.
 
-- component composition and hook correctness
-- `useEffectEvent` for effect/event separation where appropriate
-- `startTransition` and `useDeferredValue` for non-blocking UI updates
-- accessibility and testability of interactive components
-- avoiding framework-specific assumptions
+Ese template debería orientar a los agentes hacia:
+
+- composición de componentes
+- corrección de hooks
+- uso de `useEffectEvent` cuando la separación entre efecto y evento importe
+- uso de `startTransition` y `useDeferredValue` para actualizaciones no bloqueantes
+- accesibilidad y testabilidad de UI interactiva
+- evitar supuestos específicos de framework
 
 ### Next.js
 
-Next.js deserves its own template because App Router projects are not just "React plus routing". The official docs center the stack around:
+Next.js necesita template propio porque un proyecto con App Router no es simplemente "React con rutas". La documentación oficial pone el foco en:
 
-- Server Components by default
-- explicit Client Component boundaries
-- Route Handlers inside `app/`
-- caching and dynamic rendering behavior
-- streaming and navigation performance
+- Server Components por defecto
+- límites explícitos de Client Components
+- Route Handlers en `app/`
+- estrategias de caché y rendering dinámico
+- streaming y navegación
 
-That requires stack-specific agent judgment about where code should run, how data should be fetched, and which parts belong to server or client boundaries.
+Eso exige que el agente entienda dónde debe correr cada pieza y cómo separar correctamente datos, render y comportamiento cliente.
 
 ### Astro
 
-Astro also deserves a separate template because its architecture is materially different:
+Astro también necesita template propio porque su arquitectura es distinta:
 
-- islands architecture instead of broad client hydration
-- content collections as a primary content model
-- integration- and adapter-driven capabilities
-- clear static, hybrid, and server rendering modes
+- islands architecture en lugar de hidratar todo
+- content collections como modelo central de contenido
+- integrations y adapters como piezas de primer nivel
+- modos static, hybrid y server bien diferenciados
 
-An Astro-aware agent should optimize for small client payloads, limited hydration, content typing, and the right adapter or integration strategy.
+Un agente Astro-aware debería tender a minimizar JavaScript cliente, reducir hidratación y decidir bien el adapter o integration apropiado.
 
-## Recommended New Subagent: Infrastructure / Cloud / SRE
+### Diagrama de decisión para templates frontend
 
-This is the biggest missing specialist in the current topology.
+```mermaid
+flowchart TD
+    A["¿Qué tipo de frontend es?"] --> B["React puro"]
+    A --> C["Next.js App Router"]
+    A --> D["Astro"]
 
-Recommended new agent:
+    B --> B1["template: frontend-react"]
+    C --> C1["template: frontend-nextjs"]
+    D --> D1["template: frontend-astro"]
+```
+
+## Nuevo subagente recomendado: infraestructura / cloud / SRE
+
+Este es el especialista más claramente faltante en la topología actual.
+
+Nombre recomendado:
 
 - `infra-cloud-sre`
 
-Suggested scope:
+Alcance sugerido:
 
-- Dockerfile design and hardening
-- `docker compose` for local dev, staging, and single-host production
-- production compose overlays, health checks, restart policies, and remote-host flows
-- reverse proxy setup with NGINX
-- API gateway modeling with Kong Gateway: Services, Routes, Plugins
-- VPS bootstrap and deployment topology
-- VPN-aware network concerns and private service exposure
-- CI/CD design with GitHub Actions
-- environments, approvals, secret boundaries, and rollback paths
-- operational runbooks, observability, and release risk assessment
+- diseño y hardening de `Dockerfile`
+- `docker compose` para dev local, staging y producción single-host
+- overlays de producción, health checks y restart policies
+- reverse proxy con NGINX
+- modelado de Kong Gateway con Services, Routes y Plugins
+- bootstrap y topología de despliegue en VPS
+- conectividad privada y consideraciones de VPN
+- CI/CD con GitHub Actions
+- environments, approvals, secretos y rollback
+- runbooks operativos, observabilidad y riesgo de release
 
-Suggested ownership boundaries:
+Límites de ownership sugeridos:
 
-- owns infra files, deployment manifests, proxy config, gateway config, and workflows
-- does not own business logic implementation unless the task is explicitly cross-cutting
-- should work with `implementer`, `validator`, and `delivery` rather than replacing them
+- dueño de archivos de infraestructura, despliegue, proxy, gateway y workflows
+- no dueño de lógica de negocio salvo que el cambio sea explícitamente transversal
+- debería trabajar junto a `implementer`, `validator` y `delivery`, no reemplazarlos
 
-Example files this agent should own when present:
+Archivos típicos bajo su ownership:
 
 - `Dockerfile`
 - `docker-compose.yml`, `compose.yaml`, `compose.production.yaml`
 - `.github/workflows/*`
 - `nginx.conf`, `nginx/*.conf`
-- `kong.yaml`, decK config, gateway bootstrap scripts
-- deployment scripts and runbooks
+- `kong.yaml`, configuración decK y scripts de bootstrap
+- scripts de despliegue y runbooks
 
-## Suggested Next Agent Map
+### Diagrama del subagente SRE
 
-If the project evolves toward stack-aware templates, a better map would be:
+```mermaid
+flowchart TD
+    S["infra-cloud-sre"] --> D1["Docker / Compose"]
+    S --> D2["NGINX"]
+    S --> D3["Kong Gateway"]
+    S --> D4["VPS / VPN"]
+    S --> D5["GitHub Actions CI/CD"]
+    S --> D6["Runbooks / observabilidad"]
+```
 
-| Layer | Agents |
+## Mapa sugerido de agentes a futuro
+
+Si el proyecto evoluciona hacia templates con conocimiento explícito del stack, un mapa más sólido sería:
+
+| Capa | Agentes |
 | --- | --- |
-| Core routing | `orchestrator` |
-| Cross-project execution | `explorer`, `implementer`, `validator`, `reviewer`, `delivery` |
+| Enrutamiento central | `orchestrator` |
+| Ejecución transversal | `explorer`, `implementer`, `validator`, `reviewer`, `delivery` |
 | Frontend React | `react-ui`, `react-state-performance`, `react-testing-a11y` |
 | Frontend Next.js | `nextjs-app-router`, `nextjs-server-runtime`, `nextjs-data-cache` |
 | Frontend Astro | `astro-islands-content`, `astro-integrations`, `astro-ssr-adapter` |
-| Platform | `infra-cloud-sre` |
+| Plataforma | `infra-cloud-sre` |
 
-That keeps the current core topology intact while making the stack-specific knowledge explicit instead of overloading a generic implementer.
+Eso preserva la topología central actual, pero hace explícito el conocimiento por stack en lugar de recargar un `implementer` genérico.
 
-## Repository Layout
+## Estructura del repositorio
 
 ```text
 .
@@ -259,13 +335,13 @@ That keeps the current core topology intact while making the stack-specific know
 └── tui.json
 ```
 
-## Local Docs
+## Documentación local disponible
 
 - [Getting Started](docs/getting-started.md)
 - [OpenSpec Overview](openspec/README.md)
 - [AGENTS Template](AGENTS.md.template)
 
-## External References Used For Template Direction
+## Referencias externas usadas para orientar los templates
 
 - React: [Creating a React App](https://react.dev/learn/start-a-new-react-project), [Installation](https://react.dev/learn/installation), [useEffectEvent](https://react.dev/reference/react/useEffectEvent), [startTransition](https://react.dev/reference/react/startTransition), [useDeferredValue](https://react.dev/reference/react/useDeferredValue)
 - Next.js: [App Router](https://nextjs.org/docs/app), [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components), [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
@@ -275,6 +351,6 @@ That keeps the current core topology intact while making the stack-specific know
 - Kong Gateway: [Kong Gateway Overview](https://developer.konghq.com/gateway/), [Gateway Services](https://developer.konghq.com/gateway/entities/service/), [Routes](https://developer.konghq.com/gateway/entities/route/), [Plugins](https://developer.konghq.com/gateway/entities/plugin/)
 - GitHub Actions: [Deployment environments](https://docs.github.com/en/actions/concepts/workflows-and-actions/deployment-environments)
 
-## License
+## Licencia
 
 MIT
