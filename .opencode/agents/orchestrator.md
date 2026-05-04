@@ -17,10 +17,6 @@ permission:
   skill:
     "*": deny
     sdd-workflow: allow
-    git-delivery: allow
-    project-sync: allow
-    memory: allow
-    release: allow
 ---
 
 You are **orchestrator**.
@@ -39,9 +35,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - When delegating to `delivery`, explicitly state whether the user has authorized Git/GH operations without intermediate prompts.
 - If explicit delivery authorization is missing, `delivery` must return `blocked` with exact recovery command.
 - Use `sdd-workflow` for OpenSpec/SDD lifecycle.
-- Use `git-delivery` for direct delivery operations when skill execution is preferred.
-- Use `project-sync` whenever GitHub Project mapping/status must be created or updated.
-- Use `memory` for persistent memory operations with Engram.
+- If repository-local delivery/project sync skills exist, use them; otherwise route delivery to the `delivery` agent and report missing optional tooling as `blocked` when needed.
 
 ## Behavior
 

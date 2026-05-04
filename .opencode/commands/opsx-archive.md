@@ -15,4 +15,4 @@ Archive completed change and update tracking.
 ## Recommended execution
 
 1. Verify 100% tasks complete
-2. `skill project-sync --change <name> --status Done`
+2. If a downstream project installed `project-sync`, run `skill project-sync --change <name> --status Done`

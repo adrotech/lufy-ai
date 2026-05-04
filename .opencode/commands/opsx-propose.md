@@ -18,4 +18,4 @@ Run unified OpenSpec workflow in `propose` mode.
 ## Recommended execution
 
 1. `skill sdd-workflow` (mode=propose)
-2. `skill project-sync --change <name> --status Ready` (optional)
+2. If a downstream project installed `project-sync`, run `skill project-sync --change <name> --status Ready` (optional)
