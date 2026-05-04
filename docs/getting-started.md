@@ -6,8 +6,8 @@ lufy-ai is a template that brings intelligent software development workflows to 
 
 - **Orchestrated Agents**: Specialized AI agents with clear responsibilities
 - **SDD/OpenSpec Workflow**: Spec-Driven Development lifecycle
-- **Git Delivery**: Safe delivery with templates and traceability
-- **Memory**: Optional Engram integration for persistent memory
+- **Git Delivery Policy**: Safe delivery rules and a delivery subagent
+- **Memory-ready config**: Optional Engram MCP configuration in `opencode.json`
 - **TUI Observatory**: Real-time visibility into agent activity
 
 ## Installation
@@ -16,30 +16,27 @@ lufy-ai is a template that brings intelligent software development workflows to 
 
 ```bash
 # Run installer directly
-curl -fsSL https://raw.githubusercontent.com/adrianrojas/lufy-ai/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/main/scripts/install.sh | bash
 ```
 
 ### Manual Install
 
 ```bash
 # Clone repository
-git clone https://github.com/adrianrojas/lufy-ai.git /tmp/lufy-ai
+git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
 
-# Go to your project
+# Go to your project and run installer
 cd my-project
-
-# Run installer
-cd /tmp/lufy-ai
-./scripts/install.sh
+/tmp/lufy-ai/scripts/install.sh
 ```
 
 ### What the installer does
 
 1. Detects if `.opencode/` already exists
-2. Detects project stack (Node.js, Spring Boot, Go, Python)
+2. Detects project stack (React, Next.js, Astro, Expo, Spring Boot, Go, Python)
 3. Copies configuration files to `.opencode/`
 4. Creates `AGENTS.md` from template
-5. Sets up TUI configuration
+5. Sets up `tui.json`, `opencode.json`, and `openspec/`
 
 ## Available Commands
 
@@ -72,21 +69,14 @@ After installation:
 2. **Restart OpenCode**: Load new agents
 3. **Start exploring**: Use `/opsx-explore` to understand your codebase
 
-## Stack Templates
+## Stack Detection
 
-Templates for common stacks are in `docs/stack-templates/`:
-
-- `frontend-react.md` - React, Next.js, Vue
-- `mobile-expo.md` - Expo, React Native
-- `backend-spring.md` - Spring Boot, Java
-- `backend-node.md` - Node.js, Express, Nest
+The installer detects common project markers and records the detected stack in its output. Stack-specific templates are a planned evolution; the current installer copies the same base agent, command, policy, OpenSpec, and observability assets for every stack.
 
 ## Documentation
 
-- [Agents Reference](agents-reference.md) - Detailed agent descriptions
-- [Skills Reference](skills-reference.md) - Available skills
-- [TUI Reference](tui-reference.md) - Observatory plugin guide
-- [Memory Reference](memory-reference.md) - Engram integration
+- [OpenSpec Overview](../openspec/README.md) - OpenSpec structure and lifecycle
+- [Local OpenCode Tooling](../.opencode/README.md) - Installed agents, commands, skills, and observability notes
 
 ## Troubleshooting
 
@@ -104,5 +94,5 @@ Templates for common stacks are in `docs/stack-templates/`:
 
 ## Further Support
 
-- GitHub: https://github.com/adrianrojas/lufy-ai
-- Issues: https://github.com/adrianrojas/lufy-ai/issues
+- GitHub: https://github.com/adrotech/lufy-ai
+- Issues: https://github.com/adrotech/lufy-ai/issues

@@ -49,7 +49,7 @@ If any item is missing, report `blocked` or `sync_pending` with exact recovery c
 
 ## GitHub Project Sync
 
-- Use `.opencode/skills/project-sync/project_sync.py` for board sync.
+- Use `.opencode/skills/project-sync/project_sync.py` for board sync only when a downstream project installs that optional skill.
 - Keep generated content in Spanish.
 - Configure Project IDs through environment variables.
 - On remote failures, return `sync_pending` with recovery command.

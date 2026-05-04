@@ -55,15 +55,15 @@ El instalador hace lo siguiente:
 Instalación:
 
 ```bash
-git clone https://github.com/adrianrojas/lufy-ai.git /tmp/lufy-ai
-cd /tmp/lufy-ai
-./scripts/install.sh
+git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
+cd /ruta/a/tu/proyecto
+/tmp/lufy-ai/scripts/install.sh
 ```
 
 O directamente:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrianrojas/lufy-ai/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/main/scripts/install.sh | bash
 ```
 
 ### 2. El `orchestrator` reparte el trabajo

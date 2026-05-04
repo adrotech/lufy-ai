@@ -1,13 +1,21 @@
 #!/bin/bash
 # lufy-ai installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/adrianrojas/lufy-ai/main/scripts/install.sh | bash
-# Or: ./scripts/install.sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/main/scripts/install.sh | bash
+# Or: /path/to/lufy-ai/scripts/install.sh [target-project-dir]
 
 set -e
 
-REPO_URL="https://github.com/adrianrojas/lufy-ai.git"
-INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
-TARGET_DIR="${2:-.}"
+REPO_URL="https://github.com/adrotech/lufy-ai.git"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+TARGET_DIR="${1:-.}"
+TEMP_INSTALL_DIR=""
+
+if [ -d "$SCRIPT_DIR/../.opencode" ] && [ -f "$SCRIPT_DIR/../AGENTS.md.template" ]; then
+    INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+else
+    TEMP_INSTALL_DIR="$(mktemp -d)"
+    INSTALL_DIR="$TEMP_INSTALL_DIR/lufy-ai"
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -38,6 +46,22 @@ print_warn() {
 
 print_error() {
     echo -e "${RED}[✗]${NC} $1"
+}
+
+cleanup() {
+    if [ -n "$TEMP_INSTALL_DIR" ] && [ -d "$TEMP_INSTALL_DIR" ]; then
+        rm -rf "$TEMP_INSTALL_DIR"
+    fi
+}
+
+prepare_install_source() {
+    if [ -d "$INSTALL_DIR/.opencode" ]; then
+        return
+    fi
+
+    print_step "Fetching lufy-ai source..."
+    git clone --depth 1 "$REPO_URL" "$INSTALL_DIR" >/dev/null 2>&1
+    print_step "Source ready"
 }
 
 check_dependencies() {
@@ -122,25 +146,27 @@ detect_stack() {
     if [ "$stack" = "unknown" ]; then
         print_warn "Could not auto-detect stack"
         echo "Available stacks:"
-        echo "  1) frontend-react  (React, Next.js, Vue)"
-        echo "  2) mobile-expo    (Expo, React Native)"
-        echo "  3) backend-spring (Spring Boot, Java)"
-        echo "  4) backend-node   (Node.js, Express, Nest)"
-        echo "  5) backend-python (Python, Django, FastAPI)"
+        echo "  1) frontend-react  (React)"
+        echo "  2) frontend-nextjs (Next.js)"
+        echo "  3) frontend-astro  (Astro)"
+        echo "  4) mobile-expo     (Expo, React Native)"
+        echo "  5) backend-spring  (Spring Boot, Java)"
+        echo "  6) backend-python  (Python, Django, FastAPI)"
         echo ""
-        read -p "Select stack [1-5] or press Enter to skip: " stack_choice
+        read -p "Select stack [1-6] or press Enter to skip: " stack_choice
         
         case $stack_choice in
             1) stack="frontend-react" ;;
-            2) stack="mobile-expo" ;;
-            3) stack="backend-spring" ;;
-            4) stack="backend-node" ;;
-            5) stack="backend-python" ;;
+            2) stack="frontend-nextjs" ;;
+            3) stack="frontend-astro" ;;
+            4) stack="mobile-expo" ;;
+            5) stack="backend-spring" ;;
+            6) stack="backend-python" ;;
             *) print_info "Skipping stack detection" ;;
         esac
     fi
     
-    echo $stack
+    DETECTED_STACK="$stack"
 }
 
 copy_files() {
@@ -173,6 +199,13 @@ copy_files() {
     # Copy agent-observatory
     mkdir -p .opencode/agent-observatory
     cp -r "$INSTALL_DIR/.opencode/agent-observatory/"* .opencode/agent-observatory/ 2>/dev/null || true
+
+    # Copy local tooling metadata without installing dependencies
+    for file in README.md package.json package-lock.json .gitignore; do
+        if [ -f "$INSTALL_DIR/.opencode/$file" ]; then
+            cp "$INSTALL_DIR/.opencode/$file" ".opencode/$file"
+        fi
+    done
     
     # Copy templates
     mkdir -p .opencode/templates
@@ -207,6 +240,97 @@ copy_tui_config() {
     fi
 }
 
+copy_openspec() {
+    print_step "Setting up OpenSpec structure..."
+
+    if [ ! -d "openspec" ]; then
+        if [ -d "$INSTALL_DIR/openspec" ]; then
+            cp -r "$INSTALL_DIR/openspec" .
+            print_step "Copied openspec/"
+        else
+            print_warn "No openspec/ template found"
+        fi
+    else
+        print_info "openspec/ already exists, skipping"
+    fi
+}
+
+write_opencode_config() {
+    print_step "Setting up OpenCode configuration..."
+
+    if [ -f "opencode.json" ]; then
+        print_info "opencode.json already exists, skipping"
+        return
+    fi
+
+    local project_name
+    project_name="$(basename "$(pwd)")"
+
+    cat > opencode.json <<EOF
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "default_agent": "orchestrator",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "plugin": [
+    "./.opencode/plugins/anthropic-tool-streaming-compat.ts"
+  ],
+  "share": "manual",
+  "watcher": {
+    "ignore": [
+      ".git/**",
+      ".opencode/node_modules/**",
+      "node_modules/**",
+      "target/**",
+      "dist/**",
+      "build/**"
+    ]
+  },
+  "permission": {
+    "edit": "ask",
+    "external_directory": "ask",
+    "bash": {
+      "*": "ask",
+      "rg *": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow"
+    }
+  },
+  "mcp": {
+    "engram": {
+      "type": "local",
+      "command": [
+        "/opt/homebrew/bin/engram",
+        "mcp",
+        "--tools=agent",
+        "--project",
+        "$project_name"
+      ],
+      "enabled": false,
+      "timeout": 3000
+    }
+  }
+}
+EOF
+
+    print_step "Created opencode.json"
+}
+
+customize_observatory_id() {
+    local project_name
+    project_name="$(basename "$(pwd)")"
+
+    if [ -f "tui.json" ]; then
+        perl -0pi -e "s/lufy-ai\.observatory/${project_name}.observatory/g" tui.json
+    fi
+
+    if [ -f ".opencode/plugins/agent-observatory.tsx" ]; then
+        perl -0pi -e "s/lufy-ai\.observatory/${project_name}.observatory/g" .opencode/plugins/agent-observatory.tsx
+    fi
+}
+
 check_engram() {
     print_step "Checking for Engram..."
     
@@ -216,8 +340,10 @@ check_engram() {
         read -p "Integrate Engram memory? [y/N] " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            print_info "Engram integration: Add 'memory' skill to your workflow"
-            echo "Use the memory skill for persistent sessions."
+            if [ -f "opencode.json" ]; then
+                perl -0pi -e 's/"enabled": false/"enabled": true/' opencode.json
+            fi
+            print_info "Engram MCP enabled in opencode.json"
         fi
     else
         print_info "Engram not found (optional)"
@@ -250,21 +376,26 @@ print_next_steps() {
 # Main execution
 main() {
     print_header
+    trap cleanup EXIT
+    check_dependencies
+    prepare_install_source
     
     cd "$TARGET_DIR" || exit 1
     
-    check_dependencies
     detect_existing
     
-    local stack
-    stack=$(detect_stack)
-    if [ -n "$stack" ]; then
-        print_info "Detected stack: $stack"
+    DETECTED_STACK=""
+    detect_stack
+    if [ -n "$DETECTED_STACK" ]; then
+        print_info "Detected stack: $DETECTED_STACK"
     fi
     
-    copy_files "$stack"
+    copy_files "$DETECTED_STACK"
     copy_agents_md
     copy_tui_config
+    copy_openspec
+    write_opencode_config
+    customize_observatory_id
     check_engram
     print_next_steps
 }

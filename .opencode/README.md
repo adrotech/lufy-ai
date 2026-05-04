@@ -22,15 +22,12 @@ Slash commands live in `commands/`.
 - `opsx-apply`: implement OpenSpec tasks
 - `opsx-verify`: verify implementation against spec
 - `opsx-archive`: archive completed change
-- `opsx-delivery`: create PR through delivery
 
 ## Skills
 
 - `skills/sdd-workflow`: OpenSpec/SDD lifecycle
-- `skills/git-delivery`: delivery templates and traceability helpers
-- `skills/project-sync`: GitHub Project sync helpers
-- `skills/memory`: Engram memory integration
-- `skills/release`: Release workflow
+
+Optional delivery, project sync, memory, and release skills can be added by downstream projects. The base kit only ships the OpenSpec lifecycle skill.
 
 ## Agent Observatory TUI Plugin
 
