@@ -16,7 +16,7 @@ import (
 
 func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	svc := NewService()
 
 	skipTarget := installedTarget(t)
@@ -64,7 +64,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 
 func TestDryRunPerformsNoMutations(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
@@ -92,7 +92,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 
 func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
@@ -158,7 +158,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 
 func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := installedTarget(t)
 	obsoleteRel := filepath.Join(".opencode", "commands", "opsx-apply.md")
 	if err := os.Remove(filepath.Join(source, obsoleteRel)); err != nil {
@@ -191,7 +191,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 
 func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := installedTarget(t)
 	newRel := filepath.Join(".opencode", "commands", "new-command.md")
 	writeFile(t, filepath.Join(source, newRel), "new command\n")
@@ -217,7 +217,7 @@ func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T
 
 func TestBuildPlanRejectsTargetSymlinkEscape(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := installedTarget(t)
 	if err := os.Remove(filepath.Join(target, "AGENTS.md")); err != nil {
 		t.Fatal(err)
@@ -238,7 +238,7 @@ func TestBuildPlanRejectsTargetSymlinkEscape(t *testing.T) {
 
 func TestRunRejectsMissingOrCorruptState(t *testing.T) {
 	source := minimalSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	missingErr := NewService().Run(Options{Target: t.TempDir(), Yes: true, NoEngram: true}, &bytes.Buffer{})
 	if missingErr == nil || !strings.Contains(missingErr.Error(), "sync requiere") {
 		t.Fatalf("expected missing state error, got %v", missingErr)
@@ -289,6 +289,22 @@ func hasSyncConflict(conflicts []Conflict, path, reasonPart string) bool {
 		}
 	}
 	return false
+}
+
+func chdirForTest(t *testing.T, dir string) {
+	t.Helper()
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(previous); err != nil {
+			t.Fatalf("restore working directory: %v", err)
+		}
+	})
 }
 
 func minimalSource(t *testing.T) string {
