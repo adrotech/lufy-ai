@@ -1,10 +1,22 @@
 # lufy-ai
 
 <p align="center">
-  <img src="docs/assets/lufy-ai-logo.svg" alt="lufy-ai logo" width="760">
+  <img src="docs/assets/lufy-ai-logo.svg" alt="lufy-ai logo" width="920">
 </p>
 
-Kit de flujo AI-first para proyectos con OpenCode, OpenSpec, agentes especializados, reglas de delivery y observabilidad local.
+<p align="center">
+  Kit de flujo AI-first para proyectos con OpenCode, OpenSpec, subagentes especializados y delivery trazable.
+</p>
+
+<p align="center">
+  <a href="#instalación-en-un-repositorio-destino">Instalación</a> •
+  <a href="#flujo-completo">Flujo</a> •
+  <a href="#dirección-recomendada-para-templates-de-stack">Templates</a> •
+  <a href="#nuevo-subagente-recomendado-infraestructura--cloud--sre">Infra/SRE</a> •
+  <a href="#documentación-local-disponible">Docs</a>
+</p>
+
+---
 
 ## Qué entrega realmente este repositorio
 
