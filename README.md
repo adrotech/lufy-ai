@@ -5,394 +5,144 @@
 </p>
 
 <p align="center">
-  Kit de flujo AI-first para proyectos con OpenCode, OpenSpec, subagentes especializados y delivery trazable.
+  Kit AI-first instalable para añadir OpenCode, OpenSpec, subagentes especializados y delivery trazable a un repositorio existente.
 </p>
 
 <p align="center">
-  <a href="#instalación-en-un-repositorio-destino">Instalación</a> •
-  <a href="#flujo-completo">Flujo</a> •
-  <a href="#dirección-recomendada-para-templates-de-stack">Templates</a> •
-  <a href="#nuevo-subagente-recomendado-infraestructura--cloud--sre">Infra/SRE</a> •
-  <a href="#documentación-local-disponible">Docs</a> •
+  <a href="#estado-real-del-repositorio">Estado real</a> •
+  <a href="#quickstart">Quickstart</a> •
+  <a href="#flujo-instalado">Flujo</a> •
+  <a href="#validacion-local">Validación</a> •
+  <a href="#documentacion-local">Docs</a> •
   <a href="docs/roadmap.md">Roadmap</a>
 </p>
 
 ---
 
-## Qué entrega realmente este repositorio
+## Estado real del repositorio
 
-Este repositorio no es un framework de aplicación. Es una capa operativa que se instala dentro de otro proyecto y le agrega:
+`lufy-ai` no es un framework de aplicación ni instala templates por stack. Es una capa operativa que se copia en otro proyecto para trabajar con agentes OpenCode y cambios OpenSpec.
 
-- un agente principal `orchestrator` y subagentes especializados
-- un flujo OpenSpec / Spec-Driven Development
-- reglas de delivery y trazabilidad
-- comandos slash para explorar, proponer, implementar, verificar y archivar
-- un panel local de observabilidad de agentes
-- una plantilla `AGENTS.md` para convenciones del proyecto
+Hoy el repo incluye:
 
-Hoy el repositorio contiene estas piezas:
+- `.opencode/agents/`: `orchestrator`, `explorer`, `implementer`, `validator`, `reviewer` y `delivery`.
+- `.opencode/commands/`: comandos slash `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify` y `/opsx-archive`.
+- `.opencode/skills/sdd-workflow/`: skills que respaldan el ciclo OpenSpec.
+- `.opencode/policies/delivery.md`: reglas de validación, branch safety, PR y trazabilidad.
+- `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
+- `AGENTS.md.template`: plantilla base para convenciones del repositorio destino.
+- `openspec/`: estructura base y documentación del flujo OpenSpec.
+- `tools/lufy-cli-go/`: CLI Go `lufy-ai` con `install`, `verify`, `backup`, `restore` y `sync`.
+- `scripts/install.sh`: wrapper Bash estricto que solo delega en `lufy-ai install`; no tiene fallback legacy ni detección de stack.
+- `.github/workflows/go-cli-install.yml`: workflow mínimo presente en esta rama para tests/build/smokes de la CLI Go, sanity OpenSpec condicional y `git diff --check`.
 
-- `.opencode/agents/`: `orchestrator`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`
-- `.opencode/commands/`: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`
-- `.opencode/skills/sdd-workflow/`: skills del ciclo OpenSpec
-- `.opencode/policies/delivery.md`: política de delivery y trazabilidad
-- `.opencode/plugins/agent-observatory.tsx`: plugin TUI local de observabilidad
-- `AGENTS.md.template`: base para convenciones específicas del repositorio
-- `scripts/install.sh`: wrapper estricto que delega en la CLI Go `lufy-ai install`
-- `openspec/`: estructura inicial y configuración del flujo
+El futuro de templates por stack, detección de stack y subagentes adicionales vive en [`docs/roadmap.md`](docs/roadmap.md). No se documenta como capacidad instalable hasta que exista como asset real y validado.
 
-## Flujo completo
+## Quickstart
 
-## Estado actual de la migración a CLI Go (RM-013)
-
-- La CLI Go vive en `tools/lufy-cli-go/`.
-- El wrapper `scripts/install.sh` se mantiene compatible como entrada histórica, pero ya no contiene fallback legacy: solo delega en `lufy-ai install`.
-- Para desarrollo local, el wrapper usa `tools/lufy-cli-go/bin/lufy-ai` si existe; si no, busca `lufy-ai` en `PATH`.
-- Si no encuentra binario, falla con la instrucción de compilación local:
-  - `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
-- Comandos disponibles en este slice de CLI: `install`, `verify`, `backup`, `restore` (implementación mínima incremental con smoke E2E en temp dir).
-- Validación local de la CLI (desde `tools/lufy-cli-go/`):
-  - `go test ./...`
-  - `go build ./cmd/lufy-ai`
-  - `go run ./cmd/lufy-ai install --target . --dry-run --yes --no-engram`
-
-Para más detalle operativo y estado incremental, ver `tools/lufy-cli-go/README.md`.
-
-### Vista general
-
-```mermaid
-flowchart LR
-    A["Instalacion en proyecto destino"] --> B["Se copian .opencode, AGENTS.md y tui.json"]
-    B --> C["orchestrator enruta el trabajo"]
-    C --> D["opsx-explore"]
-    D --> E["opsx-propose"]
-    E --> F["opsx-apply"]
-    F --> G["opsx-verify"]
-    G --> H["opsx-archive"]
-    F --> I["delivery: commit, push y PR"]
-```
-
-### 1. Instalación en un repositorio destino
-
-El instalador actual se ejecuta mediante la CLI Go `lufy-ai install`. El script Bash es solo wrapper de compatibilidad y no copia archivos ni detecta stack por sí mismo.
-
-El slice actual de la CLI Go hace lo siguiente:
-
-1. resuelve `--target` a una ruta absoluta segura
-2. construye e imprime un plan de instalación
-3. respeta `--dry-run` sin mutaciones
-4. omite Engram con `--no-engram` o lo resuelve desde `PATH` si aplica
-5. ejecuta una instalación mínima incremental gestionada por Go
-
-Flags aceptados por el wrapper y reenviados a la CLI: `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backup`. El argumento posicional histórico se interpreta como `--target`.
-
-Para usar el wrapper desde un checkout local, compila primero el binario local si `lufy-ai` no está en `PATH`:
+### 1. Clonar y compilar la CLI local si no está en `PATH`
 
 ```bash
+git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
 cd /tmp/lufy-ai/tools/lufy-cli-go
 mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 ```
 
-Instalación:
+El wrapper `scripts/install.sh` busca primero `tools/lufy-cli-go/bin/lufy-ai` dentro del checkout y después `lufy-ai` en `PATH`. Si no encuentra binario, falla con una instrucción de build local.
+
+### 2. Revisar el plan sin escribir
 
 ```bash
-git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
-cd /ruta/a/tu/proyecto
-/tmp/lufy-ai/scripts/install.sh
+/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
-O directamente con la CLI si está instalada en `PATH`:
+También puedes usar la CLI directamente:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
-### 2. El `orchestrator` reparte el trabajo
+### 3. Instalar y verificar
 
-Una vez instalado, OpenCode usa los agentes definidos en `.opencode/agents/`.
-
-Topología actual:
-
-| Agente | Responsabilidad |
-| --- | --- |
-| `orchestrator` | Enrutador principal. Decide qué especialista debe actuar y mantiene la coordinación mínima necesaria. |
-| `explorer` | Análisis read-only de impacto, arquitectura y archivos relevantes. |
-| `implementer` | Cambios acotados de código, tests, docs y configuración. |
-| `validator` | Evidencia de compilación y tests, sin editar archivos. |
-| `reviewer` | Revisión read-only de calidad, arquitectura, riesgo y cobertura faltante. |
-| `delivery` | Operaciones Git / GitHub, higiene de ramas, push, PR y gates de trazabilidad. |
-
-### Diagrama de agentes
-
-```mermaid
-flowchart TD
-    O["orchestrator"] --> EX["explorer"]
-    O --> IM["implementer"]
-    O --> VA["validator"]
-    O --> RE["reviewer"]
-    O --> DE["delivery"]
-
-    EX --> P1["analisis de impacto"]
-    IM --> P2["codigo tests docs"]
-    VA --> P3["evidencia de validacion"]
-    RE --> P4["riesgo y calidad"]
-    DE --> P5["commit push PR"]
+```bash
+/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 ```
 
-### 3. El ciclo OpenSpec organiza el trabajo
+Flags relevantes del flujo actual:
 
-El flujo OpenSpec de este repo gira alrededor de cinco comandos:
+- `--target <dir>`: repositorio destino; por defecto suele ser `.` según el comando.
+- `--dry-run`: muestra el plan sin mutar archivos.
+- `--yes`: requerido para mutaciones reales seguras.
+- `--no-engram`: omite resolución/configuración de Engram.
+- `--backup <path>`: usado por `restore` para restaurar desde un backup existente.
 
-- `/opsx-explore`: exploración read-only y clarificación de requisitos
-- `/opsx-propose`: crea artefactos del cambio como `proposal.md`, `design.md` y `tasks.md`
-- `/opsx-apply`: implementa tareas de un cambio activo
-- `/opsx-verify`: verifica completitud, corrección y coherencia contra los artefactos
-- `/opsx-archive`: archiva un cambio terminado
-
-A nivel repositorio, el ciclo esperado es:
-
-1. explorar el problema o el código existente
-2. proponer un cambio en `openspec/changes/<nombre>/`
-3. implementar tareas de forma acotada
-4. verificar con evidencia explícita
-5. archivar solo cuando el cambio esté completo
-
-### Diagrama del ciclo OpenSpec
+## Flujo instalado
 
 ```mermaid
 flowchart LR
-    X["Explorar"] --> Y["Proponer cambio"]
-    Y --> Z["Implementar tareas"]
-    Z --> W["Verificar evidencia"]
-    W --> Q["Archivar cambio"]
+    A["install"] --> B["assets gestionados"]
+    B --> C["OpenCode carga agentes"]
+    C --> D["/opsx-explore"]
+    D --> E["/opsx-propose"]
+    E --> F["/opsx-apply"]
+    F --> G["/opsx-verify"]
+    G --> H["/opsx-archive"]
+    F --> I["delivery: commit, push y PR con autorización"]
 ```
 
-### 4. Delivery separado de implementación
+Los roles instalados mantienen responsabilidades separadas:
 
-`implementer` no es el dueño del delivery. Esa separación es deliberada.
-
-Las reglas de delivery viven en `.opencode/policies/delivery.md` y definen:
-
-- ramas protegidas
-- rama base por defecto para PR
-- niveles de validación para iteración vs delivery final
-- reglas de cierre de tareas OpenSpec
-- expectativas de sincronización con GitHub Project
-- español como idioma por defecto para artefactos humanos de delivery
-
-Eso evita mezclar edición de código, validación y operaciones Git/GitHub en un solo agente.
-
-### Diagrama de responsabilidades
-
-```mermaid
-flowchart TD
-    A["explorer"] --> A1["lee y analiza"]
-    B["implementer"] --> B1["edita e implementa"]
-    C["validator"] --> C1["ejecuta validaciones"]
-    D["reviewer"] --> D1["revisa riesgos"]
-    E["delivery"] --> E1["publica cambios"]
-```
-
-### 5. Observabilidad local de agentes
-
-El repositorio incluye un plugin local llamado Agent Observatory para la TUI de OpenCode. Se carga desde `tui.json` y su diseño es local, no telemétrico.
-
-Permite ver:
-
-- agentes activos
-- actividad de subagentes
-- resúmenes de uso de herramientas
-- costo opcional
-
-No forma parte del diseño actual enviar telemetría externa.
-
-## Deriva documental corregida
-
-Este README ahora refleja el estado real del repositorio.
-
-La versión anterior tenía drift en varios puntos:
-
-- referenciaba templates de stack que no existen como archivos en este repo
-- metía `React`, `Next.js` y `Vue` dentro de un único bucket `frontend-react`
-- documentaba `backend-node` como si fuera una dirección principal
-- enlazaba a archivos de documentación que hoy no existen en `docs/`
-
-Las secciones siguientes proponen una dirección de evolución para templates y subagentes, pero sin venderlas como ya implementadas.
-
-## Dirección recomendada para templates de stack
-
-Después de revisar el repo actual y la documentación oficial vigente de cada stack, conviene separar mejor los templates.
-
-### Templates frontend que deberían existir
-
-Estos deberían reemplazar la idea demasiado amplia de `frontend-react`:
-
-| Template | Por qué debería ser independiente | Subagentes sugeridos |
-| --- | --- | --- |
-| `frontend-react` | Un proyecto React puro necesita criterios propios para componentes, hooks, estado, accesibilidad y performance de render. | `react-ui`, `react-state-performance`, `react-testing-a11y` |
-| `frontend-nextjs` | Next.js App Router agrega límites server/client, route handlers, caché, streaming y decisiones de runtime que merecen comportamiento específico. | `nextjs-app-router`, `nextjs-server-runtime`, `nextjs-data-cache` |
-| `frontend-astro` | Astro tiene un modelo distinto: islands architecture, content collections, integrations, adapters y modos static/hybrid/server. | `astro-islands-content`, `astro-integrations`, `astro-ssr-adapter` |
-
-### Templates que deberían quedarse
-
-- `mobile-expo`
-- `backend-spring`
-
-### Template que debería salir
-
-- `backend-node`
-
-Si un repositorio usa Node, eso debería expresarse normalmente a través de un stack más concreto como `frontend-nextjs`, `frontend-react` o un futuro backend explícito mejor definido que "Node.js".
-
-## Por qué conviene separar React, Next.js y Astro
-
-### React
-
-La documentación oficial de React hoy recomienda iniciar apps nuevas con un framework, y `Create React App` ya quedó deprecado. Aun así, sigue teniendo sentido un template `frontend-react` para proyectos que no necesitan Next.js ni el modelo completo de un meta-framework.
-
-Ese template debería orientar a los agentes hacia:
-
-- composición de componentes
-- corrección de hooks
-- uso de `useEffectEvent` cuando la separación entre efecto y evento importe
-- uso de `startTransition` y `useDeferredValue` para actualizaciones no bloqueantes
-- accesibilidad y testabilidad de UI interactiva
-- evitar supuestos específicos de framework
-
-### Next.js
-
-Next.js necesita template propio porque un proyecto con App Router no es simplemente "React con rutas". La documentación oficial pone el foco en:
-
-- Server Components por defecto
-- límites explícitos de Client Components
-- Route Handlers en `app/`
-- estrategias de caché y rendering dinámico
-- streaming y navegación
-
-Eso exige que el agente entienda dónde debe correr cada pieza y cómo separar correctamente datos, render y comportamiento cliente.
-
-### Astro
-
-Astro también necesita template propio porque su arquitectura es distinta:
-
-- islands architecture en lugar de hidratar todo
-- content collections como modelo central de contenido
-- integrations y adapters como piezas de primer nivel
-- modos static, hybrid y server bien diferenciados
-
-Un agente Astro-aware debería tender a minimizar JavaScript cliente, reducir hidratación y decidir bien el adapter o integration apropiado.
-
-### Diagrama de decisión para templates frontend
-
-```mermaid
-flowchart TD
-    A["Que tipo de frontend es"] --> B["React puro"]
-    A --> C["Next.js App Router"]
-    A --> D["Astro"]
-
-    B --> B1["frontend-react"]
-    C --> C1["frontend-nextjs"]
-    D --> D1["frontend-astro"]
-```
-
-## Nuevo subagente recomendado: infraestructura / cloud / SRE
-
-Este es el especialista más claramente faltante en la topología actual.
-
-Nombre recomendado:
-
-- `infra-cloud-sre`
-
-Alcance sugerido:
-
-- diseño y hardening de `Dockerfile`
-- `docker compose` para dev local, staging y producción single-host
-- overlays de producción, health checks y restart policies
-- reverse proxy con NGINX
-- modelado de Kong Gateway con Services, Routes y Plugins
-- bootstrap y topología de despliegue en VPS
-- conectividad privada y consideraciones de VPN
-- CI/CD con GitHub Actions
-- environments, approvals, secretos y rollback
-- runbooks operativos, observabilidad y riesgo de release
-
-Límites de ownership sugeridos:
-
-- dueño de archivos de infraestructura, despliegue, proxy, gateway y workflows
-- no dueño de lógica de negocio salvo que el cambio sea explícitamente transversal
-- debería trabajar junto a `implementer`, `validator` y `delivery`, no reemplazarlos
-
-Archivos típicos bajo su ownership:
-
-- `Dockerfile`
-- `docker-compose.yml`, `compose.yaml`, `compose.production.yaml`
-- `.github/workflows/*`
-- `nginx.conf`, `nginx/*.conf`
-- `kong.yaml`, configuración decK y scripts de bootstrap
-- scripts de despliegue y runbooks
-
-### Diagrama del subagente SRE
-
-```mermaid
-flowchart TD
-    S["infra-cloud-sre"] --> D1["Docker Compose"]
-    S --> D2["NGINX"]
-    S --> D3["Kong Gateway"]
-    S --> D4["VPS VPN"]
-    S --> D5["GitHub Actions CI/CD"]
-    S --> D6["Runbooks observabilidad"]
-```
-
-## Mapa sugerido de agentes a futuro
-
-Si el proyecto evoluciona hacia templates con conocimiento explícito del stack, un mapa más sólido sería:
-
-| Capa | Agentes |
+| Agente | Responsabilidad |
 | --- | --- |
-| Enrutamiento central | `orchestrator` |
-| Ejecución transversal | `explorer`, `implementer`, `validator`, `reviewer`, `delivery` |
-| Frontend React | `react-ui`, `react-state-performance`, `react-testing-a11y` |
-| Frontend Next.js | `nextjs-app-router`, `nextjs-server-runtime`, `nextjs-data-cache` |
-| Frontend Astro | `astro-islands-content`, `astro-integrations`, `astro-ssr-adapter` |
-| Plataforma | `infra-cloud-sre` |
+| `orchestrator` | Enruta el trabajo y coordina el mínimo contexto necesario. |
+| `explorer` | Investiga en modo read-only y produce handoffs. |
+| `implementer` | Aplica cambios acotados de código, tests, docs o configuración. |
+| `validator` | Valida y diagnostica sin editar archivos. |
+| `reviewer` | Revisa calidad, riesgos y cobertura sin editar. |
+| `delivery` | Con autorización explícita, maneja Git/GitHub, PRs y trazabilidad. |
 
-Eso preserva la topología central actual, pero hace explícito el conocimiento por stack en lugar de recargar un `implementer` genérico.
+## Assets gestionados e idempotencia
 
-## Estructura del repositorio
+La CLI Go instala y sincroniza assets gestionados desde el catálogo del repo. El estado se registra en `.lufy-ai/install-state.json` con hashes SHA-256 para distinguir archivos sin cambios, actualizaciones gestionadas y drift local.
 
-```text
-.
-├── .opencode/
-│   ├── agents/
-│   ├── commands/
-│   ├── plugins/
-│   ├── policies/
-│   └── skills/
-├── docs/
-├── openspec/
-├── scripts/
-├── AGENTS.md.template
-├── README.md
-└── tui.json
+Capacidades actuales de la CLI:
+
+- `install`: copia assets gestionados, crea estado con hashes y evita sobrescribir drift local.
+- `verify`: valida estructura, `install-state.json`, assets clave y hashes registrados.
+- `backup`: captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`.
+- `restore`: restaura desde manifest, valida `targetRoot` y crea backup de recovery antes de sobrescribir.
+- `sync`: reaplica cambios de assets gestionados cuando el target no tiene drift local; hace backup antes de actualizar.
+
+Para detalles técnicos, ver [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md).
+
+## Validación local
+
+Desde `tools/lufy-cli-go/`:
+
+```bash
+go test ./...
+go build ./cmd/lufy-ai
+scripts/smoke-install.sh
 ```
 
-## Documentación local disponible
+Desde la raíz del repo:
 
-- [Getting Started](docs/getting-started.md)
-- [Roadmap](docs/roadmap.md)
-- [OpenSpec Overview](openspec/README.md)
-- [AGENTS Template](AGENTS.md.template)
+```bash
+tools/lufy-cli-go/scripts/smoke-wrapper.sh
+git diff --check
+```
 
-## Referencias externas usadas para orientar los templates
+No hay suite Node/TypeScript en la raíz del repo; no se debe asumir `npm test`, `npm run typecheck` ni `tsc` global para validar este kit.
 
-- React: [Creating a React App](https://react.dev/learn/start-a-new-react-project), [Installation](https://react.dev/learn/installation), [useEffectEvent](https://react.dev/reference/react/useEffectEvent), [startTransition](https://react.dev/reference/react/startTransition), [useDeferredValue](https://react.dev/reference/react/useDeferredValue)
-- Next.js: [App Router](https://nextjs.org/docs/app), [Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components), [Route Handlers](https://nextjs.org/docs/app/getting-started/route-handlers)
-- Astro: [Islands Architecture](https://docs.astro.build/en/concepts/islands/), [Content Collections](https://docs.astro.build/en/guides/content-collections/), [Working with Integrations](https://docs.astro.build/en/guides/integrations/), [On-demand Rendering](https://docs.astro.build/en/guides/on-demand-rendering/)
-- Docker Compose: [Quickstart](https://docs.docker.com/compose/gettingstarted/), [Use Compose in production](https://docs.docker.com/compose/how-tos/production/), [Compose Develop Specification](https://docs.docker.com/reference/compose-file/develop/)
-- NGINX: [Reverse Proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy)
-- Kong Gateway: [Kong Gateway Overview](https://developer.konghq.com/gateway/), [Gateway Services](https://developer.konghq.com/gateway/entities/service/), [Routes](https://developer.konghq.com/gateway/entities/route/), [Plugins](https://developer.konghq.com/gateway/entities/plugin/)
-- GitHub Actions: [Deployment environments](https://docs.github.com/en/actions/concepts/workflows-and-actions/deployment-environments)
+## Documentación local
+
+- [Getting Started](docs/getting-started.md): instalación paso a paso y uso inicial.
+- [Roadmap](docs/roadmap.md): templates, subagentes futuros e iniciativas RM-### no necesariamente instalables hoy.
+- [OpenSpec Overview](openspec/README.md): estructura y ciclo OpenSpec.
+- [CLI Go README](tools/lufy-cli-go/README.md): comandos y validación de `lufy-ai`.
+- [AGENTS Template](AGENTS.md.template): base para convenciones del proyecto destino.
 
 ## Licencia
 

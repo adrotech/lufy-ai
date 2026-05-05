@@ -1,118 +1,173 @@
-# Getting Started with lufy-ai
+# Primeros pasos con lufy-ai
 
-## What is lufy-ai?
+## Qué es `lufy-ai`
 
-lufy-ai is a template that brings intelligent software development workflows to any project. It provides:
+`lufy-ai` es un kit instalable para sumar un flujo AI-first a un repositorio existente. No crea una aplicación ni instala templates por stack; copia assets operativos para usar OpenCode, OpenSpec, subagentes especializados y reglas de delivery trazable.
 
-- **Orchestrated Agents**: Specialized AI agents with clear responsibilities
-- **SDD/OpenSpec Workflow**: Spec-Driven Development lifecycle
-- **Git Delivery Policy**: Safe delivery rules and a delivery subagent
-- **Memory-ready config**: Optional Engram MCP configuration in `opencode.json`
-- **TUI Observatory**: Real-time visibility into agent activity
+Incluye:
 
-## Installation
+- agentes OpenCode con responsabilidades separadas;
+- comandos slash `/opsx-*` para el ciclo OpenSpec;
+- política de delivery en `.opencode/policies/delivery.md`;
+- plugin local Agent Observatory para la TUI;
+- CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore` y `sync`;
+- wrapper estricto `scripts/install.sh` que delega en `lufy-ai install`.
 
-### Quick Install con CLI Go
+## Requisitos
 
-El instalador vigente es la CLI Go `lufy-ai`. El script `scripts/install.sh` es solo un wrapper de compatibilidad que ejecuta `lufy-ai install`; no contiene fallback legacy de Bash.
+- Go, si vas a compilar el binario local desde `tools/lufy-cli-go/`.
+- Un checkout de este repositorio o un binario `lufy-ai` disponible en `PATH`.
+- OpenCode en el repositorio destino para consumir agentes, comandos y plugin.
+- Engram es opcional; usa `--no-engram` para omitirlo.
 
-Si tienes `lufy-ai` en `PATH`:
+## Instalación rápida
+
+### 1. Obtener el repo y compilar la CLI local
 
 ```bash
-lufy-ai install --target my-project --dry-run --yes --no-engram
-```
-
-### Manual Install
-
-```bash
-# Clone repository
 git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
-
-# Build local CLI for the wrapper
 cd /tmp/lufy-ai/tools/lufy-cli-go
 mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
+```
 
-# Run wrapper from repository root or any project path
+`scripts/install.sh` busca primero ese binario local (`tools/lufy-cli-go/bin/lufy-ai`) y luego `lufy-ai` en `PATH`. Si no existe ninguno, falla sin fallback legacy y muestra la instrucción de build.
+
+### 2. Revisar el plan con `--dry-run`
+
+```bash
 /tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
-También se conserva el argumento posicional histórico como target:
+Forma equivalente con la CLI:
 
 ```bash
-/tmp/lufy-ai/scripts/install.sh /ruta/a/tu/proyecto --dry-run --yes --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
-### What the installer does
-
-1. Delegates to `lufy-ai install`
-2. Resolves `--target` safely
-3. Prints an installation plan
-4. Honors `--dry-run` without filesystem mutations
-5. Handles `--yes`, `--no-engram`, and `--backup`
-6. Resolves Engram from `PATH` when it is not disabled
-
-If neither `lufy-ai` in `PATH` nor `tools/lufy-cli-go/bin/lufy-ai` exists, the wrapper fails with this build instruction:
+### 3. Aplicar la instalación
 
 ```bash
-cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai
+/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
 ```
 
-## Available Commands
+El argumento posicional histórico se conserva como alias de target:
 
-After installation, use these slash commands in OpenCode:
+```bash
+/tmp/lufy-ai/scripts/install.sh /ruta/a/tu/proyecto --yes --no-engram
+```
 
-| Command | Description |
-|---------|-------------|
-| `/opsx-explore` | Explore codebase without changes |
-| `/opsx-propose` | Create new feature proposal |
-| `/opsx-apply` | Implement approved tasks |
-| `/opsx-verify` | Verify implementation |
-| `/opsx-archive` | Archive completed change |
+### 4. Verificar el target instalado
 
-## Agent Roles
+```bash
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+```
 
-| Agent | Role |
-|-------|------|
-| `orchestrator` | Routes work to subagents |
-| `explorer` | Read-only file discovery |
-| `implementer` | Bounded code changes |
-| `validator` | Validation evidence |
-| `reviewer` | Quality review |
-| `delivery` | Git/GH delivery |
+## Qué hace el instalador actual
 
-## Project Setup
+`lufy-ai install`:
 
-After installation:
+1. resuelve `--target` a una ruta segura;
+2. construye un plan de instalación;
+3. respeta `--dry-run` sin mutaciones;
+4. copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base);
+5. registra `.lufy-ai/install-state.json` con hashes SHA-256;
+6. evita sobrescribir archivos con drift local;
+7. crea backups antes de actualizaciones gestionadas cuando corresponde;
+8. omite Engram con `--no-engram` o lo resuelve desde `PATH` cuando aplique.
 
-1. **Review AGENTS.md**: Update with your project conventions
-2. **Restart OpenCode**: Load new agents
-3. **Start exploring**: Use `/opsx-explore` to understand your codebase
+Flags frecuentes:
 
-## Stack Detection
+| Flag | Uso |
+| --- | --- |
+| `--target <dir>` | Repositorio destino. |
+| `--dry-run` | Imprime el plan sin escribir archivos. |
+| `--yes` | Autoriza mutaciones reales cuando el plan es seguro. |
+| `--no-engram` | Omite integración Engram. |
+| `--backup <path>` | Ruta de backup usada por `restore`. |
 
-Stack-specific templates are a planned evolution. The current Bash wrapper does not detect stacks; installation behavior belongs to the Go CLI.
+## Comandos de la CLI Go
 
-## Documentation
+| Comando | Estado actual |
+| --- | --- |
+| `lufy-ai install` | Instala assets gestionados con estado SHA-256 e idempotencia. |
+| `lufy-ai verify` | Valida estructura, estado y hashes del target. |
+| `lufy-ai backup` | Crea backup multiasset con `manifest.json`. |
+| `lufy-ai restore` | Restaura desde backup y valida seguridad del manifest. |
+| `lufy-ai sync` | Reaplica assets gestionados sin tocar drift local ni archivos fuera del catálogo. |
 
-- [OpenSpec Overview](../openspec/README.md) - OpenSpec structure and lifecycle
-- [Local OpenCode Tooling](../.opencode/README.md) - Installed agents, commands, skills, and observability notes
+Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](../tools/lufy-cli-go/README.md).
 
-## Troubleshooting
+## Uso después de instalar
 
-### Agents not loading
+1. Revisa `AGENTS.md` en el repositorio destino y ajusta convenciones locales.
+2. Reinicia OpenCode para cargar agentes, comandos y plugin.
+3. Usa `/opsx-explore` para investigar antes de cambios amplios.
+4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify` y `/opsx-archive` para cambios OpenSpec.
+5. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
 
-1. Restart OpenCode
-2. Check `.opencode/agents/` exists
-3. Verify `AGENTS.md` has project conventions
+## Comandos slash disponibles
 
-### TUI plugin not showing
+| Comando | Descripción |
+| --- | --- |
+| `/opsx-explore` | Explora requisitos, impacto o código en modo read-only. |
+| `/opsx-propose` | Genera artefactos OpenSpec de un cambio. |
+| `/opsx-apply` | Implementa tareas de un cambio activo. |
+| `/opsx-verify` | Verifica completitud y coherencia contra artefactos. |
+| `/opsx-archive` | Archiva un cambio terminado cuando cumple gates. |
 
-1. Check `tui.json` exists in project root
-2. Verify plugin path in `tui.json`
-3. Use `/observatory` command to toggle
+## Validación local disponible
 
-## Further Support
+Desde `tools/lufy-cli-go/`:
 
-- GitHub: https://github.com/adrotech/lufy-ai
-- Issues: https://github.com/adrotech/lufy-ai/issues
+```bash
+go test ./...
+go build ./cmd/lufy-ai
+scripts/smoke-install.sh
+```
+
+Desde la raíz del repo:
+
+```bash
+tools/lufy-cli-go/scripts/smoke-wrapper.sh
+git diff --check
+```
+
+El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y cubre un gate mínimo para la CLI Go y el wrapper. Que exista el workflow no reemplaza la validación local ni implica que otras proposals ya estén archivadas.
+
+No hay toolchain Node/TypeScript de producto en la raíz; no asumas `npm test`, `npm run typecheck` ni `tsc` global.
+
+## Templates y stack detection
+
+Los templates por stack, detección de stack y subagentes adicionales son roadmap, no estado instalable actual. Ver [`docs/roadmap.md`](roadmap.md) para el contexto futuro.
+
+## Solución de problemas
+
+### El wrapper no encuentra `lufy-ai`
+
+Compila el binario local:
+
+```bash
+cd /tmp/lufy-ai/tools/lufy-cli-go
+mkdir -p bin
+go build -o bin/lufy-ai ./cmd/lufy-ai
+```
+
+### Los agentes no cargan
+
+1. Reinicia OpenCode.
+2. Verifica que exista `.opencode/agents/` en el target.
+3. Revisa que `AGENTS.md` contenga las convenciones del proyecto.
+
+### El plugin TUI no aparece
+
+1. Verifica `tui.json` en la raíz del target.
+2. Confirma la ruta local del plugin en `tui.json`.
+3. Usa `/observatory` para abrir/toggle del panel.
+
+## Más documentación
+
+- [README raíz](../README.md)
+- [OpenSpec Overview](../openspec/README.md)
+- [CLI Go README](../tools/lufy-cli-go/README.md)
+- [Roadmap](roadmap.md)
