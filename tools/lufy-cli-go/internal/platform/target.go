@@ -1,6 +1,9 @@
 package platform
 
-import "path/filepath"
+import (
+	"os"
+	"path/filepath"
+)
 
 func ResolveTargetPath(raw string) (string, error) {
 	if raw == "" {
@@ -10,5 +13,17 @@ func ResolveTargetPath(raw string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Clean(abs), nil
+	abs = filepath.Clean(abs)
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		return filepath.Clean(resolved), nil
+	}
+	parent := filepath.Dir(abs)
+	resolvedParent, parentErr := filepath.EvalSymlinks(parent)
+	if parentErr == nil {
+		return filepath.Join(filepath.Clean(resolvedParent), filepath.Base(abs)), nil
+	}
+	if os.IsNotExist(parentErr) {
+		return abs, nil
+	}
+	return abs, nil
 }

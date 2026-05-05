@@ -1,12 +1,14 @@
 package verify
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -48,7 +50,24 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		fmt.Fprintf(stdout, "warn: sourceChangeID inesperado: %s\n", st.SourceChangeID)
 	}
 	failures := 0
-	if st.TargetRoot != "" && st.TargetRoot != target {
+	for _, rel := range []string{config.OpenCodeFile, filepath.Join(".opencode", "package.json"), filepath.Join(".opencode", "package-lock.json")} {
+		status, err := validateJSONFile(target, rel)
+		if err != nil {
+			fmt.Fprintf(stdout, "fail: JSON inválido en %s: %s\n", rel, err.Error())
+			failures++
+			continue
+		}
+		if status != "" {
+			fmt.Fprintf(stdout, "ok: JSON parseable %s\n", rel)
+		}
+	}
+	manifestTarget := st.TargetRoot
+	if manifestTarget != "" {
+		if resolved, err := platform.ResolveTargetPath(manifestTarget); err == nil {
+			manifestTarget = resolved
+		}
+	}
+	if manifestTarget != "" && manifestTarget != target {
 		fmt.Fprintf(stdout, "fail: targetRoot del manifest no coincide: manifest=%s actual=%s\n", st.TargetRoot, target)
 		failures++
 	}
@@ -123,6 +142,25 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 func regularFile(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
+}
+
+func validateJSONFile(target, rel string) (string, error) {
+	path, err := platform.SafeJoin(target, rel)
+	if err != nil {
+		return "", err
+	}
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	var decoded any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return "", err
+	}
+	return "ok", nil
 }
 
 func shortHash(hash string) string {

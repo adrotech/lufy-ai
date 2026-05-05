@@ -38,7 +38,7 @@ func TestBackupAndRestoreMultiassetCreatesPreRestoreRecovery(t *testing.T) {
 
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "agents broken\n")
 	out.Reset()
-	if err := NewService().Restore(target, backupDir, false, &out); err != nil {
+	if err := NewService().Restore(target, backupDir, false, true, &out); err != nil {
 		t.Fatalf("Restore() error = %v", err)
 	}
 	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "agents original\n" {
@@ -59,7 +59,7 @@ func TestRestoreDryRunDoesNotWrite(t *testing.T) {
 	}
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
 	var out bytes.Buffer
-	if err := NewService().Restore(target, backupDir, true, &out); err != nil {
+	if err := NewService().Restore(target, backupDir, true, false, &out); err != nil {
 		t.Fatal(err)
 	}
 	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "changed\n" {
@@ -78,21 +78,21 @@ func TestRestoreRejectsTargetMismatchAndPathEscape(t *testing.T) {
 	}
 	manifest := Manifest{SchemaVersion: SchemaVersion, TargetRoot: t.TempDir(), Files: []FileItem{{Path: "AGENTS.md", BackupPath: "AGENTS.md", Status: "captured"}}}
 	writeManifest(t, filepath.Join(backupDir, "manifest.json"), manifest)
-	if err := NewService().Restore(target, backupDir, true, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "otro target") {
+	if err := NewService().Restore(target, backupDir, true, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "otro target") {
 		t.Fatalf("expected target mismatch error, got %v", err)
 	}
 
 	manifest.TargetRoot = target
 	manifest.Files[0].Path = "../evil"
 	writeManifest(t, filepath.Join(backupDir, "manifest.json"), manifest)
-	if err := NewService().Restore(target, backupDir, true, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "escapa") {
+	if err := NewService().Restore(target, backupDir, true, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "escapa") {
 		t.Fatalf("expected path escape error, got %v", err)
 	}
 
 	manifest.Files[0].Path = "AGENTS.md"
 	manifest.Files[0].BackupPath = "../evil"
 	writeManifest(t, filepath.Join(backupDir, "manifest.json"), manifest)
-	if err := NewService().Restore(target, backupDir, true, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "escapa") {
+	if err := NewService().Restore(target, backupDir, true, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "escapa") {
 		t.Fatalf("expected backup path escape error, got %v", err)
 	}
 }
@@ -101,16 +101,73 @@ func TestRestorePartialFailureReportsRecoveryBackup(t *testing.T) {
 	target := t.TempDir()
 	backupDir := filepath.Join(t.TempDir(), "backup")
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "current agents\n")
-	writeFile(t, filepath.Join(target, "tui.json"), "current tui\n")
+	writeFile(t, filepath.Join(target, "blocked"), "not a directory\n")
 	writeFile(t, filepath.Join(backupDir, "AGENTS.md"), "restored agents\n")
+	writeFile(t, filepath.Join(backupDir, "blocked", "child.txt"), "restored child\n")
+	agentsHash := hashFile(t, filepath.Join(backupDir, "AGENTS.md"))
+	childHash := hashFile(t, filepath.Join(backupDir, "blocked", "child.txt"))
 	manifest := Manifest{SchemaVersion: SchemaVersion, TargetRoot: target, Files: []FileItem{
-		{Path: "AGENTS.md", BackupPath: "AGENTS.md", Status: "captured"},
-		{Path: "tui.json", BackupPath: "missing-tui.json", Status: "captured"},
+		{Path: "AGENTS.md", BackupPath: "AGENTS.md", SHA256: agentsHash, Status: "captured"},
+		{Path: filepath.Join("blocked", "child.txt"), BackupPath: filepath.Join("blocked", "child.txt"), SHA256: childHash, Status: "captured"},
 	}}
 	writeManifest(t, filepath.Join(backupDir, "manifest.json"), manifest)
-	err := NewService().Restore(target, backupDir, false, &bytes.Buffer{})
+	err := NewService().Restore(target, backupDir, false, true, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "backup de recovery") {
 		t.Fatalf("expected recovery backup error, got %v", err)
+	}
+}
+
+func TestRestoreRequiresYesForRealMutation(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	err = NewService().Restore(target, backupDir, false, false, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
+		t.Fatalf("expected --yes error, got %v", err)
+	}
+}
+
+func TestRestoreRejectsCorruptBackupHash(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(backupDir, "AGENTS.md"), "tampered\n")
+	err = NewService().Restore(target, backupDir, true, false, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "hash de backup no coincide") {
+		t.Fatalf("expected hash mismatch error, got %v", err)
+	}
+}
+
+func TestRestoreRejectsCorruptBackupBeforeRecoveryBackup(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	writeFile(t, filepath.Join(backupDir, "AGENTS.md"), "tampered\n")
+	err = NewService().Restore(target, backupDir, false, true, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "hash de backup no coincide") {
+		t.Fatalf("expected hash mismatch error, got %v", err)
+	}
+	backupsRoot := filepath.Join(target, ".lufy-ai", "backups")
+	entries, err := os.ReadDir(backupsRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected no recovery backup after corrupt source, entries=%d", len(entries))
 	}
 }
 
@@ -160,4 +217,13 @@ func readFile(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(body)
+}
+
+func hashFile(t *testing.T, path string) string {
+	t.Helper()
+	hash, err := assets.FileSHA256(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return hash
 }

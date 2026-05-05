@@ -14,7 +14,11 @@ import (
 func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	target := t.TempDir()
 	for _, rel := range requiredAssets {
-		writeVerifyFile(t, filepath.Join(target, rel), rel+"\n")
+		content := rel + "\n"
+		if rel == filepath.Join(".opencode", "package.json") {
+			content = "{}\n"
+		}
+		writeVerifyFile(t, filepath.Join(target, rel), content)
 	}
 	var states []state.AssetState
 	for _, rel := range requiredAssets {
@@ -71,7 +75,11 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 
 	actual := t.TempDir()
 	for _, rel := range requiredAssets {
-		writeVerifyFile(t, filepath.Join(actual, rel), rel+"\n")
+		content := rel + "\n"
+		if rel == filepath.Join(".opencode", "package.json") {
+			content = "{}\n"
+		}
+		writeVerifyFile(t, filepath.Join(actual, rel), content)
 	}
 	var states []state.AssetState
 	for _, rel := range requiredAssets {
