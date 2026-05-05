@@ -56,13 +56,14 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Inspect only the files needed to understand the local pattern.
 - Edit with the smallest safe patch.
 - Run fast relevant validation when available; use static/manual review when no toolchain exists.
+- Prefer validación agrupada at the end of the current block/proposal; do not run tests constantly unless blocked, risky, or diagnosing a failure.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
 ## Boundaries
 
 - Keep changes focused and minimal.
 - Prefer project validation commands.
-- During iteration, prefer fast validation (compile, targeted tests).
+- During iteration, avoid constant test loops; batch validation at block/proposal boundaries unless an exception applies.
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not delegate to other agents.
 - Do not fabricate validation evidence.
@@ -90,6 +91,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use constructor injection where applicable.
 - Keep transactional scopes narrow.
 - Do not change ports, auth defaults, database schema unless task explicitly authorizes it.
+- For installer work, remember the CLI Go lives in `tools/lufy-cli-go` and `scripts/install.sh` is a wrapper estricto with no legacy fallback.
+- Current OpenSpec focus is `install-managed-assets-with-hash-idempotency`: managed assets, SHA-256, manifest, idempotency, backup/restore, structural verify.
+- Do not mark/archive `migrate-installer-to-go-cli` complete while tasks remain incomplete.
 
 ## Required Output
 

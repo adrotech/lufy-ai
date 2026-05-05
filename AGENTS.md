@@ -5,6 +5,8 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 ## Snapshot del proyecto
 
 - **Repositorio**: configuración local de OpenCode y flujo SDD/OpenSpec para `lufy-ai`.
+- **CLI del producto**: la CLI Go vive en `tools/lufy-cli-go`; no asumir una CLI legacy fuera de esa ruta.
+- **Instalador**: `scripts/install.sh` es un wrapper estricto del CLI Go y no debe reintroducir fallback legacy.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
@@ -18,6 +20,8 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
 - `.opencode/policies/delivery.md`: fuente canónica para delivery, branch safety, validación y gates de cambios completos.
 - `openspec/`: propuestas, especificaciones y tareas del flujo OpenSpec.
+- `tools/lufy-cli-go/`: implementación actual de la CLI Go usada por el instalador.
+- `scripts/install.sh`: wrapper estricto hacia `tools/lufy-cli-go`, sin fallback legacy.
 - `docs/`: documentación del proyecto cuando exista.
 - `AGENTS.md.template`: plantilla genérica; este archivo es la guía real del repo.
 
@@ -29,6 +33,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Observatory TUI: `/observatory`, `/observatory-agents`, `/observatory-subagents`, `/observatory-cost`.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
+- Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar validación al final de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
 - Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
 
 ## Reglas de arquitectura y workflow
@@ -44,6 +49,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 9. Nunca afirmar validación exitosa sin evidencia de comando o revisión manual concreta.
 10. Preferir lectura y edición específicas sobre exploración amplia.
 11. En handoffs y gestión de contexto, resumir decisiones, evitar dumps largos y preservar solo la evidencia mínima útil.
+12. Mantener `scripts/install.sh` como wrapper estricto de `tools/lufy-cli-go`; no reintroducir rutas legacy.
 
 ## Roles de agentes
 
@@ -62,6 +68,8 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
 - Una tarea OpenSpec solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md`.
+- Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
+- No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
 
 ## Política de delivery
 

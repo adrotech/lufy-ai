@@ -70,6 +70,7 @@ You handle safe delivery operations only. You are not source of truth for projec
 - Do not invent project-specific traceability formats when a repo defines templates or helper scripts.
 - Inspect branch/workspace state before staging.
 - Run required validation tier or report missing evidence as `blocked`.
+- Prefer validación agrupada evidence from the completed block/proposal; do not require repeated test loops unless needed for final delivery or diagnosis.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.
 - Sync issues/projects only when required and configured.
 
@@ -83,6 +84,9 @@ You handle safe delivery operations only. You are not source of truth for projec
 - Default PR base is `development` unless explicitly requested.
 - Report dirty or mixed worktrees before staging.
 - Do not edit source files.
+- Do not archive OpenSpec changes with tasks incompletas. `migrate-installer-to-go-cli` is explicitly `blocked` for archive until its tasks are complete.
+- Preserve installer architecture context in delivery summaries when relevant: CLI Go at `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto with no legacy fallback.
+- Current active/focus spec context: `install-managed-assets-with-hash-idempotency`.
 
 ## Validation / Evidence
 

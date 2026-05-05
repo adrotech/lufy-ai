@@ -20,10 +20,15 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    Run `openspec list --json` to get available changes. Use the **AskUserQuestion tool** to let the user select.
 
    Show changes that have implementation tasks (tasks artifact exists).
-   Include the schema used for each change if available.
-   Mark changes with incomplete tasks as "(In Progress)".
+    Include the schema used for each change if available.
+    Mark changes with incomplete tasks as "(In Progress)".
 
-   **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
+    **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
+
+   Repo-specific context:
+   - Current active/focus spec is `install-managed-assets-with-hash-idempotency` (managed assets, SHA-256, manifest, idempotency, backup/restore, structural verify).
+   - `migrate-installer-to-go-cli` must be reported as not ready for archive while tasks are incomplete.
+   - Installer architecture: CLI Go lives at `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto with no legacy fallback.
 
 2. **Check status to understand the schema**
    ```bash
@@ -52,13 +57,14 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
 5. **Verify Completeness**
 
-   **Task Completion**:
+    **Task Completion**:
    - If tasks.md exists in contextFiles, read it
    - Parse checkboxes: `- [ ]` (incomplete) vs `- [x]` (complete)
    - Count complete vs total tasks
-   - If incomplete tasks exist:
-     - Add CRITICAL issue for each incomplete task
-     - Recommendation: "Complete task: <description>" or "Mark as done if already implemented"
+    - If incomplete tasks exist:
+      - Add CRITICAL issue for each incomplete task
+      - Recommendation: "Complete task: <description>" or "Mark as done if already implemented"
+      - Archive assessment: `blocked`; tasks incompletas are never archivable
 
    **Spec Coverage**:
    - If delta specs exist in `openspec/changes/<name>/specs/`:
@@ -138,10 +144,15 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
       - Minor improvements
       - Each with specific recommendation
 
-   **Final Assessment**:
-   - If CRITICAL issues: "X critical issue(s) found. Fix before archiving."
-   - If only warnings: "No critical issues. Y warning(s) to consider. Ready for archive (with noted improvements)."
-   - If all clear: "All checks passed. Ready for archive."
+    **Final Assessment**:
+    - If CRITICAL issues: "X critical issue(s) found. Fix before archiving."
+    - If only warnings: "No critical issues. Y warning(s) to consider. Ready for archive (with noted improvements)."
+    - If all clear: "All checks passed. Ready for archive."
+    - If verifying `migrate-installer-to-go-cli` and any task remains incomplete: "Archive blocked by repo policy until all tasks are complete."
+
+   Validation preference:
+   - Use validación agrupada at the end of a coherent block/proposal.
+   - Do not run tests constantly during verification unless diagnosing or handling a risky/blocking change.
 
 **Verification Heuristics**
 

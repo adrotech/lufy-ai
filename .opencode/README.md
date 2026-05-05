@@ -17,6 +17,14 @@ Todos los agentes siguen un estándar común de frontmatter (`description`, `mod
 
 Las reglas compartidas de delivery viven en `policies/delivery.md`.
 
+Contexto operativo del repo:
+
+- La CLI Go del producto vive en `../tools/lufy-cli-go`.
+- `../scripts/install.sh` es un wrapper estricto del CLI Go, sin fallback legacy.
+- Preferir validación agrupada al final de un bloque/proposal; no correr tests constantemente salvo bloqueo, cambio riesgoso o diagnóstico.
+- Foco OpenSpec actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore, verify estructural).
+- `migrate-installer-to-go-cli` no debe archivarse mientras tenga tasks incompletas.
+
 ### Checklist para nuevos agentes
 
 - Mantener permisos mínimos; no conceder `edit`, `bash` o Git/GH si no son necesarios.
@@ -33,11 +41,15 @@ Los slash commands viven en `commands/`.
 - `opsx-propose`: crear artefactos de propuesta OpenSpec.
 - `opsx-apply`: implementar tareas OpenSpec.
 - `opsx-verify`: verificar implementación contra la spec.
-- `opsx-archive`: archivar un cambio completado.
+- `opsx-archive`: archivar un cambio completado; tasks incompletas implican `blocked`, no archive.
 
 ## Skills
 
-- `skills/sdd-workflow`: OpenSpec/SDD lifecycle
+- `skills/sdd-workflow/openspec-explore`: explorar cambios.
+- `skills/sdd-workflow/openspec-propose`: proponer cambios.
+- `skills/sdd-workflow/openspec-apply-change`: implementar tasks.
+- `skills/sdd-workflow/openspec-verify-change`: verificar implementación contra artefactos.
+- `skills/sdd-workflow/openspec-archive-change`: archivar solo cambios completos.
 
 Skills opcionales de delivery, project sync, memoria y release pueden agregarse en proyectos downstream. El kit base solo incluye el lifecycle OpenSpec.
 
