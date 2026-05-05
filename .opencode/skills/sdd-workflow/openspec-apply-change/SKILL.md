@@ -63,6 +63,8 @@ Implement tasks from an OpenSpec change.
    - Progress: "N/M tasks complete"
    - Remaining tasks overview
    - Dynamic instruction from CLI
+   - Repo context when relevant: CLI Go is in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto and must not use legacy fallback paths.
+   - Active/focus spec context: `install-managed-assets-with-hash-idempotency` covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 
 6. **Implement tasks (loop until done or blocked)**
 
@@ -72,6 +74,11 @@ Implement tasks from an OpenSpec change.
    - Keep changes minimal and focused
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
    - Continue to next task
+
+   Validation preference:
+   - Use validación agrupada at the end of a coherent block/proposal.
+   - Do not run tests constantly during normal implementation.
+   - Run focused validation earlier only for blockers, risky changes, or failure diagnosis.
 
    **Pause if:**
    - Task is unclear → ask for clarification
@@ -147,6 +154,7 @@ What would you like to do?
 - Update task checkbox immediately after completing each task
 - Pause on errors, blockers, or unclear requirements - don't guess
 - Use contextFiles from CLI output, don't assume specific file names
+- Do not suggest archive for `migrate-installer-to-go-cli` while tasks are incomplete; tasks incompletas mean `blocked`, no archive.
 
 **Fluid Workflow Integration**
 

@@ -22,7 +22,12 @@ Archive a completed change in the experimental workflow.
    Show only active changes (not already archived).
    Include the schema used for each change if available.
 
-   **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
+    **IMPORTANT**: Do NOT guess or auto-select a change. Always let the user choose.
+
+   Repo-specific context:
+   - Current active/focus spec is `install-managed-assets-with-hash-idempotency` (managed assets, SHA-256, manifest, idempotency, backup/restore, structural verify).
+   - `migrate-installer-to-go-cli` must not be archived while any tasks remain incomplete.
+   - Installer architecture: CLI Go lives at `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto with no legacy fallback.
 
 2. **Check artifact completion status**
 
@@ -34,8 +39,7 @@ Archive a completed change in the experimental workflow.
 
    **If any artifacts are not `done`:**
    - Display warning listing incomplete artifacts
-   - Use **AskUserQuestion tool** to confirm user wants to proceed
-   - Proceed if user confirms
+   - Return `blocked` with the exact incomplete artifacts and required recovery
 
 3. **Check task completion status**
 
@@ -45,10 +49,10 @@ Archive a completed change in the experimental workflow.
 
    **If incomplete tasks found:**
    - Display warning showing count of incomplete tasks
-   - Use **AskUserQuestion tool** to confirm user wants to proceed
-   - Proceed if user confirms
+   - Return `blocked`; tasks incompletas are not archivable
+   - If the change is `migrate-installer-to-go-cli`, explicitly state the repo policy block: no archive until all tasks are complete
 
-   **If no tasks file exists:** Proceed without task-related warning.
+   **If no tasks file exists:** Return `blocked` unless the schema explicitly has no tasks artifact.
 
 4. **Assess delta spec sync state**
 
@@ -63,7 +67,7 @@ Archive a completed change in the experimental workflow.
    - If changes needed: "Sync now (recommended)", "Archive without syncing"
    - If already synced: "Archive now", "Sync anyway", "Cancel"
 
-   If user chooses sync, use Task tool (subagent_type: "general-purpose", prompt: "Use Skill tool to invoke openspec-sync-specs for change '<name>'. Delta spec analysis: <include the analyzed delta spec summary>"). Proceed to archive regardless of choice.
+   If user chooses sync, use the installed concrete sync skill if available. Do not proceed to archive unless all artifact and task gates remain satisfied.
 
 5. **Perform the archive**
 
@@ -89,7 +93,7 @@ Archive a completed change in the experimental workflow.
    - Schema that was used
    - Archive location
    - Whether specs were synced (if applicable)
-   - Note about any warnings (incomplete artifacts/tasks)
+   - Note that incomplete artifacts/tasks would have blocked archive
 
 **Output On Success**
 
@@ -107,8 +111,9 @@ All artifacts complete. All tasks complete.
 **Guardrails**
 - Always prompt for change selection if not provided
 - Use artifact graph (openspec status --json) for completion checking
-- Don't block archive on warnings - just inform and confirm
+- Block archive on incomplete artifacts/tasks; do not override this with user confirmation
 - Preserve .openspec.yaml when moving to archive (it moves with the directory)
 - Show clear summary of what happened
-- If sync is requested, use openspec-sync-specs approach (agent-driven)
+- If sync is requested, use available concrete OpenSpec sync tooling; do not reference generic workflow modes.
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting
+- Use validación agrupada evidence from the completed block/proposal; do not run tests constantly solely for archive.

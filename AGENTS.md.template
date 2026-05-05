@@ -4,9 +4,9 @@ Operational guide for coding agents working in this repository.
 
 ## Project Snapshot
 
-- **Stack**: Fill in your stack (e.g., Expo 55, React Native 0.83, TypeScript)
-- **Routing**: Fill in your routing approach (e.g., expo-router file-based routes in app/)
-- **Testing**: Fill in testing framework (e.g., Jest, React Native Testing Library)
+- **Stack**: Fill in your stack without assuming Node/TypeScript unless the repo actually uses it
+- **Routing/CLI/API**: Fill in the relevant entrypoints for this repo
+- **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 
 ## Source Layout
@@ -25,23 +25,21 @@ Run from repository root.
 ### Install
 
 ```bash
-npm install
-# or
-yarn install
+# Replace with the repository's real install command, if any.
+# Do not add generic npm/yarn commands unless package.json exists and they are supported.
 ```
 
 ### Development
 
 ```bash
-npm start
+# Replace with the repository's real development command, if any.
 ```
 
 ### Validation
 
 ```bash
-npm run typecheck
-npm run test
-npm run coverage
+# Replace with real validation commands.
+# Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
 ```
 
 ## Architecture Rules
@@ -67,6 +65,6 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 
 - Make focused, minimal changes
 - Do not revert unrelated local modifications
-- Run relevant validation before finalizing
+- Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting

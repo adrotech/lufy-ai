@@ -6,7 +6,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
 - `explorer` investigates impact and repository context read-only; must not edit files.
-- `implementer` implements bounded changes and validates iteratively; must not commit, push, create PRs, or update GitHub Projects.
+- `implementer` implements bounded changes and uses validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
 - `reviewer` reviews only; must not modify files.
 - `delivery` owns Git/GH operations, PR creation, project sync, traceability comments, and final validation evidence.
@@ -22,10 +22,12 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 ## Validation Tiers
 
-- **Iteration gate** for `implementer` and `validator`: run smallest relevant validation (e.g., `npm run typecheck`, `./mvnw compile`, `go build`, etc.) plus targeted tests.
-- **Final PR gate** for `delivery`: run full validation suite (typecheck, tests, coverage, linting).
+- **Block/proposal gate** for `implementer` and `validator`: prefer validación agrupada at the end of a coherent block/proposal. Do not run tests constantly during normal implementation.
+- **Exception gate**: run focused validation earlier only when a blocker, risky change, or failure diagnosis requires it.
+- **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
 - If change affects behavior, include functional evidence when practical.
 - Never claim validation passed without command evidence.
+- For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
 ## OpenSpec Task Closure
 
@@ -40,6 +42,10 @@ An OpenSpec task is complete only when:
 7. PR when change is 100% complete or user explicitly requests it.
 
 If any item is missing, report `blocked` or `sync_pending` with exact recovery command.
+
+Tasks incompletas always block archive. Do not archive a change with unchecked tasks, even with user confirmation. `migrate-installer-to-go-cli` is explicitly blocked from archive while any tasks remain incomplete.
+
+Current active/focus spec context: `install-managed-assets-with-hash-idempotency` covers managed assets, SHA-256, manifest-driven idempotency, backup/restore, and structural verify.
 
 ## Completed Change Gate
 

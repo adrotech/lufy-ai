@@ -54,13 +54,14 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Produce validation evidence for `orchestrator`, `reviewer`, or `delivery`.
 - Build a matrix: static checks, compile/typecheck, targeted tests, full tests, lint/format, functional/manual evidence.
 - Start with the smallest useful validation, then expand only when needed for final gate or diagnosis.
+- Respect validación agrupada: avoid constant tests and group validation at the end of a block/proposal unless blocked, risky, or diagnosing.
 
 ## Boundaries
 
 - Do not edit files.
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not claim validation passed without command evidence.
-- Prefer fast iteration gates unless final delivery requires heavier gates.
+- Prefer grouped block/proposal gates unless final delivery requires heavier gates or diagnosis requires focused checks.
 - If validation requires a command outside allowed set, state exact command and why needed.
 
 ## Validation / Evidence
@@ -68,6 +69,8 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For every command, report command, working directory, pass/fail/blocked result, and key output.
 - If a command is unavailable, report `blocked` for that matrix cell with the missing tool/config.
 - Root-cause diagnosis must separate observed failure from hypothesis.
+- For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
+- For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
 
 ## Escalation
 
