@@ -1,37 +1,49 @@
-# OpenCode Local Tooling
+# Tooling local de OpenCode
 
-This directory contains repository-local lufy-ai configuration.
+Este directorio contiene la configuración local de OpenCode para `lufy-ai`.
+
+Las reglas compartidas viven en `../AGENTS.md` (guía real del repositorio). La plantilla genérica queda en `../AGENTS.md.template`.
 
 ## Agents
 
-- `agents/orchestrator.md`: default primary coordinator
-- `agents/explorer.md`: read-only exploration subagent
-- `agents/implementer.md`: implementation subagent
-- `agents/validator.md`: read-only validation subagent
-- `agents/reviewer.md`: read-only review subagent
-- `agents/delivery.md`: Git/GH and PR delivery subagent
+- `agents/orchestrator.md`: coordinador primario por defecto.
+- `agents/explorer.md`: subagente read-only para exploración.
+- `agents/implementer.md`: subagente de implementación.
+- `agents/validator.md`: subagente read-only para validación.
+- `agents/reviewer.md`: subagente read-only para revisión.
+- `agents/delivery.md`: subagente de delivery para Git/GH y PRs.
 
-Shared project rules live in `../AGENTS.md`. Shared delivery rules live in `policies/delivery.md`.
+Todos los agentes siguen un estándar común de frontmatter (`description`, `mode`, `temperature`, `steps`, permisos mínimos) y secciones: `Mission`, `Use When`, `Do Not Use When`, `Inputs Expected`, `Workflow`, `Boundaries`, `Validation / Evidence`, `Escalation`, `Required Output`.
+
+Las reglas compartidas de delivery viven en `policies/delivery.md`.
+
+### Checklist para nuevos agentes
+
+- Mantener permisos mínimos; no conceder `edit`, `bash` o Git/GH si no son necesarios.
+- Definir `steps` y un contrato de salida claro.
+- Explicar cuándo usar/no usar el agente y cómo escalar.
+- No prometer tests ni validación sin evidencia real.
+- Usar español para contenido humano y preservar identificadores técnicos.
 
 ## Commands
 
-Slash commands live in `commands/`.
+Los slash commands viven en `commands/`.
 
-- `opsx-explore`: explore codebase without implementation
-- `opsx-propose`: create OpenSpec proposal artifacts
-- `opsx-apply`: implement OpenSpec tasks
-- `opsx-verify`: verify implementation against spec
-- `opsx-archive`: archive completed change
+- `opsx-explore`: explorar el codebase sin implementar.
+- `opsx-propose`: crear artefactos de propuesta OpenSpec.
+- `opsx-apply`: implementar tareas OpenSpec.
+- `opsx-verify`: verificar implementación contra la spec.
+- `opsx-archive`: archivar un cambio completado.
 
 ## Skills
 
 - `skills/sdd-workflow`: OpenSpec/SDD lifecycle
 
-Optional delivery, project sync, memory, and release skills can be added by downstream projects. The base kit only ships the OpenSpec lifecycle skill.
+Skills opcionales de delivery, project sync, memoria y release pueden agregarse en proyectos downstream. El kit base solo incluye el lifecycle OpenSpec.
 
 ## Agent Observatory TUI Plugin
 
-The TUI sidebar plugin is loaded by root `tui.json`:
+El plugin de sidebar TUI se carga desde `tui.json` en la raíz:
 
 ```json
 {
@@ -43,13 +55,11 @@ The TUI sidebar plugin is loaded by root `tui.json`:
 }
 ```
 
-Runtime toggles exposed as slash commands:
+Slash commands registrados por el plugin actual:
 
-- `/observatory`: show/hide the panel
-- `/observatory-agents`, `/obs-agent-list`: collapse/expand agent list
-- `/observatory-subagents`, `/obs-agents`: collapse/expand subagent section
-- `/observatory-tools`, `/obs-tools`: collapse/expand tool summaries
-- `/observatory-cost`: show/hide cost
-- `/observatory-emoji`, `/obs-emoji`: show/hide emojis
+- `/observatory`: mostrar/ocultar el panel.
+- `/observatory-agents`: contraer/expandir la lista de agentes.
+- `/observatory-subagents`: contraer/expandir la sección de subagentes.
+- `/observatory-cost`: mostrar/ocultar costo.
 
-V1 is local/TUI-only. Do not add external telemetry without a separate proposal.
+V1 es local/TUI-only. No agregar telemetría externa sin una propuesta separada.
