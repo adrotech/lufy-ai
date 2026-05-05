@@ -12,7 +12,7 @@ El cambio debe ser progresivo: primero se crea una CLI mínima y testeable que c
 
 - Introducir un módulo Go real en la raíz con un binario `lufy-ai` compilable desde `cmd/lufy-ai`.
 - Mover la lógica crítica de instalación fuera de Bash hacia paquetes Go testeables.
-- Mantener `scripts/install.sh` como punto de entrada compatible para usuarios existentes.
+- Mantener `scripts/install.sh` como punto de entrada compatible para usuarios existentes, limitado a wrapper estricto de la CLI Go.
 - Implementar comandos iniciales: `install`, `verify`, `backup`, `restore`.
 - Proveer `--dry-run` con plan explícito antes de escribir, y defaults seguros que eviten sobrescribir trabajo local.
 - Crear backups con manifest antes de modificar archivos existentes cuando `--backup` esté activo o el comando lo requiera por seguridad.
@@ -26,14 +26,14 @@ El cambio debe ser progresivo: primero se crea una CLI mínima y testeable que c
 - No convertir `lufy-ai` en producto multiagente Go; el contenido instalable sigue siendo el kit OpenCode/OpenSpec existente.
 - No cambiar puertos, defaults de autenticación, esquemas de base de datos ni contratos HTTP/API.
 - No modificar `docs/roadmap.md` salvo que en una implementación futura se requiera trazabilidad adicional.
-- No eliminar el instalador Bash en esta fase.
+- No eliminar el archivo `scripts/install.sh` en esta fase, pero sí retirar su lógica legacy de instalación.
 - No inventar CI en `.github/` dentro de esta propuesta; puede ser una mejora posterior o tarea separada si se autoriza.
 
 ## Decisions
 
 ### 1. Usar Go para la CLI inicial
 
-**Decisión:** crear un binario Go `lufy-ai` con `go.mod` en la raíz.
+**Decisión:** crear un binario Go `lufy-ai` en una carpeta dedicada `tools/lufy-cli-go/` con su propio `go.mod`.
 
 **Rationale:** Go cubre bien filesystem, JSON, detección de OS, ejecución de binarios externos, pruebas unitarias y distribución como single binary. Esto coincide con `RM-013` y reduce complejidad frente a mantener lógica creciente en Bash.
 
@@ -47,15 +47,16 @@ El cambio debe ser progresivo: primero se crea una CLI mínima y testeable que c
 **Decisión:** organizar el código sugerido así:
 
 ```text
-go.mod
-cmd/lufy-ai/main.go
-internal/cli/              # dispatch de comandos y parseo de flags si se separa de main
-internal/installer/        # planificación y aplicación de instalación
-internal/backup/           # manifest, creación de snapshots, restore
-internal/verify/           # checks de estructura, JSON y Engram
-internal/config/           # lectura/merge/escritura de opencode.json y metadata
-internal/platform/         # paths, OS detection, exec.LookPath, abstracciones filesystem
-internal/assets/           # manifest/listado de assets gestionados, si no se embebe inicialmente
+tools/lufy-cli-go/
+  go.mod
+  cmd/lufy-ai/main.go
+  internal/cli/              # dispatch de comandos y parseo de flags si se separa de main
+  internal/installer/        # planificación y aplicación de instalación
+  internal/backup/           # manifest, creación de snapshots, restore
+  internal/verify/           # checks de estructura, JSON y Engram
+  internal/config/           # lectura/merge/escritura de opencode.json y metadata
+  internal/platform/         # paths, OS detection, exec.LookPath, abstracciones filesystem
+  internal/assets/           # manifest/listado de assets gestionados, si no se embebe inicialmente
 ```
 
 Los paquetes deben depender de interfaces pequeñas cuando facilite pruebas, por ejemplo `FileSystem`, `CommandResolver` o `Clock`, pero sin sobrediseñar. `cmd/lufy-ai/main.go` debe ser delgado: parsea argumentos, construye dependencias y llama a servicios.
@@ -178,15 +179,17 @@ Reglas:
 
 ### 9. Relación entre Bash wrapper y binario Go
 
-**Decisión:** `scripts/install.sh` debe quedar como wrapper/bootstrapper compatible.
+**Decisión:** `scripts/install.sh` debe quedar como wrapper compatible estricto de la CLI Go, sin fallback legacy.
 
-Comportamiento esperado durante transición:
+Comportamiento esperado:
 
 1. Aceptar el uso histórico `scripts/install.sh [target-project-dir]` y mapearlo a `lufy-ai install --target <dir>`.
-2. Pasar flags nuevos conocidos cuando se invoque como wrapper.
-3. Si el binario Go local existe (por ejemplo `./bin/lufy-ai` o `go run ./cmd/lufy-ai` en checkout de desarrollo), delegar en él.
-4. Si no existe binario, mantener un camino temporal seguro: compilar con Go si `go` está disponible y el repo contiene `go.mod`, o usar la lógica Bash legacy durante la fase de migración si aún existe.
-5. No descargar/ejecutar binarios remotos sin un mecanismo explícito de integridad y autorización; si se agrega distribución remota futura, será otra propuesta.
+2. Pasar flags compatibles: `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backup`.
+3. Si el binario Go local existe en `tools/lufy-cli-go/bin/lufy-ai`, delegar en él.
+4. Si no existe binario local, buscar `lufy-ai` en `PATH` y delegar en él.
+5. Si no existe binario local ni en `PATH`, fallar con instrucciones claras para compilar: `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`.
+6. No descargar/ejecutar binarios remotos sin un mecanismo explícito de integridad y autorización; si se agrega distribución remota futura, será otra propuesta.
+7. No conservar lógica Bash legacy de copia, detección de stack, Engram, `copy_files`, `opencode.json` o prompts de instalación.
 
 ### 10. Validación por fases
 
@@ -194,7 +197,7 @@ Comportamiento esperado durante transición:
 
 Fases sugeridas:
 
-- Fase A — scaffolding: `go test ./...` y `go build ./cmd/lufy-ai` deben pasar una vez creado `go.mod`.
+- Fase A — scaffolding: `go test ./...` y `go build ./cmd/lufy-ai` deben pasar desde `tools/lufy-cli-go/` una vez creado su `go.mod`.
 - Fase B — plan/dry-run: prueba de `lufy-ai install --target <temp> --dry-run --yes --no-engram`; confirmar que no escribe en temp dir salvo artefactos permitidos por el test harness.
 - Fase C — install real en temp dir: ejecutar instalación en directorio temporal y luego `lufy-ai verify --target <temp> --no-engram`.
 - Fase D — idempotencia: ejecutar install dos veces y verificar que la segunda ejecución reporta `skip`/sin conflictos no esperados.
@@ -219,10 +222,10 @@ Fases sugeridas:
 6. Implementar generación/merge conservador de `opencode.json` y resolución portable de Engram.
 7. Implementar `verify` y cubrirlo con tests unitarios/funcionales sobre temp dirs.
 8. Implementar `backup`/`restore` con manifest.
-9. Actualizar `scripts/install.sh` para delegar en la CLI preservando compatibilidad.
+9. Actualizar `scripts/install.sh` para delegar estrictamente en la CLI preservando compatibilidad de argumentos, sin fallback legacy.
 10. Actualizar README/docs para describir estado real: Bash wrapper + CLI Go cuando esté implementada.
 
-Rollback del cambio de código: mientras Bash conserve ruta legacy, ante fallos de la CLI puede documentarse fallback temporal al instalador Bash existente. Rollback de instalaciones en targets de usuario debe hacerse con `lufy-ai restore --target <dir> --backup <manifest>`.
+Rollback del cambio de código: ante fallos de la CLI, se debe corregir o reconstruir el binario Go; no existe fallback legacy en Bash. Rollback de instalaciones en targets de usuario debe hacerse con `lufy-ai restore --target <dir> --backup <manifest>`.
 
 ## Open Questions
 

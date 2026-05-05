@@ -4,8 +4,8 @@
 El sistema SHALL proveer una CLI Go llamada `lufy-ai` como motor de instalación progresiva del kit OpenCode/OpenSpec.
 
 #### Scenario: Compilación del binario inicial
-- **WHEN** el repositorio contiene `go.mod` y el código bajo `cmd/lufy-ai`
-- **THEN** `go build ./cmd/lufy-ai` genera el binario sin depender de toolchains no-Go globales
+- **WHEN** el repositorio contiene `tools/lufy-cli-go/go.mod` y el código bajo `tools/lufy-cli-go/cmd/lufy-ai`
+- **THEN** ejecutando `go build ./cmd/lufy-ai` desde `tools/lufy-cli-go/` se genera el binario sin depender de toolchains no-Go globales
 
 #### Scenario: Punto de entrada delgado
 - **WHEN** `cmd/lufy-ai/main.go` recibe un comando soportado
@@ -124,16 +124,24 @@ La CLI SHALL resolver Engram de forma portable con `exec.LookPath("engram")` o a
 - **WHEN** la CLI genera configuración relacionada con Engram
 - **THEN** el contenido generado no contiene `/opt/homebrew/bin/engram`
 
-### Requirement: Wrapper Bash compatible
-`scripts/install.sh` SHALL permanecer como wrapper/bootstrapper de compatibilidad durante la migración a Go.
+### Requirement: Wrapper Bash estricto
+`scripts/install.sh` SHALL permanecer como wrapper de compatibilidad que delega exclusivamente en `lufy-ai install` y MUST NOT conservar lógica legacy de instalación.
 
 #### Scenario: Uso histórico con argumento posicional
 - **WHEN** el usuario ejecuta `scripts/install.sh <target-project-dir>`
 - **THEN** el wrapper conserva compatibilidad y delega o mapea a `lufy-ai install --target <target-project-dir>` cuando el binario Go está disponible
 
 #### Scenario: Delegación al binario Go
-- **WHEN** el wrapper detecta un binario Go local o puede ejecutarlo de forma segura desde el checkout
+- **WHEN** el wrapper detecta `tools/lufy-cli-go/bin/lufy-ai` o `lufy-ai` en `PATH`
 - **THEN** delega la instalación a la CLI Go preservando flags compatibles
+
+#### Scenario: CLI Go ausente
+- **WHEN** el wrapper no encuentra `lufy-ai` en `PATH` ni `tools/lufy-cli-go/bin/lufy-ai`
+- **THEN** falla sin ejecutar fallback legacy y muestra la instrucción `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
+
+#### Scenario: Sin lógica legacy
+- **WHEN** se inspecciona `scripts/install.sh`
+- **THEN** no contiene lógica legacy de copia, detección de stack, Engram, `copy_files`, generación de `opencode.json` ni prompts de instalación
 
 #### Scenario: Sin descarga remota insegura
 - **WHEN** el wrapper no encuentra binario Go
@@ -143,8 +151,8 @@ La CLI SHALL resolver Engram de forma portable con `exec.LookPath("engram")` o a
 La implementación SHALL incluir validación incremental con comandos reales disponibles después de introducir el toolchain Go.
 
 #### Scenario: Validación Go disponible
-- **WHEN** existen `go.mod` y paquetes Go
-- **THEN** el implementador puede ejecutar `go test ./...` y `go build ./cmd/lufy-ai` como validación mínima
+- **WHEN** existen `tools/lufy-cli-go/go.mod` y paquetes Go
+- **THEN** el implementador puede ejecutar `go test ./...` y `go build ./cmd/lufy-ai` desde `tools/lufy-cli-go/` como validación mínima
 
 #### Scenario: Prueba dry-run en temp dir
 - **WHEN** el binario Go compila

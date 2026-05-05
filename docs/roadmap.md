@@ -18,7 +18,7 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 - **Validación simple antes de crecer**: añadir checks básicos de shell, JSON e instalación en temp dir antes de introducir features mayores.
 - **Documentación honesta**: documentar solo templates y assets que realmente se instalan.
 - **Evolución incremental**: productizar como CLI queda para una fase futura, no como prioridad inmediata.
-- **Migración compatible de Bash a Go**: cuando se productice el installer, Bash debe quedar solo como wrapper/bootstrapper de compatibilidad durante la transición.
+- **Migración compatible de Bash a Go**: Bash queda como wrapper estricto de compatibilidad que delega en `lufy-ai install`, sin fallback legacy.
 
 ## Prioridades por fases
 
@@ -58,7 +58,7 @@ Objetivo: introducir templates por stack solo cuando existan como archivos insta
 Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya sean confiables.
 
 - `RM-012`: Evaluar productización como CLI como fase futura, no prioridad inmediata.
-- `RM-013`: Migrar installer a CLI Go y mantener Bash solo como wrapper/bootstrapper de compatibilidad durante la transición.
+- `RM-013`: Migrar installer a CLI Go y mantener Bash solo como wrapper estricto de compatibilidad, sin lógica legacy.
 
 ## Propuesta/design por iniciativa
 
@@ -203,15 +203,25 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 
 - Go es suficiente para CLI, filesystem, JSON, OS detection y distribución como single-binary.
 - Rust no es necesario para esta etapa porque el problema principal es idempotencia, backup/rollback, portabilidad y UX, no performance ni memory-safety.
-- Mantener Bash solo como wrapper/bootstrapper de compatibilidad durante la transición reduce fricción para usuarios actuales sin seguir aumentando la complejidad del shell.
+- Mantener Bash solo como wrapper estricto de compatibilidad reduce fricción para usuarios actuales sin seguir aumentando la complejidad del shell ni duplicar rutas legacy.
 
 **Design por fases**:
 
-1. Mantener el Bash actual como wrapper/bootstrapper que delega en la CLI cuando esté disponible y conserva compatibilidad temporal.
+1. Mantener Bash como wrapper estricto que delega en la CLI Go; si no hay binario local o en `PATH`, falla con instrucciones de build local.
 2. Crear una CLI Go mínima con comandos base: `lufy-ai install --target . --dry-run --yes --no-engram`, `lufy-ai verify --target .`, `lufy-ai backup` y `lufy-ai restore`.
 3. Mover al binario la detección de entorno, Engram portable, backup/rollback, merge/idempotencia y `verify`.
 4. Agregar `sync`/`update` después de estabilizar instalación, verificación y rollback.
 5. Evaluar una TUI Go como opción futura; no es prioridad inicial.
+
+**Estado actual (2026-05-05):**
+
+- ✅ Scaffolding Go en carpeta dedicada `tools/lufy-cli-go/` con `go.mod` propio.
+- ✅ Comandos base cableados (`install`, `verify`, `backup`, `restore`) en slice mínimo funcional.
+- ✅ Wrapper `scripts/install.sh` delega exclusivamente a `lufy-ai install`, usando `tools/lufy-cli-go/bin/lufy-ai` o `lufy-ai` en `PATH`, sin fallback legacy.
+- ✅ Resolución Engram portable por `PATH` sin hardcode nuevo en la ruta de migración.
+- ✅ Smoke E2E reproducible validado en temp dir para install real + verify + idempotencia básica (2da ejecución con `skip`) + backup/restore (dry-run y real) sobre conflicto controlado de `AGENTS.md`.
+- 🔄 Pendiente inmediato: expandir install real a copia de assets gestionados completa e idempotencia por contenido/hash (hoy es implementación mínima).
+- 🔄 Pendiente inmediato: endurecer manifest de backup/restore (hashes, más archivos gestionados, validaciones de seguridad adicionales).
 
 ## Criterios de aceptación
 
@@ -238,7 +248,7 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 | `RM-010` | Cualquier template documentado como disponible existe como asset instalable y es verificado por CI o script local. |
 | `RM-011` | README queda centrado en estado real + quickstart; contenido futuro vive en docs de roadmap o diseño. |
 | `RM-012` | Hay decisión documentada de CLI con alcance, tradeoffs y prerequisitos cumplidos antes de implementarla. |
-| `RM-013` | Existe plan de migración a CLI Go; Bash queda limitado a wrapper/bootstrapper durante la transición; la primera CLI cubre `install`, `verify`, `backup` y `restore` antes de `sync`/`update`. |
+| `RM-013` | Existe plan de migración a CLI Go; Bash queda limitado a wrapper estricto sin fallback legacy; la primera CLI cubre `install`, `verify`, `backup` y `restore` antes de `sync`/`update`. |
 
 ## Riesgos/dependencias
 
@@ -248,7 +258,7 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 - `--yes` puede ser peligroso si se interpreta como permiso destructivo; debe combinarse con backup y políticas conservadoras.
 - Sync requiere una fuente de verdad de assets gestionados; sin manifest puede pisar personalizaciones.
 - Templates por stack pueden reintroducir drift documental si README se actualiza antes de tener archivos reales.
-- Migrar lógica desde Bash a Go puede duplicar comportamiento temporalmente; el wrapper debe tener alcance mínimo y una ruta clara de retiro.
+- Migrar lógica desde Bash a Go puede dejar brechas mientras la CLI completa assets gestionados; el wrapper evita duplicación al no mantener fallback legacy.
 
 ## Etiquetas sugeridas
 

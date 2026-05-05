@@ -8,7 +8,7 @@ Este cambio propone migrar progresivamente el instalador a una CLI escrita en Go
 
 - Introducir una CLI Go `lufy-ai` como nuevo motor de instalación, verificación, backup y restore del kit.
 - Mantener `scripts/install.sh` como wrapper compatible que detecta/obtiene/ejecuta el binario Go cuando esté disponible, y conserva un camino de bootstrap seguro durante la transición.
-- Añadir scaffolding Go real en la raíz del repo (`go.mod`, `cmd/lufy-ai/main.go` y paquetes `internal/...`) cuando se implemente este change; actualmente esta propuesta **no implementa** la CLI.
+- Añadir scaffolding Go real en carpeta dedicada de tooling (`tools/lufy-cli-go/go.mod`, `tools/lufy-cli-go/cmd/lufy-ai/main.go` y paquetes `tools/lufy-cli-go/internal/...`) cuando se implemente este change; actualmente esta propuesta **no implementa** la CLI.
 - Definir comandos iniciales:
   - `install`: instala o actualiza assets gestionados en un target local.
   - `verify`: valida estado de instalación, binario `engram` y archivos esperados.
@@ -29,7 +29,7 @@ Este cambio propone migrar progresivamente el instalador a una CLI escrita en Go
 
 ## Impact
 
-- Código futuro afectado: `go.mod`, `cmd/lufy-ai/main.go`, `internal/installer`, `internal/backup`, `internal/verify`, `internal/config`, `internal/platform`.
+- Código futuro afectado: `tools/lufy-cli-go/go.mod`, `tools/lufy-cli-go/cmd/lufy-ai/main.go`, `tools/lufy-cli-go/internal/installer`, `tools/lufy-cli-go/internal/backup`, `tools/lufy-cli-go/internal/verify`, `tools/lufy-cli-go/internal/config`, `tools/lufy-cli-go/internal/platform`.
 - Script afectado: `scripts/install.sh`, que pasará a actuar como wrapper/bootstrapper de compatibilidad sin dejar de soportar el flujo actual.
 - Documentación afectada: `README.md` y documentación de instalación relacionada; debe preservar el banner existente `docs/assets/lufy-ai-banner.png`.
 - Roadmap: el cambio implementa una pieza de `RM-013` descrita en `docs/roadmap.md`, sin requerir modificar el roadmap para proponerlo.
