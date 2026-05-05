@@ -64,12 +64,17 @@
         <path d="M38-28C51-7 57 9 58 24"/>
       </g>
 
-      <circle r="35" fill="url(#deepInk)" stroke="#ffffff" stroke-width="5"/>
-      <text x="0" y="12" fill="#ffffff" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="30" font-weight="850" text-anchor="middle">O</text>
-      <path d="M0-97L19-32H-19Z" fill="#0f172a" opacity="0.92"/>
-      <path d="M0 97L19 32H-19Z" fill="#0f172a" opacity="0.92"/>
-      <path d="M-97 0L-32-19V19Z" fill="#0f172a" opacity="0.92"/>
-      <path d="M97 0L32-19V19Z" fill="#0f172a" opacity="0.92"/>
+      <g filter="url(#nodeShadow)">
+        <path d="M0-104L18-34L82-62L36-14L104 0L36 14L82 62L18 34L0 104L-18 34L-82 62L-36 14L-104 0L-36-14L-82-62L-18-34Z" fill="#ffffff" stroke="#0f172a" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M0-78L13-25L61-46L27-10L78 0L27 10L61 46L13 25L0 78L-13 25L-61 46L-27 10L-78 0L-27-10L-61-46L-13-25Z" fill="url(#seaRoute)" opacity="0.18"/>
+        <path d="M0-104L18-34L0-46L-18-34Z" fill="#2563eb"/>
+        <path d="M104 0L36 14L46 0L36-14Z" fill="#0f766e"/>
+        <path d="M0 104L-18 34L0 46L18 34Z" fill="#f59e0b"/>
+        <path d="M-104 0L-36-14L-46 0L-36 14Z" fill="#0f766e"/>
+      </g>
+      <circle r="38" fill="url(#deepInk)" stroke="#ffffff" stroke-width="6"/>
+      <circle r="16" fill="none" stroke="#ffffff" stroke-width="5"/>
+      <circle r="5" fill="#f59e0b"/>
     </g>
 
     <g fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
