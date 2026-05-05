@@ -30,6 +30,10 @@ const VISIBLE_TOOLS = 5;
 const VISIBLE_PRIMARY_AGENTS = 4;
 const VISIBLE_SUBAGENTS = 8;
 const VISIBLE_AGENT_TOOLS = 3;
+const DETAIL_MAX = 36;
+const TOOL_DETAIL_MAX = 22;
+const AGENT_NAME_MAX = 18;
+const TOOL_NAME_MAX = 10;
 
 type TogglePreference =
   | 'observatory.enabled'
@@ -197,53 +201,11 @@ function AgentObservatoryPanel(props: {
     <Show when={props.enabled()}>
       <box flexDirection="column" paddingTop={0} gap={0}>
         <Show when={!props.unavailable()} fallback={<text fg={COLORS.error}>Observatory unavailable</text>}>
-          <MainSection snapshot={snapshot()} showCost={props.showCost} />
           <AvailableAgentsSection agents={snapshot().availableAgents} expanded={props.availableAgentsExpanded} onToggle={props.toggleAvailableAgents} />
           <SubAgentsSection agents={snapshot().agents} expanded={props.agentsExpanded} onToggle={props.toggleAgents} showCost={props.showCost} showTools={() => props.showTools() && props.toolsExpanded()} totalCost={snapshot().totalCost} totalTokens={snapshot().totalTokens} />
         </Show>
       </box>
     </Show>
-  );
-}
-
-function MainSection(props: { snapshot: ObservatorySnapshot; showCost: () => boolean }) {
-  const root = () => props.snapshot.root;
-  const meta = createMemo(() => compactMeta([
-    root().modelID,
-    root().durationMs ? formatDuration(root().durationMs) : undefined,
-    props.showCost() && root().cost ? formatCost(root().cost) : undefined,
-  ]));
-
-  return (
-    <box flexDirection="column" paddingTop={1} gap={0}>
-      <box flexDirection="row" gap={1}>
-        <Dot color={COLORS.title} />
-        <text fg={COLORS.title}><b>Main</b></text>
-        <text fg={COLORS.faint}>· {formatTokenCount(root().tokens.total)} tok</text>
-      </box>
-      <box flexDirection="row" gap={1}>
-        <text fg={COLORS.faint}>  •</text>
-        <text fg={COLORS.text}>{root().name}</text>
-        <text fg={stateColor(root().state)}>{stateLabel(root().state)}</text>
-      </box>
-      <box flexDirection="row" gap={1}>
-        <text fg={COLORS.faint}>  •</text>
-        <text fg={COLORS.faint}>{formatTokenBreakdown(root().tokens)}</text>
-      </box>
-      <Show when={root().currentAction}>
-        <box flexDirection="row" gap={1}>
-          <text fg={COLORS.busy}>  •</text>
-          <text fg={COLORS.muted}>doing</text>
-          <text fg={COLORS.text}>{root().currentAction}</text>
-        </box>
-      </Show>
-      <Show when={meta()}>
-        <box flexDirection="row" gap={1}>
-          <text fg={COLORS.faint}>  •</text>
-          <text fg={COLORS.faint}>{meta()}</text>
-        </box>
-      </Show>
-    </box>
   );
 }
 
@@ -258,28 +220,28 @@ function AvailableAgentsSection(props: {
   const hiddenPrimary = createMemo(() => Math.max(0, primaryAgents().length - visiblePrimary().length));
 
   return (
-    <box flexDirection="column" paddingTop={1} gap={0}>
+    <box flexDirection="column" paddingTop={0} gap={0}>
       <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
-        <Dot color={props.expanded() ? COLORS.title : COLORS.faint} />
+        <DisclosureArrow expanded={props.expanded} color={props.expanded() ? COLORS.title : COLORS.faint} />
         <text fg={COLORS.title}><b>Agents</b></text>
         <text fg={COLORS.faint}>· {primaryAgents().length} primary</text>
       </box>
       <Show when={props.expanded()}>
         <For each={visiblePrimary()}>{(agent) => (
-          <box flexDirection="row" gap={1}>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
             <Dot color={agent.active ? COLORS.success : (agent.color || COLORS.faint)} dim={!agent.active} />
             <text fg={agent.active ? COLORS.text : COLORS.muted}>{agent.name}</text>
             <Show when={agent.active}><text fg={COLORS.success}>active</text></Show>
           </box>
         )}</For>
         <Show when={hiddenPrimary() > 0}>
-          <box flexDirection="row" gap={1}>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
             <text fg={COLORS.faint}>  •</text>
             <text fg={COLORS.faint}>+{hiddenPrimary()} more primary</text>
           </box>
         </Show>
         <Show when={subagentCatalog().length > 0}>
-          <box flexDirection="row" gap={1}>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
             <text fg={COLORS.faint}>  •</text>
             <text fg={COLORS.faint}>{subagentCatalog().length} subagents available via @</text>
           </box>
@@ -301,6 +263,15 @@ function SubAgentsSection(props: {
   const [focusedAgentID, setFocusedAgentID] = createSignal<string | undefined>(undefined);
   const busy = createMemo(() => props.agents.filter(agent => agent.state === 'busy').length);
   const done = createMemo(() => props.agents.filter(agent => agent.state === 'done').length);
+  const errored = createMemo(() => props.agents.filter(agent => agent.state === 'error').length);
+  const headerSummary = createMemo(() => subagentSummary({
+    busy: busy(),
+    done: done(),
+    errored: errored(),
+    total: props.agents.length,
+    tokens: props.totalTokens.total,
+    cost: props.showCost() ? props.totalCost : undefined,
+  }));
   const visibleAgents = createMemo(() => [...props.agents].sort(sortAgentsByRelevance).slice(0, VISIBLE_SUBAGENTS));
   const hiddenAgents = createMemo(() => Math.max(0, props.agents.length - visibleAgents().length));
   const isAgentExpanded = (agent: AgentUsage) => focusedAgentID() ? focusedAgentID() === agent.sessionID : agent.state === 'busy' || agent.state === 'error';
@@ -309,25 +280,15 @@ function SubAgentsSection(props: {
   return (
     <box flexDirection="column" paddingTop={1} gap={0}>
       <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
-        <Dot color={props.expanded() ? COLORS.accent : COLORS.faint} />
-        <text fg={COLORS.accent}><b>Subagents</b></text>
-        <text fg={COLORS.faint}>· {subagentSummary(busy(), done())}</text>
-      </box>
-      <box flexDirection="row" gap={1}>
-        <text fg={COLORS.faint}>  •</text>
-        <text fg={COLORS.faint}>{formatTokenCount(props.totalTokens.total)} tok total</text>
-        <Show when={props.showCost() && props.totalCost}><text fg={COLORS.faint}>· {formatCost(props.totalCost)}</text></Show>
-      </box>
-      <box flexDirection="row" gap={1}>
-        <text fg={COLORS.faint}>  •</text>
-        <text fg={COLORS.faint}>{formatTokenBreakdown(props.totalTokens)}</text>
+        <DisclosureArrow expanded={props.expanded} color={props.expanded() ? COLORS.title : COLORS.faint} />
+        <text fg={COLORS.title}><b>Subagents</b></text>
+        <text fg={COLORS.faint}>· {truncateText(headerSummary(), 32)}</text>
       </box>
       <Show when={props.expanded()}>
-        <Show when={props.agents.length > 0} fallback={<text fg={COLORS.muted}>  • No subagent sessions yet</text>}>
+        <Show when={props.agents.length > 0} fallback={<box paddingLeft={2}><text fg={COLORS.muted}>No subagent sessions yet</text></box>}>
           <For each={visibleAgents()}>{(agent) => <AgentLine agent={agent} expanded={() => isAgentExpanded(agent)} onToggle={() => toggleAgent(agent)} showCost={props.showCost} showTools={props.showTools} />}</For>
           <Show when={hiddenAgents() > 0}>
-            <box flexDirection="row" gap={1}>
-              <text fg={COLORS.faint}>  •</text>
+            <box flexDirection="row" gap={1} paddingLeft={2}>
               <text fg={COLORS.faint}>+{hiddenAgents()} older subagents hidden</text>
             </box>
           </Show>
@@ -338,62 +299,55 @@ function SubAgentsSection(props: {
 }
 
 function AgentLine(props: { agent: AgentUsage; expanded: () => boolean; onToggle: () => void; showCost: () => boolean; showTools: () => boolean }) {
-  const detail = createMemo(() => compactMeta([
+  const activity = createMemo(() => agentActivity(props.agent));
+  const toolSummary = createMemo(() => summarizeTools(props.agent));
+  const collapsedMeta = createMemo(() => compactMeta([
+    `${formatTokenCount(props.agent.tokens.total)} tok`,
+    props.agent.durationMs ? formatDuration(props.agent.durationMs) : undefined,
+  ]));
+  const expandedMetrics = createMemo(() => compactMeta([
+    formatTokenBreakdown(props.agent.tokens),
+    props.showCost() && props.agent.cost ? formatCost(props.agent.cost) : undefined,
     props.agent.modelID,
     props.agent.durationMs ? formatDuration(props.agent.durationMs) : undefined,
     props.agent.compacted ? 'compacted' : undefined,
-  ]));
-  const metrics = createMemo(() => compactMeta([
-    formatTokenBreakdown(props.agent.tokens),
-    props.agent.completedToolCount > 0 ? `${props.agent.completedToolCount} tools` : undefined,
-    props.showCost() && props.agent.cost ? formatCost(props.agent.cost) : undefined,
   ]));
   const visibleTools = createMemo(() => props.agent.tools.slice(0, VISIBLE_AGENT_TOOLS));
 
   return (
     <box flexDirection="column" gap={0}>
-      <box flexDirection="row" gap={1} onMouseDown={props.onToggle}>
-        <Dot color={stateColor(props.agent.state)} />
-        <text fg={props.expanded() ? COLORS.text : COLORS.muted}>{props.agent.name}</text>
-        <text fg={stateColor(props.agent.state)}>{stateLabel(props.agent.state)}</text>
-        <text fg={COLORS.faint}>· {formatTokenCount(props.agent.tokens.total)} tok</text>
+      <box flexDirection="row" gap={1} paddingLeft={2} onMouseDown={props.onToggle}>
+        <text fg={stateColor(props.agent.state)}>{stateIcon(props.agent.state)}</text>
+        <text fg={props.expanded() ? COLORS.text : COLORS.muted}>{shortAgentName(props.agent.name)}</text>
+        <Show when={collapsedMeta()}><text fg={COLORS.faint}>· {collapsedMeta()}</text></Show>
       </box>
-      <Show when={!props.expanded() && props.agent.currentAction}>
-        <box flexDirection="row" gap={1}>
-          <text fg={COLORS.faint}>  •</text>
-          <text fg={COLORS.faint}>{compactCollapsedActivity(props.agent)}</text>
-        </box>
-      </Show>
       <Show when={props.expanded()}>
         <Show when={props.agent.objective}>
-          <box flexDirection="row" gap={1}>
-            <text fg={COLORS.faint}>  •</text>
-            <text fg={COLORS.muted}>goal</text>
-            <text fg={COLORS.text}>{props.agent.objective}</text>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
+            <text fg={COLORS.muted}>goal:</text>
+            <text fg={COLORS.text}>{truncateText(props.agent.objective!, DETAIL_MAX)}</text>
           </box>
         </Show>
-        <Show when={props.agent.currentAction}>
-          <box flexDirection="row" gap={1}>
-            <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.faint}>  •</text>
-            <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.muted}>{activityLabel(props.agent.state)}</text>
-            <text fg={COLORS.text}>{props.agent.currentAction}</text>
+        <Show when={activity()}>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
+            <text fg={props.agent.state === 'busy' ? COLORS.busy : COLORS.muted}>{activityLabel(props.agent)}:</text>
+            <text fg={COLORS.text}>{truncateText(activity()!, DETAIL_MAX)}</text>
           </box>
         </Show>
-        <box flexDirection="row" gap={1}>
-          <text fg={COLORS.faint}>  •</text>
-          <text fg={COLORS.faint}>{formatTokenCount(props.agent.tokens.total)} tok</text>
-          <Show when={metrics()}><text fg={COLORS.faint}>· {metrics()}</text></Show>
+        <Show when={toolSummary()}>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
+            <text fg={COLORS.muted}>tools:</text>
+            <text fg={COLORS.faint}>{truncateText(toolSummary()!, DETAIL_MAX)}</text>
+          </box>
+        </Show>
+        <box flexDirection="row" gap={1} paddingLeft={2}>
+          <text fg={COLORS.muted}>meta:</text>
+          <text fg={COLORS.faint}>{truncateText(expandedMetrics(), DETAIL_MAX)}</text>
         </box>
-        <Show when={detail()}>
-          <box flexDirection="row" gap={1}>
-            <text fg={COLORS.faint}>  •</text>
-            <text fg={COLORS.faint}>{detail()}</text>
-          </box>
-        </Show>
         <Show when={props.agent.errorReason}>
-          <box flexDirection="row" gap={1}>
-            <text fg={COLORS.error}>  •</text>
-            <text fg={COLORS.error}>{props.agent.errorReason}</text>
+          <box flexDirection="row" gap={1} paddingLeft={2}>
+            <text fg={COLORS.error}>error:</text>
+            <text fg={COLORS.error}>{truncateText(props.agent.errorReason!, DETAIL_MAX)}</text>
           </box>
         </Show>
         <Show when={props.showTools() && visibleTools().length > 0}>
@@ -405,12 +359,14 @@ function AgentLine(props: { agent: AgentUsage; expanded: () => boolean; onToggle
 }
 
 function ToolLine(props: { tool: ToolActivity }) {
+  const toolColor = () => props.tool.status === 'error' ? COLORS.error : COLORS.faint;
+  const detail = () => formatToolDetail(props.tool.title || props.tool.input || '');
+
   return (
-    <box flexDirection="row" gap={1}>
-      <Dot color={props.tool.status === 'error' ? COLORS.error : COLORS.faint} />
-      <text fg={props.tool.status === 'error' ? COLORS.error : COLORS.muted}>{props.tool.tool}</text>
-      <text fg={COLORS.faint}>{props.tool.status}</text>
-      <Show when={props.tool.title || props.tool.input}><text fg={COLORS.faint}>{props.tool.title || props.tool.input}</text></Show>
+    <box flexDirection="row" gap={1} paddingLeft={4}>
+      <text fg={toolColor()}>{toolStatusIcon(props.tool.status)}</text>
+      <text fg={props.tool.status === 'error' ? COLORS.error : COLORS.muted}>{truncateText(props.tool.tool, TOOL_NAME_MAX)}</text>
+      <Show when={detail()}><text fg={COLORS.faint}>{detail()}</text></Show>
       <Show when={props.tool.durationMs}><text fg={COLORS.faint}>{formatDuration(props.tool.durationMs)}</text></Show>
     </box>
   );
@@ -418,6 +374,10 @@ function ToolLine(props: { tool: ToolActivity }) {
 
 function Dot(props: { color: TuiColor; dim?: boolean }) {
   return <text fg={props.dim ? COLORS.faint : props.color}>•</text>;
+}
+
+function DisclosureArrow(props: { expanded: () => boolean; color: TuiColor }) {
+  return <text fg={props.color}>{props.expanded() ? '▼' : '▶'}</text>;
 }
 
 function sortAgentsByRelevance(a: AgentUsage, b: AgentUsage): number {
@@ -429,23 +389,26 @@ function compactMeta(values: Array<string | false | undefined>): string {
   return values.filter(Boolean).join(' · ');
 }
 
-function subagentSummary(busy: number, done: number): string {
-  const parts = [];
-  if (busy > 0) parts.push(`${busy} running`);
-  if (done > 0) parts.push(`${done} done`);
-  return parts.length ? parts.join(' · ') : 'none yet';
-}
-
-function compactCollapsedActivity(agent: AgentUsage): string {
+function subagentSummary(input: { busy: number; done: number; errored: number; total: number; tokens: number; cost?: number }): string {
+  if (input.total === 0) return 'none yet';
+  const idle = Math.max(0, input.total - input.busy - input.done - input.errored);
+  const allDone = input.done === input.total && input.busy === 0 && input.errored === 0 && idle === 0;
   return compactMeta([
-    agent.state === 'busy' ? 'doing' : 'last',
-    agent.currentAction,
-    agent.durationMs ? formatDuration(agent.durationMs) : undefined,
+    allDone ? undefined : `${input.total} total`,
+    input.busy > 0 ? `${input.busy} run` : undefined,
+    input.done > 0 ? `${input.done} done` : undefined,
+    input.errored > 0 ? `${input.errored} err` : undefined,
+    idle > 0 ? `${idle} idle` : undefined,
+    `${formatTokenCount(input.tokens)} tok`,
   ]);
 }
 
-function activityLabel(state: AgentUsage['state']): string {
-  return state === 'busy' ? 'doing' : 'last';
+function agentActivity(agent: AgentUsage): string | undefined {
+  return agent.currentAction || agent.lastActivity || agent.title || undefined;
+}
+
+function activityLabel(agent: AgentUsage): string {
+  return agent.currentAction ? 'now' : 'last';
 }
 
 function stateColor(state: AgentUsage['state']): TuiColor {
@@ -455,11 +418,62 @@ function stateColor(state: AgentUsage['state']): TuiColor {
   return COLORS.muted;
 }
 
-function stateLabel(state: AgentUsage['state']): string {
-  if (state === 'busy') return 'running';
-  if (state === 'done') return 'done';
-  if (state === 'error') return 'error';
-  return 'idle';
+function stateIcon(state: AgentUsage['state']): string {
+  if (state === 'busy') return '●';
+  if (state === 'done') return '✓';
+  if (state === 'error') return '✕';
+  return '○';
+}
+
+function toolStatusIcon(status: ToolActivity['status']): string {
+  if (status === 'running') return '…';
+  if (status === 'error') return '!';
+  return '✓';
+}
+
+function shortAgentName(name: string): string {
+  return truncateText(name, AGENT_NAME_MAX);
+}
+
+function summarizeTools(agent: AgentUsage): string | undefined {
+  const running = agent.runningTools.map(formatCompactTool);
+  const recent = agent.tools.slice(0, VISIBLE_AGENT_TOOLS).map(formatCompactTool);
+  const summary = (running.length ? running : recent).filter(Boolean);
+  const count = agent.runningTools.length || agent.completedToolCount;
+  if (summary.length === 0) return count > 0 ? `${count} tools` : undefined;
+  const suffix = count > summary.length ? ` +${count - summary.length}` : undefined;
+  return compactMeta([summary.join(', '), suffix]);
+}
+
+function formatCompactTool(tool: ToolActivity): string {
+  const label = formatToolDetail(tool.title || tool.input || tool.tool);
+  const name = truncateText(tool.tool, TOOL_NAME_MAX);
+  return `${toolStatusIcon(tool.status)} ${name}${label && label !== tool.tool ? `:${label}` : ''}`;
+}
+
+function formatToolDetail(value: string): string {
+  const compact = compactText(value);
+  const detail = looksLikePath(compact) ? pathBasename(compact) : compact;
+  return truncateText(detail, TOOL_DETAIL_MAX);
+}
+
+function truncateText(value: string, maxLength: number): string {
+  const compact = compactText(value);
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function compactText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function looksLikePath(value: string): boolean {
+  return value.startsWith('/Users/') || value.startsWith('.opencode/') || value.includes('/');
+}
+
+function pathBasename(value: string): string {
+  const trimmed = value.replace(/[/?#]+$/, '');
+  return trimmed.split('/').filter(Boolean).pop() || trimmed;
 }
 
 function createBooleanPreference(api: TuiPluginApi, key: TogglePreference, fallback: boolean): BooleanSignal {
