@@ -47,7 +47,7 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	if code := Run([]string{"help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) {
+	if !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) {
 		t.Fatalf("help output missing commands: %s", out.String())
 	}
 
@@ -58,6 +58,24 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("restore requiere --backup")) {
 		t.Fatalf("restore missing backup output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	if code := Run([]string{"sync", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("sync --help expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
+		t.Fatalf("sync help missing flags: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"sync", "--unknown"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("sync unknown flag expected ExitUsageErr, got %d", code)
 	}
 }
 

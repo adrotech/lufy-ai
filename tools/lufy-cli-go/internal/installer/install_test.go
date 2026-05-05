@@ -15,7 +15,7 @@ import (
 
 func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	svc := NewService()
 	target := t.TempDir()
 
@@ -67,7 +67,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 
 func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	svc := NewService()
 	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
@@ -102,7 +102,7 @@ func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
 
 func TestRunRequiresYesForRealMutation(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
@@ -115,7 +115,7 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 
 func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	svc := NewService()
 	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
@@ -132,7 +132,7 @@ func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
 
 func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	outside := t.TempDir()
 	if err := os.Symlink(outside, filepath.Join(target, ".opencode")); err != nil {
@@ -149,7 +149,7 @@ func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
 
 func TestRunRejectsCorruptState(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
 		t.Fatal(err)
@@ -184,7 +184,7 @@ func TestApplyInstallReportsRecoveryBackupOnPartialError(t *testing.T) {
 
 func TestInstallAndVerifyIntegration(t *testing.T) {
 	source := minimalInstallerSource(t)
-	t.Chdir(source)
+	chdirForTest(t, source)
 	target := t.TempDir()
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install error = %v", err)
@@ -250,6 +250,22 @@ func fileHashForTest(t *testing.T, path string) string {
 func hashBytesForTest(body []byte) string {
 	h := sha256.Sum256(body)
 	return hex.EncodeToString(h[:])
+}
+
+func chdirForTest(t *testing.T, dir string) {
+	t.Helper()
+	previous, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(previous); err != nil {
+			t.Fatalf("restore working directory: %v", err)
+		}
+	})
 }
 
 func minimalInstallerSource(t *testing.T) string {

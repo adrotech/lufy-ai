@@ -1,0 +1,90 @@
+name: Go CLI install
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/go-cli-install.yml"
+      - "scripts/install.sh"
+      - "tools/lufy-cli-go/**"
+      - "AGENTS.md"
+      - ".opencode/**"
+      - "openspec/**"
+  push:
+    branches:
+      - main
+      - master
+      - development
+      - develop
+    paths:
+      - ".github/workflows/go-cli-install.yml"
+      - "scripts/install.sh"
+      - "tools/lufy-cli-go/**"
+      - "AGENTS.md"
+      - ".opencode/**"
+      - "openspec/**"
+
+permissions:
+  contents: read
+
+jobs:
+  go-cli-install:
+    name: Test, build and smoke Go installer
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
+
+      - name: Go tests
+        working-directory: tools/lufy-cli-go
+        run: go test ./...
+
+      - name: Go build package
+        working-directory: tools/lufy-cli-go
+        run: go build ./cmd/lufy-ai
+
+      - name: Build local wrapper binary
+        working-directory: tools/lufy-cli-go
+        run: |
+          mkdir -p bin
+          go build -o bin/lufy-ai ./cmd/lufy-ai
+
+      - name: Installer smoke
+        run: tools/lufy-cli-go/scripts/smoke-install.sh
+
+      - name: Wrapper smoke
+        run: tools/lufy-cli-go/scripts/smoke-wrapper.sh
+
+      - name: OpenSpec sanity
+        run: |
+          if command -v openspec >/dev/null 2>&1; then
+            openspec list --json
+          else
+            echo "::notice::openspec CLI no disponible en el runner; sanity OpenSpec omitido"
+          fi
+
+      - name: Whitespace check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git fetch --no-tags --prune --depth=1 origin "$BASE_REF"
+            git diff --check "origin/${BASE_REF}...HEAD"
+          elif [[ -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            git diff --check "${EVENT_BEFORE}..${GITHUB_SHA}"
+          else
+            git diff --check HEAD~1..HEAD
+          fi
