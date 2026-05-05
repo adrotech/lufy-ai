@@ -1,7 +1,7 @@
 # lufy-ai
 
 <p align="center">
-  <img src="docs/assets/lufy-ai-logo.svg" alt="lufy-ai logo" width="920">
+  <img src="docs/assets/lufy-ai-banner.png" alt="lufy-ai OpenSpec journey banner" width="920">
 </p>
 
 <p align="center">
@@ -13,7 +13,8 @@
   <a href="#flujo-completo">Flujo</a> •
   <a href="#dirección-recomendada-para-templates-de-stack">Templates</a> •
   <a href="#nuevo-subagente-recomendado-infraestructura--cloud--sre">Infra/SRE</a> •
-  <a href="#documentación-local-disponible">Docs</a>
+  <a href="#documentación-local-disponible">Docs</a> •
+  <a href="docs/roadmap.md">Roadmap</a>
 </p>
 
 ---
@@ -354,6 +355,7 @@ Eso preserva la topología central actual, pero hace explícito el conocimiento 
 ## Documentación local disponible
 
 - [Getting Started](docs/getting-started.md)
+- [Roadmap](docs/roadmap.md)
 - [OpenSpec Overview](openspec/README.md)
 - [AGENTS Template](AGENTS.md.template)
 
