@@ -1,106 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="440" viewBox="0 0 1440 440" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="480" viewBox="0 0 1440 480" role="img" aria-labelledby="title desc">
   <title id="title">lufy-ai logo</title>
-  <desc id="desc">An original sea-adventure inspired lufy-ai logo with a captain compass, agent crew nodes, and an OpenCode workflow route.</desc>
+  <desc id="desc">An original straw-hat inspired lufy-ai logo with agent crew nodes, a compass route, and an OpenCode workflow path.</desc>
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#f8fafc"/>
-      <stop offset="45%" stop-color="#eefaf8"/>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fbff"/>
+      <stop offset="48%" stop-color="#eefaf8"/>
       <stop offset="100%" stop-color="#fff7ed"/>
     </linearGradient>
-    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f766e"/>
-      <stop offset="52%" stop-color="#2563eb"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
-    </linearGradient>
-    <linearGradient id="captain" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="straw" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#fde68a"/>
-      <stop offset="44%" stop-color="#f59e0b"/>
+      <stop offset="48%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#b45309"/>
     </linearGradient>
-    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="strawLight" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff7c2"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <linearGradient id="seaRoute" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="55%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="deepInk" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0f172a"/>
       <stop offset="100%" stop-color="#164e63"/>
     </linearGradient>
-    <filter id="softShadow" x="-12%" y="-18%" width="124%" height="146%">
+    <filter id="shadow" x="-12%" y="-18%" width="124%" height="146%">
       <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.14"/>
     </filter>
     <filter id="nodeShadow" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
-    <pattern id="chart" width="36" height="36" patternUnits="userSpaceOnUse">
-      <path d="M36 0H0V36" fill="none" stroke="#cbd5e1" stroke-width="1" opacity="0.5"/>
+    <pattern id="chartGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V36" fill="none" stroke="#cbd5e1" stroke-width="1" opacity="0.48"/>
     </pattern>
   </defs>
 
-  <rect width="1440" height="440" rx="38" fill="url(#sky)"/>
-  <rect x="24" y="24" width="1392" height="392" rx="30" fill="url(#chart)" opacity="0.45"/>
+  <rect width="1440" height="480" rx="40" fill="url(#canvas)"/>
+  <rect x="26" y="26" width="1388" height="428" rx="32" fill="url(#chartGrid)" opacity="0.42"/>
 
   <g fill="none" stroke-linecap="round">
-    <path d="M90 332C219 246 340 350 489 270C642 188 742 149 898 211C1042 268 1143 302 1334 180" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 14" opacity="0.56"/>
-    <path d="M110 135C253 197 338 68 494 122C656 178 728 282 891 176C1043 78 1168 102 1309 153" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 13" opacity="0.82"/>
-    <path d="M168 354C312 303 384 381 517 312C622 258 710 258 812 298" stroke="#0f766e" stroke-width="3" opacity="0.16"/>
+    <path d="M83 366C220 282 337 386 490 303C639 223 757 195 914 254C1054 307 1166 309 1338 196" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 14" opacity="0.45"/>
+    <path d="M117 132C252 196 339 76 494 128C642 178 725 285 886 183C1038 88 1167 109 1308 158" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5 13" opacity="0.72"/>
+    <path d="M1098 356C1149 321 1212 318 1268 351C1294 366 1324 373 1352 361" stroke="#0f766e" stroke-width="3" opacity="0.16"/>
   </g>
 
-  <g transform="translate(86 56)" filter="url(#softShadow)">
-    <rect x="0" y="0" width="328" height="328" rx="58" fill="#ffffff"/>
-    <rect x="19" y="19" width="290" height="290" rx="44" fill="#f8fafc" stroke="#dbeafe" stroke-width="2"/>
+  <g transform="translate(88 70)" filter="url(#shadow)">
+    <rect x="0" y="0" width="340" height="340" rx="58" fill="#ffffff"/>
+    <rect x="20" y="20" width="300" height="300" rx="45" fill="#f8fafc" stroke="#dbeafe" stroke-width="2"/>
 
-    <g transform="translate(164 164)">
-      <circle r="112" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
-      <circle r="74" fill="#f8fafc" stroke="#bfdbfe" stroke-width="2"/>
-      <path d="M-113 4C-78-35-31-56 15-50C61-44 98-18 116 24C80 8 43 3 1 8C-38 12-76 12-113 4Z" fill="url(#captain)" stroke="#92400e" stroke-width="2"/>
-      <path d="M-91 8C-45 19 17 20 91 5" fill="none" stroke="#b91c1c" stroke-width="13" stroke-linecap="round"/>
-      <path d="M-54 42L0-86L54 42L0 17Z" fill="#ffffff" stroke="#0f172a" stroke-width="5" stroke-linejoin="round"/>
-      <path d="M0-52L23 24H-23Z" fill="#0f172a"/>
-      <circle r="33" fill="url(#ink)" stroke="#ffffff" stroke-width="5"/>
+    <g transform="translate(170 178)">
+      <circle r="118" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>
+      <circle r="82" fill="#f8fafc" stroke="#bfdbfe" stroke-width="2"/>
+
+      <path d="M-120 36C-78 5-31-10 18-6C67-2 103 17 122 46C82 61 41 68-1 66C-44 64-85 54-120 36Z" fill="url(#straw)" stroke="#92400e" stroke-width="3"/>
+      <path d="M-72 17C-46-49 43-50 74 18C43 9-38 9-72 17Z" fill="url(#strawLight)" stroke="#92400e" stroke-width="3"/>
+      <path d="M-65 20C-27 33 28 33 68 18" fill="none" stroke="#b91c1c" stroke-width="14" stroke-linecap="round"/>
+
+      <g opacity="0.45" stroke="#92400e" stroke-width="2" stroke-linecap="round">
+        <path d="M-95 34C-53 42-6 46 46 42"/>
+        <path d="M-39-29C-50-8-55 8-55 24"/>
+        <path d="M0-39C-2-13-1 8 4 29"/>
+        <path d="M38-28C51-7 57 9 58 24"/>
+      </g>
+
+      <circle r="35" fill="url(#deepInk)" stroke="#ffffff" stroke-width="5"/>
       <text x="0" y="12" fill="#ffffff" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="30" font-weight="850" text-anchor="middle">O</text>
+      <path d="M0-97L19-32H-19Z" fill="#0f172a" opacity="0.92"/>
+      <path d="M0 97L19 32H-19Z" fill="#0f172a" opacity="0.92"/>
+      <path d="M-97 0L-32-19V19Z" fill="#0f172a" opacity="0.92"/>
+      <path d="M97 0L32-19V19Z" fill="#0f172a" opacity="0.92"/>
     </g>
 
     <g fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M164 68C214 75 253 111 263 158" stroke="#2563eb"/>
-      <path d="M261 185C248 232 208 266 164 272" stroke="#0f766e"/>
-      <path d="M134 268C88 257 58 218 56 172" stroke="#f59e0b"/>
-      <path d="M60 138C74 94 111 69 153 68" stroke="#0f766e"/>
+      <path d="M170 73C223 80 265 119 277 168" stroke="#2563eb"/>
+      <path d="M275 197C261 248 218 284 170 290" stroke="#0f766e"/>
+      <path d="M138 286C90 273 59 231 58 182" stroke="#f59e0b"/>
+      <path d="M63 146C78 99 118 74 160 73" stroke="#0f766e"/>
     </g>
 
     <g filter="url(#nodeShadow)">
-      <circle cx="164" cy="68" r="24" fill="#2563eb"/>
-      <circle cx="263" cy="164" r="24" fill="#0f766e"/>
-      <circle cx="164" cy="272" r="24" fill="#f59e0b"/>
-      <circle cx="56" cy="164" r="24" fill="#0f766e"/>
+      <circle cx="170" cy="73" r="24" fill="#2563eb"/>
+      <circle cx="277" cy="180" r="24" fill="#0f766e"/>
+      <circle cx="170" cy="290" r="24" fill="#f59e0b"/>
+      <circle cx="58" cy="180" r="24" fill="#0f766e"/>
     </g>
     <g fill="#ffffff" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="16" font-weight="850" text-anchor="middle">
-      <text x="164" y="74">E</text>
-      <text x="263" y="170">A</text>
-      <text x="164" y="278">D</text>
-      <text x="56" y="170">V</text>
+      <text x="170" y="79">E</text>
+      <text x="277" y="186">A</text>
+      <text x="170" y="296">D</text>
+      <text x="58" y="186">V</text>
     </g>
   </g>
 
-  <g transform="translate(474 84)">
-    <text x="0" y="86" fill="#0f172a" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="94" font-weight="850" letter-spacing="0">lufy-ai</text>
-    <text x="4" y="132" fill="#334155" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="29" font-weight="650" letter-spacing="0">una tripulacion de agentes para navegar cambios de software</text>
+  <g transform="translate(494 92)">
+    <text x="0" y="78" fill="#0f172a" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="86" font-weight="850" letter-spacing="0">lufy-ai</text>
+    <text x="4" y="123" fill="#334155" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="25" font-weight="650" letter-spacing="0">tripulacion de agentes para navegar cambios de software</text>
 
-    <g transform="translate(0 170)">
-      <rect x="0" y="0" width="668" height="78" rx="24" fill="#0f172a"/>
-      <path d="M34 39H630" stroke="#334155" stroke-width="2" stroke-dasharray="6 12"/>
-      <g font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="20" font-weight="850">
-        <text x="31" y="46" fill="#2dd4bf">explore</text>
-        <text x="185" y="46" fill="#93c5fd">propose</text>
-        <text x="350" y="46" fill="#bae6fd">apply</text>
-        <text x="486" y="46" fill="#fde68a">verify</text>
-        <text x="606" y="46" fill="#fed7aa" text-anchor="end">deliver</text>
-      </g>
+    <g transform="translate(0 160)">
+      <rect x="0" y="0" width="716" height="78" rx="24" fill="#0f172a"/>
+      <path d="M35 39H681" stroke="#334155" stroke-width="2" stroke-dasharray="6 12"/>
       <g fill="#ffffff">
-        <circle cx="20" cy="39" r="6"/>
-        <circle cx="169" cy="39" r="6"/>
-        <circle cx="334" cy="39" r="6"/>
-        <circle cx="470" cy="39" r="6"/>
-        <circle cx="624" cy="39" r="6"/>
+        <circle cx="22" cy="39" r="6"/>
+        <circle cx="178" cy="39" r="6"/>
+        <circle cx="352" cy="39" r="6"/>
+        <circle cx="500" cy="39" r="6"/>
+        <circle cx="680" cy="39" r="6"/>
+      </g>
+      <g font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="19" font-weight="850">
+        <text x="36" y="46" fill="#2dd4bf">explore</text>
+        <text x="193" y="46" fill="#93c5fd">propose</text>
+        <text x="367" y="46" fill="#bae6fd">apply</text>
+        <text x="515" y="46" fill="#fde68a">verify</text>
+        <text x="623" y="46" fill="#fed7aa">deliver</text>
       </g>
     </g>
 
-    <g transform="translate(0 270)" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="20" font-weight="800">
+    <g transform="translate(0 268)" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="19" font-weight="800">
       <rect x="0" y="-30" width="148" height="44" rx="14" fill="#ecfeff" stroke="#99f6e4"/>
       <rect x="166" y="-30" width="148" height="44" rx="14" fill="#eff6ff" stroke="#bfdbfe"/>
       <rect x="332" y="-30" width="148" height="44" rx="14" fill="#fffbeb" stroke="#fde68a"/>
@@ -110,15 +126,13 @@
     </g>
   </g>
 
-  <g transform="translate(1182 92)" filter="url(#softShadow)">
-    <rect x="0" y="0" width="166" height="246" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="2"/>
-    <path d="M40 64H96C114 64 126 76 126 94V198" fill="none" stroke="url(#sea)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M40 126H90" fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
-    <path d="M40 188H126" fill="none" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
-    <circle cx="40" cy="64" r="14" fill="#0f766e"/>
-    <circle cx="40" cy="126" r="14" fill="#2563eb"/>
-    <circle cx="40" cy="188" r="14" fill="#f59e0b"/>
-    <circle cx="126" cy="198" r="14" fill="#0f172a"/>
-    <text x="83" y="226" fill="#64748b" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="14" font-weight="850" text-anchor="middle">agent crew</text>
+  <g transform="translate(1230 104)" opacity="0.9">
+    <circle cx="48" cy="48" r="42" fill="#ffffff" stroke="#dbeafe" stroke-width="2"/>
+    <path d="M48 15L58 48L48 81L38 48Z" fill="#0f172a"/>
+    <path d="M15 48L48 38L81 48L48 58Z" fill="#0f766e" opacity="0.85"/>
+    <circle cx="48" cy="48" r="9" fill="#f59e0b"/>
+    <path d="M-12 188C27 158 70 160 111 189" fill="none" stroke="url(#seaRoute)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="-12" cy="188" r="10" fill="#0f766e"/>
+    <circle cx="111" cy="189" r="10" fill="#2563eb"/>
   </g>
 </svg>
