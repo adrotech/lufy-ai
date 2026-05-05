@@ -38,10 +38,25 @@ Hoy el repositorio contiene estas piezas:
 - `.opencode/policies/delivery.md`: política de delivery y trazabilidad
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local de observabilidad
 - `AGENTS.md.template`: base para convenciones específicas del repositorio
-- `scripts/install.sh`: instalador para proyectos destino
+- `scripts/install.sh`: wrapper estricto que delega en la CLI Go `lufy-ai install`
 - `openspec/`: estructura inicial y configuración del flujo
 
 ## Flujo completo
+
+## Estado actual de la migración a CLI Go (RM-013)
+
+- La CLI Go vive en `tools/lufy-cli-go/`.
+- El wrapper `scripts/install.sh` se mantiene compatible como entrada histórica, pero ya no contiene fallback legacy: solo delega en `lufy-ai install`.
+- Para desarrollo local, el wrapper usa `tools/lufy-cli-go/bin/lufy-ai` si existe; si no, busca `lufy-ai` en `PATH`.
+- Si no encuentra binario, falla con la instrucción de compilación local:
+  - `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
+- Comandos disponibles en este slice de CLI: `install`, `verify`, `backup`, `restore` (implementación mínima incremental con smoke E2E en temp dir).
+- Validación local de la CLI (desde `tools/lufy-cli-go/`):
+  - `go test ./...`
+  - `go build ./cmd/lufy-ai`
+  - `go run ./cmd/lufy-ai install --target . --dry-run --yes --no-engram`
+
+Para más detalle operativo y estado incremental, ver `tools/lufy-cli-go/README.md`.
 
 ### Vista general
 
@@ -59,15 +74,25 @@ flowchart LR
 
 ### 1. Instalación en un repositorio destino
 
-El instalador hace lo siguiente:
+El instalador actual se ejecuta mediante la CLI Go `lufy-ai install`. El script Bash es solo wrapper de compatibilidad y no copia archivos ni detecta stack por sí mismo.
 
-1. valida dependencias
-2. detecta si ya existe `.opencode/` o `AGENTS.md`
-3. intenta detectar el stack del proyecto
-4. copia los assets locales de OpenCode al proyecto destino
-5. crea `AGENTS.md` desde `AGENTS.md.template` si hace falta
-6. copia `tui.json`
-7. ofrece integración orientada a memoria si Engram ya está instalado
+El slice actual de la CLI Go hace lo siguiente:
+
+1. resuelve `--target` a una ruta absoluta segura
+2. construye e imprime un plan de instalación
+3. respeta `--dry-run` sin mutaciones
+4. omite Engram con `--no-engram` o lo resuelve desde `PATH` si aplica
+5. ejecuta una instalación mínima incremental gestionada por Go
+
+Flags aceptados por el wrapper y reenviados a la CLI: `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backup`. El argumento posicional histórico se interpreta como `--target`.
+
+Para usar el wrapper desde un checkout local, compila primero el binario local si `lufy-ai` no está en `PATH`:
+
+```bash
+cd /tmp/lufy-ai/tools/lufy-cli-go
+mkdir -p bin
+go build -o bin/lufy-ai ./cmd/lufy-ai
+```
 
 Instalación:
 
@@ -77,10 +102,10 @@ cd /ruta/a/tu/proyecto
 /tmp/lufy-ai/scripts/install.sh
 ```
 
-O directamente:
+O directamente con la CLI si está instalada en `PATH`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/main/scripts/install.sh | bash
+lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
 ### 2. El `orchestrator` reparte el trabajo
