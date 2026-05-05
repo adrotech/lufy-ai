@@ -10,8 +10,10 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
 
 type Options struct {
@@ -44,6 +46,7 @@ type Conflict struct {
 type Plan struct {
 	SourceRoot string
 	TargetRoot string
+	NoEngram   bool
 	Catalog    assets.Catalog
 	Previous   *state.InstallState
 	Actions    []Action
@@ -75,7 +78,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		fmt.Fprintln(stdout)
 	}
 	for _, c := range plan.Conflicts {
-		fmt.Fprintf(stdout, "- [conflict] %s (%s) current=%s source=%s\n", c.Path, c.Reason, shortHash(c.CurrentHash), shortHash(c.SourceHash))
+		fmt.Fprintf(stdout, "- [warn-conflict] %s (%s) current=%s source=%s\n", c.Path, c.Reason, shortHash(c.CurrentHash), shortHash(c.SourceHash))
 	}
 
 	if opts.NoEngram {
@@ -92,6 +95,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	if len(plan.Conflicts) > 0 {
 		return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
+	}
+	if !opts.Yes && requiresConfirmation(plan.Actions) {
+		return fmt.Errorf("install requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
 
 	if err := s.applyInstall(plan, stdout); err != nil {
@@ -123,12 +129,12 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		previousAssets = previous.AssetMap()
 	}
 
-	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, Catalog: catalog, Previous: previous}
+	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous}
 	seenDirs := map[string]bool{}
 	for _, asset := range catalog.Assets {
 		if asset.Kind == assets.KindDir {
 			if !dirExists(filepath.Join(target, asset.TargetRel)) {
-				plan.Actions = append(plan.Actions, Action{Kind: "create-dir", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "directorio gestionado ausente", Risk: "low"})
+				plan.Actions = append(plan.Actions, Action{Kind: "mkdir", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "directorio gestionado ausente", Risk: "low"})
 			}
 			seenDirs[asset.TargetRel] = true
 			continue
@@ -139,7 +145,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			}
 			seenDirs[dir] = true
 			if !dirExists(filepath.Join(target, dir)) {
-				plan.Actions = append(plan.Actions, Action{Kind: "create-dir", Target: dir, Reason: "directorio padre requerido", Risk: "low"})
+				plan.Actions = append(plan.Actions, Action{Kind: "mkdir", Target: dir, Reason: "directorio padre requerido", Risk: "low"})
 			}
 		}
 
@@ -182,8 +188,37 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			Action{Kind: "update-managed", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "source gestionado cambió sin drift local", Risk: "medium", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, PreviousInstalledHash: prev.TargetSHA256},
 		)
 	}
+	if opts.Backup && previous != nil {
+		alreadyBackup := map[string]bool{}
+		for _, action := range plan.Actions {
+			if action.Kind == "backup" {
+				alreadyBackup[action.Target] = true
+			}
+		}
+		for _, asset := range previous.Assets {
+			if alreadyBackup[asset.TargetRel] {
+				continue
+			}
+			assetPath, err := platform.SafeJoin(target, asset.TargetRel)
+			if err != nil {
+				return Plan{}, err
+			}
+			if fileExists(assetPath) {
+				plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: asset.TargetRel, Reason: "backup solicitado explícitamente", Risk: "low", CurrentHash: asset.TargetSHA256})
+			}
+		}
+	}
+	configPlan, err := config.NewService().Plan(config.Options{TargetRoot: target, NoEngram: opts.NoEngram})
+	if err != nil {
+		return Plan{}, err
+	}
+	if configPlan.Action == "merge-json" && fileExists(filepath.Join(target, config.OpenCodeFile)) {
+		plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: config.OpenCodeFile, Reason: "opencode.json existente será mergeado", Risk: "medium"})
+	}
+	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: config.OpenCodeFile, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
+	plan.Actions = append(plan.Actions, Action{Kind: "verify", Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"create-dir": 0, "backup": 1, "copy": 2, "update-managed": 3, "skip": 4}
+		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-json": 4, "verify": 5, "skip": 6}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -209,7 +244,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 	applied := 0
 	for _, action := range plan.Actions {
 		switch action.Kind {
-		case "create-dir":
+		case "mkdir":
 			targetPath, err := platform.SafeJoin(plan.TargetRoot, action.Target)
 			if err != nil {
 				return installRecoveryError(err, recoveryBackup, applied)
@@ -218,17 +253,27 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 				return installRecoveryError(err, recoveryBackup, applied)
 			}
 			applied++
-			fmt.Fprintf(stdout, "- [create-dir] %s\n", action.Target)
+			fmt.Fprintf(stdout, "- [mkdir] %s\n", action.Target)
 		case "copy", "update-managed":
 			if err := copyFile(filepath.Join(plan.SourceRoot, action.Source), plan.TargetRoot, action.Target); err != nil {
 				return installRecoveryError(err, recoveryBackup, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [%s] %s\n", action.Kind, action.Target)
+		case "merge-json":
+			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
+				return installRecoveryError(err, recoveryBackup, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
+		case "verify":
 		case "skip", "backup":
 		}
 	}
 	if plan.Previous != nil && !hasContentMutation(plan.Actions) {
+		if err := runPostInstallVerify(plan, stdout); err != nil {
+			return installRecoveryError(err, recoveryBackup, applied)
+		}
 		fmt.Fprintf(stdout, "- [skip] %s sin cambios\n", filepath.Join(".lufy-ai", "install-state.json"))
 		return nil
 	}
@@ -241,6 +286,31 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 		return installRecoveryError(err, recoveryBackup, applied)
 	}
 	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
+	if err := runPostInstallVerify(plan, stdout); err != nil {
+		if rollbackErr := restoreStateAfterVerifyFailure(plan); rollbackErr != nil {
+			err = fmt.Errorf("%w; además falló restaurar install-state previo: %v", err, rollbackErr)
+		}
+		return installRecoveryError(err, recoveryBackup, applied)
+	}
+	return nil
+}
+
+func restoreStateAfterVerifyFailure(plan Plan) error {
+	if plan.Previous == nil {
+		err := os.Remove(state.Path(plan.TargetRoot))
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return state.WriteAtomic(plan.TargetRoot, *plan.Previous)
+}
+
+func runPostInstallVerify(plan Plan, stdout io.Writer) error {
+	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram}, stdout); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "- [verify] %s\n", plan.TargetRoot)
 	return nil
 }
 
@@ -263,7 +333,17 @@ func targetsForKind(actions []Action, kind string) []string {
 
 func hasContentMutation(actions []Action) bool {
 	for _, action := range actions {
-		if action.Kind == "copy" || action.Kind == "update-managed" {
+		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "merge-json" {
+			return true
+		}
+	}
+	return false
+}
+
+func requiresConfirmation(actions []Action) bool {
+	for _, action := range actions {
+		switch action.Kind {
+		case "mkdir", "copy", "update-managed", "merge-json", "backup":
 			return true
 		}
 	}
@@ -335,6 +415,11 @@ func parentDirs(path string) []string {
 func dirExists(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.IsDir() && info.Mode()&os.ModeSymlink == 0
+}
+
+func fileExists(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
 }
 
 func shortHash(hash string) string {

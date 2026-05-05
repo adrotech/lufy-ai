@@ -22,9 +22,11 @@ type Options struct {
 type Manifest struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	CreatedAt     string     `json:"createdAt"`
+	ToolVersion   string     `json:"toolVersion"`
 	TargetRoot    string     `json:"targetRoot"`
 	Cause         string     `json:"cause"`
 	Files         []FileItem `json:"files"`
+	Actions       []Action   `json:"actions"`
 }
 
 type FileItem struct {
@@ -36,6 +38,15 @@ type FileItem struct {
 	Status     string `json:"status"`
 	Error      string `json:"error,omitempty"`
 	Cause      string `json:"cause"`
+}
+
+type Action struct {
+	Path         string `json:"path"`
+	Operation    string `json:"operation"`
+	BackupPath   string `json:"backupPath"`
+	SHA256Before string `json:"sha256Before"`
+	SHA256After  string `json:"sha256After"`
+	Status       string `json:"status"`
 }
 
 type Service struct{}
@@ -66,7 +77,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 		return "", err
 	}
 
-	manifest := Manifest{SchemaVersion: SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), TargetRoot: target, Cause: cause}
+	manifest := Manifest{SchemaVersion: SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), ToolVersion: state.ToolVersion, TargetRoot: target, Cause: cause}
 	for _, rel := range uniqueStrings(rels) {
 		clean, err := platform.EnsureRelativeSafe(rel)
 		if err != nil {
@@ -102,6 +113,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 		}
 		item.Status = "captured"
 		manifest.Files = append(manifest.Files, item)
+		manifest.Actions = append(manifest.Actions, Action{Path: clean, Operation: cause, BackupPath: clean, SHA256Before: item.SHA256, Status: item.Status})
 	}
 
 	manifestPath := filepath.Join(backupDir, "manifest.json")
@@ -117,7 +129,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 	return backupDir, nil
 }
 
-func (s Service) Restore(target, backupPath string, dryRun bool, stdout io.Writer) error {
+func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdout io.Writer) error {
 	absTarget, err := platform.ResolveTargetPath(target)
 	if err != nil {
 		return err
@@ -142,12 +154,22 @@ func (s Service) Restore(target, backupPath string, dryRun bool, stdout io.Write
 	if manifest.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("schema de backup no soportado: %d", manifest.SchemaVersion)
 	}
-	if manifest.TargetRoot != absTarget {
+	manifestTarget, err := platform.ResolveTargetPath(manifest.TargetRoot)
+	if err != nil {
+		return err
+	}
+	if manifestTarget != absTarget {
 		return fmt.Errorf("backup pertenece a otro target: %s", manifest.TargetRoot)
 	}
 
 	restoreFiles, err := capturedPaths(manifest.Files)
 	if err != nil {
+		return err
+	}
+	if !dryRun && len(restoreFiles) > 0 && !yes {
+		return fmt.Errorf("restore requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
+	}
+	if err := validateBackupHashes(manifestPath, manifest.Files); err != nil {
 		return err
 	}
 	recoveryBackup := ""
@@ -189,6 +211,30 @@ func (s Service) Restore(target, backupPath string, dryRun bool, stdout io.Write
 		fmt.Fprintf(stdout, "Restaurado %s\n", path)
 	}
 
+	return nil
+}
+
+func validateBackupHashes(manifestPath string, files []FileItem) error {
+	for _, file := range files {
+		if file.Status != "captured" {
+			continue
+		}
+		path, err := platform.EnsureRelativeSafe(file.Path)
+		if err != nil {
+			return err
+		}
+		backupRel, err := platform.EnsureRelativeSafe(file.BackupPath)
+		if err != nil {
+			return err
+		}
+		actualHash, err := assets.FileSHA256(filepath.Join(filepath.Dir(manifestPath), backupRel))
+		if err != nil {
+			return err
+		}
+		if file.SHA256 == "" || actualHash != file.SHA256 {
+			return fmt.Errorf("hash de backup no coincide para %s: manifest=%s actual=%s", path, shortHash(file.SHA256), shortHash(actualHash))
+		}
+	}
 	return nil
 }
 

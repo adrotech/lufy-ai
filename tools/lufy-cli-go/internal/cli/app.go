@@ -73,7 +73,7 @@ func runRestore(args []string, deps Dependencies) int {
 	target := fs.String("target", ".", "Directorio destino")
 	backupPath := fs.String("backup", "", "Ruta a backup o manifest.json")
 	dryRun := fs.Bool("dry-run", false, "Mostrar restore sin mutaciones")
-	_ = fs.Bool("yes", false, "Acepta confirmaciones")
+	yes := fs.Bool("yes", false, "Acepta confirmaciones")
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
@@ -82,7 +82,7 @@ func runRestore(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	svc := backup.NewService()
-	if err := svc.Restore(*target, *backupPath, *dryRun, deps.Stdout); err != nil {
+	if err := svc.Restore(*target, *backupPath, *dryRun, *yes, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}

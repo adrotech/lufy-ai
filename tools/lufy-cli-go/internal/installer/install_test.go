@@ -23,7 +23,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(copy) error = %v", err)
 	}
-	if !hasAction(copyPlan.Actions, "copy", "AGENTS.md") || !hasAction(copyPlan.Actions, "create-dir", ".opencode") {
+	if !hasAction(copyPlan.Actions, "copy", "AGENTS.md") || !hasAction(copyPlan.Actions, "mkdir", ".opencode") || !hasAction(copyPlan.Actions, "merge-json", "opencode.json") || !hasAction(copyPlan.Actions, "verify", copyPlan.TargetRoot) {
 		t.Fatalf("copy plan missing expected actions: %#v", copyPlan.Actions)
 	}
 
@@ -100,6 +100,36 @@ func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
 	}
 }
 
+func TestRunRequiresYesForRealMutation(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
+		t.Fatalf("expected --yes error, got %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "AGENTS.md")); !os.IsNotExist(err) {
+		t.Fatalf("install without --yes mutated target, stat err=%v", err)
+	}
+}
+
+func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	var out bytes.Buffer
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true, Backup: true}, &out); err != nil {
+		t.Fatalf("Run(backup) error = %v", err)
+	}
+	if !strings.Contains(out.String(), "- [backup]") {
+		t.Fatalf("backup flag did not create backup action: %s", out.String())
+	}
+}
+
 func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
 	source := minimalInstallerSource(t)
 	t.Chdir(source)
@@ -165,6 +195,18 @@ func TestInstallAndVerifyIntegration(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "ok: verify estructural completo") {
 		t.Fatalf("verify output unexpected: %s", out.String())
+	}
+}
+
+func TestApplyInstallRemovesNewStateWhenPostVerifyFails(t *testing.T) {
+	target := t.TempDir()
+	plan := Plan{TargetRoot: target}
+	err := NewService().applyInstall(plan, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "verify falló") {
+		t.Fatalf("expected verify failure, got %v", err)
+	}
+	if _, statErr := os.Stat(state.Path(target)); !os.IsNotExist(statErr) {
+		t.Fatalf("expected state rollback after verify failure, stat err=%v", statErr)
 	}
 }
 
