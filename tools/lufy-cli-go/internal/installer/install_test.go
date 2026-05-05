@@ -1,0 +1,244 @@
+package installer
+
+import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
+)
+
+func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	svc := NewService()
+	target := t.TempDir()
+
+	copyPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(copy) error = %v", err)
+	}
+	if !hasAction(copyPlan.Actions, "copy", "AGENTS.md") || !hasAction(copyPlan.Actions, "create-dir", ".opencode") {
+		t.Fatalf("copy plan missing expected actions: %#v", copyPlan.Actions)
+	}
+
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	skipPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(skip) error = %v", err)
+	}
+	if !hasAction(skipPlan.Actions, "skip", "AGENTS.md") || hasActionKind(skipPlan.Actions, "copy") {
+		t.Fatalf("skip plan unexpected actions: %#v", skipPlan.Actions)
+	}
+
+	if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte("local drift\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	conflictPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(conflict) error = %v", err)
+	}
+	if len(conflictPlan.Conflicts) != 1 || conflictPlan.Conflicts[0].Path != "AGENTS.md" {
+		t.Fatalf("expected AGENTS.md conflict, got %#v", conflictPlan.Conflicts)
+	}
+
+	updatedTarget := t.TempDir()
+	if err := svc.Run(Options{Target: updatedTarget, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(updated initial) error = %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("upstream changed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(update) error = %v", err)
+	}
+	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "update-managed", "AGENTS.md") {
+		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	}
+}
+
+func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	before, err := os.ReadFile(state.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	infoBefore, err := os.Stat(filepath.Join(target, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(second) error = %v", err)
+	}
+	after, err := os.ReadFile(state.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	infoAfter, err := os.Stat(filepath.Join(target, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("install-state changed on idempotent run")
+	}
+	if !infoBefore.ModTime().Equal(infoAfter.ModTime()) {
+		t.Fatal("managed file mtime changed on idempotent run")
+	}
+}
+
+func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	outside := t.TempDir()
+	if err := os.Symlink(outside, filepath.Join(target, ".opencode")); err != nil {
+		t.Skipf("symlink no soportado en este entorno: %v", err)
+	}
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if len(plan.Conflicts) == 0 {
+		t.Fatalf("expected symlink conflict, actions=%#v", plan.Actions)
+	}
+}
+
+func TestRunRejectsCorruptState(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(state.Path(target), []byte("{not-json"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "install-state.json inválido") {
+		t.Fatalf("expected corrupt state error, got %v", err)
+	}
+}
+
+func TestApplyInstallReportsRecoveryBackupOnPartialError(t *testing.T) {
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "current\n")
+	hash := fileHashForTest(t, filepath.Join(target, "AGENTS.md"))
+	plan := Plan{
+		SourceRoot: t.TempDir(),
+		TargetRoot: target,
+		Previous:   &state.InstallState{SchemaVersion: state.SchemaVersion, Assets: []state.AssetState{{ID: "AGENTS.md", TargetRel: "AGENTS.md", TargetSHA256: hash}}},
+		Actions: []Action{
+			{Kind: "backup", Target: "AGENTS.md"},
+			{Kind: "update-managed", Source: "missing-template", Target: "AGENTS.md"},
+		},
+	}
+	err := NewService().applyInstall(plan, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "backup de recovery") || !strings.Contains(err.Error(), "acciones aplicadas=0") {
+		t.Fatalf("expected recovery error, got %v", err)
+	}
+}
+
+func TestInstallAndVerifyIntegration(t *testing.T) {
+	source := minimalInstallerSource(t)
+	t.Chdir(source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("install error = %v", err)
+	}
+	var out bytes.Buffer
+	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true}, &out); err != nil {
+		t.Fatalf("verify error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "ok: verify estructural completo") {
+		t.Fatalf("verify output unexpected: %s", out.String())
+	}
+}
+
+func hasAction(actions []Action, kind, target string) bool {
+	for _, action := range actions {
+		if action.Kind == kind && action.Target == target {
+			return true
+		}
+	}
+	return false
+}
+
+func hasActionKind(actions []Action, kind string) bool {
+	for _, action := range actions {
+		if action.Kind == kind {
+			return true
+		}
+	}
+	return false
+}
+
+func writeInstallerFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func fileHashForTest(t *testing.T, path string) string {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return hashBytesForTest(body)
+}
+
+func hashBytesForTest(body []byte) string {
+	h := sha256.Sum256(body)
+	return hex.EncodeToString(h[:])
+}
+
+func minimalInstallerSource(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	files := map[string]string{
+		"AGENTS.md":                                                    "agents root\n",
+		"AGENTS.md.template":                                           "agents template\n",
+		"tui.json":                                                     "{}\n",
+		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
+		filepath.Join(".opencode", "README.md"):                        "readme\n",
+		filepath.Join(".opencode", "package.json"):                     "{}\n",
+		filepath.Join(".opencode", "package-lock.json"):                "{}\n",
+		filepath.Join(".opencode", "agents", "orchestrator.md"):        "orchestrator\n",
+		filepath.Join(".opencode", "commands", "opsx-apply.md"):        "apply\n",
+		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):   "skill\n",
+		filepath.Join(".opencode", "policies", "delivery.md"):          "delivery\n",
+		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
+		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",
+		filepath.Join("openspec", "config.yaml"):                       "config\n",
+		filepath.Join("openspec", "README.md"):                         "openspec\n",
+		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+	}
+	for rel, content := range files {
+		path := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root
+}

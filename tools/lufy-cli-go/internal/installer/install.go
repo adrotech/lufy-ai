@@ -1,13 +1,17 @@
 package installer
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
 type Options struct {
@@ -19,21 +23,29 @@ type Options struct {
 }
 
 type Action struct {
-	Kind   string
-	Source string
-	Target string
-	Reason string
-	Risk   string
+	Kind                  string
+	Source                string
+	Target                string
+	Reason                string
+	Risk                  string
+	SourceHash            string
+	CurrentHash           string
+	PreviousInstalledHash string
 }
 
 type Conflict struct {
-	Path   string
-	Reason string
-	Risk   string
+	Path        string
+	Reason      string
+	Risk        string
+	CurrentHash string
+	SourceHash  string
 }
 
 type Plan struct {
+	SourceRoot string
 	TargetRoot string
+	Catalog    assets.Catalog
+	Previous   *state.InstallState
 	Actions    []Action
 	Conflicts  []Conflict
 }
@@ -51,8 +63,19 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 
 	fmt.Fprintf(stdout, "Plan de instalación para %s\n", plan.TargetRoot)
+	fmt.Fprintf(stdout, "Source root: %s\n", plan.SourceRoot)
 	for _, a := range plan.Actions {
-		fmt.Fprintf(stdout, "- [%s] %s (%s)\n", a.Kind, a.Target, a.Reason)
+		fmt.Fprintf(stdout, "- [%s] %s (%s)", a.Kind, a.Target, a.Reason)
+		if a.SourceHash != "" {
+			fmt.Fprintf(stdout, " source=%s", shortHash(a.SourceHash))
+		}
+		if a.CurrentHash != "" {
+			fmt.Fprintf(stdout, " current=%s", shortHash(a.CurrentHash))
+		}
+		fmt.Fprintln(stdout)
+	}
+	for _, c := range plan.Conflicts {
+		fmt.Fprintf(stdout, "- [conflict] %s (%s) current=%s source=%s\n", c.Path, c.Reason, shortHash(c.CurrentHash), shortHash(c.SourceHash))
 	}
 
 	if opts.NoEngram {
@@ -67,50 +90,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		fmt.Fprintln(stdout, "Modo dry-run: sin mutaciones en filesystem")
 		return nil
 	}
+	if len(plan.Conflicts) > 0 {
+		return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
+	}
 
-	if err := s.applyInstall(plan.TargetRoot, stdout); err != nil {
+	if err := s.applyInstall(plan, stdout); err != nil {
 		return err
 	}
-	fmt.Fprintln(stdout, "Install real completado (slice mínimo)")
-	return nil
-}
-
-func (s Service) applyInstall(target string, stdout io.Writer) error {
-	stateDir := filepath.Join(target, ".lufy-ai")
-	if err := os.MkdirAll(stateDir, 0o755); err != nil {
-		return err
-	}
-
-	statePath := filepath.Join(stateDir, "install-state.json")
-	if _, err := os.Stat(statePath); err == nil {
-		fmt.Fprintf(stdout, "- [skip] %s ya existe\n", statePath)
-	} else {
-		state := map[string]any{
-			"schemaVersion": 1,
-			"targetRoot":    target,
-			"managedFiles":  []string{"AGENTS.md", ".lufy-ai/install-state.json"},
-		}
-		body, err := json.MarshalIndent(state, "", "  ")
-		if err != nil {
-			return err
-		}
-		if err := os.WriteFile(statePath, body, 0o644); err != nil {
-			return err
-		}
-		fmt.Fprintf(stdout, "- [write] %s\n", statePath)
-	}
-
-	templatePath := filepath.Join(target, "AGENTS.md.template")
-	agentsPath := filepath.Join(target, "AGENTS.md")
-	if _, err := os.Stat(agentsPath); err == nil {
-		fmt.Fprintln(stdout, "- [skip] AGENTS.md ya existe")
-	} else if content, readErr := os.ReadFile(templatePath); readErr == nil {
-		if writeErr := os.WriteFile(agentsPath, content, 0o644); writeErr != nil {
-			return writeErr
-		}
-		fmt.Fprintln(stdout, "- [copy] AGENTS.md desde AGENTS.md.template")
-	}
-
+	fmt.Fprintln(stdout, "Install real completado")
 	return nil
 }
 
@@ -119,11 +106,240 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	sourceRoot, err := platform.ResolveSourceRoot("")
+	if err != nil {
+		return Plan{}, err
+	}
+	catalog, err := assets.BuildCatalog(sourceRoot)
+	if err != nil {
+		return Plan{}, err
+	}
+	previous, err := state.Load(target)
+	if err != nil {
+		return Plan{}, err
+	}
+	previousAssets := map[string]state.AssetState{}
+	if previous != nil {
+		previousAssets = previous.AssetMap()
+	}
 
-	return Plan{
-		TargetRoot: target,
-		Actions: []Action{
-			{Kind: "verify", Target: target, Reason: "Slice inicial: planificar sin escribir", Risk: "low"},
-		},
-	}, nil
+	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, Catalog: catalog, Previous: previous}
+	seenDirs := map[string]bool{}
+	for _, asset := range catalog.Assets {
+		if asset.Kind == assets.KindDir {
+			if !dirExists(filepath.Join(target, asset.TargetRel)) {
+				plan.Actions = append(plan.Actions, Action{Kind: "create-dir", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "directorio gestionado ausente", Risk: "low"})
+			}
+			seenDirs[asset.TargetRel] = true
+			continue
+		}
+		for _, dir := range parentDirs(asset.TargetRel) {
+			if seenDirs[dir] {
+				continue
+			}
+			seenDirs[dir] = true
+			if !dirExists(filepath.Join(target, dir)) {
+				plan.Actions = append(plan.Actions, Action{Kind: "create-dir", Target: dir, Reason: "directorio padre requerido", Risk: "low"})
+			}
+		}
+
+		targetPath, err := platform.SafeJoin(target, asset.TargetRel)
+		if err != nil {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: err.Error(), Risk: "high", SourceHash: asset.SourceSHA256})
+			continue
+		}
+		info, err := os.Lstat(targetPath)
+		if os.IsNotExist(err) {
+			plan.Actions = append(plan.Actions, Action{Kind: "copy", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "archivo gestionado ausente", Risk: "low", SourceHash: asset.SourceSHA256})
+			continue
+		}
+		if err != nil {
+			return Plan{}, err
+		}
+		if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: "destino no es archivo regular seguro", Risk: "high", SourceHash: asset.SourceSHA256})
+			continue
+		}
+		currentHash, err := assets.FileSHA256(targetPath)
+		if err != nil {
+			return Plan{}, err
+		}
+		if currentHash == asset.SourceSHA256 {
+			plan.Actions = append(plan.Actions, Action{Kind: "skip", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "hash destino coincide con source", Risk: "none", SourceHash: asset.SourceSHA256, CurrentHash: currentHash})
+			continue
+		}
+		prev, managed := previousAssets[asset.TargetRel]
+		if !managed {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: "archivo existente no gestionado con contenido distinto", Risk: "high", CurrentHash: currentHash, SourceHash: asset.SourceSHA256})
+			continue
+		}
+		if currentHash != prev.TargetSHA256 {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: "archivo gestionado con drift local", Risk: "high", CurrentHash: currentHash, SourceHash: asset.SourceSHA256})
+			continue
+		}
+		plan.Actions = append(plan.Actions,
+			Action{Kind: "backup", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "source gestionado cambió; backup requerido antes de actualizar", Risk: "medium", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, PreviousInstalledHash: prev.TargetSHA256},
+			Action{Kind: "update-managed", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "source gestionado cambió sin drift local", Risk: "medium", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, PreviousInstalledHash: prev.TargetSHA256},
+		)
+	}
+	sort.SliceStable(plan.Actions, func(i, j int) bool {
+		order := map[string]int{"create-dir": 0, "backup": 1, "copy": 2, "update-managed": 3, "skip": 4}
+		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
+			return plan.Actions[i].Target < plan.Actions[j].Target
+		}
+		return order[plan.Actions[i].Kind] < order[plan.Actions[j].Kind]
+	})
+	return plan, nil
+}
+
+func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
+	if err := os.MkdirAll(plan.TargetRoot, 0o755); err != nil {
+		return err
+	}
+	backupTargets := targetsForKind(plan.Actions, "backup")
+	recoveryBackup := ""
+	if len(backupTargets) > 0 {
+		backupDir, err := backup.BackupFiles(plan.TargetRoot, backupTargets, "install-update-managed", stdout)
+		if err != nil {
+			return err
+		}
+		recoveryBackup = backupDir
+		fmt.Fprintf(stdout, "- [backup] %s\n", backupDir)
+	}
+	applied := 0
+	for _, action := range plan.Actions {
+		switch action.Kind {
+		case "create-dir":
+			targetPath, err := platform.SafeJoin(plan.TargetRoot, action.Target)
+			if err != nil {
+				return installRecoveryError(err, recoveryBackup, applied)
+			}
+			if err := os.MkdirAll(targetPath, 0o755); err != nil {
+				return installRecoveryError(err, recoveryBackup, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [create-dir] %s\n", action.Target)
+		case "copy", "update-managed":
+			if err := copyFile(filepath.Join(plan.SourceRoot, action.Source), plan.TargetRoot, action.Target); err != nil {
+				return installRecoveryError(err, recoveryBackup, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [%s] %s\n", action.Kind, action.Target)
+		case "skip", "backup":
+		}
+	}
+	if plan.Previous != nil && !hasContentMutation(plan.Actions) {
+		fmt.Fprintf(stdout, "- [skip] %s sin cambios\n", filepath.Join(".lufy-ai", "install-state.json"))
+		return nil
+	}
+	assetStates, err := buildAssetStates(plan)
+	if err != nil {
+		return installRecoveryError(err, recoveryBackup, applied)
+	}
+	st := state.New(plan.TargetRoot, plan.Previous, assetStates)
+	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
+		return installRecoveryError(err, recoveryBackup, applied)
+	}
+	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
+	return nil
+}
+
+func installRecoveryError(err error, recoveryBackup string, applied int) error {
+	if recoveryBackup == "" {
+		return err
+	}
+	return fmt.Errorf("install falló después de crear backup de recovery en %s; acciones aplicadas=%d: %w", recoveryBackup, applied, err)
+}
+
+func targetsForKind(actions []Action, kind string) []string {
+	var out []string
+	for _, action := range actions {
+		if action.Kind == kind {
+			out = append(out, action.Target)
+		}
+	}
+	return out
+}
+
+func hasContentMutation(actions []Action) bool {
+	for _, action := range actions {
+		if action.Kind == "copy" || action.Kind == "update-managed" {
+			return true
+		}
+	}
+	return false
+}
+
+func buildAssetStates(plan Plan) ([]state.AssetState, error) {
+	now := time.Now().UTC().Format(time.RFC3339)
+	lastAction := map[string]string{}
+	for _, action := range plan.Actions {
+		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "skip" {
+			lastAction[action.Target] = action.Kind
+		}
+	}
+	var out []state.AssetState
+	for _, asset := range plan.Catalog.Assets {
+		if asset.Kind != assets.KindFile {
+			continue
+		}
+		targetPath, err := platform.SafeJoin(plan.TargetRoot, asset.TargetRel)
+		if err != nil {
+			return nil, err
+		}
+		targetHash, err := assets.FileSHA256(targetPath)
+		if err != nil {
+			return nil, err
+		}
+		action := lastAction[asset.TargetRel]
+		if action == "" {
+			action = "record"
+		}
+		out = append(out, state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, InstalledAt: now, LastAction: action})
+	}
+	return out, nil
+}
+
+func copyFile(src, targetRoot, targetRel string) error {
+	if info, err := os.Lstat(src); err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("source no es archivo regular seguro: %s", src)
+	}
+	dst, err := platform.SafeJoin(targetRoot, targetRel)
+	if err != nil {
+		return err
+	}
+	if info, err := os.Lstat(dst); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return fmt.Errorf("destino symlink no permitido: %s", dst)
+	}
+	content, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(dst, content, 0o644)
+}
+
+func parentDirs(path string) []string {
+	var dirs []string
+	for dir := filepath.Dir(path); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		dirs = append(dirs, dir)
+	}
+	return dirs
+}
+
+func dirExists(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.IsDir() && info.Mode()&os.ModeSymlink == 0
+}
+
+func shortHash(hash string) string {
+	if len(hash) <= 12 {
+		return hash
+	}
+	return hash[:12]
 }
