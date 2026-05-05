@@ -261,6 +261,7 @@ function SubAgentsSection(props: {
   totalTokens: AgentUsage['tokens'];
 }) {
   const [focusedAgentID, setFocusedAgentID] = createSignal<string | undefined>(undefined);
+  const [collapsedAgentIDs, setCollapsedAgentIDs] = createSignal<ReadonlySet<string>>(new Set());
   const busy = createMemo(() => props.agents.filter(agent => agent.state === 'busy').length);
   const done = createMemo(() => props.agents.filter(agent => agent.state === 'done').length);
   const errored = createMemo(() => props.agents.filter(agent => agent.state === 'error').length);
@@ -274,8 +275,56 @@ function SubAgentsSection(props: {
   }));
   const visibleAgents = createMemo(() => [...props.agents].sort(sortAgentsByRelevance).slice(0, VISIBLE_SUBAGENTS));
   const hiddenAgents = createMemo(() => Math.max(0, props.agents.length - visibleAgents().length));
-  const isAgentExpanded = (agent: AgentUsage) => focusedAgentID() ? focusedAgentID() === agent.sessionID : agent.state === 'busy' || agent.state === 'error';
-  const toggleAgent = (agent: AgentUsage) => setFocusedAgentID(current => current === agent.sessionID ? undefined : agent.sessionID);
+  const shouldAutoExpandAgent = (agent: AgentUsage) => agent.state === 'busy' || agent.state === 'error';
+  const isAgentExpanded = (agent: AgentUsage) => {
+    const focused = focusedAgentID();
+    if (focused) return focused === agent.sessionID;
+    if (collapsedAgentIDs().has(agent.sessionID)) return false;
+    return shouldAutoExpandAgent(agent);
+  };
+  const setAgentCollapsed = (sessionID: string, collapsed: boolean) => {
+    setCollapsedAgentIDs((current) => {
+      const next = new Set(current);
+      if (collapsed) next.add(sessionID);
+      else next.delete(sessionID);
+      return next;
+    });
+  };
+  const toggleAgent = (agent: AgentUsage) => {
+    const focused = focusedAgentID();
+    const autoExpanded = shouldAutoExpandAgent(agent);
+    const manuallyCollapsed = collapsedAgentIDs().has(agent.sessionID);
+
+    if (focused === agent.sessionID) {
+      setFocusedAgentID(undefined);
+      setAgentCollapsed(agent.sessionID, autoExpanded);
+      return;
+    }
+
+    if (focused) {
+      setAgentCollapsed(agent.sessionID, false);
+      setFocusedAgentID(agent.sessionID);
+      return;
+    }
+
+    if (autoExpanded && !manuallyCollapsed) {
+      setAgentCollapsed(agent.sessionID, true);
+      return;
+    }
+
+    setAgentCollapsed(agent.sessionID, false);
+    setFocusedAgentID(autoExpanded ? undefined : agent.sessionID);
+  };
+
+  createEffect(() => {
+    const currentIDs = new Set(props.agents.map(agent => agent.sessionID));
+    const focused = focusedAgentID();
+    if (focused && !currentIDs.has(focused)) setFocusedAgentID(undefined);
+    setCollapsedAgentIDs((current) => {
+      const next = new Set([...current].filter(sessionID => currentIDs.has(sessionID)));
+      return next.size === current.size ? current : next;
+    });
+  });
 
   return (
     <box flexDirection="column" paddingTop={1} gap={0}>
