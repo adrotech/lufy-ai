@@ -1,5 +1,9 @@
 # lufy-ai
 
+<p align="center">
+  <img src="docs/assets/lufy-ai-logo.svg" alt="lufy-ai logo" width="760">
+</p>
+
 Kit de flujo AI-first para proyectos con OpenCode, OpenSpec, agentes especializados, reglas de delivery y observabilidad local.
 
 ## Qué entrega realmente este repositorio
