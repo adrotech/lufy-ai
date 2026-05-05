@@ -13,10 +13,12 @@ CLI Go del instalador de `lufy-ai`, ubicada en carpeta dedicada para separar run
 tools/lufy-cli-go/
   cmd/lufy-ai/main.go        # entrypoint delgado
   internal/cli/              # parser/dispatch y códigos de salida
-  internal/installer/        # plan y ejecución de install (slice inicial real)
-  internal/platform/         # resolución portable (target, engram)
-  internal/backup/           # backup/restore mínimo con manifest.json
-  internal/verify/           # verify mínimo de estado instalado
+  internal/assets/           # catálogo de assets gestionados y hashing SHA-256
+  internal/installer/        # plan y ejecución idempotente de install
+  internal/platform/         # resolución portable (source, target, engram)
+  internal/state/            # .lufy-ai/install-state.json versionado
+  internal/backup/           # backup/restore multiasset con manifest.json
+  internal/verify/           # verify estructural de manifest y hashes
   internal/config/           # placeholder
 ```
 
@@ -77,14 +79,16 @@ cd ../..
 
 - Implementado parser base con comandos `install`, `verify`, `backup` y `restore`.
 - `install --dry-run` construye plan e imprime resultado sin mutaciones.
-- `install` real (mínimo) crea `.lufy-ai/install-state.json` y crea `AGENTS.md` desde `AGENTS.md.template` cuando falta; en segunda ejecución reporta `skip` (idempotencia básica demostrable).
+- `install` real copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base), escribe `.lufy-ai/install-state.json` con hashes SHA-256 y en segunda ejecución reporta `skip` sin reescribir archivos ni estado.
+- Si un archivo gestionado cambió upstream y el target no tiene drift local, `install` crea backup bajo `.lufy-ai/backups/<timestamp>/` antes de `update-managed`.
+- Si un archivo existe sin estado previo o su hash actual no coincide con el último hash gestionado, `install` reporta `conflict` y no sobrescribe aunque `--yes` esté presente.
 - Resolución de Engram portable por `PATH` (`exec.LookPath("engram")`), sin hardcode de `/opt/homebrew/bin/engram`.
-- `verify` mínimo valida `install-state.json` parseable y reporta estado de Engram.
-- `backup`/`restore` mínimos crean backup con `manifest.json`, soportan restore dry-run y restore real para archivos respaldados.
+- `verify` valida `install-state.json`, assets clave, existencia y hashes de assets listados; reporta Engram como warning no bloqueante u omitido con `--no-engram`.
+- `backup`/`restore` respaldan múltiples assets gestionados con `manifest.json`, hashes, tamaño, timestamp y validación de `targetRoot`.
+- Antes de un `restore` real que sobrescribe archivos existentes, la CLI crea un backup de recovery `pre-restore-recovery`; si la restauración falla parcialmente, el error incluye la ruta de ese backup.
+- `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
+- Las escrituras rechazan paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
 
 ## Próximos pasos
 
-1. Expandir instalación real a assets gestionados completos (`.opencode/...`, `tui.json`, etc.).
-2. Endurecer idempotencia por contenido/hash y no solo por existencia.
-3. Endurecer backup/restore con hashes por archivo y cobertura de más paths gestionados.
-4. Implementar merge conservador de `opencode.json`.
+1. Implementar merge conservador de `opencode.json` si se decide incluirlo como asset gestionado futuro.
