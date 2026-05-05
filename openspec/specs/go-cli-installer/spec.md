@@ -1,5 +1,6 @@
+## Purpose
+Definir la CLI Go `lufy-ai` como motor portable de instalación, verificación, backup, restore y sync del kit OpenCode/OpenSpec, manteniendo `scripts/install.sh` como wrapper estricto sin fallback legacy.
 ## Requirements
-
 ### Requirement: CLI Go instalable
 El sistema SHALL proveer una CLI Go llamada `lufy-ai` como motor de instalación progresiva del kit OpenCode/OpenSpec.
 
@@ -12,7 +13,7 @@ El sistema SHALL proveer una CLI Go llamada `lufy-ai` como motor de instalación
 - **THEN** delega la lógica de negocio a paquetes internos en vez de implementar instalación completa dentro de `main.go`
 
 ### Requirement: Comandos base de instalación
-La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup` y `restore` antes de añadir comandos posteriores como `sync` o `update`.
+La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup`, `restore` y `sync` antes de añadir comandos posteriores como `update`.
 
 #### Scenario: Install con flags mínimos
 - **WHEN** el usuario ejecuta `lufy-ai install --target . --dry-run --yes --no-engram`
@@ -29,6 +30,10 @@ La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup` y 
 #### Scenario: Restore desde manifest
 - **WHEN** el usuario ejecuta `lufy-ai restore --target <dir> --backup <manifest-or-dir>`
 - **THEN** la CLI valida el manifest y restaura los archivos registrados de forma controlada
+
+#### Scenario: Sync de assets gestionados
+- **WHEN** el usuario ejecuta `lufy-ai sync --target <dir> --dry-run --yes --no-engram`
+- **THEN** la CLI construye un plan de sincronización de assets gestionados para el target actual, omite Engram y no escribe archivos por estar en dry-run
 
 ### Requirement: Flags y defaults seguros
 La CLI SHALL soportar `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backup` con defaults seguros que minimicen escrituras inesperadas y prompts ambiguos.
@@ -52,6 +57,10 @@ La CLI SHALL soportar `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backu
 #### Scenario: Flag inválido
 - **WHEN** el usuario pasa un flag desconocido a cualquier comando
 - **THEN** la CLI falla con exit code distinto de cero y muestra ayuda breve del comando
+
+#### Scenario: Sync comparte flags seguros
+- **WHEN** el usuario ejecuta `lufy-ai sync` con `--target`, `--dry-run`, `--yes` o `--no-engram`
+- **THEN** la CLI aplica los mismos defaults seguros y semántica de flags definidos para comandos de instalación gestionada
 
 ### Requirement: Plan de instalación antes de escribir
 El comando `install` SHALL construir un plan explícito antes de modificar el filesystem.
@@ -148,7 +157,7 @@ La CLI SHALL resolver Engram de forma portable con `exec.LookPath("engram")` o a
 - **THEN** no descarga ni ejecuta binarios remotos sin mecanismo explícito de integridad y autorización
 
 ### Requirement: Validación por fases
-La implementación SHALL incluir validación incremental con comandos reales disponibles después de introducir el toolchain Go.
+La implementación SHALL incluir validación incremental con comandos reales disponibles después de introducir el toolchain Go, y SHALL ser ejecutable tanto localmente como desde CI mínima.
 
 #### Scenario: Validación Go disponible
 - **WHEN** existen `tools/lufy-cli-go/go.mod` y paquetes Go
@@ -160,4 +169,38 @@ La implementación SHALL incluir validación incremental con comandos reales dis
 
 #### Scenario: Verify tras instalación temporal
 - **WHEN** una instalación real se ejecuta en un directorio temporal de prueba
+- **THEN** `lufy-ai verify --target <temp>` valida el resultado sin depender de modificar el repositorio fuente
+
+#### Scenario: Validación automática en CI
+- **WHEN** se ejecuta el workflow de CI mínima del instalador Go
+- **THEN** la validación incluye tests, build y smoke temporal de install/verify/idempotencia/backup/restore con `--no-engram`
+
+### Requirement: Comando sync de CLI Go
+La CLI Go SHALL exponer `lufy-ai sync` como comando para sincronizar assets gestionados de forma segura en un target existente.
+
+#### Scenario: Help incluye sync
+- **WHEN** el usuario solicita ayuda de la CLI o del comando `sync`
+- **THEN** la salida describe `sync`, sus flags soportados y que opera sobre assets gestionados con manifest/hash/backup
+
+#### Scenario: Sync delega fuera de main
+- **WHEN** `cmd/lufy-ai/main.go` recibe el comando `sync`
+- **THEN** delega la lógica de negocio a paquetes internos en vez de implementar planificación o copia completa dentro de `main.go`
+
+#### Scenario: Wrapper Bash no cambia para sync
+- **WHEN** se inspecciona `scripts/install.sh` después de añadir `sync`
+- **THEN** permanece como wrapper estricto de `lufy-ai install` y no contiene lógica propia ni fallback legacy para sincronizar assets
+
+### Requirement: Validación de sync en CLI Go
+La implementación SHALL incluir validación real del comando `sync` usando comandos disponibles del toolchain Go y pruebas de filesystem confinadas a directorios temporales.
+
+#### Scenario: Validación Go de sync disponible
+- **WHEN** existen `tools/lufy-cli-go/go.mod` y paquetes Go con el comando `sync`
+- **THEN** el implementador puede ejecutar `go test ./...` y `go build ./cmd/lufy-ai` desde `tools/lufy-cli-go/` como validación mínima
+
+#### Scenario: Sync dry-run en temp dir
+- **WHEN** el binario Go compila
+- **THEN** el implementador puede ejecutar `lufy-ai sync --target <temp> --dry-run` y confirmar que no se escriben archivos de sincronización
+
+#### Scenario: Verify tras sync temporal
+- **WHEN** una instalación temporal y un sync real se ejecutan en un directorio temporal de prueba
 - **THEN** `lufy-ai verify --target <temp>` valida el resultado sin depender de modificar el repositorio fuente
