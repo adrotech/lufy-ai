@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="520" viewBox="0 0 1440 520" role="img" aria-labelledby="title desc">
+  <title id="title">lufy-ai</title>
+  <desc id="desc">A refined lufy-ai repository banner with an original straw hat compass mark and a clean AI workflow wordmark.</desc>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#07111f"/>
+      <stop offset="48%" stop-color="#0f2537"/>
+      <stop offset="100%" stop-color="#123129"/>
+    </linearGradient>
+    <linearGradient id="horizon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="50%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="straw" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff1a8"/>
+      <stop offset="43%" stop-color="#f7c948"/>
+      <stop offset="100%" stop-color="#c77710"/>
+    </linearGradient>
+    <linearGradient id="strawDeep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f9d467"/>
+      <stop offset="100%" stop-color="#9a4d0a"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff7db"/>
+      <stop offset="100%" stop-color="#f6c453"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="35%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.28"/>
+      <stop offset="48%" stop-color="#14b8a6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="30" stdDeviation="26" flood-color="#020617" flood-opacity="0.34"/>
+    </filter>
+    <filter id="hatShadow" x="-20%" y="-25%" width="140%" height="155%">
+      <feDropShadow dx="0" dy="18" stdDeviation="14" flood-color="#020617" flood-opacity="0.32"/>
+    </filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.06"/>
+    </pattern>
+  </defs>
+
+  <rect width="1440" height="520" rx="42" fill="url(#night)"/>
+  <rect width="1440" height="520" rx="42" fill="url(#glow)"/>
+  <rect x="24" y="24" width="1392" height="472" rx="32" fill="url(#grid)"/>
+
+  <g fill="none" stroke-linecap="round">
+    <path d="M86 364C210 281 323 366 455 301C593 232 720 201 870 255C1026 311 1178 302 1352 184" stroke="#94a3b8" stroke-width="2" stroke-dasharray="7 15" opacity="0.28"/>
+    <path d="M100 158C226 218 332 96 480 140C626 184 720 273 882 188C1036 107 1178 111 1320 162" stroke="#64748b" stroke-width="2" stroke-dasharray="5 13" opacity="0.32"/>
+    <path d="M111 421C240 381 327 425 452 371C541 333 623 337 707 372" stroke="#2dd4bf" stroke-width="3" opacity="0.18"/>
+  </g>
+
+  <g transform="translate(118 92)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="336" height="336" rx="76" fill="#f8fafc" opacity="0.98"/>
+    <rect x="20" y="20" width="296" height="296" rx="60" fill="#0f172a"/>
+    <circle cx="168" cy="168" r="108" fill="#111c2e" stroke="#254056" stroke-width="2"/>
+    <circle cx="168" cy="168" r="76" fill="#0b1220" stroke="#2a4a66" stroke-width="2"/>
+
+    <g transform="translate(168 171)" filter="url(#hatShadow)">
+      <path d="M-128 46C-86 9-34-6 20-1C74 4 111 25 130 55C85 73 38 80-9 77C-56 74-96 63-128 46Z" fill="url(#strawDeep)" stroke="#5f2f0a" stroke-width="3"/>
+      <path d="M-76 25C-51-52 47-54 79 26C40 13-37 13-76 25Z" fill="url(#straw)" stroke="#5f2f0a" stroke-width="3"/>
+      <path d="M-72 28C-29 43 31 43 75 25" fill="none" stroke="#b91c1c" stroke-width="15" stroke-linecap="round"/>
+      <g opacity="0.48" stroke="#7c3d0a" stroke-width="2" stroke-linecap="round">
+        <path d="M-102 44C-52 56-6 58 50 52"/>
+        <path d="M-43-30C-54-6-58 11-58 29"/>
+        <path d="M0-41C-2-11-1 11 5 33"/>
+        <path d="M43-29C55-5 61 12 62 30"/>
+      </g>
+    </g>
+
+    <g transform="translate(168 170)">
+      <path d="M0-98L17-31L76-57L33-13L98 0L33 13L76 57L17 31L0 98L-17 31L-76 57L-33 13L-98 0L-33-13L-76-57L-17-31Z" fill="#f8fafc" stroke="#020617" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M0-72L12-23L56-42L25-9L72 0L25 9L56 42L12 23L0 72L-12 23L-56 42L-25 9L-72 0L-25-9L-56-42L-12-23Z" fill="url(#horizon)" opacity="0.2"/>
+      <path d="M0-98L17-31L0-43L-17-31Z" fill="#38bdf8"/>
+      <path d="M98 0L33 13L44 0L33-13Z" fill="#14b8a6"/>
+      <path d="M0 98L-17 31L0 43L17 31Z" fill="#f59e0b"/>
+      <path d="M-98 0L-33-13L-44 0L-33 13Z" fill="#14b8a6"/>
+      <circle r="36" fill="#07111f" stroke="#f8fafc" stroke-width="6"/>
+      <circle r="15" fill="none" stroke="#f8fafc" stroke-width="5"/>
+      <circle r="5" fill="#f59e0b"/>
+    </g>
+
+    <g filter="url(#hatShadow)">
+      <circle cx="168" cy="63" r="22" fill="#38bdf8"/>
+      <circle cx="274" cy="170" r="22" fill="#14b8a6"/>
+      <circle cx="168" cy="276" r="22" fill="#f59e0b"/>
+      <circle cx="62" cy="170" r="22" fill="#14b8a6"/>
+    </g>
+    <g fill="#07111f" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="15" font-weight="900" text-anchor="middle">
+      <text x="168" y="69">E</text>
+      <text x="274" y="176">A</text>
+      <text x="168" y="282">D</text>
+      <text x="62" y="176">V</text>
+    </g>
+  </g>
+
+  <g transform="translate(520 122)">
+    <text x="0" y="78" fill="#f8fafc" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="88" font-weight="850" letter-spacing="0">lufy-ai</text>
+    <text x="4" y="126" fill="#cbd5e1" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="26" font-weight="650" letter-spacing="0">tripulacion de agentes para navegar cambios de software</text>
+    <rect x="4" y="154" width="660" height="6" rx="3" fill="url(#horizon)"/>
+
+    <g transform="translate(4 198)" font-family="Avenir Next, Manrope, Segoe UI, sans-serif">
+      <rect x="0" y="0" width="692" height="80" rx="24" fill="#f8fafc" opacity="0.96"/>
+      <path d="M38 40H650" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="6 12"/>
+      <g fill="#0f172a">
+        <circle cx="24" cy="40" r="6"/>
+        <circle cx="178" cy="40" r="6"/>
+        <circle cx="348" cy="40" r="6"/>
+        <circle cx="496" cy="40" r="6"/>
+        <circle cx="664" cy="40" r="6"/>
+      </g>
+      <g font-size="19" font-weight="900">
+        <text x="39" y="47" fill="#0f766e">explore</text>
+        <text x="193" y="47" fill="#2563eb">propose</text>
+        <text x="363" y="47" fill="#0f172a">apply</text>
+        <text x="511" y="47" fill="#b45309">verify</text>
+        <text x="592" y="47" fill="#b45309">deliver</text>
+      </g>
+    </g>
+
+    <g transform="translate(4 312)" font-family="Avenir Next, Manrope, Segoe UI, sans-serif" font-size="18" font-weight="850">
+      <rect x="0" y="-28" width="138" height="42" rx="14" fill="#0f766e"/>
+      <rect x="154" y="-28" width="138" height="42" rx="14" fill="#2563eb"/>
+      <rect x="308" y="-28" width="138" height="42" rx="14" fill="#d97706"/>
+      <text x="21" y="-2" fill="#ecfeff">OpenSpec</text>
+      <text x="181" y="-2" fill="#eff6ff">Subagents</text>
+      <text x="342" y="-2" fill="#fff7ed">Delivery</text>
+    </g>
+  </g>
+
+  <g transform="translate(1218 98)" opacity="0.82">
+    <circle cx="54" cy="54" r="46" fill="#0b1220" stroke="#26435f" stroke-width="2"/>
+    <path d="M54 17L65 54L54 91L43 54Z" fill="#f8fafc"/>
+    <path d="M17 54L54 43L91 54L54 65Z" fill="#14b8a6"/>
+    <circle cx="54" cy="54" r="8" fill="#f59e0b"/>
+    <path d="M-8 222C31 186 82 189 124 224" fill="none" stroke="url(#horizon)" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="-8" cy="222" r="10" fill="#14b8a6"/>
+    <circle cx="124" cy="224" r="10" fill="#38bdf8"/>
+  </g>
+</svg>
