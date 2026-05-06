@@ -11,6 +11,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
+- **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
 
 ## Estructura relevante
 
@@ -74,8 +75,12 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 ## Política de delivery
 
 - Consultar `.opencode/policies/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
+- PR normal: ramas `feature/*`, `fix/*`, `chore/*` o equivalentes → `develop`.
+- Promoción productiva: `develop` → `main` con autorización y evidencia de validación.
+- `main` no es base de trabajo diario; se reserva para producción, release y hotfix explícitamente autorizado.
+- Tags de release estable: `v*` creados desde commits alcanzables desde `origin/main`; no publicar releases desde `develop` sin promoción.
 - No hacer commit, push, PR ni actualizar GitHub Projects sin autorización explícita del usuario y rol `delivery`.
-- No crear PR desde `development`, `develop`, `main` o `master`.
+- No crear PR desde ramas protegidas como `develop`, `main`, `master` o `development`, salvo promoción `develop` → `main` explícitamente autorizada.
 - Nunca usar force push salvo solicitud explícita.
 
 ## Formato de reporte
