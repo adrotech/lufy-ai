@@ -19,6 +19,7 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 - **Documentación honesta**: documentar solo templates y assets que realmente se instalan.
 - **Evolución incremental**: productizar como CLI queda para una fase futura, no como prioridad inmediata.
 - **Migración compatible de Bash a Go**: Bash queda como wrapper estricto de compatibilidad que delega en `lufy-ai install`, sin fallback legacy.
+- **Release estable desde producción**: integrar trabajo en `develop`, promover a `main` y publicar releases estables solo desde tags `v*` sobre commits alcanzables desde `main`.
 
 ## Estado instalable vs roadmap
 
@@ -31,8 +32,15 @@ Estado actual documentable:
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
-- Distribución versionada implementada en la rama: `lufy-ai version`, artifacts release por OS/arch, checksums SHA-256, bootstrap `scripts/bootstrap.sh` y assets embebidos para instalar sin checkout fuente. Las releases públicas instalables dependen de publicar tags `v*` y sus artifacts en GitHub Releases; antes de que exista un tag publicado, el bootstrap solo funciona contra fixtures/local mirrors o fallará al intentar descargar la release inexistente.
+- Distribución versionada implementada en la rama: `lufy-ai version`, artifacts release por OS/arch, checksums SHA-256, bootstrap `scripts/bootstrap.sh` y assets embebidos para instalar sin checkout fuente. Las releases públicas instalables dependen de publicar tags `v*` desde commits alcanzables desde `main` y sus artifacts en GitHub Releases; antes de que exista un tag publicado, el bootstrap solo funciona contra fixtures/local mirrors o fallará al intentar descargar la release inexistente.
 - README, `docs/getting-started.md` y README de la CLI ya describen el flujo sin clone con pinning/inspección, sujeto a que exista la release pública taggeada correspondiente.
+
+Flujo operativo de ramas/release:
+
+- `develop`: base normal de PRs y rama de integración diaria.
+- `main`: rama productiva/estable, actualizada por promoción `develop` → `main` o hotfix explícito.
+- `v*`: tags de release estable creados después de la promoción, sobre commits alcanzables desde `origin/main`.
+- Settings remotos esperados: default branch `develop` y protecciones para `develop`/`main`; ver [`docs/github-branch-settings.md`](github-branch-settings.md).
 
 No son capacidades instalables actuales:
 

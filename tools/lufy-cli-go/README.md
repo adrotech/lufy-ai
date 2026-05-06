@@ -46,8 +46,10 @@ La CLI puede compilarse como artifact standalone con assets gestionados embebido
 
 El flujo de publicación está preparado en `.github/workflows/release.yml` y requiere un contexto autorizado:
 
-- tags `v*` construyen artifacts versionados y pueden publicar GitHub Release;
-- `workflow_dispatch` valida artifacts con una versión indicada, pero solo publica si corre sobre un ref de tag `v*` y se solicita `publish`;
+- `develop` es la rama normal de integración para cambios de la CLI;
+- `main` es la rama estable/productiva y recibe promociones desde `develop`;
+- tags `v*` creados sobre commits alcanzables desde `origin/main` construyen artifacts versionados y pueden publicar GitHub Release;
+- tags `v*` sobre commits no promovidos a `main` fallan antes de publicar assets;
 - mientras no exista un tag/release `v*`, no hay release pública consumible por usuarios.
 
 Scripts relacionados:
@@ -142,9 +144,9 @@ El smoke de CLI cubre:
 - Merge conservador de `opencode.json`, preservando configuración local y excluyéndolo del estado por hash completo.
 - `backup`, `restore --dry-run --yes`, restore real con `--yes` y errores accionables cuando `install`/`restore` se ejecutan sin `--yes` ante mutaciones reales.
 
-El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el set mínimo histórico: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`.
+El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el set mínimo en PRs/pushes a `develop` y `main`: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`.
 
-El workflow `.github/workflows/release.yml` agrega el gate de artifacts versionados: tests Go, build, artifacts/checksums, smoke release, smoke bootstrap, verificación de checksums y publicación de assets solo desde tag `v*` autorizado.
+El workflow `.github/workflows/release.yml` agrega el gate de artifacts versionados: tests Go, build, artifacts/checksums, smoke release, smoke bootstrap, verificación de checksums y publicación de assets solo desde tag `v*` autorizado y alcanzable desde `origin/main`.
 
 `shellcheck scripts/install.sh` es una validación útil cuando `shellcheck` existe localmente, pero no forma parte de este gate mínimo inicial para no añadir una dependencia extra al runner; el wrapper queda cubierto funcionalmente por `tools/lufy-cli-go/scripts/smoke-wrapper.sh`.
 
@@ -185,7 +187,7 @@ cd ../..
 - `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
 - Las escrituras rechazan paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
 - Los artifacts standalone pueden instalar assets embebidos cuando no se encuentra un checkout fuente válido; el checkout fuente ahora requiere el marcador adicional `tools/lufy-cli-go/go.mod` para evitar falsos positivos en repositorios destino ya instalados.
-- La publicación pública requiere crear un tag `v*`; esta rama no implica que exista ya una release publicada.
+- La publicación pública requiere promover a `main` y crear un tag `v*` sobre un commit alcanzable desde `origin/main`; esta rama no implica que exista ya una release publicada.
 
 ## Próximos pasos
 

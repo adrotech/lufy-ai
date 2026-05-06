@@ -13,8 +13,12 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 ## Branch And PR Rules
 
-- Protected PR source branches: `development`, `main`, `master`.
-- Default PR base: `development`.
+- Normal integration branch and default PR base: `develop`.
+- Productive/stable branch: `main`; use it only for `develop` → `main` promotion, release, or explicitly authorized hotfix work.
+- Normal work opens PRs from feature/fix/chore branches to `develop`.
+- Promotion to production opens a PR from `develop` to `main` with release/promotion validation evidence.
+- Stable release tags MUST match `v*` and be created from commits reachable from `origin/main`; do not tag unpromoted `develop` commits for stable releases.
+- Protected PR source branches: `develop`, `main`, `master`, `development`.
 - Never force push unless the user explicitly requests it.
 - Report dirty or mixed worktrees before staging.
 - With explicit delivery authorization, `delivery` can run `git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, and `gh` without intermediate prompts.

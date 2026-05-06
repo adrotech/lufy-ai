@@ -4,17 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Versión a construir para validación manual (ej: v0.0.0-smoke)'
-        required: true
-        default: 'v0.0.0-smoke'
-      publish:
-        description: 'Publicar GitHub Release; solo válido para refs/tags/v*'
-        required: true
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -29,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Go from go.mod
         uses: actions/setup-go@v5
@@ -39,18 +30,31 @@ jobs:
       - name: Resolve release metadata
         id: meta
         run: |
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            version="${GITHUB_REF_NAME}"
-          else
-            version="${{ inputs.version }}"
+          if [[ "${GITHUB_REF_TYPE}" != "tag" || ! "${GITHUB_REF_NAME}" =~ ^v ]]; then
+            echo "release solo permitido desde tags v*: ${GITHUB_REF}" >&2
+            exit 2
           fi
+          version="${GITHUB_REF_NAME}"
           if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
             echo "version inválida: $version" >&2
             exit 2
           fi
+          release_commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "commit=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          echo "commit=${release_commit::12}" >> "$GITHUB_OUTPUT"
+          echo "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
           echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Guard tag is reachable from main
+        env:
+          RELEASE_COMMIT: ${{ steps.meta.outputs.release_commit }}
+        run: |
+          git fetch --no-tags --prune origin main
+          if ! git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main; then
+            echo "tag ${GITHUB_REF_NAME} apunta a $RELEASE_COMMIT, que no es alcanzable desde origin/main" >&2
+            echo "Promueve develop -> main antes de publicar un release estable." >&2
+            exit 2
+          fi
 
       - name: Go tests
         working-directory: tools/lufy-cli-go
@@ -91,7 +95,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release assets
-        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && (github.event_name == 'push' || inputs.publish == true)
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}

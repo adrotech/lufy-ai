@@ -2,23 +2,30 @@ name: Go CLI install
 
 on:
   pull_request:
+    branches:
+      - develop
+      - main
     paths:
       - ".github/workflows/go-cli-install.yml"
+      - ".github/workflows/release.yml"
       - "scripts/install.sh"
       - "tools/lufy-cli-go/**"
+      - "README.md"
+      - "docs/**"
       - "AGENTS.md"
       - ".opencode/**"
       - "openspec/**"
   push:
     branches:
       - main
-      - master
-      - development
       - develop
     paths:
       - ".github/workflows/go-cli-install.yml"
+      - ".github/workflows/release.yml"
       - "scripts/install.sh"
       - "tools/lufy-cli-go/**"
+      - "README.md"
+      - "docs/**"
       - "AGENTS.md"
       - ".opencode/**"
       - "openspec/**"
