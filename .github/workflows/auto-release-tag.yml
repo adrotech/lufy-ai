@@ -1,0 +1,115 @@
+name: auto-release-tag
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: auto-release-tag-main
+  cancel-in-progress: false
+
+jobs:
+  tag-release:
+    name: Create automatic release tag
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve target and next tag
+        id: release-tag
+        env:
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ -z "$MERGE_COMMIT_SHA" ]]; then
+            echo "No se recibió merge_commit_sha para el PR #${PR_NUMBER}" >&2
+            exit 2
+          fi
+
+          git fetch --prune --tags origin
+          git fetch --no-tags --prune origin main:refs/remotes/origin/main
+
+          if ! git cat-file -e "${MERGE_COMMIT_SHA}^{commit}"; then
+            echo "merge_commit_sha no resuelve a un commit: ${MERGE_COMMIT_SHA}" >&2
+            exit 2
+          fi
+
+          if ! git merge-base --is-ancestor "$MERGE_COMMIT_SHA" origin/main; then
+            echo "El merge commit ${MERGE_COMMIT_SHA} no es alcanzable desde origin/main; no se creará tag estable." >&2
+            exit 2
+          fi
+
+          latest_tag="$({
+            for tag in $(git tag --list 'v*'); do
+              if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                printf '%s\n' "$tag"
+              fi
+            done
+          } | sort -V | tail -n 1)"
+
+          if [[ -z "$latest_tag" ]]; then
+            next_tag="v0.1.0"
+          else
+            version="${latest_tag#v}"
+            IFS='.' read -r major minor patch <<< "$version"
+            next_tag="v${major}.${minor}.$((patch + 1))"
+          fi
+
+          echo "merge_commit_sha=$MERGE_COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
+          echo "Siguiente tag calculado: ${next_tag} (último tag simple: ${latest_tag:-ninguno})"
+
+      - name: Create and push annotated tag
+        id: create-tag
+        env:
+          MERGE_COMMIT_SHA: ${{ steps.release-tag.outputs.merge_commit_sha }}
+          NEXT_TAG: ${{ steps.release-tag.outputs.next_tag }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/${NEXT_TAG}" >/dev/null; then
+            echo "No-op: el tag calculado ${NEXT_TAG} ya existe localmente; no se sobrescribe."
+            echo "tag_created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${NEXT_TAG}" >/dev/null 2>&1; then
+            echo "No-op: el tag calculado ${NEXT_TAG} ya existe en origin; no se sobrescribe."
+            echo "tag_created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$NEXT_TAG" "$MERGE_COMMIT_SHA" \
+            -m "Release automático ${NEXT_TAG}" \
+            -m "Creado al mergear PR #${PR_NUMBER}: ${PR_TITLE}" \
+            -m "Merge commit: ${MERGE_COMMIT_SHA}"
+
+          git push origin "refs/tags/${NEXT_TAG}"
+          echo "tag_created=true" >> "$GITHUB_OUTPUT"
+          echo "Tag anotado ${NEXT_TAG} creado sobre ${MERGE_COMMIT_SHA} y pusheado a origin."
+
+      - name: Dispatch release workflow for created tag
+        if: steps.create-tag.outputs.tag_created == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT_TAG: ${{ steps.release-tag.outputs.next_tag }}
+        run: |
+          gh workflow run release.yml --ref "$NEXT_TAG" --field "tag=$NEXT_TAG"
+          echo "Workflow release.yml invocado explícitamente para ${NEXT_TAG}."
