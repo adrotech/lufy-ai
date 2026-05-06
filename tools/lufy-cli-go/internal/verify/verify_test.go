@@ -13,15 +13,13 @@ import (
 
 func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	target := t.TempDir()
-	for _, rel := range requiredAssets {
-		content := rel + "\n"
-		if rel == filepath.Join(".opencode", "package.json") {
-			content = "{}\n"
-		}
+	writeVerifyDirs(t, target)
+	for _, rel := range requiredManagedFiles {
+		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(target, rel), content)
 	}
 	var states []state.AssetState
-	for _, rel := range requiredAssets {
+	for _, rel := range requiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -49,15 +47,51 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		t.Fatalf("drift output unexpected: %s", out.String())
 	}
 
-	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "commands", "opsx-apply.md"))); err != nil {
+	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "plugins", "agent-observatory.tsx"))); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
 	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
 		t.Fatalf("Run(missing) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta asset clave") {
+	if !strings.Contains(out.String(), "fail: falta archivo crítico") {
 		t.Fatalf("missing output unexpected: %s", out.String())
+	}
+}
+
+func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
+	target := t.TempDir()
+	writeVerifyDirs(t, target)
+	for _, rel := range requiredManagedFiles {
+		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
+	}
+	var states []state.AssetState
+	for _, rel := range requiredManagedFiles {
+		if rel == "tui.json" {
+			continue
+		}
+		hash, err := assets.FileSHA256(filepath.Join(target, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+	}
+	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "skills"))); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(invalid structure) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "skills")) {
+		t.Fatalf("missing directory output unexpected: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "fail: asset clave no está en manifest: tui.json") {
+		t.Fatalf("missing manifest output unexpected: %s", out.String())
 	}
 }
 
@@ -74,15 +108,13 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	}
 
 	actual := t.TempDir()
-	for _, rel := range requiredAssets {
-		content := rel + "\n"
-		if rel == filepath.Join(".opencode", "package.json") {
-			content = "{}\n"
-		}
+	writeVerifyDirs(t, actual)
+	for _, rel := range requiredManagedFiles {
+		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(actual, rel), content)
 	}
 	var states []state.AssetState
-	for _, rel := range requiredAssets {
+	for _, rel := range requiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(actual, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -99,6 +131,44 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	}
 }
 
+func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
+	target := t.TempDir()
+	writeVerifyDirs(t, target)
+	for _, rel := range requiredManagedFiles {
+		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
+	}
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), "tui.json\n")
+
+	var states []state.AssetState
+	for _, rel := range requiredManagedFiles {
+		hash, err := assets.FileSHA256(filepath.Join(target, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+	}
+	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(invalid tui.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "fail: JSON inválido en tui.json") {
+		t.Fatalf("invalid tui.json output unexpected: %s", out.String())
+	}
+}
+
+func writeVerifyDirs(t *testing.T, target string) {
+	t.Helper()
+	for _, rel := range requiredDirs {
+		if err := os.MkdirAll(filepath.Join(target, rel), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func writeVerifyFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -107,4 +177,11 @@ func writeVerifyFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func verifyFileContent(rel string) string {
+	if rel == "tui.json" {
+		return "{}\n"
+	}
+	return rel + "\n"
 }

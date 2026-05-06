@@ -24,13 +24,28 @@ func NewService() Service {
 	return Service{}
 }
 
-var requiredAssets = []string{
+var requiredDirs = []string{
+	filepath.Join(".opencode", "agents"),
+	filepath.Join(".opencode", "commands"),
+	filepath.Join(".opencode", "skills"),
+	filepath.Join(".opencode", "plugins"),
+	filepath.Join(".opencode", "policies"),
+}
+
+var requiredManagedFiles = []string{
 	"AGENTS.md",
-	filepath.Join(".opencode", "agents", "orchestrator.md"),
-	filepath.Join(".opencode", "commands", "opsx-apply.md"),
-	filepath.Join(".opencode", "package.json"),
+	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
 	filepath.Join("openspec", "config.yaml"),
+}
+
+var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
+
+var jsonValidationFiles = []string{
+	config.OpenCodeFile,
+	"tui.json",
+	filepath.Join(".opencode", "package.json"),
+	filepath.Join(".opencode", "package-lock.json"),
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
@@ -46,11 +61,23 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if st == nil {
 		return fmt.Errorf("fail: falta estado de instalación (%s)", state.Path(target))
 	}
+	failures := 0
+	for _, rel := range requiredStateFiles {
+		path, err := platform.SafeJoin(target, rel)
+		if err != nil {
+			return err
+		}
+		if !regularFile(path) {
+			fmt.Fprintf(stdout, "fail: falta archivo crítico: %s\n", rel)
+			failures++
+			continue
+		}
+		fmt.Fprintf(stdout, "ok: archivo crítico %s\n", rel)
+	}
 	if st.SourceChangeID != state.SourceChangeID {
 		fmt.Fprintf(stdout, "warn: sourceChangeID inesperado: %s\n", st.SourceChangeID)
 	}
-	failures := 0
-	for _, rel := range []string{config.OpenCodeFile, filepath.Join(".opencode", "package.json"), filepath.Join(".opencode", "package-lock.json")} {
+	for _, rel := range jsonValidationFiles {
 		status, err := validateJSONFile(target, rel)
 		if err != nil {
 			fmt.Fprintf(stdout, "fail: JSON inválido en %s: %s\n", rel, err.Error())
@@ -74,7 +101,26 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	fmt.Fprintf(stdout, "ok: install-state.json schema=%d assets=%d\n", st.SchemaVersion, len(st.Assets))
 
 	assetMap := st.AssetMap()
-	for _, required := range requiredAssets {
+	for _, required := range requiredDirs {
+		clean, err := platform.EnsureRelativeSafe(required)
+		if err != nil {
+			return err
+		}
+		path, err := platform.SafeJoin(target, clean)
+		if err != nil {
+			fmt.Fprintf(stdout, "fail: directorio crítico inseguro: %s (%s)\n", clean, err.Error())
+			failures++
+			continue
+		}
+		if !directory(path) {
+			fmt.Fprintf(stdout, "fail: falta directorio crítico: %s\n", clean)
+			failures++
+			continue
+		}
+		fmt.Fprintf(stdout, "ok: directorio crítico %s\n", clean)
+	}
+
+	for _, required := range requiredManagedFiles {
 		clean, err := platform.EnsureRelativeSafe(required)
 		if err != nil {
 			return err
@@ -82,7 +128,6 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		if _, ok := assetMap[clean]; !ok {
 			fmt.Fprintf(stdout, "fail: asset clave no está en manifest: %s\n", clean)
 			failures++
-			continue
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
@@ -91,9 +136,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			continue
 		}
 		if !regularFile(path) {
-			fmt.Fprintf(stdout, "fail: falta asset clave: %s\n", clean)
+			fmt.Fprintf(stdout, "fail: falta archivo crítico: %s\n", clean)
 			failures++
+			continue
 		}
+		fmt.Fprintf(stdout, "ok: archivo crítico %s\n", clean)
 	}
 
 	for _, asset := range st.Assets {
@@ -142,6 +189,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 func regularFile(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
+}
+
+func directory(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.IsDir() && info.Mode()&os.ModeSymlink == 0
 }
 
 func validateJSONFile(target, rel string) (string, error) {

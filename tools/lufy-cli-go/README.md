@@ -44,7 +44,7 @@ La CLI expone estos comandos en el slice actual:
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
 | `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256 y evita sobrescribir drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
-| `lufy-ai verify` | Valida estructura, `.lufy-ai/install-state.json`, existencia de assets y hashes registrados. | `--target`, `--no-engram` |
+| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados y hashes SHA-256 registrados. | `--target`, `--no-engram` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
@@ -53,7 +53,7 @@ No hay comandos de detección de stack ni instalación de templates por stack en
 
 ## Assets gestionados, SHA-256 e idempotencia
 
-`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
+`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
 
 - `skip`: el target ya coincide con el estado gestionado.
 - `create`: el asset gestionado aún no existe y puede crearse.
@@ -132,7 +132,7 @@ cd ../..
 - Si un archivo gestionado cambió upstream y el target no tiene drift local, `install` crea backup bajo `.lufy-ai/backups/<timestamp>/` antes de `update-managed`.
 - Si un archivo existe sin estado previo o su hash actual no coincide con el último hash gestionado, `install` reporta `conflict` y no sobrescribe aunque `--yes` esté presente.
 - Resolución de Engram portable por `PATH` (`exec.LookPath("engram")`), sin hardcode de `/opt/homebrew/bin/engram`.
-- `verify` valida `install-state.json`, assets clave, existencia y hashes de assets listados; reporta Engram como warning no bloqueante u omitido con `--no-engram`.
+- `verify` valida `install-state.json`, categorías críticas (`.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies`), archivos críticos (`.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml`), manifest y hashes de assets listados; reporta Engram como warning no bloqueante u omitido con `--no-engram`.
 - `backup`/`restore` respaldan múltiples assets gestionados con `manifest.json`, hashes, tamaño, timestamp y validación de `targetRoot`.
 - Antes de un `restore` real que sobrescribe archivos existentes, la CLI crea un backup de recovery `pre-restore-recovery`; si la restauración falla parcialmente, el error incluye la ruta de ese backup.
 - `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
