@@ -114,9 +114,14 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	}
 	sourceRoot, err := platform.ResolveSourceRoot("")
 	if err != nil {
-		return Plan{}, err
+		sourceRoot = assets.EmbeddedSourceRoot
 	}
-	catalog, err := assets.BuildCatalog(sourceRoot)
+	var catalog assets.Catalog
+	if sourceRoot == assets.EmbeddedSourceRoot {
+		catalog, err = assets.BuildEmbeddedCatalog()
+	} else {
+		catalog, err = assets.BuildCatalog(sourceRoot)
+	}
 	if err != nil {
 		return Plan{}, err
 	}
@@ -255,7 +260,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 			applied++
 			fmt.Fprintf(stdout, "- [mkdir] %s\n", action.Target)
 		case "copy", "update-managed":
-			if err := copyFile(filepath.Join(plan.SourceRoot, action.Source), plan.TargetRoot, action.Target); err != nil {
+			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return installRecoveryError(err, recoveryBackup, applied)
 			}
 			applied++
@@ -380,12 +385,27 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 	return out, nil
 }
 
-func copyFile(src, targetRoot, targetRel string) error {
-	if info, err := os.Lstat(src); err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
+	var content []byte
+	if sourceRoot == assets.EmbeddedSourceRoot {
+		var err error
+		content, err = assets.ReadSourceFile(sourceRoot, sourceRel)
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("source no es archivo regular seguro: %s", src)
+	} else {
+		src := filepath.Join(sourceRoot, sourceRel)
+		if info, err := os.Lstat(src); err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("source no es archivo regular seguro: %s", src)
+		}
+		var err error
+		content, err = os.ReadFile(src)
+		if err != nil {
+			return err
+		}
 	}
 	dst, err := platform.SafeJoin(targetRoot, targetRel)
 	if err != nil {
@@ -393,10 +413,6 @@ func copyFile(src, targetRoot, targetRel string) error {
 	}
 	if info, err := os.Lstat(dst); err == nil && info.Mode()&os.ModeSymlink != 0 {
 		return fmt.Errorf("destino symlink no permitido: %s", dst)
-	}
-	content, err := os.ReadFile(src)
-	if err != nil {
-		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err

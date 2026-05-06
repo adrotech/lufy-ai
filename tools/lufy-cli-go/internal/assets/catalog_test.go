@@ -50,6 +50,38 @@ func TestBuildCatalogRejectsSourceSymlink(t *testing.T) {
 	}
 }
 
+func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
+	catalog, err := BuildEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("BuildEmbeddedCatalog() error = %v", err)
+	}
+	if catalog.SourceRoot != EmbeddedSourceRoot {
+		t.Fatalf("SourceRoot = %q, want %q", catalog.SourceRoot, EmbeddedSourceRoot)
+	}
+
+	want := map[string]bool{
+		"AGENTS.md": false,
+		filepath.Join(".opencode", "agents", "orchestrator.md"): false,
+		filepath.Join("openspec", "config.yaml"):                false,
+	}
+	for _, asset := range catalog.Assets {
+		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
+			t.Fatalf("embedded catalog included openspec changes asset: %s", asset.TargetRel)
+		}
+		if _, ok := want[asset.TargetRel]; ok {
+			want[asset.TargetRel] = true
+			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
+				t.Fatalf("embedded file asset %s missing hash", asset.TargetRel)
+			}
+		}
+	}
+	for path, found := range want {
+		if !found {
+			t.Fatalf("embedded catalog missing %s", path)
+		}
+	}
+}
+
 func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
@@ -70,6 +102,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "config.yaml"):                       "config\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 		filepath.Join("openspec", "changes", "active", "proposal.md"):  "must not copy\n",
 	}
 	for rel, content := range files {

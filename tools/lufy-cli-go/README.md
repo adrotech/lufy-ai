@@ -21,6 +21,7 @@ tools/lufy-cli-go/
   internal/syncer/           # sync seguro de assets gestionados con hash/backup
   internal/verify/           # verify estructural de manifest, hashes y configs merge-managed
   internal/config/           # planificación/merge/validación de opencode.json
+  internal/version/          # metadata de release y comando lufy-ai version
 ```
 
 ## Comandos locales
@@ -34,8 +35,31 @@ Ejecutar desde `tools/lufy-cli-go/`:
   - `go test ./...`
 - Run (ejemplo dry-run seguro):
   - `go run ./cmd/lufy-ai install --target . --dry-run --yes --no-engram`
+- Version local:
+  - `go run ./cmd/lufy-ai version` (sin metadata de linker reporta `development build`)
 - Sync (revisar plan sin escribir):
   - `go run ./cmd/lufy-ai sync --target <proyecto-instalado> --dry-run --yes --no-engram`
+
+## Releases binarios y bootstrap
+
+La CLI puede compilarse como artifact standalone con assets gestionados embebidos vía `go:embed`; esto permite que `lufy-ai install --target <dir>` funcione desde un binario distribuido sin leer el checkout fuente. Si el binario se ejecuta dentro de un checkout válido, puede usar assets locales para desarrollo; fuera de ese contexto usa el catálogo embebido.
+
+El flujo de publicación está preparado en `.github/workflows/release.yml` y requiere un contexto autorizado:
+
+- tags `v*` construyen artifacts versionados y pueden publicar GitHub Release;
+- `workflow_dispatch` valida artifacts con una versión indicada, pero solo publica si corre sobre un ref de tag `v*` y se solicita `publish`;
+- mientras no exista un tag/release `v*`, no hay release pública consumible por usuarios.
+
+Scripts relacionados:
+
+| Script | Uso |
+| --- | --- |
+| `scripts/build-release-artifacts.sh <version>` | Construye artifacts determinísticos para darwin/linux/windows soportados e inyecta `Version`, `Commit` y `BuildDate` con linker flags. |
+| `scripts/smoke-release-artifacts.sh` | Genera fixtures locales, recalcula checksums, ejecuta `lufy-ai version`, `install --dry-run`, instalación temporal y `verify` con el artifact del runner. |
+| `../../scripts/bootstrap.sh` | Bootstrap remoto seguro: detecta OS/arch, descarga artifact/checksums de una release, verifica SHA-256 e instala solo el binario en el directorio elegido. |
+| `scripts/smoke-bootstrap.sh` | Valida bootstrap con fixtures `file://`, incluyendo dry-run, checksum correcto y bloqueo por checksum incorrecto. |
+
+El bootstrap soporta `--version vX.Y.Z` o `LUFY_AI_VERSION`; `--version latest` existe como conveniencia no reproducible. Para automatización se recomienda siempre una versión fija. También soporta `--install-dir`/`LUFY_AI_INSTALL_DIR` y falla con mensaje accionable si el destino no es escribible. No ejecuta comandos destructivos como `lufy-ai install` contra un target de proyecto.
 
 ## Comandos de usuario
 
@@ -48,6 +72,7 @@ La CLI expone estos comandos en el slice actual:
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
+| `lufy-ai version` | Muestra versión semántica, commit, fecha de build, GOOS y GOARCH; los builds sin metadata se marcan como `development build`. | n/a |
 
 No hay comandos de detección de stack ni instalación de templates por stack en esta CLI.
 
@@ -98,7 +123,10 @@ Ejecutar desde `tools/lufy-cli-go/`:
    - Recomendado: `mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
    - Validación rápida tolerada: `go build ./cmd/lufy-ai` (genera `./lufy-ai`, ignorado como artefacto local)
 3. Smoke end-to-end de la CLI Go contra directorios temporales:
-   - `scripts/smoke-install.sh`
+    - `scripts/smoke-install.sh`
+4. Smokes de release/bootstrap con fixtures locales, sin descargar internet:
+   - `scripts/smoke-release-artifacts.sh`
+   - `scripts/smoke-bootstrap.sh`
 
 Desde la raíz del repo, ejecutar además el smoke del wrapper estricto:
 
@@ -114,7 +142,9 @@ El smoke de CLI cubre:
 - Merge conservador de `opencode.json`, preservando configuración local y excluyéndolo del estado por hash completo.
 - `backup`, `restore --dry-run --yes`, restore real con `--yes` y errores accionables cuando `install`/`restore` se ejecutan sin `--yes` ante mutaciones reales.
 
-El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el mismo set mínimo: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`. Esto documenta el workflow presente, no el archive ni delivery final de ninguna proposal OpenSpec.
+El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el set mínimo histórico: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`.
+
+El workflow `.github/workflows/release.yml` agrega el gate de artifacts versionados: tests Go, build, artifacts/checksums, smoke release, smoke bootstrap, verificación de checksums y publicación de assets solo desde tag `v*` autorizado.
 
 `shellcheck scripts/install.sh` es una validación útil cuando `shellcheck` existe localmente, pero no forma parte de este gate mínimo inicial para no añadir una dependencia extra al runner; el wrapper queda cubierto funcionalmente por `tools/lufy-cli-go/scripts/smoke-wrapper.sh`.
 
@@ -129,6 +159,7 @@ Si `go` no está instalado en el entorno, estos pasos quedan pendientes y deben 
 - Contrato preservado: `scripts/install.sh [target-project-dir]`, mapeado a `lufy-ai install --target <target-project-dir>`.
 - Flags reenviados: `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup`.
 - No existe fallback legacy de copia, detección de stack, Engram o `copy_files` en Bash.
+- Tampoco existe fallback remoto: las descargas versionadas viven en `scripts/bootstrap.sh`, no en el wrapper local.
 
 Para probar el wrapper desde la raíz del repo:
 
@@ -140,7 +171,7 @@ cd ../..
 
 ## Estado actual del slice
 
-- Implementado parser base con comandos `install`, `verify`, `backup` y `restore`.
+- Implementado parser base con comandos `install`, `verify`, `backup`, `restore`, `sync` y `version`.
 - `install --dry-run` construye plan e imprime resultado sin mutaciones.
 - `install` real copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base), escribe `.lufy-ai/install-state.json` con hashes SHA-256 y en segunda ejecución reporta `skip` sin reescribir archivos ni estado.
 - `opencode.json` se crea o mergea con estrategia `merge-json`, preserva claves desconocidas, falla ante JSON inválido y queda fuera del manifest de assets completos por hash.
@@ -153,6 +184,8 @@ cd ../..
 - Antes de un `restore` real que sobrescribe archivos existentes, la CLI crea un backup de recovery `pre-restore-recovery`; si la restauración falla parcialmente, el error incluye la ruta de ese backup.
 - `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
 - Las escrituras rechazan paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
+- Los artifacts standalone pueden instalar assets embebidos cuando no se encuentra un checkout fuente válido; el checkout fuente ahora requiere el marcador adicional `tools/lufy-cli-go/go.mod` para evitar falsos positivos en repositorios destino ya instalados.
+- La publicación pública requiere crear un tag `v*`; esta rama no implica que exista ya una release publicada.
 
 ## Próximos pasos
 

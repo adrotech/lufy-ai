@@ -1,0 +1,35 @@
+# OpenSpec Configuration
+# Configuración genérica para proyectos que usan el workflow SDD
+
+specs:
+  # Directorio donde viven las specs activas
+  path: openspec/specs
+
+  # Nombre del archivo principal de spec (puede ser .md o .yaml)
+  entry: spec.md
+
+changes:
+  # Directorio para cambios/proposals activos
+  path: openspec/changes
+
+  # Directorio para cambios archivados
+  archive: openspec/changes/archive
+
+  # Formato de naming: kebab-case por defecto
+  naming: kebab-case
+
+workflow:
+  # Estados posibles del workflow
+  states:
+    - proposed
+    - in_progress
+    - verification
+    - completed
+    - archived
+
+  # Tags disponibles para filtering
+  tags:
+    - feature
+    - bugfix
+    - refactor
+    - docs

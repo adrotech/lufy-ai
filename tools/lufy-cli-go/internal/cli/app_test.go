@@ -30,6 +30,31 @@ func TestRunUnknownCommand(t *testing.T) {
 	}
 }
 
+func TestRunVersionOutputAndRejectsArgs(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"version"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("version expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	for _, want := range []string{"lufy-ai", "commit:", "buildDate:", "goos:", "goarch:"} {
+		if !bytes.Contains(out.Bytes(), []byte(want)) {
+			t.Fatalf("version output missing %q: %s", want, out.String())
+		}
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"version", "extra"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("version with positional arg expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("version no acepta argumentos posicionales")) {
+		t.Fatalf("version positional arg error unexpected: %s", errOut.String())
+	}
+}
+
 func TestRunInstallUnknownFlag(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer

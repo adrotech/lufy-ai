@@ -1,0 +1,70 @@
+# AGENTS.md
+
+Operational guide for coding agents working in this repository.
+
+## Project Snapshot
+
+- **Stack**: Fill in your stack without assuming Node/TypeScript unless the repo actually uses it
+- **Routing/CLI/API**: Fill in the relevant entrypoints for this repo
+- **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
+- **Spec workflow**: OpenSpec change artifacts in `openspec/`
+
+## Source Layout
+
+Describe your project source layout here. For example:
+
+- `app/`: route files and screen implementations
+- `src/components/`: reusable UI primitives
+- `src/api/`: API clients and services
+- `tests/`: test suites mirroring app areas
+
+## Required Commands
+
+Run from repository root.
+
+### Install
+
+```bash
+# Replace with the repository's real install command, if any.
+# Do not add generic npm/yarn commands unless package.json exists and they are supported.
+```
+
+### Development
+
+```bash
+# Replace with the repository's real development command, if any.
+```
+
+### Validation
+
+```bash
+# Replace with real validation commands.
+# Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
+```
+
+## Architecture Rules
+
+1. Keep controllers/handlers thin
+2. Services own business rules
+3. Keep persistence entities out of HTTP contracts
+4. Use constructor injection
+5. Keep transactional scopes narrow
+
+## Testing Expectations
+
+- Add smallest useful tests for changed behavior
+- Test contracts at API level
+- Test business logic at service level
+- Never report tests as passing without command evidence
+
+## OpenSpec Workflow
+
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
+
+## Agent Behavior Guidelines
+
+- Make focused, minimal changes
+- Do not revert unrelated local modifications
+- Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
+- When asked to commit/push, follow repository branch standards
+- When task depends on repository-local tooling, inspect relevant SKILL.md files before acting

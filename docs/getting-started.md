@@ -10,19 +10,67 @@ Incluye:
 - comandos slash `/opsx-*` para el ciclo OpenSpec;
 - política de delivery en `.opencode/policies/delivery.md`;
 - plugin local Agent Observatory para la TUI;
-- CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore` y `sync`;
+- CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore`, `sync` y `version`;
 - wrapper estricto `scripts/install.sh` que delega en `lufy-ai install`.
 
 ## Requisitos
 
-- Go, si vas a compilar el binario local desde `tools/lufy-cli-go/`.
-- Un checkout de este repositorio o un binario `lufy-ai` disponible en `PATH`.
+- Para uso final: una release publicada con tag `v*` y un directorio de instalación escribible que puedas agregar a `PATH`.
+- Para desarrollo/contribución: Go y un checkout de este repositorio para compilar desde `tools/lufy-cli-go/`.
 - OpenCode en el repositorio destino para consumir agentes, comandos y plugin.
 - Engram es opcional; usa `--no-engram` para omitirlo.
 
 ## Instalación rápida
 
-### 1. Obtener el repo y compilar la CLI local
+### 1. Instalar el binario sin clone desde una release `v*`
+
+El soporte de release/checkout standalone existe en esta rama, pero **no hay release publicada hasta crear y publicar un tag `v*`**. Cuando exista una release, usa pinning explícito:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+less /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version vX.Y.Z --install-dir "$HOME/.local/bin"
+```
+
+También existe un atajo directo, documentado junto a la alternativa inspeccionable anterior:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh \
+  | bash -s -- --version vX.Y.Z --install-dir "$HOME/.local/bin"
+```
+
+El bootstrap:
+
+1. detecta OS/arch soportado;
+2. resuelve la versión seleccionada (`vX.Y.Z`, o `latest` solo como conveniencia explícita no reproducible);
+3. descarga artifact y checksums de la misma release;
+4. verifica SHA-256 antes de instalar o ejecutar el binario;
+5. copia solo `lufy-ai` al directorio elegido y muestra guía de `PATH`.
+
+No ejecuta `lufy-ai install` contra ningún proyecto por defecto.
+
+### 2. Revisar el plan con `--dry-run`
+
+```bash
+lufy-ai version
+lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+```
+
+### 3. Aplicar la instalación
+
+```bash
+lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
+```
+
+### 4. Verificar el target instalado
+
+```bash
+lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+```
+
+## Flujo de desarrollo/contribuidor con clone local
+
+Usa este camino para trabajar en este repositorio o validar cambios antes de que exista una release publicada:
 
 ```bash
 git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
@@ -31,9 +79,9 @@ mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 ```
 
-`scripts/install.sh` busca primero ese binario local (`tools/lufy-cli-go/bin/lufy-ai`) y luego `lufy-ai` en `PATH`. Si no existe ninguno, falla sin fallback legacy y muestra la instrucción de build.
+`scripts/install.sh` busca primero ese binario local (`tools/lufy-cli-go/bin/lufy-ai`) y luego `lufy-ai` en `PATH`. Si no existe ninguno, falla sin fallback legacy y muestra la instrucción de build. Este wrapper local no descarga releases.
 
-### 2. Revisar el plan con `--dry-run`
+Revisar el plan con `--dry-run`:
 
 ```bash
 /tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
@@ -45,7 +93,7 @@ Forma equivalente con la CLI:
 /tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 ```
 
-### 3. Aplicar la instalación
+Aplicar la instalación:
 
 ```bash
 /tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
@@ -57,7 +105,7 @@ El argumento posicional histórico se conserva como alias de target:
 /tmp/lufy-ai/scripts/install.sh /ruta/a/tu/proyecto --yes --no-engram
 ```
 
-### 4. Verificar el target instalado
+Verificar el target instalado:
 
 ```bash
 /tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
@@ -99,6 +147,7 @@ Flags frecuentes:
 | `lufy-ai backup` | Crea backup multiasset con `manifest.json`. |
 | `lufy-ai restore` | Restaura desde backup y valida seguridad del manifest. |
 | `lufy-ai sync` | Reaplica assets gestionados sin tocar drift local ni archivos fuera del catálogo. |
+| `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH; si falta metadata de linker reporta development build. |
 
 Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](../tools/lufy-cli-go/README.md).
 
@@ -134,10 +183,14 @@ Desde la raíz del repo:
 
 ```bash
 tools/lufy-cli-go/scripts/smoke-wrapper.sh
+tools/lufy-cli-go/scripts/smoke-release-artifacts.sh
+tools/lufy-cli-go/scripts/smoke-bootstrap.sh
 git diff --check
 ```
 
 El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y cubre un gate mínimo para la CLI Go y el wrapper. Que exista el workflow no reemplaza la validación local ni implica que otras proposals ya estén archivadas.
+
+El workflow `.github/workflows/release.yml` construye artifacts versionados, checksums y smokes de release/bootstrap. Solo publica GitHub Releases desde refs de tag `v*`; una ejecución manual de validación no crea por sí misma una release pública.
 
 No hay toolchain Node/TypeScript de producto en la raíz; no asumas `npm test`, `npm run typecheck` ni `tsc` global.
 
@@ -156,6 +209,10 @@ cd /tmp/lufy-ai/tools/lufy-cli-go
 mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 ```
+
+### No existe una release para `vX.Y.Z`
+
+El bootstrap depende de GitHub Releases. Si aún no se creó un tag `v*` y se publicó la release correspondiente, usa el flujo de desarrollo/contribuidor o espera a que exista el artifact versionado con su archivo de checksums.
 
 ### Los agentes no cargan
 

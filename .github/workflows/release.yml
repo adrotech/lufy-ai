@@ -1,0 +1,102 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a construir para validación manual (ej: v0.0.0-smoke)'
+        required: true
+        default: 'v0.0.0-smoke'
+      publish:
+        description: 'Publicar GitHub Release; solo válido para refs/tags/v*'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release-artifacts:
+    name: Build and validate release artifacts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go from go.mod
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.mod
+
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          if [[ ! "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "version inválida: $version" >&2
+            exit 2
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Go tests
+        working-directory: tools/lufy-cli-go
+        run: go test ./...
+
+      - name: Go build
+        working-directory: tools/lufy-cli-go
+        run: go build ./cmd/lufy-ai
+
+      - name: Build release artifacts and checksums
+        working-directory: tools/lufy-cli-go
+        env:
+          LUFY_AI_VERSION: ${{ steps.meta.outputs.version }}
+          LUFY_AI_COMMIT: ${{ steps.meta.outputs.commit }}
+          LUFY_AI_BUILD_DATE: ${{ steps.meta.outputs.build_date }}
+          LUFY_AI_DIST_DIR: dist
+        run: scripts/build-release-artifacts.sh "${{ steps.meta.outputs.version }}"
+
+      - name: Smoke release artifacts
+        working-directory: tools/lufy-cli-go
+        run: scripts/smoke-release-artifacts.sh
+
+      - name: Smoke bootstrap installer
+        run: tools/lufy-cli-go/scripts/smoke-bootstrap.sh
+
+      - name: Verify generated checksums
+        working-directory: tools/lufy-cli-go/dist
+        run: shasum -a 256 -c "lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lufy-ai-${{ steps.meta.outputs.version }}-release-artifacts
+          path: |
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.tar.gz
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.zip
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && (github.event_name == 'push' || inputs.publish == true)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.version }}
+          fail_on_unmatched_files: true
+          files: |
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.tar.gz
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.zip
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt

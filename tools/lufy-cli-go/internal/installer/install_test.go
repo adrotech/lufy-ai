@@ -403,6 +403,7 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join("openspec", "config.yaml"):                       "config\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

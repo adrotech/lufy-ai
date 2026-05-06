@@ -10,6 +10,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 func Run(args []string, deps Dependencies) int {
@@ -29,6 +30,8 @@ func Run(args []string, deps Dependencies) int {
 		return runRestore(args[1:], deps)
 	case "sync":
 		return runSync(args[1:], deps)
+	case "version":
+		return runVersion(args[1:], deps)
 	case "-h", "--help", "help":
 		printGeneralHelp(deps.Stdout)
 		return ExitOK
@@ -37,6 +40,20 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runVersion(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("version", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "version no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	fmt.Fprintln(deps.Stdout, version.Current().String())
+	return ExitOK
 }
 
 func runSync(args []string, deps Dependencies) int {
@@ -185,4 +202,5 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
+	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
 }

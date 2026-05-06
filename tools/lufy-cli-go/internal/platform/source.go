@@ -45,7 +45,10 @@ func hasSourceMarkers(dir string) bool {
 	if !isDir(filepath.Join(dir, ".opencode")) {
 		return false
 	}
-	return isFile(filepath.Join(dir, "openspec", "config.yaml"))
+	if !isFile(filepath.Join(dir, "openspec", "config.yaml")) {
+		return false
+	}
+	return isFile(filepath.Join(dir, "tools", "lufy-cli-go", "go.mod"))
 }
 
 func isFile(path string) bool {

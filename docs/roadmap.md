@@ -31,6 +31,8 @@ Estado actual documentable:
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
+- Distribución versionada implementada en la rama: `lufy-ai version`, artifacts release por OS/arch, checksums SHA-256, bootstrap `scripts/bootstrap.sh` y assets embebidos para instalar sin checkout fuente. Las releases públicas instalables dependen de publicar tags `v*` y sus artifacts en GitHub Releases; antes de que exista un tag publicado, el bootstrap solo funciona contra fixtures/local mirrors o fallará al intentar descargar la release inexistente.
+- README, `docs/getting-started.md` y README de la CLI ya describen el flujo sin clone con pinning/inspección, sujeto a que exista la release pública taggeada correspondiente.
 
 No son capacidades instalables actuales:
 
@@ -79,6 +81,15 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 
 - `RM-012`: Evaluar productización como CLI como fase futura, no prioridad inmediata.
 - `RM-013`: Migrar installer a CLI Go y mantener Bash solo como wrapper estricto de compatibilidad, sin lógica legacy.
+
+### Fase 6 — Distribución versionada sin clone
+
+Objetivo: permitir instalación sin obligar a clonar este repositorio, usando releases binarios versionados, checksums y un bootstrap remoto seguro.
+
+- `RM-014`: Publicar binarios `lufy-ai` versionados por OS/arch en GitHub Releases, con checksums SHA-256 y comando `lufy-ai version`.
+- `RM-015`: Añadir bootstrap remoto inspeccionable que detecta OS/arch, permite pinning de versión, descarga la release correcta, verifica checksum antes de instalar y coloca el binario en un destino de `PATH` elegido por el usuario.
+- `RM-016`: Resolver instalación standalone real llevando assets gestionados embebidos en el binario o mediante un release bundle versionado con assets; estrategia incremental recomendada: primero `go:embed`, bundle solo si el tamaño/frecuencia de assets lo justifica.
+- `RM-017`: Actualizar README, `docs/getting-started.md` y README de la CLI solo al final de la implementación, sin presentar `curl | bash`, Homebrew, Scoop, `go install` ni releases como estado actual antes de existir.
 
 ## Propuesta/design por iniciativa
 
@@ -247,6 +258,61 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 - ✅ `sync` reaplica assets gestionados con hash/idempotencia y backup previo, bloqueando drift local, estado ausente/corrupto y escapes por symlink/path inseguro.
 - ✅ `opencode.json` usa contrato `merge-json` especial en `install`, `sync` y `verify`: no se copia como asset completo ni se registra con SHA-256 en `.lufy-ai/install-state.json`.
 
+### `RM-014` — Releases binarios versionados
+
+**Propuesta**: publicar artifacts versionados de `lufy-ai` desde GitHub Actions/GitHub Releases para que el usuario no necesite clonar y compilar el repositorio como paso de instalación.
+
+**Design:**
+
+- Construir artifacts por OS/arch soportado desde `tools/lufy-cli-go/` sin depender de tooling Node/TS de raíz.
+- Generar nombres determinísticos que incluyan versión, OS y arquitectura.
+- Publicar checksums SHA-256 junto a cada release y validarlos en CI antes de considerar el release instalable.
+- Añadir `lufy-ai version` con versión, commit, fecha de build, GOOS y GOARCH; los builds locales sin metadata deben declararse como development/unknown.
+- Tratar GitHub Releases con checksums como fuente de verdad para canales posteriores como Homebrew, Scoop o manifests similares.
+
+**Estado actual:** implementado en la rama por proposal OpenSpec `add-versioned-binary-release-installer`: build de artifacts por OS/arch, checksums SHA-256 y `lufy-ai version` existen. Para uso público falta publicar un tag `v*` y los artifacts de GitHub Releases correspondientes; sin ese tag, no hay URL pública instalable aunque el código esté listo.
+
+### `RM-015` — Bootstrap remoto seguro
+
+**Propuesta**: ofrecer un instalador remoto que descargue una release versionada, verifique su checksum y coloque el binario en `PATH` sin ejecutar acciones destructivas por defecto.
+
+**Design:**
+
+- Detectar OS/arch y fallar de forma accionable para plataformas no soportadas.
+- Exigir verificación SHA-256 antes de instalar o ejecutar cualquier binario descargado.
+- Soportar version pinning (`vX.Y.Z`) como ruta recomendada para automatización; `latest` debe ser conveniencia explícita con trade-off documentado.
+- Documentar `curl | bash` solo junto con alternativa inspeccionable: descargar script, revisarlo y ejecutarlo con versión explícita.
+- No ejecutar `lufy-ai install` contra un target de proyecto salvo flag explícito del usuario; el bootstrap instala el binario, no modifica repositorios destino por sorpresa.
+
+**Estado actual:** implementado en la rama como `scripts/bootstrap.sh`. Detecta OS/arch, soporta versión explícita o `latest`, descarga artifact/checksums y verifica SHA-256 antes de instalar el binario. El bootstrap está disponible para inspección y validación local; la descarga desde GitHub solo funciona cuando exista la release taggeada publicada. `scripts/install.sh` sigue siendo wrapper local estricto y no crece fallback remoto.
+
+### `RM-016` — Assets standalone para instalación real sin clone
+
+**Propuesta**: eliminar la dependencia del checkout fuente para instalar assets gestionados, llevando esos assets dentro del binario o en un bundle versionado verificable.
+
+**Design:**
+
+- Estrategia incremental recomendada: usar `go:embed` primero para que el binario release sea autocontenido y el checksum cubra código + assets.
+- Considerar bundle zip/tar versionado si el tamaño o frecuencia de assets hace incómodo recompilar el binario por cambios de contenido.
+- Si se usa bundle, verificar checksum del bundle completo y manifest interno antes de usar assets.
+- Mantener los contratos existentes de idempotencia, manifest `.lufy-ai/install-state.json`, hashes SHA-256, backup/restore y `verify`.
+- No documentar instalación standalone real hasta que `lufy-ai install --target <dir>` funcione desde un binario distribuido sin leer el repo fuente.
+
+**Estado actual:** implementado en la rama mediante assets gestionados embebidos en el binario Go. Un binario release puede ejecutar `lufy-ai install --target <dir>` sin leer el checkout fuente, preservando idempotencia, manifest, hashes, backup/restore, sync y verify; el quickstart público requiere que exista una release `v*` publicada para descargar ese binario.
+
+### `RM-017` — Documentación final del flujo sin clone
+
+**Propuesta**: actualizar la documentación pública al cierre de la implementación para mover el camino principal a instalación sin clone y retirar instrucciones obsoletas.
+
+**Design:**
+
+- Actualizar `README.md`, `docs/getting-started.md` y `tools/lufy-cli-go/README.md` solo cuando releases, checksums, bootstrap y assets standalone estén implementados y validados.
+- Mantener instrucciones clone/build únicamente como flujo de contribuidor/desarrollo si siguen siendo útiles.
+- Borrar o demotar docs obsoletos que presenten clone/build como camino primario de usuario final; no conservar retrocompatibilidad documental hacia un flujo que ya no aplique.
+- Incluir verificación post-instalación con `lufy-ai verify` y advertencias sobre pinning/checksums.
+
+**Estado actual:** implementado en la rama. README, `docs/getting-started.md` y `tools/lufy-cli-go/README.md` ya describen instalación sin clone, pinning, checksum/bootstrap e instalación con binario; deben leerse como flujo disponible para tags `v*` publicados, no como garantía de que una release pública exista antes del primer tag.
+
 ## Criterios de aceptación
 
 ### Criterios generales
@@ -273,6 +339,10 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 | `RM-011` | README queda centrado en estado real + quickstart; contenido futuro vive en docs de roadmap o diseño. |
 | `RM-012` | Hay decisión documentada de CLI con alcance, tradeoffs y prerequisitos cumplidos antes de implementarla. |
 | `RM-013` | Existe plan de migración a CLI Go; Bash queda limitado a wrapper estricto sin fallback legacy; la primera CLI cubre `install`, `verify`, `backup` y `restore` antes de `sync`/`update`. |
+| `RM-014` | GitHub Releases publica binarios versionados por OS/arch con checksums SHA-256 y `lufy-ai version` reporta metadata de release. |
+| `RM-015` | El bootstrap remoto detecta OS/arch, soporta pinning de versión, verifica checksum antes de instalar y ofrece alternativa inspeccionable a `curl \| bash`. |
+| `RM-016` | Un binario release o bundle verificado puede instalar assets gestionados sin leer el checkout fuente, preservando idempotencia, manifest, hashes, backup/restore y verify. |
+| `RM-017` | README/getting-started/CLI docs describen instalación sin clone solo cuando está implementada y retiran clone/build como camino primario de usuario final. |
 
 ## Riesgos/dependencias
 
@@ -283,6 +353,9 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 - Sync requiere una fuente de verdad de assets gestionados; sin manifest puede pisar personalizaciones.
 - Templates por stack pueden reintroducir drift documental si README se actualiza antes de tener archivos reales.
 - Migrar lógica desde Bash a Go puede dejar brechas mientras la CLI completa assets gestionados; el wrapper evita duplicación al no mantener fallback legacy.
+- Publicar binarios sin resolver assets standalone puede crear una falsa promesa de instalación sin clone; la documentación final debe esperar a `go:embed` o bundle verificado.
+- `curl | bash` requiere comunicación cuidadosa: pinning e inspección deben estar documentados junto al comando directo.
+- Matrices OS/arch, Homebrew y Scoop aumentan mantenimiento; conviene estabilizar GitHub Releases + checksums antes de sumar canales.
 
 ## Etiquetas sugeridas
 
@@ -299,3 +372,7 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 - `documentation`
 - `future-cli`
 - `go-cli`
+- `release-distribution`
+- `checksums`
+- `bootstrap-installer`
+- `version-pinning`

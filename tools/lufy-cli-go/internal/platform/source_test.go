@@ -28,3 +28,43 @@ func TestSafeJoinRejectsSymlinkParent(t *testing.T) {
 		t.Fatal("SafeJoin() expected symlink parent error")
 	}
 }
+
+func TestResolveSourceRootRequiresGoModuleMarker(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "AGENTS.md"), "# test\n")
+	mkdir(t, filepath.Join(root, ".opencode"))
+	mkdir(t, filepath.Join(root, "openspec"))
+	writeFile(t, filepath.Join(root, "openspec", "config.yaml"), "specs: []\n")
+
+	if _, err := ResolveSourceRoot(root); err == nil {
+		t.Fatal("ResolveSourceRoot() expected error without tools/lufy-cli-go/go.mod marker")
+	}
+
+	writeFile(t, filepath.Join(root, "tools", "lufy-cli-go", "go.mod"), "module example.test/lufy\n")
+	nested := filepath.Join(root, "tools", "lufy-cli-go", "cmd")
+	mkdir(t, nested)
+	got, err := ResolveSourceRoot(nested)
+	if err != nil {
+		t.Fatalf("ResolveSourceRoot() error = %v", err)
+	}
+	if got != root {
+		t.Fatalf("ResolveSourceRoot() = %q, want %q", got, root)
+	}
+}
+
+func writeFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+}
+
+func mkdir(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatalf("MkdirAll() error = %v", err)
+	}
+}
