@@ -19,8 +19,8 @@ tools/lufy-cli-go/
   internal/state/            # .lufy-ai/install-state.json versionado
   internal/backup/           # backup/restore multiasset con manifest.json
   internal/syncer/           # sync seguro de assets gestionados con hash/backup
-  internal/verify/           # verify estructural de manifest y hashes
-  internal/config/           # placeholder
+  internal/verify/           # verify estructural de manifest, hashes y configs merge-managed
+  internal/config/           # planificación/merge/validación de opencode.json
 ```
 
 ## Comandos locales
@@ -43,11 +43,11 @@ La CLI expone estos comandos en el slice actual:
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256 y evita sobrescribir drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
-| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados y hashes SHA-256 registrados. | `--target`, `--no-engram` |
+| `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256, mergea `opencode.json` de forma conservadora y evita sobrescribir drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
+| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados, hashes SHA-256 registrados y estructura merge-managed de `opencode.json`. | `--target`, `--no-engram` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
+| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
 
 No hay comandos de detección de stack ni instalación de templates por stack en esta CLI.
 
@@ -62,6 +62,18 @@ No hay comandos de detección de stack ni instalación de templates por stack en
 
 Las escrituras bloquean paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
 
+### `opencode.json` como `merge-json`
+
+`opencode.json` no se trata como asset completo gestionado por hash porque puede contener proveedores, modelos, MCPs o claves locales del proyecto destino. En `install` y `sync`, la CLI usa una estrategia especial `merge-json`:
+
+- crea el archivo cuando falta con estructura OpenCode mínima;
+- preserva claves desconocidas existentes del usuario;
+- agrega/actualiza solo claves gestionadas por `lufy-ai` (`$schema`, `plugin` e integración Engram cuando aplica);
+- falla sin sobrescribir si el JSON existente es inválido, para que el usuario lo corrija o respalde explícitamente;
+- no registra `opencode.json` en `.lufy-ai/install-state.json` como asset completo con `targetSHA256`.
+
+`lufy-ai verify` valida que `opencode.json` sea JSON parseable y contenga la estructura merge-managed mínima, pero no exige una entrada de hash para ese archivo en el manifest de instalación.
+
 ## Sync de assets gestionados
 
 `lufy-ai sync` reaplica assets del catálogo gestionado sobre un target ya instalado usando `.lufy-ai/install-state.json` y hashes SHA-256. Está diseñado para actualizar solo archivos previamente gestionados y sin drift local.
@@ -71,6 +83,7 @@ Las escrituras bloquean paths relativos inseguros y symlinks en rutas gestionada
 - `--yes` es obligatorio para aplicar mutaciones reales (`backup` + `update-managed`).
 - `--no-engram` mantiene el flujo portable sin requerir Engram instalado.
 - Archivos no gestionados, drift local, estado ausente/corrupto y symlinks/escapes de path bloquean la mutación.
+- `opencode.json` se planifica como `merge-json`: puede requerir backup si existe y será mergeado, pero no aparece como `copy`/`update-managed` ni se registra por hash completo.
 - Antes de actualizar assets gestionados, sync crea backup bajo `.lufy-ai/backups/<timestamp>/manifest.json` con causa `sync`; si falla después del backup, el error incluye guía de `restore`.
 
 ## Cómo validar localmente
@@ -98,6 +111,7 @@ El smoke de CLI cubre:
 - `install --dry-run --yes --no-engram` sin mutaciones.
 - `install --yes --no-engram` real y `verify --no-engram`.
 - Idempotencia básica con segunda instalación y comparación de hashes de `.lufy-ai/install-state.json` y `AGENTS.md`.
+- Merge conservador de `opencode.json`, preservando configuración local y excluyéndolo del estado por hash completo.
 - `backup`, `restore --dry-run --yes`, restore real con `--yes` y errores accionables cuando `install`/`restore` se ejecutan sin `--yes` ante mutaciones reales.
 
 El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el mismo set mínimo: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`. Esto documenta el workflow presente, no el archive ni delivery final de ninguna proposal OpenSpec.
@@ -129,10 +143,12 @@ cd ../..
 - Implementado parser base con comandos `install`, `verify`, `backup` y `restore`.
 - `install --dry-run` construye plan e imprime resultado sin mutaciones.
 - `install` real copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base), escribe `.lufy-ai/install-state.json` con hashes SHA-256 y en segunda ejecución reporta `skip` sin reescribir archivos ni estado.
+- `opencode.json` se crea o mergea con estrategia `merge-json`, preserva claves desconocidas, falla ante JSON inválido y queda fuera del manifest de assets completos por hash.
 - Si un archivo gestionado cambió upstream y el target no tiene drift local, `install` crea backup bajo `.lufy-ai/backups/<timestamp>/` antes de `update-managed`.
 - Si un archivo existe sin estado previo o su hash actual no coincide con el último hash gestionado, `install` reporta `conflict` y no sobrescribe aunque `--yes` esté presente.
 - Resolución de Engram portable por `PATH` (`exec.LookPath("engram")`), sin hardcode de `/opt/homebrew/bin/engram`.
 - `verify` valida `install-state.json`, categorías críticas (`.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies`), archivos críticos (`.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml`), manifest y hashes de assets listados; reporta Engram como warning no bloqueante u omitido con `--no-engram`.
+- `sync` puede aplicar `merge-json` a `opencode.json` sin copiarlo como asset completo ni registrarlo con SHA-256, manteniendo backup previo si el archivo existente será modificado.
 - `backup`/`restore` respaldan múltiples assets gestionados con `manifest.json`, hashes, tamaño, timestamp y validación de `targetRoot`.
 - Antes de un `restore` real que sobrescribe archivos existentes, la CLI crea un backup de recovery `pre-restore-recovery`; si la restauración falla parcialmente, el error incluye la ruta de ese backup.
 - `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
@@ -140,4 +156,4 @@ cd ../..
 
 ## Próximos pasos
 
-1. Implementar merge conservador de `opencode.json` si se decide incluirlo como asset gestionado futuro.
+1. Ampliar la cobertura de docs/smokes cuando se agreguen nuevas claves gestionadas al contrato `merge-json` de `opencode.json`.

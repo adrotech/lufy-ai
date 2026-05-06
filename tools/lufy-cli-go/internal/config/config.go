@@ -27,6 +27,10 @@ type Result struct {
 	Changed     bool
 }
 
+type ValidationResult struct {
+	Exists bool
+}
+
 type Service struct{}
 
 func NewService() Service {
@@ -95,11 +99,17 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 	if err != nil {
 		return nil, nil, "", "", false, err
 	}
+	if err := validateRegularOpenCode(path); err != nil {
+		return nil, nil, "", "", false, err
+	}
 	var current map[string]any
 	body, err := os.ReadFile(path)
 	if err == nil {
 		if err := json.Unmarshal(body, &current); err != nil {
 			return nil, nil, "", "", false, fmt.Errorf("opencode.json inválido; corrige JSON o respáldalo antes de instalar: %w", err)
+		}
+		if err := validateManagedKeyTypes(current); err != nil {
+			return nil, nil, "", "", false, err
 		}
 	} else if !os.IsNotExist(err) {
 		return nil, nil, "", "", false, err
@@ -116,7 +126,10 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 	}
 	engramPath, engramFound := platform.ResolveEngram(opts.NoEngram, resolver)
 	if !opts.NoEngram && engramFound {
-		mcp := objectAt(desired, "mcp")
+		mcp, err := objectAt(desired, "mcp")
+		if err != nil {
+			return nil, nil, "", "", false, err
+		}
 		mcp["engram"] = map[string]any{
 			"type":    "local",
 			"command": []any{engramPath, "mcp", "--tools=agent"},
@@ -127,13 +140,75 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 	return current, desired, path, engramPath, engramFound, nil
 }
 
-func objectAt(root map[string]any, key string) map[string]any {
+func (s Service) ValidateManagedStructure(targetRoot string) (ValidationResult, error) {
+	path, err := platform.SafeJoin(targetRoot, OpenCodeFile)
+	if err != nil {
+		return ValidationResult{}, err
+	}
+	if err := validateRegularOpenCode(path); err != nil {
+		return ValidationResult{}, err
+	}
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return ValidationResult{}, fmt.Errorf("falta %s merge-managed", OpenCodeFile)
+	}
+	if err != nil {
+		return ValidationResult{}, err
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return ValidationResult{}, err
+	}
+	if err := validateManagedKeyTypes(decoded); err != nil {
+		return ValidationResult{Exists: true}, err
+	}
+	if _, ok := decoded["$schema"].(string); !ok {
+		return ValidationResult{Exists: true}, fmt.Errorf("falta clave gestionada mínima $schema")
+	}
+	if _, ok := decoded["plugin"].([]any); !ok {
+		return ValidationResult{Exists: true}, fmt.Errorf("falta clave gestionada mínima plugin")
+	}
+	return ValidationResult{Exists: true}, nil
+}
+
+func validateRegularOpenCode(path string) error {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return fmt.Errorf("%s debe ser un archivo regular seguro; symlinks, directorios y archivos especiales no están permitidos", OpenCodeFile)
+	}
+	return nil
+}
+
+func validateManagedKeyTypes(decoded map[string]any) error {
+	if schema, ok := decoded["$schema"]; ok {
+		if _, valid := schema.(string); !valid {
+			return fmt.Errorf("opencode.json inválido: clave gestionada $schema debe ser string; corrige o respalda el archivo antes de instalar/sincronizar")
+		}
+	}
+	if plugin, ok := decoded["plugin"]; ok {
+		if _, valid := plugin.([]any); !valid {
+			return fmt.Errorf("opencode.json inválido: clave gestionada plugin debe ser array; corrige o respalda el archivo antes de instalar/sincronizar")
+		}
+	}
+	return nil
+}
+
+func objectAt(root map[string]any, key string) (map[string]any, error) {
 	if existing, ok := root[key].(map[string]any); ok {
-		return existing
+		return existing, nil
+	}
+	if _, exists := root[key]; exists {
+		return nil, fmt.Errorf("opencode.json inválido: clave %s debe ser object para configurar Engram; corrige o respalda el archivo antes de instalar/sincronizar", key)
 	}
 	obj := map[string]any{}
 	root[key] = obj
-	return obj
+	return obj, nil
 }
 
 func cloneMap(in map[string]any) map[string]any {

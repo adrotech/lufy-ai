@@ -215,6 +215,76 @@ func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T
 	}
 }
 
+func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true}}`)
+
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if !hasSyncAction(plan.Actions, "merge-json", "opencode.json") || hasSyncAction(plan.Actions, "update-managed", "opencode.json") {
+		t.Fatalf("expected merge-json without update-managed for opencode.json: %#v", plan.Actions)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
+	}
+	decoded := readOpenCodeForSyncTest(t, target)
+	if decoded["custom"] == nil || decoded["$schema"] == nil || decoded["plugin"] == nil {
+		t.Fatalf("opencode.json merge-managed unexpected: %#v", decoded)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := st.AssetMap()["opencode.json"]; ok {
+		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
+	}
+}
+
+func TestBuildPlanRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	stateBefore := readFile(t, state.Path(target))
+	writeFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
+
+	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
+		t.Fatalf("expected invalid opencode.json error, got %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "opencode.json"))); got != `{bad-json` {
+		t.Fatalf("invalid opencode.json was overwritten: %q", got)
+	}
+	if got := readFile(t, state.Path(target)); string(got) != string(stateBefore) {
+		t.Fatal("sync BuildPlan rewrote state after invalid opencode.json")
+	}
+}
+
+func TestBuildPlanRejectsInvalidOpenCodeManagedKeyTypesWithoutAssetUpdates(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	stateBefore := readFile(t, state.Path(target))
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed but must not apply\n")
+	writeFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":{}}`)
+
+	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
+		t.Fatalf("expected managed key type error, got %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "opencode.json"))); got != `{"$schema":123,"plugin":{}}` {
+		t.Fatalf("invalid opencode.json was overwritten: %q", got)
+	}
+	if got := readFile(t, state.Path(target)); string(got) != string(stateBefore) {
+		t.Fatal("sync BuildPlan rewrote state after invalid opencode.json structure")
+	}
+}
+
 func TestBuildPlanRejectsTargetSymlinkEscape(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -351,4 +421,13 @@ func readFile(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return body
+}
+
+func readOpenCodeForSyncTest(t *testing.T, target string) map[string]any {
+	t.Helper()
+	var decoded map[string]any
+	if err := json.Unmarshal(readFile(t, filepath.Join(target, "opencode.json")), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	return decoded
 }

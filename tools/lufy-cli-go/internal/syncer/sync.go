@@ -10,6 +10,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -212,8 +213,20 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		}
 		plan.Actions = append(plan.Actions, Action{Kind: "retired", Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo; se preserva y queda rastreado", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 	}
+	configPlan, err := config.NewService().Plan(config.Options{TargetRoot: target, NoEngram: opts.NoEngram})
+	if err != nil {
+		return Plan{}, err
+	}
+	if configPlan.Action == "merge-json" {
+		if fileExists(filepath.Join(target, config.OpenCodeFile)) {
+			plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: config.OpenCodeFile, Reason: "opencode.json existente será mergeado conservadoramente"})
+		}
+		plan.Actions = append(plan.Actions, Action{Kind: "merge-json", Target: config.OpenCodeFile, Reason: "configuración OpenCode merge-managed parcial"})
+	} else {
+		plan.Actions = append(plan.Actions, Action{Kind: "skip", Target: config.OpenCodeFile, Reason: "configuración OpenCode merge-managed sin cambios"})
+	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"backup": 0, "update-managed": 1, "retired": 2, "skip": 3}
+		order := map[string]int{"backup": 0, "update-managed": 1, "merge-json": 2, "retired": 3, "skip": 4}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -224,26 +237,39 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 
 func (s Service) apply(plan Plan, stdout io.Writer) error {
 	updates := targetsForKind(plan.Actions, "update-managed")
-	if len(updates) == 0 {
+	merges := targetsForKind(plan.Actions, "merge-json")
+	if len(updates) == 0 && len(merges) == 0 {
 		fmt.Fprintln(stdout, "- [skip] sin cambios gestionados")
 		return nil
 	}
-	backupDir, err := backup.BackupFiles(plan.TargetRoot, updates, "sync", stdout)
-	if err != nil {
-		return err
+	backupTargets := uniqueTargets(append(append([]string{}, updates...), targetsForKind(plan.Actions, "backup")...))
+	manifestPath := ""
+	if len(backupTargets) > 0 {
+		backupDir, err := backup.BackupFiles(plan.TargetRoot, backupTargets, "sync", stdout)
+		if err != nil {
+			return err
+		}
+		manifestPath = filepath.Join(backupDir, "manifest.json")
+		fmt.Fprintf(stdout, "- [backup] %s\n", manifestPath)
 	}
-	manifestPath := filepath.Join(backupDir, "manifest.json")
-	fmt.Fprintf(stdout, "- [backup] %s\n", manifestPath)
 	applied := 0
 	for _, action := range plan.Actions {
-		if action.Kind != "update-managed" {
+		switch action.Kind {
+		case "update-managed":
+			if err := copyFile(filepath.Join(plan.SourceRoot, action.Source), plan.TargetRoot, action.Target); err != nil {
+				return syncRecoveryError(err, manifestPath, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [update-managed] %s\n", action.Target)
+		case "merge-json":
+			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
+				return syncRecoveryError(err, manifestPath, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
+		default:
 			continue
 		}
-		if err := copyFile(filepath.Join(plan.SourceRoot, action.Source), plan.TargetRoot, action.Target); err != nil {
-			return syncRecoveryError(err, manifestPath, applied)
-		}
-		applied++
-		fmt.Fprintf(stdout, "- [update-managed] %s\n", action.Target)
 	}
 	assetStates, err := buildAssetStates(plan, updates)
 	if err != nil {
@@ -348,7 +374,7 @@ func copyFile(src, targetRoot, targetRel string) error {
 
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
-		if action.Kind == "update-managed" || action.Kind == "backup" {
+		if action.Kind == "update-managed" || action.Kind == "backup" || action.Kind == "merge-json" {
 			return true
 		}
 	}
@@ -365,7 +391,28 @@ func targetsForKind(actions []Action, kind string) []string {
 	return out
 }
 
+func uniqueTargets(in []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, target := range in {
+		if seen[target] {
+			continue
+		}
+		seen[target] = true
+		out = append(out, target)
+	}
+	return out
+}
+
+func fileExists(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
+}
+
 func syncRecoveryError(err error, manifestPath string, applied int) error {
+	if manifestPath == "" {
+		return err
+	}
 	return fmt.Errorf("sync falló después de crear backup en %s; acciones aplicadas=%d; restaura con: lufy-ai restore --target <target> --backup %s --yes: %w", manifestPath, applied, manifestPath, err)
 }
 

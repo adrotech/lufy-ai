@@ -28,6 +28,7 @@ Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.
 - Assets gestionados con estado `.lufy-ai/install-state.json`, hashes SHA-256, idempotencia y backups antes de actualizaciones gestionadas.
+- `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
 
@@ -136,7 +137,8 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 
 - Para archivos completos gestionados, comparar checksums o manifest antes de reemplazar.
 - Para `AGENTS.md`, usar bloque gestionado con marcadores si se decide mezclar contenido.
-- Para `opencode.json` y `tui.json`, preferir merge JSON conservador o pedir estrategia: `skip`, `backup-and-replace`, `merge`.
+- Para `opencode.json`, usar estrategia especial `merge-json`: merge conservador, backup antes de escribir cuando exista, preservación de claves desconocidas y fallo accionable ante JSON inválido.
+- Para otros JSON como `tui.json`, preferir estrategia explícita futura (`skip`, `backup-and-replace`, `merge`) antes de permitir sobrescrituras amplias.
 - El instalador repetido debe reportar `unchanged`, `updated`, `skipped` o `conflict` por asset.
 
 ### `RM-006` — GitHub Actions básica
@@ -243,7 +245,7 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 - ✅ Install real copia assets gestionados del catálogo, escribe `.lufy-ai/install-state.json` con SHA-256 y evita sobrescribir drift local.
 - ✅ `backup`/`restore` usan `manifest.json`, hashes, `targetRoot` y backup de recovery antes de restauraciones reales.
 - ✅ `sync` reaplica assets gestionados con hash/idempotencia y backup previo, bloqueando drift local, estado ausente/corrupto y escapes por symlink/path inseguro.
-- 🔄 Pendiente inmediato: decidir si `opencode.json` entra como asset gestionado futuro con merge conservador.
+- ✅ `opencode.json` usa contrato `merge-json` especial en `install`, `sync` y `verify`: no se copia como asset completo ni se registra con SHA-256 en `.lufy-ai/install-state.json`.
 
 ## Criterios de aceptación
 
@@ -262,7 +264,7 @@ Objetivo: evaluar empaquetado y DX avanzada cuando el instalador, sync y CI ya s
 | `RM-002` | Antes de modificar paths sensibles se crea backup; ante fallo se intenta rollback; queda manifest de la ejecución. |
 | `RM-003` | `opencode.json` no contiene `/opt/homebrew/bin/engram` hardcodeado cuando la integración se genera; usa el resultado de `command -v engram` o queda deshabilitada. |
 | `RM-004` | `lufy-ai verify --target <dir> --no-engram` valida estructura, JSON parseable, manifest, hashes y presencia de commands/skills/plugin. |
-| `RM-005` | Reinstalar sobre un target existente no sobrescribe configs sin estrategia; los conflictos se reportan de forma accionable. |
+| `RM-005` | Reinstalar sobre un target existente no sobrescribe configs sin estrategia; `opencode.json` se mergea de forma conservadora y los conflictos/JSON inválido se reportan de forma accionable. |
 | `RM-006` | Existe workflow en `.github/workflows/` con tests/build Go, smoke de instalación en temp dir, wrapper smoke y checks estáticos disponibles; `shellcheck` queda como mejora opcional si se incorpora al runner. |
 | `RM-007` | La verificación local está documentada y CI ejecuta `lufy-ai verify` o checks equivalentes. |
 | `RM-008` | Sync reaplica assets gestionados con backup y reporte por archivo, sin modificar personalizaciones fuera de scope. |

@@ -88,6 +88,12 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			fmt.Fprintf(stdout, "ok: JSON parseable %s\n", rel)
 		}
 	}
+	if status, err := config.NewService().ValidateManagedStructure(target); err != nil {
+		fmt.Fprintf(stdout, "fail: estructura gestionada inválida en %s: %s\n", config.OpenCodeFile, err.Error())
+		failures++
+	} else if status.Exists {
+		fmt.Fprintf(stdout, "ok: estructura merge-managed %s\n", config.OpenCodeFile)
+	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
 		if resolved, err := platform.ResolveTargetPath(manifestTarget); err == nil {

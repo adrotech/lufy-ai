@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -111,6 +112,98 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, "AGENTS.md")); !os.IsNotExist(err) {
 		t.Fatalf("install without --yes mutated target, stat err=%v", err)
 	}
+}
+
+func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true},"provider":{"local":{"models":{"keep-me":{}}}}}`)
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(install) error = %v", err)
+	}
+	decoded := readOpenCodeForTest(t, target)
+	if decoded["custom"] == nil || decoded["provider"] == nil {
+		t.Fatalf("opencode.json perdió claves desconocidas: %#v", decoded)
+	}
+	if decoded["$schema"] == nil || decoded["plugin"] == nil {
+		t.Fatalf("opencode.json no contiene estructura gestionada mínima: %#v", decoded)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := st.AssetMap()["opencode.json"]; ok {
+		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
+	}
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(reinstall) error = %v", err)
+	}
+	decoded = readOpenCodeForTest(t, target)
+	if decoded["custom"] == nil || decoded["provider"] == nil {
+		t.Fatalf("reinstall perdió claves desconocidas: %#v", decoded)
+	}
+}
+
+func TestInstallRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
+
+	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
+		t.Fatalf("expected invalid opencode.json error, got %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "opencode.json"))); got != `{bad-json` {
+		t.Fatalf("invalid opencode.json was overwritten: %q", got)
+	}
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("install wrote state after invalid opencode.json, stat err=%v", err)
+	}
+}
+
+func TestInstallRejectsUnsafeOpenCodePath(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "opencode.json")
+	writeInstallerFile(t, outside, `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
+	if err := os.Symlink(outside, filepath.Join(target, "opencode.json")); err != nil {
+		t.Skipf("symlink no soportado en este entorno: %v", err)
+	}
+
+	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !unsafeOpenCodeInstallError(err) {
+		t.Fatalf("expected unsafe opencode.json error, got %v", err)
+	}
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("install wrote state after unsafe opencode.json, stat err=%v", err)
+	}
+}
+
+func TestInstallRejectsInvalidOpenCodeManagedKeyTypes(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"$schema":false,"plugin":{}}`)
+
+	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
+		t.Fatalf("expected managed key type error, got %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "opencode.json"))); got != `{"$schema":false,"plugin":{}}` {
+		t.Fatalf("invalid opencode.json was overwritten: %q", got)
+	}
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("install wrote state after invalid opencode.json structure, stat err=%v", err)
+	}
+}
+
+func unsafeOpenCodeInstallError(err error) bool {
+	return strings.Contains(err.Error(), "archivo regular seguro") || strings.Contains(err.Error(), "symlink no permitido")
 }
 
 func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
@@ -245,6 +338,28 @@ func fileHashForTest(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return hashBytesForTest(body)
+}
+
+func readOpenCodeForTest(t *testing.T, target string) map[string]any {
+	t.Helper()
+	body, err := os.ReadFile(filepath.Join(target, "opencode.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	return decoded
+}
+
+func readFileForTest(t *testing.T, path string) []byte {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
 }
 
 func hashBytesForTest(body []byte) string {

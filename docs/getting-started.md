@@ -71,10 +71,14 @@ El argumento posicional histórico se conserva como alias de target:
 2. construye un plan de instalación;
 3. respeta `--dry-run` sin mutaciones;
 4. copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base);
-5. registra `.lufy-ai/install-state.json` con hashes SHA-256;
-6. evita sobrescribir archivos con drift local;
-7. crea backups antes de actualizaciones gestionadas cuando corresponde;
-8. omite Engram con `--no-engram` o lo resuelve desde `PATH` cuando aplique.
+5. crea o mergea `opencode.json` de forma conservadora: preserva claves desconocidas, agrega solo estructura mínima gestionada y, si Engram está habilitado, conserva otros MCP locales dentro de `mcp`;
+6. no trata `opencode.json` como asset completo por hash: queda fuera del manifest de assets completos y se valida por JSON/estructura mínima durante `verify`;
+7. registra `.lufy-ai/install-state.json` con hashes SHA-256 para assets completos gestionados;
+8. evita sobrescribir archivos con drift local;
+9. crea backups antes de actualizaciones gestionadas cuando corresponde;
+10. omite Engram con `--no-engram` o lo resuelve desde `PATH` cuando aplique.
+
+Si `opencode.json` existente no es JSON válido, o si `mcp` existe con un tipo incompatible cuando debe agregarse Engram, `install`/`sync` fallan sin sobrescribirlo y piden corregir o respaldar el archivo.
 
 Flags frecuentes:
 

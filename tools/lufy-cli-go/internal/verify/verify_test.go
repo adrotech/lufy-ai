@@ -160,6 +160,94 @@ func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
 	}
 }
 
+func TestVerifyFailsInvalidOrIncompleteMergeManagedOpenCode(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(invalid opencode.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "fail: JSON inválido en opencode.json") || !strings.Contains(out.String(), "estructura gestionada inválida") {
+		t.Fatalf("invalid opencode.json output unexpected: %s", out.String())
+	}
+
+	target = validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json"}`)
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(incomplete opencode.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "falta clave gestionada mínima plugin") {
+		t.Fatalf("incomplete opencode.json output unexpected: %s", out.String())
+	}
+}
+
+func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
+	target := validVerifyTarget(t)
+	outside := filepath.Join(t.TempDir(), "opencode.json")
+	writeVerifyFile(t, outside, `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
+	if err := os.Remove(filepath.Join(target, "opencode.json")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(target, "opencode.json")); err != nil {
+		t.Skipf("symlink no soportado en este entorno: %v", err)
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(symlink opencode.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "opencode.json") || !strings.Contains(out.String(), "symlink no permitido") {
+		t.Fatalf("symlink opencode.json output unexpected: %s", out.String())
+	}
+
+	target = validVerifyTarget(t)
+	if err := os.Remove(filepath.Join(target, "opencode.json")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(target, "opencode.json"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(directory opencode.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "archivo regular seguro") {
+		t.Fatalf("directory opencode.json output unexpected: %s", out.String())
+	}
+
+	target = validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":[]}`)
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(invalid managed type opencode.json) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "$schema debe ser string") {
+		t.Fatalf("invalid managed type output unexpected: %s", out.String())
+	}
+}
+
+func validVerifyTarget(t *testing.T) string {
+	t.Helper()
+	target := t.TempDir()
+	writeVerifyDirs(t, target)
+	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
+	for _, rel := range requiredManagedFiles {
+		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
+	}
+	var states []state.AssetState
+	for _, rel := range requiredManagedFiles {
+		hash, err := assets.FileSHA256(filepath.Join(target, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+	}
+	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+		t.Fatal(err)
+	}
+	return target
+}
+
 func writeVerifyDirs(t *testing.T, target string) {
 	t.Helper()
 	for _, rel := range requiredDirs {
@@ -167,6 +255,7 @@ func writeVerifyDirs(t *testing.T, target string) {
 			t.Fatal(err)
 		}
 	}
+	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
 }
 
 func writeVerifyFile(t *testing.T, path, content string) {
