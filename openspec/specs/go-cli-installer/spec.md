@@ -21,7 +21,7 @@ La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup`, `
 
 #### Scenario: Verify de un target
 - **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>`
-- **THEN** la CLI valida estructura instalada, archivos esperados, JSON parseable cuando aplique y estado de integración Engram según flags
+- **THEN** la CLI valida estructura instalada, archivos esperados, JSON parseable cuando aplique, `.lufy-ai/install-state.json`, manifest de assets gestionados, hashes SHA-256 y estado de integración Engram según flags
 
 #### Scenario: Backup explícito
 - **WHEN** el usuario ejecuta `lufy-ai backup --target <dir>`
@@ -204,3 +204,26 @@ La implementación SHALL incluir validación real del comando `sync` usando coma
 #### Scenario: Verify tras sync temporal
 - **WHEN** una instalación temporal y un sync real se ejecutan en un directorio temporal de prueba
 - **THEN** `lufy-ai verify --target <temp>` valida el resultado sin depender de modificar el repositorio fuente
+
+### Requirement: `lufy-ai verify` canónico
+La CLI Go SHALL usar `lufy-ai verify` como verificador canónico de instalaciones y MUST NOT requerir ni introducir `scripts/verify-install.sh`.
+
+#### Scenario: Verificación estructural de categorías críticas
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **THEN** la CLI valida que `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins` y `.opencode/policies` existen como directorios seguros no symlink
+
+#### Scenario: Verificación de archivos críticos
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **THEN** la CLI valida que `.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml` y `.lufy-ai/install-state.json` existen como archivos seguros no symlink
+
+#### Scenario: Archivos críticos presentes en manifest
+- **WHEN** un archivo crítico gestionado existe en el target pero no está registrado en `.lufy-ai/install-state.json`
+- **THEN** `lufy-ai verify` falla indicando que el asset clave no está en el manifest
+
+#### Scenario: Hashes de assets gestionados
+- **WHEN** un asset listado en `.lufy-ai/install-state.json` existe pero su SHA-256 actual no coincide con `targetSHA256`
+- **THEN** `lufy-ai verify` falla reportando drift con hashes abreviados expected/actual
+
+#### Scenario: No existe script verificador paralelo
+- **WHEN** se documenta o valida una instalación local/CI
+- **THEN** la guía usa `lufy-ai verify` y no define `scripts/verify-install.sh` como objetivo ni dependencia
