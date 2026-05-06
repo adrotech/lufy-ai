@@ -39,9 +39,9 @@ El repositorio incluye hoy:
 | Observatory | `.opencode/plugins/agent-observatory.tsx` y comandos `/observatory*` para la TUI local. |
 | CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync` y `version`. |
 | Instalador Bash | `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy. |
-| Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Requiere crear un tag `v*` para publicar; mientras no exista ese tag no hay release publicada. |
+| Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Requiere crear un tag `v*` sobre un commit alcanzable desde `main`; mientras no exista ese tag no hay release publicada. |
 | OpenSpec base | `openspec/` con configuración, documentación y estructura base. |
-| CI mínimo | `.github/workflows/go-cli-install.yml` para tests/build/smokes de la CLI Go, sanity OpenSpec condicional y `git diff --check`. |
+| CI mínimo | `.github/workflows/go-cli-install.yml` para PRs/pushes a `develop` y `main`: tests/build/smokes de la CLI Go, sanity OpenSpec condicional y `git diff --check`. |
 
 No son capacidades instalables actuales:
 
@@ -164,6 +164,13 @@ Roles instalados:
 | `reviewer` | Revisa calidad, riesgos y cobertura sin editar. |
 | `delivery` | Con autorización explícita, maneja Git/GitHub, PRs y trazabilidad. |
 
+## Flujo de ramas y releases
+
+- `develop` es la rama normal de integración y la base por defecto para PRs de trabajo (`feature/*`, `fix/*`, `chore/*` o equivalentes).
+- `main` es la rama productiva/estable. No se usa como base de trabajo diario; recibe promociones `develop` → `main` o hotfix/release explícitamente autorizados.
+- Los releases estables se publican desde tags `v*` creados sobre commits alcanzables desde `origin/main`; el workflow de release bloquea tags creados solo sobre `develop`.
+- La configuración remota esperada está resumida en [`docs/github-branch-settings.md`](docs/github-branch-settings.md): default branch `develop` y protección para `develop`/`main`.
+
 ## Validación local y CI
 
 Validación local recomendada para cambios de CLI/instalador:
@@ -184,15 +191,16 @@ tools/lufy-cli-go/scripts/smoke-bootstrap.sh
 git diff --check
 ```
 
-El workflow `.github/workflows/go-cli-install.yml` cubre el gate mínimo de esta rama: tests Go, build Go, smokes de CLI/wrapper, sanity OpenSpec condicional cuando existe la CLI `openspec`, y `git diff --check`.
+El workflow `.github/workflows/go-cli-install.yml` cubre el gate mínimo para PRs/pushes a `develop` y `main`: tests Go, build Go, smokes de CLI/wrapper, sanity OpenSpec condicional cuando existe la CLI `openspec`, y `git diff --check`.
 
-El workflow `.github/workflows/release.yml` construye y valida artifacts de release solo desde contexto autorizado: tags `v*` o `workflow_dispatch`. La publicación de GitHub Release queda limitada a refs de tag `v*`; ejecutar validación manual no implica que exista una release pública.
+El workflow `.github/workflows/release.yml` construye, valida y publica artifacts de release solo desde tags `v*`. Antes de publicar verifica que el commit taggeado sea alcanzable desde `origin/main`; no publica releases estables desde `develop` sin promoción previa.
 
 No hay suite Node/TypeScript de producto en la raíz del repo; no se debe asumir `npm test`, `npm run typecheck` ni `tsc` global para validar este kit.
 
 ## Roadmap y enlaces
 
 - [`docs/getting-started.md`](docs/getting-started.md): instalación paso a paso, uso posterior y troubleshooting.
+- [`docs/github-branch-settings.md`](docs/github-branch-settings.md): settings esperados de ramas GitHub para `develop`/`main`.
 - [`docs/roadmap.md`](docs/roadmap.md): hardening, templates futuros, detección de stack y subagentes no instalables hoy.
 - [`openspec/README.md`](openspec/README.md): estructura y ciclo OpenSpec.
 - [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md): detalles técnicos, comandos y validación de la CLI Go.

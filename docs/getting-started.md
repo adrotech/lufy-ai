@@ -159,6 +159,13 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify` y `/opsx-archive` para cambios OpenSpec.
 5. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
 
+## Flujo de contribución y release del repositorio
+
+- Abre PRs normales desde ramas `feature/*`, `fix/*`, `chore/*` o equivalentes hacia `develop`.
+- Reserva `main` para producción/estabilidad: promociones `develop` → `main` o hotfix/release explícitamente autorizados.
+- Crea tags estables `v*` solo sobre commits alcanzables desde `origin/main`. El workflow de release bloquea publicación si el tag apunta a un commit que aún vive solo en `develop`.
+- Consulta [`docs/github-branch-settings.md`](github-branch-settings.md) para configurar default branch `develop` y protección de `develop`/`main` en GitHub.
+
 ## Comandos slash disponibles
 
 | Comando | Descripción |
@@ -188,9 +195,9 @@ tools/lufy-cli-go/scripts/smoke-bootstrap.sh
 git diff --check
 ```
 
-El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y cubre un gate mínimo para la CLI Go y el wrapper. Que exista el workflow no reemplaza la validación local ni implica que otras proposals ya estén archivadas.
+El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y cubre un gate mínimo para la CLI Go y el wrapper en PRs/pushes a `develop` y `main`. Que exista el workflow no reemplaza la validación local ni implica que otras proposals ya estén archivadas.
 
-El workflow `.github/workflows/release.yml` construye artifacts versionados, checksums y smokes de release/bootstrap. Solo publica GitHub Releases desde refs de tag `v*`; una ejecución manual de validación no crea por sí misma una release pública.
+El workflow `.github/workflows/release.yml` construye artifacts versionados, checksums y smokes de release/bootstrap. Solo corre para tags `v*` y publica GitHub Releases si el commit taggeado es alcanzable desde `origin/main`; no hay release estable desde `develop` sin promoción.
 
 No hay toolchain Node/TypeScript de producto en la raíz; no asumas `npm test`, `npm run typecheck` ni `tsc` global.
 
@@ -231,4 +238,5 @@ El bootstrap depende de GitHub Releases. Si aún no se creó un tag `v*` y se pu
 - [README raíz](../README.md)
 - [OpenSpec Overview](../openspec/README.md)
 - [CLI Go README](../tools/lufy-cli-go/README.md)
+- [GitHub branch settings](github-branch-settings.md)
 - [Roadmap](roadmap.md)
