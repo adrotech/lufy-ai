@@ -39,7 +39,7 @@ El repositorio incluye hoy:
 | Observatory | `.opencode/plugins/agent-observatory.tsx` y comandos `/observatory*` para la TUI local. |
 | CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync` y `version`. |
 | Instalador Bash | `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy. |
-| Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Requiere crear un tag `v*` sobre un commit alcanzable desde `main`; mientras no exista ese tag no hay release publicada. |
+| Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Al mergear un PR hacia `main`, `.github/workflows/auto-release-tag.yml` crea el siguiente tag patch `vMAJOR.MINOR.PATCH` sobre el merge commit e invoca explícitamente la publicación. |
 | OpenSpec base | `openspec/` con configuración, documentación y estructura base. |
 | CI mínimo | `.github/workflows/go-cli-install.yml` para PRs/pushes a `develop` y `main`: tests/build/smokes de la CLI Go, sanity OpenSpec condicional y `git diff --check`. |
 
@@ -55,7 +55,7 @@ El cambio `route-orchestrator-to-domain-agents` sigue siendo trabajo activo/futu
 
 ### Opción recomendada cuando exista una release `v*`
 
-El flujo sin clone se habilita con releases de GitHub versionadas. En esta rama ya existe el soporte runtime, pero **no hay release publicada hasta que un maintainer cree y publique un tag `v*`**.
+El flujo sin clone se habilita con releases de GitHub versionadas. Los tags estables `v*` se crean automáticamente como patch release cuando un PR se mergea hacia `main`; si todavía no existe una release publicada, espera a la primera promoción a `main`.
 
 Usa siempre una versión explícita para automatización:
 
@@ -168,7 +168,9 @@ Roles instalados:
 
 - `develop` es la rama normal de integración y la base por defecto para PRs de trabajo (`feature/*`, `fix/*`, `chore/*` o equivalentes).
 - `main` es la rama productiva/estable. No se usa como base de trabajo diario; recibe promociones `develop` → `main` o hotfix/release explícitamente autorizados.
-- Los releases estables se publican desde tags `v*` creados sobre commits alcanzables desde `origin/main`; el workflow de release bloquea tags creados solo sobre `develop`.
+- Al cerrar mergeado un PR hacia `main`, `.github/workflows/auto-release-tag.yml` calcula el mayor tag semver simple `vMAJOR.MINOR.PATCH`, ignora prereleases, crea `v0.1.0` si no hay tags válidos o incrementa `PATCH` en caso contrario, pushea un tag anotado sobre el merge commit e invoca `.github/workflows/release.yml` con `workflow_dispatch` para ese tag.
+- Si el tag calculado ya existe localmente o en `origin`, el workflow no lo sobrescribe, no invoca un release duplicado y termina como no-op explícito.
+- Los releases estables se publican desde tags `v*` creados sobre commits alcanzables desde `origin/main`; el workflow de release bloquea tags creados solo sobre `develop` y el workflow de auto-tag repite esa verificación antes de taggear.
 - La configuración remota esperada está resumida en [`docs/github-branch-settings.md`](docs/github-branch-settings.md): default branch `develop` y protección para `develop`/`main`.
 
 ## Validación local y CI
@@ -193,7 +195,7 @@ git diff --check
 
 El workflow `.github/workflows/go-cli-install.yml` cubre el gate mínimo para PRs/pushes a `develop` y `main`: tests Go, build Go, smokes de CLI/wrapper, sanity OpenSpec condicional cuando existe la CLI `openspec`, y `git diff --check`.
 
-El workflow `.github/workflows/release.yml` construye, valida y publica artifacts de release solo desde tags `v*`. Antes de publicar verifica que el commit taggeado sea alcanzable desde `origin/main`; no publica releases estables desde `develop` sin promoción previa.
+El workflow `.github/workflows/auto-release-tag.yml` solo crea y pushea el tag anotado al mergear PRs hacia `main` e invoca explícitamente `.github/workflows/release.yml` con `workflow_dispatch`; no compila binarios ni publica GitHub Releases. `release.yml` también conserva el trigger por push de tags `v*` para tags manuales/humanos. Antes de publicar verifica que el tag sea `v*` y que el commit taggeado sea alcanzable desde `origin/main`; no publica releases estables desde `develop` sin promoción previa.
 
 No hay suite Node/TypeScript de producto en la raíz del repo; no se debe asumir `npm test`, `npm run typecheck` ni `tsc` global para validar este kit.
 
