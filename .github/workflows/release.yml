@@ -70,8 +70,13 @@ jobs:
           RELEASE_COMMIT: ${{ steps.meta.outputs.release_commit }}
           RELEASE_VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          git fetch --no-tags --prune origin main
-          if ! git merge-base --is-ancestor "$RELEASE_COMMIT" origin/main; then
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          if ! git show-ref --verify --quiet refs/remotes/origin/main; then
+            echo "No se pudo resolver refs/remotes/origin/main después del fetch determinista; no se publicará el release estable." >&2
+            exit 2
+          fi
+
+          if ! git merge-base --is-ancestor "$RELEASE_COMMIT" refs/remotes/origin/main; then
             echo "tag ${RELEASE_VERSION} apunta a $RELEASE_COMMIT, que no es alcanzable desde origin/main" >&2
             echo "Promueve develop -> main antes de publicar un release estable." >&2
             exit 2

@@ -40,15 +40,20 @@ jobs:
             exit 2
           fi
 
-          git fetch --prune --tags origin
-          git fetch --no-tags --prune origin main:refs/remotes/origin/main
+          git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
+          git fetch --tags origin
+
+          if ! git show-ref --verify --quiet refs/remotes/origin/main; then
+            echo "No se pudo resolver refs/remotes/origin/main después del fetch determinista; no se creará tag estable." >&2
+            exit 2
+          fi
 
           if ! git cat-file -e "${MERGE_COMMIT_SHA}^{commit}"; then
             echo "merge_commit_sha no resuelve a un commit: ${MERGE_COMMIT_SHA}" >&2
             exit 2
           fi
 
-          if ! git merge-base --is-ancestor "$MERGE_COMMIT_SHA" origin/main; then
+          if ! git merge-base --is-ancestor "$MERGE_COMMIT_SHA" refs/remotes/origin/main; then
             echo "El merge commit ${MERGE_COMMIT_SHA} no es alcanzable desde origin/main; no se creará tag estable." >&2
             exit 2
           fi
