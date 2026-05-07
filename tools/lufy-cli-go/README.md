@@ -61,7 +61,7 @@ Scripts relacionados:
 | `../../scripts/bootstrap.sh` | Bootstrap remoto seguro: detecta OS/arch, descarga artifact/checksums de una release, verifica SHA-256 e instala solo el binario en el directorio elegido. |
 | `scripts/smoke-bootstrap.sh` | Valida bootstrap con fixtures `file://`, incluyendo dry-run, checksum correcto y bloqueo por checksum incorrecto. |
 
-El bootstrap soporta `--version vX.Y.Z` o `LUFY_AI_VERSION`; `--version latest` existe como conveniencia no reproducible. Para automatización se recomienda siempre una versión fija. También soporta `--install-dir`/`LUFY_AI_INSTALL_DIR` y falla con mensaje accionable si el destino no es escribible. No ejecuta comandos destructivos como `lufy-ai install` contra un target de proyecto.
+El bootstrap soporta `--version vX.Y.Z` o `LUFY_AI_VERSION`; `--version latest` existe como conveniencia no reproducible. Para automatización se recomienda siempre una versión fija. También soporta `--install-dir`/`LUFY_AI_INSTALL_DIR` y falla con mensaje accionable si el destino no es escribible. Si el directorio instalado no está en `PATH`, muestra instrucciones para bash/zsh y fish sin modificar archivos de shell automáticamente. No ejecuta comandos destructivos como `lufy-ai install` contra un target de proyecto. Ver la guía de usuario en [`../../docs/installation.md`](../../docs/installation.md).
 
 ## Comandos de usuario
 

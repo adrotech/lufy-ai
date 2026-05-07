@@ -53,23 +53,25 @@ El cambio `route-orchestrator-to-domain-agents` sigue siendo trabajo activo/futu
 
 ## Instalación rápida
 
-### Opción recomendada cuando exista una release `v*`
+Versión estable actual: `v0.1.0`.
 
-El flujo sin clone se habilita con releases de GitHub versionadas. Los tags estables `v*` se crean automáticamente como patch release cuando un PR se mergea hacia `main`; si todavía no existe una release publicada, espera a la primera promoción a `main`.
+Para instalación completa por OS/shell —incluyendo macOS, Linux, Windows/WSL y configuración de `PATH` para bash, zsh y fish— ver [`docs/installation.md`](docs/installation.md).
 
-Usa siempre una versión explícita para automatización:
+Resumen sin clone desde release estable:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version vX.Y.Z --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
 ```
+
+Si el bootstrap indica que el directorio no está en `PATH`, aplica la instrucción correspondiente a tu shell (bash/zsh o fish) desde la guía dedicada y abre una terminal nueva.
 
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh \
-  | bash -s -- --version vX.Y.Z --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh \
+  | bash -s -- --version v0.1.0 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap detecta OS/arch, descarga el artifact `lufy-ai_<version>_<os>_<arch>`, verifica su SHA-256 contra el archivo de checksums de la misma release y solo instala el binario. No ejecuta `lufy-ai install` contra tu proyecto.
@@ -124,8 +126,6 @@ Flags frecuentes:
 | `--yes` | Autoriza mutaciones reales cuando no hay conflictos bloqueantes. |
 | `--no-engram` | Omite resolución/configuración de Engram. |
 | `--backup <path>` | Ruta usada por `restore` para restaurar un backup existente. |
-
-Ver el paso a paso completo en [`docs/getting-started.md`](docs/getting-started.md).
 
 ## CLI Go
 
@@ -201,7 +201,8 @@ No hay suite Node/TypeScript de producto en la raíz del repo; no se debe asumir
 
 ## Roadmap y enlaces
 
-- [`docs/getting-started.md`](docs/getting-started.md): instalación paso a paso, uso posterior y troubleshooting.
+- [`docs/installation.md`](docs/installation.md): instalación paso a paso, PATH por OS/shell y troubleshooting.
+- [`docs/getting-started.md`](docs/getting-started.md): quickstart, uso posterior y flujo de contribución.
 - [`docs/github-branch-settings.md`](docs/github-branch-settings.md): settings esperados de ramas GitHub para `develop`/`main`.
 - [`docs/roadmap.md`](docs/roadmap.md): hardening, templates futuros, detección de stack y subagentes no instalables hoy.
 - [`openspec/README.md`](openspec/README.md): estructura y ciclo OpenSpec.
