@@ -184,5 +184,20 @@ install -m 0755 "$bin" "$INSTALL_DIR/lufy-ai"
 echo "lufy-ai instalado en $INSTALL_DIR/lufy-ai"
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
-  *) echo "Agrega a PATH: export PATH=\"$INSTALL_DIR:\$PATH\"" ;;
+  *)
+    cat <<EOF
+
+$INSTALL_DIR no está en tu PATH actual. Agrega el directorio a tu shell y abre una terminal nueva:
+
+Bash/Zsh:
+  export PATH="$INSTALL_DIR:\$PATH"
+
+Fish:
+  fish_add_path $INSTALL_DIR
+  # Alternativa sin fish_add_path:
+  set -gx PATH $INSTALL_DIR \$PATH
+
+Este bootstrap no modifica automáticamente archivos de configuración del shell.
+EOF
+    ;;
 esac
