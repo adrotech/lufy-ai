@@ -2,6 +2,7 @@
 
 - [x] 1.1 Agregar workflow `auto-release-tag.yml` para eventos `pull_request.closed` hacia `main` con permisos mínimos.
 - [x] 1.2 Implementar guardas para PR mergeado, branch `main`, merge commit resoluble y alcanzabilidad desde `origin/main`.
+- [x] 1.2.1 Corregir fetch determinista de `main` para evitar fallos cuando `origin/main` fue pruned en el runner.
 - [x] 1.3 Implementar cálculo del siguiente tag patch desde tags `vMAJOR.MINOR.PATCH`, con fallback inicial `v0.1.0`.
 - [x] 1.4 Crear y pushear tag anotado sin sobrescribir tags existentes, con no-op explícito si el tag calculado ya existe.
 
