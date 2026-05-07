@@ -22,32 +22,29 @@ Incluye:
 
 ## Instalación rápida
 
-### 1. Instalar el binario sin clone desde una release `v*`
+Versión estable actual: `v0.1.0`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
 
-El soporte de release/checkout standalone existe en esta rama, pero **no hay release publicada hasta crear y publicar un tag `v*`**. Cuando exista una release, usa pinning explícito:
+### 1. Instalar el binario sin clone desde una release estable
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version vX.Y.Z --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
 ```
 
-También existe un atajo directo, documentado junto a la alternativa inspeccionable anterior:
+Si `~/.local/bin` no está en `PATH`, configura tu shell antes de continuar. Ejemplos rápidos:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/vX.Y.Z/scripts/bootstrap.sh \
-  | bash -s -- --version vX.Y.Z --install-dir "$HOME/.local/bin"
+# bash/zsh
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-El bootstrap:
+```fish
+# fish
+fish_add_path $HOME/.local/bin
+```
 
-1. detecta OS/arch soportado;
-2. resuelve la versión seleccionada (`vX.Y.Z`, o `latest` solo como conveniencia explícita no reproducible);
-3. descarga artifact y checksums de la misma release;
-4. verifica SHA-256 antes de instalar o ejecutar el binario;
-5. copia solo `lufy-ai` al directorio elegido y muestra guía de `PATH`.
-
-No ejecuta `lufy-ai install` contra ningún proyecto por defecto.
+El bootstrap detecta OS/arch, verifica SHA-256 e instala solo el binario. No ejecuta `lufy-ai install` contra ningún proyecto por defecto.
 
 ### 2. Revisar el plan con `--dry-run`
 
@@ -207,6 +204,8 @@ Los templates por stack, detección de stack y subagentes adicionales son roadma
 
 ## Solución de problemas
 
+Para problemas de instalación del binario, `PATH`, fish o ejecución por ruta absoluta, consulta [`docs/installation.md#troubleshooting`](installation.md#troubleshooting).
+
 ### El wrapper no encuentra `lufy-ai`
 
 Compila el binario local:
@@ -217,9 +216,9 @@ mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 ```
 
-### No existe una release para `vX.Y.Z`
+### No existe una release para la versión seleccionada
 
-El bootstrap depende de GitHub Releases. Si aún no se creó un tag `v*` y se publicó la release correspondiente, usa el flujo de desarrollo/contribuidor o espera a que exista el artifact versionado con su archivo de checksums.
+El bootstrap depende de GitHub Releases. Si la versión seleccionada no tiene artifact para tu plataforma o checksums publicados, usa el flujo de desarrollo/contribuidor o espera a que exista la release correspondiente.
 
 ### Los agentes no cargan
 
@@ -236,6 +235,7 @@ El bootstrap depende de GitHub Releases. Si aún no se creó un tag `v*` y se pu
 ## Más documentación
 
 - [README raíz](../README.md)
+- [Instalación completa](installation.md)
 - [OpenSpec Overview](../openspec/README.md)
 - [CLI Go README](../tools/lufy-cli-go/README.md)
 - [GitHub branch settings](github-branch-settings.md)
