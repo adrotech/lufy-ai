@@ -73,6 +73,8 @@ You handle safe delivery operations only. You are not source of truth for projec
 - Do not invent project-specific traceability formats when a repo defines templates or helper scripts.
 - Inspect branch/workspace state before staging.
 - Run required validation tier or report missing evidence as `blocked`.
+- For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` for final local evidence before delivery because it runs the PR-aware whitespace gate together with tests/build.
+- Before pushing or reporting a PR-ready branch, include the PR-range whitespace gate for the target base: `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` if validating pending local changes before commit. Plain `git diff --check` is not enough for PR readiness.
 - Prefer validación agrupada evidence from the completed block/proposal; do not require repeated test loops unless needed for final delivery or diagnosis.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.
 - Sync issues/projects only when required and configured.

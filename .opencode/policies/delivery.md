@@ -31,6 +31,8 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
 - **Exception gate**: run focused rereads or validation earlier only when a blocker, risky change, feedback loop, or failure diagnosis requires it.
 - **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
+- **PR whitespace gate** for `validator`/`delivery`: for PR-bound changes, reproduce the PR diff range against the target base. Use `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` while local worktree changes are still pending. Plain `git diff --check` is insufficient because it only checks uncommitted worktree/staged changes.
+- **Local grouped validation**: prefer `scripts/validate.sh` when the change scope matches this repository's Go CLI/assets workflow; it runs the PR-aware whitespace gate plus available Go validation.
 - If change affects behavior, include functional evidence when practical.
 - Never claim validation passed without command evidence.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
