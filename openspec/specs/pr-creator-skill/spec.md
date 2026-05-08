@@ -113,4 +113,3 @@ El skill SHALL analizar automáticamente archivos modificados y diff disponible 
 #### Scenario: Señal ambigua de persistencia
 - **WHEN** el diff sugiere cambios de persistencia pero no coincide con patrones conocidos de migración
 - **THEN** la sección `Migraciones` marca el estado como `Pendiente de confirmar` e incluye la evidencia ambigua encontrada
-
