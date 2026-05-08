@@ -46,4 +46,3 @@ The installer SHALL write managed file content atomically to avoid partially wri
 #### Scenario: Backup and restore write atomically
 - **WHEN** backup captures a file or restore writes a captured file back to target
 - **THEN** the destination file is written atomically with no direct partial `os.WriteFile` target write
-
