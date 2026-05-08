@@ -10,6 +10,9 @@ permission:
   bash:
     "*": ask
     "pwd": allow
+    "ls*": allow
+    "dir*": allow
+    "cp *": allow
     "go version": allow
     "go env*": allow
     "go list*": allow
@@ -79,7 +82,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - During iteration, avoid repeated old-file rereads. Reread old files only if modified/affected, conflicted, blocked, risky, scope changes, or new evidence invalidates the initial analysis.
 - Before final validation, review changed/affected old files or diffs for coherence with dependencies and expected behavior.
 - Do not commit, push, create PRs, or update GitHub Projects.
-- Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist.
+- Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist. Basic navigation/copy commands like `ls`, `dir`, and `cp` are allowed for implementation work.
 - Do not delegate to other agents.
 - Do not fabricate validation evidence.
 - If change needs broader impact analysis, report that `explorer` should run first.
