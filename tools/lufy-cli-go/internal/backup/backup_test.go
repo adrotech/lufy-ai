@@ -35,6 +35,9 @@ func TestBackupAndRestoreMultiassetCreatesPreRestoreRecovery(t *testing.T) {
 	if len(manifest.Files) != 2 || manifest.Files[0].SHA256 == "" || manifest.Files[0].Size == 0 {
 		t.Fatalf("manifest incompleto: %#v", manifest.Files)
 	}
+	if manifest.ToolVersion == "" || manifest.ToolCommit == "" || manifest.ToolBuildDate == "" {
+		t.Fatalf("manifest missing runtime tool metadata: %#v", manifest)
+	}
 
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "agents broken\n")
 	out.Reset()
@@ -181,7 +184,7 @@ func stateWithFiles(t *testing.T, target string, rels []string) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -25,6 +25,8 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 
 Esta página contiene ideas futuras y decisiones estratégicas. Salvo que una sección indique explícitamente que algo ya existe en la rama actual, no debe leerse como contrato instalable.
 
+Para el backlog priorizado de mejoras detectadas por análisis externo, ver [`docs/backlog.md`](backlog.md). Ese backlog agrupa oportunidades por olas y sirve como entrada para futuras proposals OpenSpec.
+
 Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.

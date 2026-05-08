@@ -6,17 +6,20 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 const (
-	SchemaVersion  = 1
-	ToolVersion    = "dev"
-	SourceChangeID = "install-managed-assets-with-hash-idempotency"
+	SchemaVersion = 1
 )
 
 type InstallState struct {
 	SchemaVersion         int          `json:"schemaVersion"`
 	ToolVersion           string       `json:"toolVersion"`
+	ToolCommit            string       `json:"toolCommit,omitempty"`
+	ToolBuildDate         string       `json:"toolBuildDate,omitempty"`
 	SourceChangeID        string       `json:"sourceChangeID"`
 	SourceRootFingerprint string       `json:"sourceRootFingerprint"`
 	InstalledAt           string       `json:"installedAt"`
@@ -67,29 +70,17 @@ func WriteAtomic(targetRoot string, st InstallState) error {
 		return err
 	}
 	body = append(body, '\n')
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".install-state-*.tmp")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
-	if _, err := tmp.Write(body); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmpName, path)
+	return platform.WriteFileAtomic(path, body, 0o644)
 }
 
-func New(targetRoot string, previous *InstallState, assets []AssetState) InstallState {
+func New(targetRoot string, previous *InstallState, assets []AssetState, sourceRootFingerprint string) InstallState {
 	now := time.Now().UTC().Format(time.RFC3339)
 	installedAt := now
 	if previous != nil && previous.InstalledAt != "" {
 		installedAt = previous.InstalledAt
 	}
-	return InstallState{SchemaVersion: SchemaVersion, ToolVersion: ToolVersion, SourceChangeID: SourceChangeID, SourceRootFingerprint: "dev-checkout", InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
+	info := version.Current()
+	return InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
 }
 
 func (s InstallState) AssetMap() map[string]AssetState {

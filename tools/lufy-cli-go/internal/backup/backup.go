@@ -11,6 +11,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 const SchemaVersion = 1
@@ -23,6 +24,8 @@ type Manifest struct {
 	SchemaVersion int        `json:"schemaVersion"`
 	CreatedAt     string     `json:"createdAt"`
 	ToolVersion   string     `json:"toolVersion"`
+	ToolCommit    string     `json:"toolCommit,omitempty"`
+	ToolBuildDate string     `json:"toolBuildDate,omitempty"`
 	TargetRoot    string     `json:"targetRoot"`
 	Cause         string     `json:"cause"`
 	Files         []FileItem `json:"files"`
@@ -77,7 +80,8 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 		return "", err
 	}
 
-	manifest := Manifest{SchemaVersion: SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), ToolVersion: state.ToolVersion, TargetRoot: target, Cause: cause}
+	toolInfo := version.Current()
+	manifest := Manifest{SchemaVersion: SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), ToolVersion: toolInfo.Version, ToolCommit: toolInfo.Commit, ToolBuildDate: toolInfo.BuildDate, TargetRoot: target, Cause: cause}
 	for _, rel := range uniqueStrings(rels) {
 		clean, err := platform.EnsureRelativeSafe(rel)
 		if err != nil {
@@ -122,7 +126,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 		return "", err
 	}
 	body = append(body, '\n')
-	if err := os.WriteFile(manifestPath, body, 0o644); err != nil {
+	if err := platform.WriteFileAtomic(manifestPath, body, 0o644); err != nil {
 		return "", err
 	}
 	fmt.Fprintf(stdout, "Backup creado: %s (%d archivo(s))\n", backupDir, len(manifest.Files))
@@ -314,7 +318,7 @@ func copyFile(src, targetRoot, targetRel string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(dst, content, 0o644)
+	return platform.WriteFileAtomic(dst, content, 0o644)
 }
 
 func uniqueStrings(values []string) []string {

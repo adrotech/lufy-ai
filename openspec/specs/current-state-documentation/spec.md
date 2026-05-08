@@ -86,4 +86,3 @@ The roadmap SHALL record this distribution roadmap as planned future work and MU
 #### Scenario: Roadmap planned block
 - **WHEN** a reader opens `docs/roadmap.md` during this proposal stage
 - **THEN** it includes a planned block for versioned binary releases, bootstrap installation and standalone assets without claiming them as current capabilities
-

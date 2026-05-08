@@ -134,6 +134,9 @@ func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *
 	if err != nil {
 		t.Fatal(err)
 	}
+	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
+		t.Fatalf("install state metadata not populated from runtime/catalog: %#v", st)
+	}
 	if _, ok := st.AssetMap()["opencode.json"]; ok {
 		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
 	}

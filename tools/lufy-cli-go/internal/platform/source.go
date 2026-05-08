@@ -65,10 +65,15 @@ func EnsureRelativeSafe(path string) (string, error) {
 	if path == "" || filepath.IsAbs(path) {
 		return "", fmt.Errorf("path no permitido en catálogo: %q", path)
 	}
-	clean := filepath.Clean(path)
-	if clean == "." || clean == ".." || len(clean) >= 3 && clean[:3] == "../" {
+	normalized := strings.ReplaceAll(path, "\\", "/")
+	if normalized == "" || strings.HasPrefix(normalized, "/") || len(normalized) >= 2 && normalized[1] == ':' {
+		return "", fmt.Errorf("path no permitido en catálogo: %q", path)
+	}
+	cleanSlash := filepath.ToSlash(filepath.Clean(normalized))
+	if cleanSlash == "." || cleanSlash == ".." || strings.HasPrefix(cleanSlash, "../") {
 		return "", fmt.Errorf("path escapa del root permitido: %q", path)
 	}
+	clean := filepath.FromSlash(cleanSlash)
 	return clean, nil
 }
 

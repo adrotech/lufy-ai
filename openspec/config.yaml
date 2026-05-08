@@ -4,17 +4,17 @@
 specs:
   # Directorio donde viven las specs activas
   path: openspec/specs
-  
+
   # Nombre del archivo principal de spec (puede ser .md o .yaml)
   entry: spec.md
 
 changes:
   # Directorio para cambios/proposals activos
   path: openspec/changes
-  
+
   # Directorio para cambios archivados
   archive: openspec/changes/archive
-  
+
   # Formato de naming: kebab-case por defecto
   naming: kebab-case
 

@@ -67,6 +67,9 @@ You handle safe delivery operations only. You are not source of truth for projec
 - If `git-delivery` exists, load and follow it.
 - If `git-delivery` is not installed, follow `.opencode/policies/delivery.md`, repository `AGENTS.md`, and the user's explicit delivery authorization. Report optional missing project-sync/comment helpers as `blocked` or `sync_pending` only when those steps are required.
 - Treat `.opencode/policies/delivery.md` as shared policy for branch safety, validation tiers, traceability, and completed-change gates.
+- When creating a Pull Request and `.opencode/skills/pr.creator/` exists, use `pr.creator` before `gh pr create` to generate the suggested title and PR body from available OpenSpec context, diff, validation evidence, tracking, monitors, and migration signals; this also applies inside the delegated/local `git-delivery` flow when it exists, unless an explicit higher-priority policy conflicts.
+- Keep responsibility split explicit: `pr.creator` only structures/generates PR content; `delivery` still owns branch safety, final validation, staging, commit, push, `gh pr create`, issue/project sync, and delivery reporting.
+- If `.opencode/skills/pr.creator/` is unavailable or cannot be loaded during PR creation, report that limitation and fall back to `.opencode/policies/delivery.md` and any repo PR template only when doing so does not violate authorization or delivery gates.
 - Do not invent project-specific traceability formats when a repo defines templates or helper scripts.
 - Inspect branch/workspace state before staging.
 - Run required validation tier or report missing evidence as `blocked`.
