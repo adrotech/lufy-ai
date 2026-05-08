@@ -27,6 +27,8 @@ Esta página contiene ideas futuras y decisiones estratégicas. Salvo que una se
 
 Para el backlog priorizado de mejoras detectadas por análisis externo, ver [`docs/backlog.md`](backlog.md). Ese backlog agrupa oportunidades por olas y sirve como entrada para futuras proposals OpenSpec.
 
+Para política de firma, provenance, SBOM y labels de release, ver [`docs/release-security.md`](release-security.md).
+
 Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.

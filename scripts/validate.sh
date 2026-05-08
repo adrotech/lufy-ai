@@ -43,6 +43,9 @@ whitespace_check() {
 main() {
   whitespace_check
 
+  log "Action pinning"
+  "$REPO_ROOT/scripts/check-actions-pinned.sh"
+
   log "Go tests"
   (cd "$CLI_ROOT" && go test ./...)
 

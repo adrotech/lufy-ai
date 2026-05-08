@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release-artifacts:
@@ -23,13 +24,13 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Setup Go from go.mod
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version-file: tools/lufy-cli-go/go.mod
           cache-dependency-path: tools/lufy-cli-go/go.mod
@@ -99,6 +100,48 @@ jobs:
           LUFY_AI_DIST_DIR: dist
         run: scripts/build-release-artifacts.sh "${{ steps.meta.outputs.version }}"
 
+      - name: Generate release SBOM and provenance
+        working-directory: tools/lufy-cli-go
+        env:
+          LUFY_AI_VERSION: ${{ steps.meta.outputs.version }}
+          LUFY_AI_COMMIT: ${{ steps.meta.outputs.release_commit }}
+          LUFY_AI_BUILD_DATE: ${{ steps.meta.outputs.build_date }}
+          LUFY_AI_DIST_DIR: dist
+        run: scripts/generate-release-metadata.sh "${{ steps.meta.outputs.version }}"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
+
+      - name: Sign release artifacts
+        working-directory: tools/lufy-cli-go/dist
+        env:
+          COSIGN_YES: "true"
+          RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          shopt -s nullglob
+          for file in \
+            lufy-ai_${RELEASE_VERSION}_*.tar.gz \
+            lufy-ai_${RELEASE_VERSION}_*.zip \
+            lufy-ai_${RELEASE_VERSION}_checksums.txt \
+            lufy-ai_${RELEASE_VERSION}_sbom.spdx.json \
+            lufy-ai_${RELEASE_VERSION}_provenance.intoto.jsonl; do
+            cosign sign-blob --yes --bundle "${file}.bundle" "$file"
+          done
+
+      - name: Verify release verification material exists
+        working-directory: tools/lufy-cli-go/dist
+        env:
+          RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          test -s "lufy-ai_${RELEASE_VERSION}_checksums.txt"
+          test -s "lufy-ai_${RELEASE_VERSION}_sbom.spdx.json"
+          test -s "lufy-ai_${RELEASE_VERSION}_provenance.intoto.jsonl"
+          shopt -s nullglob
+          artifacts=(lufy-ai_${RELEASE_VERSION}_*.tar.gz lufy-ai_${RELEASE_VERSION}_*.zip lufy-ai_${RELEASE_VERSION}_checksums.txt lufy-ai_${RELEASE_VERSION}_sbom.spdx.json lufy-ai_${RELEASE_VERSION}_provenance.intoto.jsonl)
+          for file in "${artifacts[@]}"; do
+            test -s "${file}.bundle"
+          done
+
       - name: Smoke release artifacts
         working-directory: tools/lufy-cli-go
         run: scripts/smoke-release-artifacts.sh
@@ -111,17 +154,20 @@ jobs:
         run: shasum -a 256 -c "lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt"
 
       - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: lufy-ai-${{ steps.meta.outputs.version }}-release-artifacts
           path: |
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.tar.gz
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.zip
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_sbom.spdx.json
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_provenance.intoto.jsonl
+            tools/lufy-cli-go/dist/*.bundle
           if-no-files-found: error
 
       - name: Publish GitHub Release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
           fail_on_unmatched_files: true
@@ -129,3 +175,6 @@ jobs:
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.tar.gz
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.zip
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_checksums.txt
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_sbom.spdx.json
+            tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_provenance.intoto.jsonl
+            tools/lufy-cli-go/dist/*.bundle
