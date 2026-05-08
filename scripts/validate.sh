@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# Validación agrupada local para cambios destinados a PR.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CLI_ROOT="$REPO_ROOT/tools/lufy-cli-go"
+BASE_REF="${LUFY_AI_VALIDATE_BASE:-develop}"
+
+log() {
+  printf '==> %s\n' "$1"
+}
+
+ensure_base_ref() {
+  if git -C "$REPO_ROOT" rev-parse --verify --quiet "origin/${BASE_REF}" >/dev/null; then
+    return 0
+  fi
+  if git -C "$REPO_ROOT" remote get-url origin >/dev/null 2>&1; then
+    git -C "$REPO_ROOT" fetch --no-tags --prune origin "$BASE_REF"
+  fi
+}
+
+whitespace_check() {
+  ensure_base_ref
+
+  if git -C "$REPO_ROOT" rev-parse --verify --quiet "origin/${BASE_REF}" >/dev/null; then
+    if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
+      log "Whitespace contra origin/${BASE_REF} incluyendo worktree"
+      git -C "$REPO_ROOT" diff --check "origin/${BASE_REF}"
+      return 0
+    fi
+
+    log "Whitespace del rango PR origin/${BASE_REF}...HEAD"
+    git -C "$REPO_ROOT" diff --check "origin/${BASE_REF}...HEAD"
+    return 0
+  fi
+
+  log "Whitespace local sin origin/${BASE_REF} disponible"
+  git -C "$REPO_ROOT" diff --check
+}
+
+main() {
+  whitespace_check
+
+  log "Go tests"
+  (cd "$CLI_ROOT" && go test ./...)
+
+  log "Go build"
+  (cd "$CLI_ROOT" && go build ./cmd/lufy-ai)
+}
+
+main "$@"

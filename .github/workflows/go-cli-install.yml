@@ -9,6 +9,7 @@ on:
       - ".github/workflows/go-cli-install.yml"
       - ".github/workflows/release.yml"
       - "scripts/install.sh"
+      - "scripts/validate.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -23,6 +24,7 @@ on:
       - ".github/workflows/go-cli-install.yml"
       - ".github/workflows/release.yml"
       - "scripts/install.sh"
+      - "scripts/validate.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -52,13 +54,10 @@ jobs:
         with:
           go-version-file: tools/lufy-cli-go/go.mod
 
-      - name: Go tests
-        working-directory: tools/lufy-cli-go
-        run: go test ./...
-
-      - name: Go build package
-        working-directory: tools/lufy-cli-go
-        run: go build ./cmd/lufy-ai
+      - name: Validate
+        env:
+          LUFY_AI_VALIDATE_BASE: ${{ github.base_ref || 'develop' }}
+        run: scripts/validate.sh
 
       - name: Build local wrapper binary
         working-directory: tools/lufy-cli-go
@@ -78,20 +77,4 @@ jobs:
             openspec list --json
           else
             echo "::notice::openspec CLI no disponible en el runner; sanity OpenSpec omitido"
-          fi
-
-      - name: Whitespace check
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          EVENT_BEFORE: ${{ github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
-          GITHUB_SHA: ${{ github.sha }}
-        run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            git fetch --no-tags --prune --depth=1 origin "$BASE_REF"
-            git diff --check "origin/${BASE_REF}...HEAD"
-          elif [[ -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
-            git diff --check "${EVENT_BEFORE}..${GITHUB_SHA}"
-          else
-            git diff --check HEAD~1..HEAD
           fi
