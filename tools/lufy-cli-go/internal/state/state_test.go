@@ -4,7 +4,7 @@ import "testing"
 
 func TestWriteAtomicAndLoad(t *testing.T) {
 	target := t.TempDir()
-	want := New(target, nil, []AssetState{{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: "abc", TargetSHA256: "abc", LastAction: "copy"}})
+	want := New(target, nil, []AssetState{{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: "abc", TargetSHA256: "abc", LastAction: "copy"}}, "test-fingerprint")
 	if err := WriteAtomic(target, want); err != nil {
 		t.Fatalf("WriteAtomic() error = %v", err)
 	}
@@ -12,7 +12,7 @@ func TestWriteAtomicAndLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if got == nil || got.SchemaVersion != SchemaVersion || len(got.Assets) != 1 || got.Assets[0].TargetRel != "AGENTS.md" {
+	if got == nil || got.SchemaVersion != SchemaVersion || got.ToolVersion == "" || got.SourceRootFingerprint != "test-fingerprint" || len(got.Assets) != 1 || got.Assets[0].TargetRel != "AGENTS.md" {
 		t.Fatalf("Load() unexpected state: %#v", got)
 	}
 }

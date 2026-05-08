@@ -7,7 +7,7 @@ import (
 )
 
 func TestEnsureRelativeSafeRejectsTraversal(t *testing.T) {
-	bad := []string{"", ".", "..", "../x", "/tmp/x"}
+	bad := []string{"", ".", "..", "../x", "..\\x", "safe/../../x", "safe\\..\\..\\x", "/tmp/x", "C:\\tmp\\x", "C:/tmp/x"}
 	for _, path := range bad {
 		if _, err := EnsureRelativeSafe(path); err == nil {
 			t.Fatalf("EnsureRelativeSafe(%q) expected error", path)
@@ -15,6 +15,9 @@ func TestEnsureRelativeSafeRejectsTraversal(t *testing.T) {
 	}
 	if got, err := EnsureRelativeSafe(".opencode/agents"); err != nil || got != ".opencode/agents" {
 		t.Fatalf("EnsureRelativeSafe() = %q, %v", got, err)
+	}
+	if got, err := EnsureRelativeSafe(".opencode\\agents"); err != nil || got != filepath.Join(".opencode", "agents") {
+		t.Fatalf("EnsureRelativeSafe(backslash) = %q, %v", got, err)
 	}
 }
 

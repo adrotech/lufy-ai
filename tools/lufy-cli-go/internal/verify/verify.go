@@ -74,8 +74,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		fmt.Fprintf(stdout, "ok: archivo crítico %s\n", rel)
 	}
-	if st.SourceChangeID != state.SourceChangeID {
-		fmt.Fprintf(stdout, "warn: sourceChangeID inesperado: %s\n", st.SourceChangeID)
+	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
+		fmt.Fprintln(stdout, "fail: install-state.json no contiene fingerprint de catálogo")
+		failures++
 	}
 	for _, rel := range jsonValidationFiles {
 		status, err := validateJSONFile(target, rel)

@@ -50,7 +50,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 
 	untrackedTarget := t.TempDir()
 	writeFile(t, filepath.Join(untrackedTarget, "AGENTS.md"), "untracked\n")
-	if err := state.WriteAtomic(untrackedTarget, state.New(untrackedTarget, nil, nil)); err != nil {
+	if err := state.WriteAtomic(untrackedTarget, state.New(untrackedTarget, nil, nil, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 	untrackedPlan, err := svc.BuildPlan(Options{Target: untrackedTarget, NoEngram: true})
@@ -129,6 +129,9 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	}
 	if agents.SourceSHA256 != current || agents.TargetSHA256 != current || agents.LastAction != "sync-update-managed" {
 		t.Fatalf("state was not refreshed for AGENTS.md: %#v current=%s", agents, current)
+	}
+	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
+		t.Fatalf("sync state metadata not populated from runtime/catalog: %#v", st)
 	}
 	if _, ok := st.AssetMap()["outside-source.txt"]; ok {
 		t.Fatal("sync registered source file outside managed catalog")

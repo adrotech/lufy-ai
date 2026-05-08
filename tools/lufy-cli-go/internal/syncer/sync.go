@@ -280,7 +280,11 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	if err != nil {
 		return syncRecoveryError(err, manifestPath, applied)
 	}
-	st := state.New(plan.TargetRoot, plan.Previous, assetStates)
+	fingerprint, err := plan.Catalog.Fingerprint()
+	if err != nil {
+		return syncRecoveryError(err, manifestPath, applied)
+	}
+	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return syncRecoveryError(err, manifestPath, applied)
 	}
@@ -384,7 +388,7 @@ func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(dst, body, 0o644)
+	return platform.WriteFileAtomic(dst, body, 0o644)
 }
 
 func requiresConfirmation(actions []Action) bool {

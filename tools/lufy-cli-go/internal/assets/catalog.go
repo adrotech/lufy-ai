@@ -3,6 +3,7 @@ package assets
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -39,6 +40,27 @@ type Asset struct {
 type Catalog struct {
 	SourceRoot string
 	Assets     []Asset
+}
+
+func (c Catalog) Fingerprint() (string, error) {
+	type item struct {
+		TargetRel    string `json:"targetRel"`
+		SourceSHA256 string `json:"sourceSHA256"`
+	}
+	var items []item
+	for _, asset := range c.Assets {
+		if asset.Kind != KindFile {
+			continue
+		}
+		items = append(items, item{TargetRel: filepath.ToSlash(asset.TargetRel), SourceSHA256: asset.SourceSHA256})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].TargetRel < items[j].TargetRel })
+	body, err := json.Marshal(items)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.Sum256(body)
+	return hex.EncodeToString(h[:]), nil
 }
 
 type entry struct {

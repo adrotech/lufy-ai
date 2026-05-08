@@ -26,7 +26,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -76,7 +76,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "skills"))); err != nil {
@@ -121,7 +121,7 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(actual, state.New(t.TempDir(), nil, states)); err != nil {
+	if err := state.WriteAtomic(actual, state.New(t.TempDir(), nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
@@ -147,7 +147,7 @@ func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -242,7 +242,7 @@ func validVerifyTarget(t *testing.T) string {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 	return target

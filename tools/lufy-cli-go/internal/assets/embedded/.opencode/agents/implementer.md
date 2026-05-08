@@ -54,9 +54,10 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Tests and documentation tied directly to implementation.
 - Minimal repository exploration needed to complete assigned change.
 - Inspect only the files needed to understand the local pattern.
+- Reuse initial analysis/handoffs for old files; do not reread old files repeatedly during normal implementation.
 - Edit with the smallest safe patch.
-- Run fast relevant validation when available; use static/manual review when no toolchain exists.
-- Prefer validación agrupada at the end of the current block/proposal; do not run tests constantly unless blocked, risky, or diagnosing a failure.
+- Run grouped validation only at the end of all assigned tasks when available; use static/manual review when no toolchain exists.
+- Prefer validación agrupada at the end of the current block/proposal, including tests/coverage only when real commands exist; do not run tests constantly unless blocked, risky, or diagnosing a failure.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
 ## Boundaries
@@ -64,6 +65,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Keep changes focused and minimal.
 - Prefer project validation commands.
 - During iteration, avoid constant test loops; batch validation at block/proposal boundaries unless an exception applies.
+- During iteration, avoid repeated old-file rereads. Reread old files only if modified/affected, conflicted, blocked, risky, scope changes, or new evidence invalidates the initial analysis.
+- Before final validation, review changed/affected old files or diffs for coherence with dependencies and expected behavior.
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not delegate to other agents.
 - Do not fabricate validation evidence.
@@ -76,6 +79,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Include exact commands run and their results.
 - If no toolchain exists, state that explicitly and describe manual/static checks performed.
 - Do not promise tests; add/run them only when appropriate and available.
+- If tests or coverage are applicable, run them after all tasks in the assigned block/proposal are complete, not after each task.
 
 ## Escalation
 

@@ -286,7 +286,11 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 	if err != nil {
 		return installRecoveryError(err, recoveryBackup, applied)
 	}
-	st := state.New(plan.TargetRoot, plan.Previous, assetStates)
+	fingerprint, err := plan.Catalog.Fingerprint()
+	if err != nil {
+		return installRecoveryError(err, recoveryBackup, applied)
+	}
+	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return installRecoveryError(err, recoveryBackup, applied)
 	}
@@ -417,7 +421,7 @@ func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(dst, content, 0o644)
+	return platform.WriteFileAtomic(dst, content, 0o644)
 }
 
 func parentDirs(path string) []string {
