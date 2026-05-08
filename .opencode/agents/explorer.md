@@ -49,6 +49,7 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 ## Workflow
 
 - Identify relevant files, modules, packages, endpoints, migrations, tests, and OpenSpec artifacts.
+- Map system interconnections and dependencies: APIs, persistence, services, agents, skills, policies, tests, documentation, feedback loops, and structure/behavior risks relevant to the request.
 - Explain current behavior and likely impact.
 - Detect existing repository patterns before implementation.
 - Produce an implementation handoff for `implementer` when code changes are needed.
@@ -62,6 +63,7 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 - Do not run validation unless explicitly asked.
 - Keep exploration bounded to user request.
 - Prefer `rg` and targeted file reads over broad scans.
+- Treat this as the initial systemic analysis for the block/proposal: read enough old files once to plan safely, then summarize what does not need rereading unless changed, conflicted, or invalidated by new evidence.
 - Summarize findings without pasting large source excerpts.
 - If implementation scope is unclear, return missing decision.
 
@@ -83,6 +85,8 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 ### Thoroughness
 ### Relevant Files
 ### Existing Patterns
+### Interconnections / Dependencies
+### Feedback / Structure-Behavior
 ### Risks / Constraints
 ### Implementer Handoff
 ### Recommended Next Step

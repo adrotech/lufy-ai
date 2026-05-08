@@ -10,6 +10,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
+- **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
 - **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
 
@@ -34,7 +35,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Observatory TUI: `/observatory`, `/observatory-agents`, `/observatory-subagents`, `/observatory-cost`.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
-- Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar validación al final de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
+- Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
 - Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
 
 ## Reglas de arquitectura y workflow
@@ -51,6 +52,8 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 10. Preferir lectura y edición específicas sobre exploración amplia.
 11. En handoffs y gestión de contexto, resumir decisiones, evitar dumps largos y preservar solo la evidencia mínima útil.
 12. Mantener `scripts/install.sh` como wrapper estricto de `tools/lufy-cli-go`; no reintroducir rutas legacy.
+13. Aplicar pensamiento sistémico: entender el todo, interconexiones, dependencias, bucles de feedback y cómo la estructura estática produce comportamiento dinámico.
+14. Durante una propuesta, concentrar el análisis de código viejo al inicio y la revisión final en archivos viejos modificados/afectados; no releer archivos ya analizados salvo conflicto, bloqueo, nueva evidencia, cambio de alcance o riesgo explícito.
 
 ## Roles de agentes
 
@@ -69,6 +72,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
 - Una tarea OpenSpec solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md`.
+- En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
 
