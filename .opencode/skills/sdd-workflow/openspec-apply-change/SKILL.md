@@ -76,9 +76,12 @@ Implement tasks from an OpenSpec change.
    - Continue to next task
 
    Validation preference:
-   - Use validación agrupada at the end of a coherent block/proposal.
+   - Use systemic workflow: analyze old files, dependencies, interconnections, feedback paths, and structure/behavior risks at the beginning of the coherent block/proposal.
+   - Do not reread old files repeatedly during normal implementation after the initial analysis.
+   - Reread old files only if they were modified/affected, conflict with changes, new evidence appears, scope changes, a blocker appears, or risk requires confirmation.
+   - Use validación agrupada at the end of all tasks in a coherent block/proposal, including tests/coverage only when real commands exist for the scope.
    - Do not run tests constantly during normal implementation.
-   - Run focused validation earlier only for blockers, risky changes, or failure diagnosis.
+   - Run focused validation earlier only for blockers, risky changes, feedback loops, or failure diagnosis.
 
    **Pause if:**
    - Task is unclear → ask for clarification
@@ -148,10 +151,12 @@ What would you like to do?
 **Guardrails**
 - Keep going through tasks until done or blocked
 - Always read context files before starting (from the apply instructions output)
+- Perform the initial systemic analysis once before implementation, then avoid repeated old-file rereads unless justified by modification, conflict, blocker, new evidence, scope change, or explicit risk.
 - If task is ambiguous, pause and ask before implementing
 - If implementation reveals issues, pause and suggest artifact updates
 - Keep code changes minimal and scoped to each task
 - Update task checkbox immediately after completing each task
+- Before final validation, review changed/affected old files or diffs for coherence with the initial analysis.
 - Pause on errors, blockers, or unclear requirements - don't guess
 - Use contextFiles from CLI output, don't assume specific file names
 - Do not suggest archive for `migrate-installer-to-go-cli` while tasks are incomplete; tasks incompletas mean `blocked`, no archive.

@@ -63,6 +63,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 - Route archive attempts for `migrate-installer-to-go-cli` to `blocked` while tasks are incomplete; tasks incompletas are never archivable.
 - Respect the user's validation preference: use validación agrupada at the end of a block/proposal instead of constant tests, except for blockers, risky changes, or diagnosis.
+- Enforce systemic workflow: route broad/context work to `explorer` first, then `implementer`, then final `validator` evidence after all tasks are complete.
+- Avoid duplicating work across agents: analysis of old files happens up front, implementation avoids repeated rereads, and final reread/validation is scoped to changed or affected old files plus real tests/coverage when available.
 - If repository-local delivery/project sync skills exist, use them; otherwise route delivery to the `delivery` agent and report missing optional tooling as `blocked` when needed.
 - Parallelize only when tasks are independent and read-only, for example `validator` evidence and `reviewer` quality review after implementation is complete.
 - Keep one specialist at a time when findings from one role determine the next action.
