@@ -13,7 +13,7 @@ func TestEnsureRelativeSafeRejectsTraversal(t *testing.T) {
 			t.Fatalf("EnsureRelativeSafe(%q) expected error", path)
 		}
 	}
-	if got, err := EnsureRelativeSafe(".opencode/agents"); err != nil || got != ".opencode/agents" {
+	if got, err := EnsureRelativeSafe(".opencode/agents"); err != nil || got != filepath.Join(".opencode", "agents") {
 		t.Fatalf("EnsureRelativeSafe() = %q, %v", got, err)
 	}
 	if got, err := EnsureRelativeSafe(".opencode\\agents"); err != nil || got != filepath.Join(".opencode", "agents") {

@@ -41,7 +41,7 @@ check_file() {
 }
 
 for workflow in "$ROOT"/.github/workflows/*.yml; do
-  check_file "${workflow#$ROOT/}"
+  check_file "${workflow#"$ROOT"/}"
 done
 
 exit "$status"

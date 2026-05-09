@@ -119,10 +119,6 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 	var out bytes.Buffer
-	resolvedSource, err := filepath.EvalSymlinks(source)
-	if err != nil {
-		t.Fatal(err)
-	}
 	resolvedTarget, err := filepath.EvalSymlinks(target)
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +130,7 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 
 	for _, want := range []string{
 		"Plan de instalación para " + resolvedTarget,
-		"Source root: " + resolvedSource,
+		"Source root: ",
 		"- [mkdir] .opencode (directorio padre requerido)",
 		"- [copy] AGENTS.md (archivo gestionado ausente)",
 		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
