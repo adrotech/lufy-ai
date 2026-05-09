@@ -40,8 +40,8 @@ check_file() {
   done < "$ROOT/$file"
 }
 
-check_file ".github/workflows/go-cli-install.yml"
-check_file ".github/workflows/release.yml"
-check_file ".github/workflows/auto-release-tag.yml"
+for workflow in "$ROOT"/.github/workflows/*.yml; do
+  check_file "${workflow#$ROOT/}"
+done
 
 exit "$status"

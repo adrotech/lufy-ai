@@ -46,8 +46,14 @@ main() {
   log "Action pinning"
   "$REPO_ROOT/scripts/check-actions-pinned.sh"
 
-  log "Go tests"
-  (cd "$CLI_ROOT" && go test ./...)
+  log "Workflow YAML"
+  "$REPO_ROOT/scripts/check-workflows-yaml.rb"
+
+  log "Shell lint"
+  "$REPO_ROOT/scripts/check-shell.sh"
+
+  log "Go quality"
+  "$REPO_ROOT/scripts/quality-go.sh"
 
   log "Go build"
   (cd "$CLI_ROOT" && go build ./cmd/lufy-ai)

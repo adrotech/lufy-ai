@@ -114,6 +114,39 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	}
 }
 
+func TestInstallDryRunPlanOutputRegression(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	var out bytes.Buffer
+	resolvedSource, err := filepath.EvalSymlinks(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedTarget, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(dry-run) error = %v", err)
+	}
+
+	for _, want := range []string{
+		"Plan de instalación para " + resolvedTarget,
+		"Source root: " + resolvedSource,
+		"- [mkdir] .opencode (directorio padre requerido)",
+		"- [copy] AGENTS.md (archivo gestionado ausente)",
+		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
+		"Engram: omitido por --no-engram",
+		"Modo dry-run: sin mutaciones en filesystem",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("dry-run output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
 func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
