@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -110,7 +111,15 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	manifest := []byte(`{"schemaVersion":1,"toolVersion":"dev","targetRoot":"` + target + `","files":[]}`)
+	manifest, err := json.Marshal(struct {
+		SchemaVersion int      `json:"schemaVersion"`
+		ToolVersion   string   `json:"toolVersion"`
+		TargetRoot    string   `json:"targetRoot"`
+		Files         []string `json:"files"`
+	}{SchemaVersion: 1, ToolVersion: "dev", TargetRoot: target, Files: []string{}})
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(backupDir, "manifest.json"), manifest, 0o644); err != nil {
 		t.Fatal(err)
 	}

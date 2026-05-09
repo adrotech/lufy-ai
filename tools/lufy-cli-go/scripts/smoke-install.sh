@@ -6,6 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BIN="${LUFY_AI_BIN:-$CLI_ROOT/bin/lufy-ai}"
+work_root=""
 
 log() {
     printf '==> %s\n' "$1"
@@ -36,6 +37,10 @@ sha256_file() {
         return 0
     fi
     fail "no se encontró sha256sum ni shasum para validar idempotencia"
+}
+
+cleanup() {
+    rm -rf "$work_root"
 }
 
 assert_empty_dir() {
@@ -72,9 +77,8 @@ expect_failure_contains() {
 main() {
     ensure_bin
 
-    local work_root
     work_root="$(mktemp -d)"
-    trap "rm -rf '$work_root'" EXIT
+    trap cleanup EXIT
 
     local dry_target="$work_root/dry-run-target"
     mkdir -p "$dry_target"

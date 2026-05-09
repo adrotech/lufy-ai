@@ -29,6 +29,8 @@ Para el backlog priorizado de mejoras detectadas por análisis externo, ver [`do
 
 Para política de firma, provenance, SBOM y labels de release, ver [`docs/release-security.md`](release-security.md).
 
+Para gates de coverage, lint, shellcheck, matriz multi-OS y E2E post-release, ver [`docs/ci-quality-gates.md`](ci-quality-gates.md).
+
 Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.

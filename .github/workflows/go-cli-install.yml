@@ -6,11 +6,13 @@ on:
       - develop
       - main
     paths:
-      - ".github/workflows/go-cli-install.yml"
-      - ".github/workflows/release.yml"
+      - ".github/workflows/**"
       - "scripts/install.sh"
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
+      - "scripts/check-shell.sh"
+      - "scripts/check-workflows-yaml.rb"
+      - "scripts/quality-go.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -22,11 +24,13 @@ on:
       - main
       - develop
     paths:
-      - ".github/workflows/go-cli-install.yml"
-      - ".github/workflows/release.yml"
+      - ".github/workflows/**"
       - "scripts/install.sh"
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
+      - "scripts/check-shell.sh"
+      - "scripts/check-workflows-yaml.rb"
+      - "scripts/quality-go.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -38,8 +42,8 @@ permissions:
   contents: read
 
 jobs:
-  go-cli-install:
-    name: Test, build and smoke Go installer
+  quality:
+    name: Quality gates
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -56,10 +60,62 @@ jobs:
         with:
           go-version-file: tools/lufy-cli-go/go.mod
 
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: Validate
         env:
           LUFY_AI_VALIDATE_BASE: ${{ github.base_ref || 'develop' }}
         run: scripts/validate.sh
+
+  platform-go:
+    name: Go tests and build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
+
+      - name: Go tests
+        working-directory: tools/lufy-cli-go
+        run: go test ./...
+
+      - name: Go build
+        working-directory: tools/lufy-cli-go
+        run: go build ./cmd/lufy-ai
+
+  go-cli-install:
+    name: Test, build and smoke Go installer
+    runs-on: ubuntu-latest
+    needs: [quality, platform-go]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
 
       - name: Build local wrapper binary
         working-directory: tools/lufy-cli-go
