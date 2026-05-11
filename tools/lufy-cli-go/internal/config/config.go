@@ -9,9 +9,12 @@ import (
 	"reflect"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 const OpenCodeFile = "opencode.json"
+
+const managedNamespace = "x-lufy-ai"
 
 type Options struct {
 	TargetRoot string
@@ -125,17 +128,18 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 		desired["plugin"] = []any{}
 	}
 	engramPath, engramFound := platform.ResolveEngram(opts.NoEngram, resolver)
+	managedKeys := []any{"$schema", "plugin"}
 	if !opts.NoEngram && engramFound {
 		mcp, err := objectAt(desired, "mcp")
 		if err != nil {
 			return nil, nil, "", "", false, err
 		}
-		mcp["engram"] = map[string]any{
-			"type":    "local",
-			"command": []any{engramPath, "mcp", "--tools=agent"},
-			"enabled": true,
-			"timeout": float64(3000),
-		}
+		mcp["engram"] = mergeEngramConfig(mcp["engram"], engramPath)
+		managedKeys = append(managedKeys, "mcp.engram")
+	}
+	desired[managedNamespace] = map[string]any{
+		"version":     version.Current().Version,
+		"managedKeys": managedKeys,
 	}
 	return current, desired, path, engramPath, engramFound, nil
 }
@@ -203,12 +207,35 @@ func objectAt(root map[string]any, key string) (map[string]any, error) {
 	if existing, ok := root[key].(map[string]any); ok {
 		return existing, nil
 	}
+	if value, exists := root[key]; exists && value == nil {
+		obj := map[string]any{}
+		root[key] = obj
+		return obj, nil
+	}
 	if _, exists := root[key]; exists {
 		return nil, fmt.Errorf("opencode.json inválido: clave %s debe ser object para configurar Engram; corrige o respalda el archivo antes de instalar/sincronizar", key)
 	}
 	obj := map[string]any{}
 	root[key] = obj
 	return obj, nil
+}
+
+func mergeEngramConfig(existing any, engramPath string) map[string]any {
+	engram, ok := existing.(map[string]any)
+	if !ok {
+		engram = map[string]any{}
+	} else {
+		engram = cloneMap(engram)
+	}
+	if _, ok := engram["enabled"]; !ok {
+		engram["enabled"] = true
+	}
+	if _, ok := engram["timeout"]; !ok {
+		engram["timeout"] = float64(3000)
+	}
+	engram["type"] = "local"
+	engram["command"] = []any{engramPath, "mcp", "--tools=agent"}
+	return engram
 }
 
 func cloneMap(in map[string]any) map[string]any {

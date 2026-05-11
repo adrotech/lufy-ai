@@ -16,6 +16,7 @@ platforms=(
   linux/amd64
   linux/arm64
   windows/amd64
+  windows/arm64
 )
 
 checksum_file="$OUT_DIR/lufy-ai_${VERSION}_checksums.txt"

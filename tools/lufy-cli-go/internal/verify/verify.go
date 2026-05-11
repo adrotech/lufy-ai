@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
@@ -14,8 +15,30 @@ import (
 )
 
 type Options struct {
-	Target   string
-	NoEngram bool
+	Target                string
+	NoEngram              bool
+	JSON                  bool
+	Quiet                 bool
+	Verbose               bool
+	Deep                  bool
+	AllowCatalogNewAssets bool
+}
+
+type Report struct {
+	OK            bool    `json:"ok"`
+	TargetRoot    string  `json:"targetRoot"`
+	SchemaVersion int     `json:"schemaVersion,omitempty"`
+	Assets        int     `json:"assets,omitempty"`
+	Failures      int     `json:"failures"`
+	Warnings      int     `json:"warnings"`
+	Infos         int     `json:"infos"`
+	Checks        []Check `json:"checks"`
+}
+
+type Check struct {
+	Level   string `json:"level"`
+	Path    string `json:"path,omitempty"`
+	Message string `json:"message"`
 }
 
 type Service struct{}
@@ -24,7 +47,7 @@ func NewService() Service {
 	return Service{}
 }
 
-var requiredDirs = []string{
+var fallbackRequiredDirs = []string{
 	filepath.Join(".opencode", "agents"),
 	filepath.Join(".opencode", "commands"),
 	filepath.Join(".opencode", "skills"),
@@ -32,7 +55,7 @@ var requiredDirs = []string{
 	filepath.Join(".opencode", "policies"),
 }
 
-var requiredManagedFiles = []string{
+var fallbackRequiredManagedFiles = []string{
 	"AGENTS.md",
 	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
@@ -53,47 +76,84 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	report := Report{TargetRoot: target}
+	emit := func(level, path, format string, args ...any) {
+		message := fmt.Sprintf(format, args...)
+		report.Checks = append(report.Checks, Check{Level: level, Path: path, Message: message})
+		switch level {
+		case "fail":
+			report.Failures++
+		case "warn":
+			report.Warnings++
+		case "info":
+			report.Infos++
+		}
+		if !opts.JSON && !opts.Quiet {
+			if path == "" {
+				fmt.Fprintf(stdout, "%s: %s\n", level, message)
+				return
+			}
+			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
+		}
+	}
+	finish := func(err error) error {
+		report.OK = report.Failures == 0
+		if opts.JSON {
+			body, jsonErr := json.MarshalIndent(report, "", "  ")
+			if jsonErr != nil {
+				return jsonErr
+			}
+			fmt.Fprintf(stdout, "%s\n", body)
+		}
+		return err
+	}
 
 	st, err := state.Load(target)
 	if err != nil {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		return fmt.Errorf("fail: falta estado de instalación (%s)", state.Path(target))
+		emit("fail", state.Path(target), "falta estado de instalación")
+		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	}
-	failures := 0
+	report.SchemaVersion = st.SchemaVersion
+	report.Assets = len(st.Assets)
+	assetMap := st.AssetMap()
+	requiredDirs, requiredManagedFiles := catalogRequirements(assetMap)
+	if opts.Verbose {
+		emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
+	}
 	for _, rel := range requiredStateFiles {
 		path, err := platform.SafeJoin(target, rel)
 		if err != nil {
 			return err
 		}
 		if !regularFile(path) {
-			fmt.Fprintf(stdout, "fail: falta archivo crítico: %s\n", rel)
-			failures++
+			emit("fail", rel, "falta archivo crítico")
 			continue
 		}
-		fmt.Fprintf(stdout, "ok: archivo crítico %s\n", rel)
+		emit("ok", rel, "archivo crítico")
 	}
 	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
-		fmt.Fprintln(stdout, "fail: install-state.json no contiene fingerprint de catálogo")
-		failures++
+		emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
 	}
 	for _, rel := range jsonValidationFiles {
 		status, err := validateJSONFile(target, rel)
 		if err != nil {
-			fmt.Fprintf(stdout, "fail: JSON inválido en %s: %s\n", rel, err.Error())
-			failures++
+			emit("fail", "", "JSON inválido en %s: %s", rel, err.Error())
 			continue
 		}
 		if status != "" {
-			fmt.Fprintf(stdout, "ok: JSON parseable %s\n", rel)
+			emit("ok", rel, "JSON parseable")
 		}
 	}
+	if opts.Deep {
+		runDeepVerify(target, emit)
+	}
 	if status, err := config.NewService().ValidateManagedStructure(target); err != nil {
-		fmt.Fprintf(stdout, "fail: estructura gestionada inválida en %s: %s\n", config.OpenCodeFile, err.Error())
-		failures++
+		emit("fail", "", "estructura gestionada inválida en %s: %s", config.OpenCodeFile, err.Error())
 	} else if status.Exists {
-		fmt.Fprintf(stdout, "ok: estructura merge-managed %s\n", config.OpenCodeFile)
+		emit("ok", config.OpenCodeFile, "estructura merge-managed")
 	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
@@ -102,12 +162,10 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 	}
 	if manifestTarget != "" && manifestTarget != target {
-		fmt.Fprintf(stdout, "fail: targetRoot del manifest no coincide: manifest=%s actual=%s\n", st.TargetRoot, target)
-		failures++
+		emit("fail", "install-state.json", "targetRoot del manifest no coincide: manifest=%s actual=%s", st.TargetRoot, target)
 	}
-	fmt.Fprintf(stdout, "ok: install-state.json schema=%d assets=%d\n", st.SchemaVersion, len(st.Assets))
+	emit("ok", "install-state.json", "install-state.json schema=%d assets=%d", st.SchemaVersion, len(st.Assets))
 
-	assetMap := st.AssetMap()
 	for _, required := range requiredDirs {
 		clean, err := platform.EnsureRelativeSafe(required)
 		if err != nil {
@@ -115,16 +173,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			fmt.Fprintf(stdout, "fail: directorio crítico inseguro: %s (%s)\n", clean, err.Error())
-			failures++
+			emit("fail", clean, "directorio crítico inseguro: %s", err.Error())
 			continue
 		}
 		if !directory(path) {
-			fmt.Fprintf(stdout, "fail: falta directorio crítico: %s\n", clean)
-			failures++
+			emit("fail", clean, "falta directorio crítico")
 			continue
 		}
-		fmt.Fprintf(stdout, "ok: directorio crítico %s\n", clean)
+		emit("ok", clean, "directorio crítico")
 	}
 
 	for _, required := range requiredManagedFiles {
@@ -133,21 +189,21 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return err
 		}
 		if _, ok := assetMap[clean]; !ok {
-			fmt.Fprintf(stdout, "fail: asset clave no está en manifest: %s\n", clean)
-			failures++
+			if opts.AllowCatalogNewAssets {
+				continue
+			}
+			emit("fail", clean, "asset clave no está en manifest")
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			fmt.Fprintf(stdout, "fail: asset clave inseguro: %s (%s)\n", clean, err.Error())
-			failures++
+			emit("fail", clean, "asset clave inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			fmt.Fprintf(stdout, "fail: falta archivo crítico: %s\n", clean)
-			failures++
+			emit("fail", clean, "falta archivo crítico")
 			continue
 		}
-		fmt.Fprintf(stdout, "ok: archivo crítico %s\n", clean)
+		emit("ok", clean, "archivo crítico")
 	}
 
 	for _, asset := range st.Assets {
@@ -157,13 +213,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			fmt.Fprintf(stdout, "fail: asset inseguro: %s (%s)\n", clean, err.Error())
-			failures++
+			emit("fail", clean, "asset inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			fmt.Fprintf(stdout, "fail: falta asset gestionado: %s\n", clean)
-			failures++
+			emit("fail", clean, "falta asset gestionado")
 			continue
 		}
 		actual, err := assets.FileSHA256(path)
@@ -171,26 +225,77 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return err
 		}
 		if actual != asset.TargetSHA256 {
-			fmt.Fprintf(stdout, "fail: drift en %s expected=%s actual=%s\n", clean, shortHash(asset.TargetSHA256), shortHash(actual))
-			failures++
+			emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 			continue
 		}
-		fmt.Fprintf(stdout, "ok: %s sha256=%s\n", clean, shortHash(actual))
+		emit("ok", clean, "sha256=%s", shortHash(actual))
 	}
+	reportExtraManagedDirFiles(target, requiredDirs, assetMap, emit)
 
 	if opts.NoEngram {
-		fmt.Fprintln(stdout, "warn: chequeo de Engram omitido por --no-engram")
+		emit("warn", "", "chequeo de Engram omitido por --no-engram")
 	} else if path, ok := platform.ResolveEngram(false, platform.OSResolver{}); ok {
-		fmt.Fprintf(stdout, "ok: engram detectado en PATH (%s)\n", path)
+		emit("ok", "", "engram detectado en PATH (%s)", path)
 	} else {
-		fmt.Fprintln(stdout, "warn: engram no encontrado en PATH")
+		emit("warn", "", "engram no encontrado en PATH")
 	}
 
-	if failures > 0 {
-		return fmt.Errorf("verify falló con %d problema(s) crítico(s)", failures)
+	if report.Failures > 0 {
+		return finish(fmt.Errorf("verify falló con %d problema(s) crítico(s)", report.Failures))
 	}
-	fmt.Fprintln(stdout, "ok: verify estructural completo")
-	return nil
+	emit("ok", "", "verify estructural completo")
+	return finish(nil)
+}
+
+func catalogRequirements(assetMap map[string]state.AssetState) ([]string, []string) {
+	catalog, err := currentCatalog()
+	if err != nil {
+		return fallbackRequiredDirs, fallbackRequiredManagedFiles
+	}
+	dirs := map[string]bool{}
+	files := map[string]bool{}
+	for _, dir := range fallbackRequiredDirs {
+		dirs[dir] = true
+	}
+	for _, file := range fallbackRequiredManagedFiles {
+		files[file] = true
+	}
+	for _, asset := range catalog.Assets {
+		if asset.Policy != assets.PolicyManaged {
+			continue
+		}
+		if asset.Kind == assets.KindFile && assetMap[asset.TargetRel].TargetRel != "" {
+			files[asset.TargetRel] = true
+			for _, dir := range parentDirs(asset.TargetRel) {
+				dirs[dir] = true
+			}
+		}
+	}
+	return sortedKeys(dirs), sortedKeys(files)
+}
+
+func parentDirs(path string) []string {
+	var dirs []string
+	for dir := filepath.Dir(path); dir != "." && dir != string(filepath.Separator); dir = filepath.Dir(dir) {
+		dirs = append(dirs, dir)
+	}
+	return dirs
+}
+
+func currentCatalog() (assets.Catalog, error) {
+	if sourceRoot, err := platform.ResolveSourceRoot(""); err == nil {
+		return assets.BuildCatalog(sourceRoot)
+	}
+	return assets.BuildEmbeddedCatalog()
+}
+
+func sortedKeys(values map[string]bool) []string {
+	out := make([]string, 0, len(values))
+	for value := range values {
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func regularFile(path string) bool {
@@ -220,6 +325,91 @@ func validateJSONFile(target, rel string) (string, error) {
 		return "", err
 	}
 	return "ok", nil
+}
+
+func runDeepVerify(target string, emit func(level, path, format string, args ...any)) {
+	validatePluginConfig(target, "tui.json", emit)
+	validatePluginConfig(target, config.OpenCodeFile, emit)
+}
+
+func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {
+	path, err := platform.SafeJoin(target, rel)
+	if err != nil {
+		emit("fail", rel, "config plugin insegura: %s", err.Error())
+		return
+	}
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return
+	}
+	if err != nil {
+		emit("fail", rel, "no se pudo leer config plugin: %s", err.Error())
+		return
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return
+	}
+	plugins, exists := decoded["plugin"]
+	if !exists {
+		return
+	}
+	items, ok := plugins.([]any)
+	if !ok {
+		emit("fail", rel, "plugin debe ser array para deep verify")
+		return
+	}
+	for _, item := range items {
+		pluginRel, ok := item.(string)
+		if !ok {
+			emit("fail", rel, "plugin contiene entrada no string")
+			continue
+		}
+		pluginRel = filepath.Clean(pluginRel)
+		clean, err := platform.EnsureRelativeSafe(pluginRel)
+		if err != nil {
+			emit("fail", rel, "plugin path inseguro %q: %s", pluginRel, err.Error())
+			continue
+		}
+		pluginPath, err := platform.SafeJoin(target, clean)
+		if err != nil {
+			emit("fail", clean, "plugin inseguro: %s", err.Error())
+			continue
+		}
+		if !regularFile(pluginPath) {
+			emit("fail", clean, "plugin referenciado no existe o no es archivo regular seguro")
+			continue
+		}
+		emit("ok", clean, "plugin referenciado por %s", rel)
+	}
+}
+
+func reportExtraManagedDirFiles(target string, dirs []string, assetMap map[string]state.AssetState, emit func(level, path, format string, args ...any)) {
+	seen := map[string]bool{}
+	for _, dir := range dirs {
+		root, err := platform.SafeJoin(target, dir)
+		if err != nil || !directory(root) {
+			continue
+		}
+		_ = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
+			if err != nil || entry.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(target, path)
+			if err != nil {
+				return nil
+			}
+			clean, err := platform.EnsureRelativeSafe(rel)
+			if err != nil || seen[clean] {
+				return nil
+			}
+			seen[clean] = true
+			if _, managed := assetMap[clean]; !managed {
+				emit("info", clean, "archivo extra en directorio gestionado")
+			}
+			return nil
+		})
+	}
 }
 
 func shortHash(hash string) string {

@@ -60,6 +60,18 @@ func NewService() Service {
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
+	if !opts.DryRun {
+		target, err := platform.ResolveTargetPath(opts.Target)
+		if err != nil {
+			return err
+		}
+		lock, err := platform.AcquireLock(target)
+		if err != nil {
+			return err
+		}
+		defer lock.Release()
+		opts.Target = target
+	}
 	plan, err := s.BuildPlan(opts)
 	if err != nil {
 		return err
@@ -252,22 +264,22 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 		case "mkdir":
 			targetPath, err := platform.SafeJoin(plan.TargetRoot, action.Target)
 			if err != nil {
-				return installRecoveryError(err, recoveryBackup, applied)
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			if err := os.MkdirAll(targetPath, 0o755); err != nil {
-				return installRecoveryError(err, recoveryBackup, applied)
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [mkdir] %s\n", action.Target)
 		case "copy", "update-managed":
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
-				return installRecoveryError(err, recoveryBackup, applied)
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [%s] %s\n", action.Kind, action.Target)
 		case "merge-json":
 			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
-				return installRecoveryError(err, recoveryBackup, applied)
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
@@ -277,29 +289,29 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 	}
 	if plan.Previous != nil && !hasContentMutation(plan.Actions) {
 		if err := runPostInstallVerify(plan, stdout); err != nil {
-			return installRecoveryError(err, recoveryBackup, applied)
+			return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 		}
 		fmt.Fprintf(stdout, "- [skip] %s sin cambios\n", filepath.Join(".lufy-ai", "install-state.json"))
 		return nil
 	}
 	assetStates, err := buildAssetStates(plan)
 	if err != nil {
-		return installRecoveryError(err, recoveryBackup, applied)
+		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
 	fingerprint, err := plan.Catalog.Fingerprint()
 	if err != nil {
-		return installRecoveryError(err, recoveryBackup, applied)
+		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
 	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
-		return installRecoveryError(err, recoveryBackup, applied)
+		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
 	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
 	if err := runPostInstallVerify(plan, stdout); err != nil {
 		if rollbackErr := restoreStateAfterVerifyFailure(plan); rollbackErr != nil {
 			err = fmt.Errorf("%w; además falló restaurar install-state previo: %v", err, rollbackErr)
 		}
-		return installRecoveryError(err, recoveryBackup, applied)
+		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
 	return nil
 }
@@ -323,11 +335,15 @@ func runPostInstallVerify(plan Plan, stdout io.Writer) error {
 	return nil
 }
 
-func installRecoveryError(err error, recoveryBackup string, applied int) error {
+func installRecoveryError(err error, targetRoot string, recoveryBackup string, applied int) error {
 	if recoveryBackup == "" {
 		return err
 	}
-	return fmt.Errorf("install falló después de crear backup de recovery en %s; acciones aplicadas=%d: %w", recoveryBackup, applied, err)
+	restored, rollbackErr := backup.RestoreCapturedFiles(targetRoot, recoveryBackup, io.Discard)
+	if rollbackErr != nil {
+		return fmt.Errorf("install falló después de crear backup de recovery en %s; acciones aplicadas=%d; rollback automático falló: %v: %w", recoveryBackup, applied, rollbackErr, err)
+	}
+	return fmt.Errorf("install falló después de crear backup de recovery en %s; acciones aplicadas=%d; rollback automático restauró %d archivo(s): %w", recoveryBackup, applied, restored, err)
 }
 
 func targetsForKind(actions []Action, kind string) []string {

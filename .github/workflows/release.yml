@@ -170,6 +170,7 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
+          generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_*.tar.gz

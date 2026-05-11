@@ -41,6 +41,46 @@ func TestEnsureCreatesOpenCodeJSONWithPortableEngram(t *testing.T) {
 	if cmd[0] != "/usr/local/bin/engram" {
 		t.Fatalf("unexpected engram command: %#v", cmd)
 	}
+	if decoded[managedNamespace] == nil {
+		t.Fatalf("managed namespace not written: %s", string(body))
+	}
+}
+
+func TestEnsurePreservesExistingEngramUserOptions(t *testing.T) {
+	target := t.TempDir()
+	writeConfig(t, target, `{"mcp":{"engram":{"type":"local","command":["/old/engram","mcp"],"enabled":false,"timeout":10000,"env":{"KEEP":"1"}}}}`)
+	if _, err := NewService().Ensure(Options{TargetRoot: target, Resolver: fakeResolver{path: "/usr/local/bin/engram"}}); err != nil {
+		t.Fatalf("Ensure() error = %v", err)
+	}
+	body := readConfig(t, target)
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	engram := decoded["mcp"].(map[string]any)["engram"].(map[string]any)
+	cmd := engram["command"].([]any)
+	if cmd[0] != "/usr/local/bin/engram" {
+		t.Fatalf("unexpected engram command: %#v", cmd)
+	}
+	if engram["enabled"] != false || engram["timeout"] != float64(10000) || engram["env"] == nil {
+		t.Fatalf("existing engram user options not preserved: %#v", engram)
+	}
+}
+
+func TestEnsureTreatsNullMCPAsAbsent(t *testing.T) {
+	target := t.TempDir()
+	writeConfig(t, target, `{"mcp":null}`)
+	if _, err := NewService().Ensure(Options{TargetRoot: target, Resolver: fakeResolver{path: "/usr/local/bin/engram"}}); err != nil {
+		t.Fatalf("Ensure() error = %v", err)
+	}
+	body := readConfig(t, target)
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := decoded["mcp"].(map[string]any)["engram"]; !ok {
+		t.Fatalf("engram not written when mcp was null: %s", string(body))
+	}
 }
 
 func TestEnsurePreservesUnknownKeysAndNoEngram(t *testing.T) {

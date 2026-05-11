@@ -60,6 +60,18 @@ func NewService() Service {
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
+	if !opts.DryRun {
+		target, err := platform.ResolveTargetPath(opts.Target)
+		if err != nil {
+			return err
+		}
+		lock, err := platform.AcquireLock(target)
+		if err != nil {
+			return err
+		}
+		defer lock.Release()
+		opts.Target = target
+	}
 	plan, err := s.BuildPlan(opts)
 	if err != nil {
 		return err
@@ -262,13 +274,13 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 		switch action.Kind {
 		case "update-managed":
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
-				return syncRecoveryError(err, manifestPath, applied)
+				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [update-managed] %s\n", action.Target)
 		case "merge-json":
 			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
-				return syncRecoveryError(err, manifestPath, applied)
+				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
@@ -278,19 +290,19 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	}
 	assetStates, err := buildAssetStates(plan, updates)
 	if err != nil {
-		return syncRecoveryError(err, manifestPath, applied)
+		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	fingerprint, err := plan.Catalog.Fingerprint()
 	if err != nil {
-		return syncRecoveryError(err, manifestPath, applied)
+		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
-		return syncRecoveryError(err, manifestPath, applied)
+		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
-	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram}, stdout); err != nil {
-		return syncRecoveryError(err, manifestPath, applied)
+	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram, AllowCatalogNewAssets: true}, stdout); err != nil {
+		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	fmt.Fprintf(stdout, "- [verify] %s\n", plan.TargetRoot)
 	return nil
@@ -428,11 +440,15 @@ func fileExists(path string) bool {
 	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
 }
 
-func syncRecoveryError(err error, manifestPath string, applied int) error {
+func syncRecoveryError(err error, targetRoot string, manifestPath string, applied int) error {
 	if manifestPath == "" {
 		return err
 	}
-	return fmt.Errorf("sync falló después de crear backup en %s; acciones aplicadas=%d; restaura con: lufy-ai restore --target <target> --backup %s --yes: %w", manifestPath, applied, manifestPath, err)
+	restored, rollbackErr := backup.RestoreCapturedFiles(targetRoot, manifestPath, io.Discard)
+	if rollbackErr != nil {
+		return fmt.Errorf("sync falló después de crear backup en %s; acciones aplicadas=%d; rollback automático falló: %v; restaura con: lufy-ai restore --target <target> --backup %s --yes: %w", manifestPath, applied, rollbackErr, manifestPath, err)
+	}
+	return fmt.Errorf("sync falló después de crear backup en %s; acciones aplicadas=%d; rollback automático restauró %d archivo(s): %w", manifestPath, applied, restored, err)
 }
 
 func shortHash(hash string) string {

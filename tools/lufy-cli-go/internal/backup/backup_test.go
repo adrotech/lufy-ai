@@ -174,6 +174,55 @@ func TestRestoreRejectsCorruptBackupBeforeRecoveryBackup(t *testing.T) {
 	}
 }
 
+func TestRestoreCapturedFilesRestoresWithoutRecoveryBackup(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	restored, err := RestoreCapturedFiles(target, backupDir, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("RestoreCapturedFiles() error = %v", err)
+	}
+	if restored != 1 {
+		t.Fatalf("RestoreCapturedFiles() restored %d, want 1", restored)
+	}
+	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "original\n" {
+		t.Fatalf("RestoreCapturedFiles() did not restore file: %q", got)
+	}
+}
+
+func TestBackupPrunesOldBackups(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupsRoot := filepath.Join(target, ".lufy-ai", "backups")
+	for i := 0; i < defaultBackupRetention; i++ {
+		path := filepath.Join(backupsRoot, "20000101T000000.00000000"+string(rune('0'+i))+"Z")
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	entries, err := os.ReadDir(backupsRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != defaultBackupRetention {
+		t.Fatalf("backup retention kept %d entries, want %d", len(entries), defaultBackupRetention)
+	}
+	if _, err := os.Stat(backupDir); err != nil {
+		t.Fatalf("current backup pruned: %v", err)
+	}
+}
+
 func stateWithFiles(t *testing.T, target string, rels []string) {
 	t.Helper()
 	var states []state.AssetState

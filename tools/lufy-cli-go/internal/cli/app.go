@@ -8,7 +8,9 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
@@ -30,6 +32,10 @@ func Run(args []string, deps Dependencies) int {
 		return runRestore(args[1:], deps)
 	case "sync":
 		return runSync(args[1:], deps)
+	case "status":
+		return runStatus(args[1:], deps)
+	case "upgrade":
+		return runUpgrade(args[1:], deps)
 	case "version":
 		return runVersion(args[1:], deps)
 	case "-h", "--help", "help":
@@ -40,6 +46,46 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runUpgrade(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("upgrade", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	to := fs.String("to", "", "Versión destino vX.Y.Z")
+	baseURL := fs.String("base-url", "", "Base URL de releases")
+	dryRun := fs.Bool("dry-run", false, "Mostrar descarga/reemplazo sin mutar")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "upgrade no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if err := upgrade.NewService().Run(upgrade.Options{To: *to, BaseURL: *baseURL, DryRun: *dryRun}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runStatus(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("status", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	verbose := fs.Bool("verbose", false, "Mostrar detalle por asset")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "status no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if err := status.NewService().Run(status.Options{Target: *target, JSON: *jsonOutput, Verbose: *verbose}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runVersion(args []string, deps Dependencies) int {
@@ -97,11 +143,15 @@ func runVerify(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
 	noEngram := fs.Bool("no-engram", false, "Omitir chequeo Engram")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	quiet := fs.Bool("quiet", false, "Omitir salida humana si no hay errores")
+	verbose := fs.Bool("verbose", false, "Mostrar diagnóstico adicional")
+	deep := fs.Bool("deep", false, "Ejecutar validaciones profundas opt-in")
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
 	svc := verify.NewService()
-	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram}, deps.Stdout); err != nil {
+	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -202,5 +252,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
+	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
+	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
 }

@@ -5,11 +5,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -252,6 +254,24 @@ func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "- [backup]") {
 		t.Fatalf("backup flag did not create backup action: %s", out.String())
+	}
+}
+
+func TestInstallRecoveryErrorRestoresBackup(t *testing.T) {
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "before\n")
+	backupDir, err := backup.BackupFiles(target, []string{"AGENTS.md"}, "test-install-rollback", &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "after\n")
+
+	err = installRecoveryError(errors.New("boom"), target, backupDir, 1)
+	if err == nil || !strings.Contains(err.Error(), "rollback automático restauró 1") {
+		t.Fatalf("unexpected recovery error: %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != "before\n" {
+		t.Fatalf("rollback did not restore file: %q", got)
 	}
 }
 

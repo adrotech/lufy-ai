@@ -2,6 +2,7 @@ package verify
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,12 +15,12 @@ import (
 func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(target, rel), content)
 	}
 	var states []state.AssetState
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -62,11 +63,11 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
 	}
 	var states []state.AssetState
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		if rel == "tui.json" {
 			continue
 		}
@@ -109,12 +110,12 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 
 	actual := t.TempDir()
 	writeVerifyDirs(t, actual)
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(actual, rel), content)
 	}
 	var states []state.AssetState
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(actual, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -134,13 +135,13 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
 	}
 	writeVerifyFile(t, filepath.Join(target, "tui.json"), "tui.json\n")
 
 	var states []state.AssetState
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -226,16 +227,112 @@ func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
 	}
 }
 
+func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, ".opencode", "agents", "local-agent.md"), "local\n")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run() error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: "+filepath.Join(".opencode", "agents", "local-agent.md")) {
+		t.Fatalf("extra managed dir file not reported: %s", out.String())
+	}
+}
+
+func TestVerifyJSONReportsFailures(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "drift\n")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, JSON: true}, &out); err == nil {
+		t.Fatalf("Run(JSON drift) expected error, output=%s", out.String())
+	}
+	var report Report
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatalf("invalid JSON output: %v body=%s", err, out.String())
+	}
+	if report.OK || report.Failures == 0 || report.TargetRoot == "" || report.Assets == 0 {
+		t.Fatalf("unexpected JSON report: %#v", report)
+	}
+	foundDrift := false
+	for _, check := range report.Checks {
+		if check.Level == "fail" && strings.Contains(check.Message, "drift en AGENTS.md") {
+			foundDrift = true
+		}
+	}
+	if !foundDrift {
+		t.Fatalf("drift check not found in JSON: %#v", report.Checks)
+	}
+}
+
+func TestVerifyQuietSuppressesHumanOutput(t *testing.T) {
+	target := validVerifyTarget(t)
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Quiet: true}, &out); err != nil {
+		t.Fatalf("Run(quiet) error = %v", err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("quiet output not suppressed: %s", out.String())
+	}
+}
+
+func TestVerifyVerboseReportsDerivedRequirements(t *testing.T) {
+	target := validVerifyTarget(t)
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Verbose: true}, &out); err != nil {
+		t.Fatalf("Run(verbose) error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "info: requirements derivados") {
+		t.Fatalf("verbose requirements info missing: %s", out.String())
+	}
+}
+
+func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":["./.opencode/plugins/agent-observatory.tsx"]}`)
+	refreshVerifyAssetHash(t, target, "tui.json")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err != nil {
+		t.Fatalf("Run(deep valid) error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "plugin referenciado por tui.json") {
+		t.Fatalf("deep output missing plugin ok: %s", out.String())
+	}
+
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":["../evil.ts"]}`)
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+		t.Fatalf("Run(deep invalid) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "plugin path inseguro") {
+		t.Fatalf("deep invalid output unexpected: %s", out.String())
+	}
+}
+
+func TestCatalogRequirementsIncludeRegisteredCatalogAssets(t *testing.T) {
+	dirs, files := catalogRequirements(map[string]state.AssetState{
+		filepath.Join(".opencode", "agents", "orchestrator.md"): {TargetRel: filepath.Join(".opencode", "agents", "orchestrator.md")},
+	})
+	if !containsString(files, filepath.Join(".opencode", "agents", "orchestrator.md")) {
+		t.Fatalf("catalog registered file not required: %#v", files)
+	}
+	if !containsString(dirs, filepath.Join(".opencode", "agents")) {
+		t.Fatalf("catalog registered file parent dir not required: %#v", dirs)
+	}
+}
+
 func validVerifyTarget(t *testing.T) string {
 	t.Helper()
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
 	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
 	}
 	var states []state.AssetState
-	for _, rel := range requiredManagedFiles {
+	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
 		if err != nil {
 			t.Fatal(err)
@@ -248,9 +345,39 @@ func validVerifyTarget(t *testing.T) string {
 	return target
 }
 
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func refreshVerifyAssetHash(t *testing.T, target, rel string) {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash, err := assets.FileSHA256(filepath.Join(target, rel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range st.Assets {
+		if st.Assets[i].TargetRel == rel {
+			st.Assets[i].SourceSHA256 = hash
+			st.Assets[i].TargetSHA256 = hash
+		}
+	}
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func writeVerifyDirs(t *testing.T, target string) {
 	t.Helper()
-	for _, rel := range requiredDirs {
+	for _, rel := range fallbackRequiredDirs {
 		if err := os.MkdirAll(filepath.Join(target, rel), 0o755); err != nil {
 			t.Fatal(err)
 		}
