@@ -1,7 +1,8 @@
 # remote-bootstrap-installer Specification
 
 ## Purpose
-TBD - created by archiving change add-versioned-binary-release-installer. Update Purpose after archive.
+Define the remote bootstrap installer contract for clone-free binary installation with platform detection, checksum verification, version pinning and safe execution defaults.
+
 ## Requirements
 ### Requirement: Remote bootstrap installer
 The system SHALL provide a remote bootstrap installer that installs `lufy-ai` without requiring the user to clone the repository.

@@ -1,7 +1,8 @@
 # installer-structural-hardening Specification
 
 ## Purpose
-TBD - created by archiving change hardening-structural-foundation. Update Purpose after archive.
+Define structural hardening requirements for managed asset parity, safe paths, stable catalog fingerprints and atomic writes in installer operations.
+
 ## Requirements
 ### Requirement: Asset mirror parity gate
 The installer SHALL provide a deterministic validation gate that detects drift between canonical managed assets in the repository root and the embedded assets used by standalone binaries.

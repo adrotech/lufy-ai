@@ -1,7 +1,8 @@
 # pr-creator-skill Specification
 
 ## Purpose
-TBD - created by archiving change add-pr-creator-skill. Update Purpose after archive.
+Define the `pr.creator` skill contract for generating Spanish GitHub PR titles and bodies with traceability, validation evidence, monitors, migrations and delivery separation.
+
 ## Requirements
 ### Requirement: Skill pr.creator con estructura estándar
 El sistema SHALL incluir un skill OpenCode llamado `pr.creator` con estructura estándar tipo Anthropic, autocontenido bajo `.opencode/skills/pr.creator/`, con `SKILL.md` como punto de entrada y recursos/templates auxiliares versionados cuando sean necesarios.
