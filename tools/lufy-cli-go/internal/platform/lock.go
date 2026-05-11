@@ -7,12 +7,19 @@ import (
 )
 
 type Lock struct {
-	path string
-	file *os.File
+	path       string
+	file       *os.File
+	createdDir bool
 }
 
 func AcquireLock(targetRoot string) (*Lock, error) {
 	lockDir := filepath.Join(targetRoot, ".lufy-ai")
+	createdDir := false
+	if _, err := os.Stat(lockDir); os.IsNotExist(err) {
+		createdDir = true
+	} else if err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(lockDir, 0o755); err != nil {
 		return nil, err
 	}
@@ -29,7 +36,7 @@ func AcquireLock(targetRoot string) (*Lock, error) {
 		_ = os.Remove(lockPath)
 		return nil, err
 	}
-	return &Lock{path: lockPath, file: file}, nil
+	return &Lock{path: lockPath, file: file, createdDir: createdDir}, nil
 }
 
 func (l *Lock) Release() error {
@@ -39,6 +46,11 @@ func (l *Lock) Release() error {
 	err := l.file.Close()
 	if removeErr := os.Remove(l.path); err == nil {
 		err = removeErr
+	}
+	if l.createdDir {
+		if removeErr := os.Remove(filepath.Dir(l.path)); err == nil && removeErr != nil && !os.IsNotExist(removeErr) {
+			err = removeErr
+		}
 	}
 	return err
 }
