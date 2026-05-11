@@ -16,6 +16,8 @@ func ResolveTargetPath(raw string) (string, error) {
 	abs = filepath.Clean(abs)
 	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
 		return filepath.Clean(resolved), nil
+	} else if !os.IsNotExist(err) {
+		return "", err
 	}
 	parent := filepath.Dir(abs)
 	resolvedParent, parentErr := filepath.EvalSymlinks(parent)
@@ -25,5 +27,5 @@ func ResolveTargetPath(raw string) (string, error) {
 	if os.IsNotExist(parentErr) {
 		return abs, nil
 	}
-	return abs, nil
+	return "", parentErr
 }

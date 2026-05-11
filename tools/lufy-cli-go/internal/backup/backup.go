@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
@@ -15,6 +16,8 @@ import (
 )
 
 const SchemaVersion = 1
+
+const defaultBackupRetention = 10
 
 type Options struct {
 	Target string
@@ -63,6 +66,11 @@ func (s Service) Run(opts Options, stdout io.Writer) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	lock, err := platform.AcquireLock(target)
+	if err != nil {
+		return "", err
+	}
+	defer lock.Release()
 	rels, err := managedExistingFiles(target)
 	if err != nil {
 		return "", err
@@ -74,8 +82,8 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 	if len(rels) == 0 {
 		return "", fmt.Errorf("no hay archivos gestionados existentes para respaldar")
 	}
-	ts := time.Now().UTC().Format("20060102T150405.000000000Z")
-	backupDir := filepath.Join(target, ".lufy-ai", "backups", ts)
+	backupRoot := filepath.Join(target, ".lufy-ai", "backups")
+	backupDir := uniqueBackupDir(backupRoot, time.Now().UTC())
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return "", err
 	}
@@ -129,14 +137,77 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 	if err := platform.WriteFileAtomic(manifestPath, body, 0o644); err != nil {
 		return "", err
 	}
+	if err := pruneBackups(backupRoot, backupDir, defaultBackupRetention); err != nil && stdout != nil {
+		fmt.Fprintf(stdout, "Aviso: no se pudo aplicar retención de backups: %v\n", err)
+	}
 	fmt.Fprintf(stdout, "Backup creado: %s (%d archivo(s))\n", backupDir, len(manifest.Files))
 	return backupDir, nil
+}
+
+func uniqueBackupDir(backupRoot string, now time.Time) string {
+	base := now.Format("20060102T150405.000000000Z")
+	for i := 0; ; i++ {
+		name := base
+		if i > 0 {
+			name = fmt.Sprintf("%s-%d", base, i)
+		}
+		path := filepath.Join(backupRoot, name)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return path
+		}
+	}
+}
+
+func pruneBackups(backupRoot, current string, keep int) error {
+	if keep <= 0 {
+		return nil
+	}
+	entries, err := os.ReadDir(backupRoot)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var dirs []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		dirs = append(dirs, filepath.Join(backupRoot, entry.Name()))
+	}
+	sort.Strings(dirs)
+	if len(dirs) <= keep {
+		return nil
+	}
+	current = filepath.Clean(current)
+	removeCount := len(dirs) - keep
+	for _, dir := range dirs {
+		if removeCount == 0 {
+			return nil
+		}
+		if filepath.Clean(dir) == current {
+			continue
+		}
+		if err := os.RemoveAll(dir); err != nil {
+			return err
+		}
+		removeCount--
+	}
+	return nil
 }
 
 func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdout io.Writer) error {
 	absTarget, err := platform.ResolveTargetPath(target)
 	if err != nil {
 		return err
+	}
+	if !dryRun {
+		lock, err := platform.AcquireLock(absTarget)
+		if err != nil {
+			return err
+		}
+		defer lock.Release()
 	}
 	absBackup, err := platform.ResolveTargetPath(backupPath)
 	if err != nil {
@@ -216,6 +287,65 @@ func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdou
 	}
 
 	return nil
+}
+
+func RestoreCapturedFiles(target, backupPath string, stdout io.Writer) (int, error) {
+	absTarget, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		return 0, err
+	}
+	absBackup, err := platform.ResolveTargetPath(backupPath)
+	if err != nil {
+		return 0, err
+	}
+	manifestPath := absBackup
+	if filepath.Base(absBackup) != "manifest.json" {
+		manifestPath = filepath.Join(absBackup, "manifest.json")
+	}
+	body, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return 0, err
+	}
+	var manifest Manifest
+	if err := json.Unmarshal(body, &manifest); err != nil {
+		return 0, err
+	}
+	if manifest.SchemaVersion != SchemaVersion {
+		return 0, fmt.Errorf("schema de backup no soportado: %d", manifest.SchemaVersion)
+	}
+	manifestTarget, err := platform.ResolveTargetPath(manifest.TargetRoot)
+	if err != nil {
+		return 0, err
+	}
+	if manifestTarget != absTarget {
+		return 0, fmt.Errorf("backup pertenece a otro target: %s", manifest.TargetRoot)
+	}
+	if err := validateBackupHashes(manifestPath, manifest.Files); err != nil {
+		return 0, err
+	}
+	restored := 0
+	for _, file := range manifest.Files {
+		if file.Status != "captured" {
+			continue
+		}
+		path, err := platform.EnsureRelativeSafe(file.Path)
+		if err != nil {
+			return restored, err
+		}
+		backupRel, err := platform.EnsureRelativeSafe(file.BackupPath)
+		if err != nil {
+			return restored, err
+		}
+		src := filepath.Join(filepath.Dir(manifestPath), backupRel)
+		if err := copyFile(src, absTarget, path); err != nil {
+			return restored, err
+		}
+		restored++
+		if stdout != nil {
+			fmt.Fprintf(stdout, "- [rollback] %s\n", path)
+		}
+	}
+	return restored, nil
 }
 
 func validateBackupHashes(manifestPath string, files []FileItem) error {

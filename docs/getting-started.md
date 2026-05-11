@@ -10,7 +10,7 @@ Incluye:
 - comandos slash `/opsx-*` para el ciclo OpenSpec;
 - política de delivery en `.opencode/policies/delivery.md`;
 - plugin local Agent Observatory para la TUI;
-- CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore`, `sync` y `version`;
+- CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore`, `sync`, `status`, `upgrade` y `version`;
 - wrapper estricto `scripts/install.sh` que delega en `lufy-ai install`.
 
 ## Requisitos
@@ -63,6 +63,7 @@ lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
 
 ```bash
 lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai status --target /ruta/a/tu/proyecto
 ```
 
 ## Flujo de desarrollo/contribuidor con clone local
@@ -144,7 +145,18 @@ Flags frecuentes:
 | `lufy-ai backup` | Crea backup multiasset con `manifest.json`. |
 | `lufy-ai restore` | Restaura desde backup y valida seguridad del manifest. |
 | `lufy-ai sync` | Reaplica assets gestionados sin tocar drift local ni archivos fuera del catálogo. |
+| `lufy-ai status` | Resume estado instalado, drift local, faltantes y errores; soporta `--json` y `--verbose`. |
+| `lufy-ai upgrade` | Actualiza el binario a una versión fija verificando checksum antes de reemplazarlo. |
 | `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH; si falta metadata de linker reporta development build. |
+
+Flags útiles de verificación:
+
+| Flag | Uso |
+| --- | --- |
+| `verify --json` | Emite reporte estructurado para CI/automatización. |
+| `verify --quiet` | Suprime salida humana por stdout. |
+| `verify --verbose` | Agrega diagnóstico adicional. |
+| `verify --deep` | Valida referencias de plugins en `tui.json` y `opencode.json`. |
 
 Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](../tools/lufy-cli-go/README.md).
 

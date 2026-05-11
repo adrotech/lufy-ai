@@ -73,7 +73,7 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	if code := Run([]string{"help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) {
+	if !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) || !bytes.Contains(out.Bytes(), []byte("status")) || !bytes.Contains(out.Bytes(), []byte("upgrade")) {
 		t.Fatalf("help output missing commands: %s", out.String())
 	}
 
@@ -84,6 +84,73 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("restore requiere --backup")) {
 		t.Fatalf("restore missing backup output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunStatusJSON(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"status", "--target", t.TempDir(), "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("status --json expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("status output is not JSON: %v body=%s", err, out.String())
+	}
+	if decoded["installed"] != false {
+		t.Fatalf("unexpected status JSON: %#v", decoded)
+	}
+}
+
+func TestRunStatusVerbose(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"status", "--target", t.TempDir(), "--verbose"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("status --verbose expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("no instalado")) {
+		t.Fatalf("status verbose output unexpected: %s", out.String())
+	}
+}
+
+func TestRunVerifyQuietMissingState(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"verify", "--target", t.TempDir(), "--quiet", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("verify --quiet expected ExitRuntimeErr, got %d", code)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("quiet verify wrote stdout: %s", out.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("verify falló")) {
+		t.Fatalf("quiet verify stderr unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunVerifyAcceptsDeepFlag(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"verify", "--target", t.TempDir(), "--deep", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("verify --deep expected runtime error for missing state, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("verify falló")) {
+		t.Fatalf("verify --deep stderr unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunUpgradeRequiresTo(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"upgrade", "--dry-run"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("upgrade without --to expected ExitRuntimeErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("upgrade requiere --to")) {
+		t.Fatalf("upgrade stderr unexpected: %s", errOut.String())
 	}
 }
 

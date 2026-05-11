@@ -3,6 +3,7 @@ package syncer
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -156,6 +157,25 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	}
 	if !infoBefore.ModTime().Equal(infoAfter.ModTime()) {
 		t.Fatal("second sync rewrote unchanged managed file")
+	}
+}
+
+func TestSyncRecoveryErrorRestoresBackup(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "before\n")
+	backupDir, err := backup.BackupFiles(target, []string{"AGENTS.md"}, "test-sync-rollback", &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(backupDir, "manifest.json")
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "after\n")
+
+	err = syncRecoveryError(errors.New("boom"), target, manifestPath, 1)
+	if err == nil || !strings.Contains(err.Error(), "rollback automático restauró 1") {
+		t.Fatalf("unexpected recovery error: %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "AGENTS.md"))); got != "before\n" {
+		t.Fatalf("rollback did not restore file: %q", got)
 	}
 }
 

@@ -18,6 +18,15 @@ Cada release estable debe publicar:
 - `lufy-ai_<version>_provenance.intoto.jsonl` con subjects y metadata de build.
 - `*.bundle` generado por `cosign sign-blob` para cada artifact/checksum/SBOM/provenance publicado.
 
+Plataformas esperadas:
+
+- `darwin/amd64`
+- `darwin/arm64`
+- `linux/amd64`
+- `linux/arm64`
+- `windows/amd64`
+- `windows/arm64`
+
 ## Verificación por consumidores
 
 Verificación de checksum:
@@ -37,6 +46,8 @@ cosign verify-blob \
 ```
 
 Si `cosign` no está instalado, la firma no fue verificada localmente. En ese caso solo puede afirmarse que el checksum coincide, no que se verificó autenticidad keyless.
+
+`lufy-ai upgrade --to <version>` verifica SHA-256 contra `checksums.txt` antes de reemplazar el binario local. La verificación keyless con cosign sigue siendo un paso manual/externo para consumidores que requieran autenticidad criptográfica adicional.
 
 ## Labels de release
 
