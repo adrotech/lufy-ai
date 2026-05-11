@@ -9,7 +9,7 @@ labels: bug
 
 ## Pasos para reproducir
 
-1. 
+1.
 
 ## Resultado esperado
 

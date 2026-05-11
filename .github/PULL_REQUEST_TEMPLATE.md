@@ -1,6 +1,6 @@
 ## Resumen
 
-- 
+-
 
 ## Validación
 
@@ -9,7 +9,7 @@
 
 ## Riesgos
 
-- 
+-
 
 ## Trazabilidad
 
