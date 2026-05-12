@@ -109,7 +109,7 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 	agents := st.AssetMap()["AGENTS.md"]
-	if agents.AncestorRel != filepath.Join(".lufy-ai", "ancestors", "AGENTS.md") || agents.AncestorHash != agents.SourceSHA256 {
+	if agents.AncestorRel != ".lufy-ai/ancestors/AGENTS.md" || agents.AncestorHash != agents.SourceSHA256 {
 		t.Fatalf("ancestor metadata not recorded: %#v", agents)
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
