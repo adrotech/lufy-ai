@@ -358,4 +358,3 @@ El catálogo de assets SHALL declarar si cada entry se instala en scope project,
 #### Scenario: Entry global shared usa config global
 - **WHEN** el catálogo marca un asset como global-shared y el usuario solicita `--scope=global` o `--scope=both`
 - **THEN** install y sync lo planifican bajo el directorio global OpenCode resuelto
-

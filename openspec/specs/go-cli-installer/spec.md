@@ -334,4 +334,3 @@ The CLI SHALL use consistent action names and JSON fields for policy-driven drif
 #### Scenario: Verify and status share policy fields
 - **WHEN** verify or status emits JSON
 - **THEN** each relevant asset result includes policy, scope, target path and recommended action when drift is detected
-

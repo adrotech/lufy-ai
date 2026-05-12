@@ -70,15 +70,23 @@ La instalación SHALL decidir acciones por contenido/hash y MUST ser idempotente
 - **THEN** el plan incluye `backup` y `update-managed` para actualizarlo de forma segura
 
 ### Requirement: Conflictos no se sobrescriben silenciosamente
-La CLI MUST detectar conflictos y MUST NOT sobrescribir archivos no gestionados o modificados localmente sin una decisión explícita soportada.
+La CLI MUST detectar conflictos y MUST NOT sobrescribir archivos no gestionados o modificados localmente sin una decisión explícita soportada por la policy del asset.
 
 #### Scenario: Archivo existente no gestionado
-- **WHEN** un asset destino existe pero no aparece como gestionado en `.lufy-ai/install-state.json`
+- **WHEN** un asset destino existe pero no aparece como gestionado en `.lufy-ai/install-state.json` y su policy no permite adopción o merge seguro
 - **THEN** el plan lo marca como `conflict` y apply MUST NOT sobrescribirlo
 
-#### Scenario: Archivo gestionado con drift local
-- **WHEN** un asset gestionado existe pero su hash actual no coincide con el último hash target registrado
+#### Scenario: Archivo gestionado con drift local y policy managed
+- **WHEN** un asset `managed` existe pero su hash actual no coincide con el último hash target registrado
 - **THEN** el plan lo marca como `conflict` y apply MUST NOT sobrescribirlo como `update-managed`
+
+#### Scenario: Archivo gestionado con drift local y policy no-replace
+- **WHEN** un asset `no-replace` existe, tiene drift local y existe una nueva versión source
+- **THEN** el plan usa una acción no destructiva que preserva el archivo original y escribe la nueva versión como `.lufy-new`
+
+#### Scenario: Archivo gestionado con drift local y policy merge-block
+- **WHEN** un asset `merge-block` existe, tiene drift local fuera de bloques lufy y los marcadores lufy son válidos
+- **THEN** el plan puede actualizar solo los bloques lufy gestionados sin tratar el texto del usuario como conflicto
 
 #### Scenario: Estado corrupto
 - **WHEN** `.lufy-ai/install-state.json` existe pero no es JSON válido o usa schema no soportado
@@ -229,14 +237,22 @@ El comando `sync` SHALL decidir acciones por hash de source actual, target actua
 - **THEN** escribe `.lufy-ai/install-state.json` con hashes source y target actualizados solo después de completar las mutaciones requeridas
 
 ### Requirement: Sync preserva personalizaciones fuera de scope
-El comando `sync` MUST NOT sobrescribir archivos no gestionados, assets con drift local ni personalizaciones fuera del catálogo permitido; para `opencode.json` solo puede aplicar merge JSON conservador explícito.
+El comando `sync` MUST NOT sobrescribir archivos no gestionados, assets con drift local ni personalizaciones fuera del catálogo permitido; solo puede modificar drift local cuando la policy del asset define una estrategia segura y no destructiva.
 
-#### Scenario: Asset gestionado con drift local bloqueado
-- **WHEN** un asset gestionado existe pero su hash target actual no coincide con el último hash target registrado
+#### Scenario: Asset managed con drift local bloqueado
+- **WHEN** un asset `managed` existe pero su hash target actual no coincide con el último hash target registrado
 - **THEN** el plan de sync lo marca como `conflict` y apply MUST NOT sobrescribirlo como `update-managed`
 
+#### Scenario: Asset no-replace con drift local genera nueva versión
+- **WHEN** un asset `no-replace` existe con drift local y el source actual difiere del source registrado
+- **THEN** el plan de sync escribe la nueva versión en `.lufy-new` y conserva el target original
+
+#### Scenario: Asset merge-block con drift local fuera de bloques preservado
+- **WHEN** un asset `merge-block` contiene personalizaciones fuera de bloques lufy y bloques lufy válidos
+- **THEN** sync preserva esas personalizaciones y actualiza solo los bloques gestionados que cambiaron
+
 #### Scenario: Archivo existente no gestionado bloqueado
-- **WHEN** un path del catálogo existe en el target pero no aparece como gestionado en `.lufy-ai/install-state.json`
+- **WHEN** un path del catálogo existe en el target pero no aparece como gestionado en `.lufy-ai/install-state.json` y su policy no permite merge/adopción segura
 - **THEN** el plan de sync lo marca como `conflict` y apply MUST NOT sobrescribirlo
 
 #### Scenario: Archivo desconocido del usuario preservado
@@ -320,3 +336,25 @@ Install, sync, backup and restore SHALL avoid direct non-atomic writes for manag
 #### Scenario: Interrupted copy cannot leave truncated managed file
 - **WHEN** a managed file payload is being copied into a target or backup destination
 - **THEN** the implementation writes via temp file plus rename in the destination directory instead of writing directly to the final path
+
+### Requirement: Manifest registra policy scope y ancestor
+La CLI SHALL persistir metadata de policy, scope y ancestor por asset gestionado para que install, sync, verify y status puedan tomar decisiones consistentes.
+
+#### Scenario: Estado nuevo incluye metadata de drift
+- **WHEN** install o sync escribe `.lufy-ai/install-state.json`
+- **THEN** cada asset gestionado incluye `policy`, `scope` y referencia de ancestor cuando aplique
+
+#### Scenario: Estado anterior migra con defaults seguros
+- **WHEN** la CLI lee un install state de schema anterior sin `policy` ni `scope`
+- **THEN** completa defaults compatibles sin perder hashes, paths ni timestamps existentes
+
+### Requirement: Catálogo declara scope efectivo
+El catálogo de assets SHALL declarar si cada entry se instala en scope project, global o both.
+
+#### Scenario: Entry project-only permanece local
+- **WHEN** el catálogo marca un asset como project-only
+- **THEN** install y sync lo planifican bajo el project target incluso cuando el usuario solicita scope global para assets compartidos
+
+#### Scenario: Entry global shared usa config global
+- **WHEN** el catálogo marca un asset como global-shared y el usuario solicita `--scope=global` o `--scope=both`
+- **THEN** install y sync lo planifican bajo el directorio global OpenCode resuelto
