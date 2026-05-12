@@ -144,19 +144,21 @@ lufy-ai version
 Luego revisa el plan de instalación en el repositorio destino:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --dry-run --yes --no-engram
 ```
 
 Aplica la instalación:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
 ```
+
+`--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
 
 Después de `install`, ejecuta el verificador canónico:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --scope project --no-engram
 ```
 
 Para automatización o CI puedes usar salida JSON:
@@ -164,6 +166,21 @@ Para automatización o CI puedes usar salida JSON:
 ```bash
 lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --json
 lufy-ai status --target /ruta/a/tu/proyecto --json --verbose
+```
+
+Si un asset `no-replace` tiene drift local, install/sync preservan el archivo original y escriben `<archivo>.lufy-new`. Revisa el estado y resuelve manualmente o con un merge tool:
+
+```bash
+lufy-ai status --target /ruta/a/tu/proyecto --verbose
+LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto tui.json
+```
+
+Para descubrir y restaurar backups:
+
+```bash
+lufy-ai restore --target /ruta/a/tu/proyecto --list
+lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --dry-run
+lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 ```
 
 Para validaciones opt-in de referencias de plugins en `tui.json`/`opencode.json`:

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
@@ -209,7 +210,7 @@ func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdou
 		}
 		defer lock.Release()
 	}
-	absBackup, err := platform.ResolveTargetPath(backupPath)
+	absBackup, err := resolveBackupReference(absTarget, backupPath)
 	if err != nil {
 		return err
 	}
@@ -289,6 +290,25 @@ func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdou
 	return nil
 }
 
+func (s Service) List(target string, stdout io.Writer) error {
+	absTarget, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		return err
+	}
+	items, err := backupItems(absTarget)
+	if err != nil {
+		return err
+	}
+	if len(items) == 0 {
+		fmt.Fprintln(stdout, "No hay backups disponibles")
+		return nil
+	}
+	for _, item := range items {
+		fmt.Fprintf(stdout, "%s\t%s\t%s\n", item.ID, item.CreatedAt, item.ManifestPath)
+	}
+	return nil
+}
+
 func RestoreCapturedFiles(target, backupPath string, stdout io.Writer) (int, error) {
 	absTarget, err := platform.ResolveTargetPath(target)
 	if err != nil {
@@ -346,6 +366,59 @@ func RestoreCapturedFiles(target, backupPath string, stdout io.Writer) (int, err
 		}
 	}
 	return restored, nil
+}
+
+type backupItem struct {
+	ID           string
+	CreatedAt    string
+	ManifestPath string
+}
+
+func resolveBackupReference(target, backupPath string) (string, error) {
+	absBackup, err := platform.ResolveTargetPath(backupPath)
+	if err == nil {
+		if _, statErr := os.Stat(absBackup); statErr == nil {
+			return absBackup, nil
+		} else if !os.IsNotExist(statErr) {
+			return "", statErr
+		}
+	}
+	if err != nil && (filepath.IsAbs(backupPath) || strings.Contains(backupPath, string(filepath.Separator))) {
+		return "", err
+	}
+	if filepath.IsAbs(backupPath) || strings.Contains(backupPath, string(filepath.Separator)) {
+		return absBackup, nil
+	}
+	return platform.SafeJoin(target, filepath.Join(".lufy-ai", "backups", backupPath))
+}
+
+func backupItems(target string) ([]backupItem, error) {
+	root := filepath.Join(target, ".lufy-ai", "backups")
+	entries, err := os.ReadDir(root)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var out []backupItem
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		manifestPath := filepath.Join(root, entry.Name(), "manifest.json")
+		body, err := os.ReadFile(manifestPath)
+		if err != nil {
+			continue
+		}
+		var manifest Manifest
+		if err := json.Unmarshal(body, &manifest); err != nil || manifest.SchemaVersion != SchemaVersion {
+			continue
+		}
+		out = append(out, backupItem{ID: entry.Name(), CreatedAt: manifest.CreatedAt, ManifestPath: manifestPath})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
+	return out, nil
 }
 
 func validateBackupHashes(manifestPath string, files []FileItem) error {

@@ -30,13 +30,13 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	}
 
 	updateTarget := installedTarget(t)
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
 	updatePlan, err := svc.BuildPlan(Options{Target: updateTarget, NoEngram: true})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
-	if !hasSyncAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasSyncAction(updatePlan.Actions, "update-managed", "AGENTS.md") {
-		t.Fatalf("update plan missing backup/update-managed: actions=%#v conflicts=%#v", updatePlan.Actions, updatePlan.Conflicts)
+	if !hasSyncAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasSyncAction(updatePlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("update plan missing backup/merge-block: actions=%#v conflicts=%#v", updatePlan.Actions, updatePlan.Conflicts)
 	}
 
 	driftTarget := installedTarget(t)
@@ -45,8 +45,8 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(drift) error = %v", err)
 	}
-	if !hasSyncConflict(driftPlan.Conflicts, "AGENTS.md", "drift local") {
-		t.Fatalf("expected drift conflict, got %#v", driftPlan.Conflicts)
+	if len(driftPlan.Conflicts) != 0 || !hasSyncAction(driftPlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("expected merge-block drift resolution, actions=%#v conflicts=%#v", driftPlan.Actions, driftPlan.Conflicts)
 	}
 
 	untrackedTarget := t.TempDir()
@@ -63,13 +63,60 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	}
 }
 
+func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if len(plan.Conflicts) != 0 || !hasSyncAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
+		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
+		t.Fatalf("no-replace original was overwritten: %q", got)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(sync) error = %v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agents := st.AssetMap()["AGENTS.md"]
+	if agents.AncestorRel != ".lufy-ai/ancestors/AGENTS.md" || agents.AncestorHash != agents.SourceSHA256 {
+		t.Fatalf("ancestor metadata not refreshed: %#v", agents)
+	}
+	if got := string(readFile(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n" {
+		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
 func TestDryRunPerformsNoMutations(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
 
 	stateBefore := readFile(t, state.Path(target))
 	targetBefore := readFile(t, filepath.Join(target, "AGENTS.md"))
@@ -77,7 +124,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
 	}
-	if !strings.Contains(out.String(), "Modo dry-run") || !strings.Contains(out.String(), "update-managed") {
+	if !strings.Contains(out.String(), "Modo dry-run") || !strings.Contains(out.String(), "merge-block") {
 		t.Fatalf("dry-run output unexpected: %s", out.String())
 	}
 	if !bytes.Equal(stateBefore, readFile(t, state.Path(target))) {
@@ -97,7 +144,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
@@ -128,7 +175,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if agents.SourceSHA256 != current || agents.TargetSHA256 != current || agents.LastAction != "sync-update-managed" {
+	if agents.TargetSHA256 != current || agents.LastAction != "sync-update-managed" {
 		t.Fatalf("state was not refreshed for AGENTS.md: %#v current=%s", agents, current)
 	}
 	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
@@ -187,7 +234,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	if err := os.Remove(filepath.Join(source, obsoleteRel)); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
@@ -218,7 +265,7 @@ func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T
 	target := installedTarget(t)
 	newRel := filepath.Join(".opencode", "commands", "new-command.md")
 	writeFile(t, filepath.Join(source, newRel), "new command\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
 
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
@@ -293,7 +340,7 @@ func TestBuildPlanRejectsInvalidOpenCodeManagedKeyTypesWithoutAssetUpdates(t *te
 	chdirForTest(t, source)
 	target := installedTarget(t)
 	stateBefore := readFile(t, state.Path(target))
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "upstream changed but must not apply\n")
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed but must not apply\n<!-- LUFY:END project-guide -->\n")
 	writeFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":{}}`)
 
 	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
@@ -405,7 +452,7 @@ func minimalSource(t *testing.T) string {
 	root := t.TempDir()
 	files := map[string]string{
 		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "agents template\n",
+		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"tui.json":                                                     "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",

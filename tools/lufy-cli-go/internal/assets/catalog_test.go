@@ -128,13 +128,14 @@ type comparableAsset struct {
 	TargetRel    string
 	Kind         Kind
 	Policy       Policy
+	Scope        Scope
 	SourceSHA256 string
 }
 
 func comparableAssets(c Catalog) []comparableAsset {
 	out := make([]comparableAsset, 0, len(c.Assets))
 	for _, asset := range c.Assets {
-		out = append(out, comparableAsset{TargetRel: filepath.ToSlash(asset.TargetRel), Kind: asset.Kind, Policy: asset.Policy, SourceSHA256: asset.SourceSHA256})
+		out = append(out, comparableAsset{TargetRel: filepath.ToSlash(asset.TargetRel), Kind: asset.Kind, Policy: asset.Policy, Scope: asset.Scope, SourceSHA256: asset.SourceSHA256})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].TargetRel < out[j].TargetRel })
 	return out

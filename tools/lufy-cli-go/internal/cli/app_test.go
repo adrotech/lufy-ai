@@ -161,7 +161,7 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	if code := Run([]string{"sync", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("sync --help expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
 		t.Fatalf("sync help missing flags: %s", errOut.String())
 	}
 
@@ -169,6 +169,18 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	errOut.Reset()
 	if code := Run([]string{"sync", "--unknown"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
 		t.Fatalf("sync unknown flag expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunRejectsInvalidScope(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"install", "--scope", "elsewhere", "--dry-run"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("invalid scope expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("project, global, both")) {
+		t.Fatalf("invalid scope output unexpected: %s", errOut.String())
 	}
 }
 

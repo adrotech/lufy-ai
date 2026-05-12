@@ -27,7 +27,7 @@ func TestStatusReportsMissingAndDrift(t *testing.T) {
 	}
 	writeStatusFile(t, filepath.Join(target, "drift.txt"), "changed\n")
 
-	report, err := NewService().Build(target, true)
+	report, err := NewService().Build(target, true, "")
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
@@ -67,6 +67,26 @@ func TestStatusVerboseOutput(t *testing.T) {
 	}
 	if !bytes.Contains(out.Bytes(), []byte("- [ok] AGENTS.md")) {
 		t.Fatalf("verbose output missing asset detail: %s", out.String())
+	}
+}
+
+func TestStatusReportsLufyNewForNoReplaceDrift(t *testing.T) {
+	target := t.TempDir()
+	writeStatusFile(t, filepath.Join(target, "tui.json"), "original\n")
+	originalHash := hashStatusFile(t, filepath.Join(target, "tui.json"))
+	st := state.New(target, nil, []state.AssetState{{ID: "tui.json", TargetRel: "tui.json", TargetSHA256: originalHash, Policy: "no-replace", Scope: "project"}}, "test-fingerprint")
+	if err := state.WriteAtomic(target, st); err != nil {
+		t.Fatal(err)
+	}
+	writeStatusFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeStatusFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+
+	report, err := NewService().Build(target, true, "")
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	if !report.OK || report.Drifted != 0 || len(report.AssetDetails) != 1 || report.AssetDetails[0].Status != "lufy-new" {
+		t.Fatalf("unexpected report: %#v", report)
 	}
 }
 

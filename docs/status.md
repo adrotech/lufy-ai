@@ -12,9 +12,13 @@
 - `verify --deep` para referencias de plugins en `tui.json` y `opencode.json`.
 - Bootstrap remoto con checksum, validación de tar entries, retry y timeouts.
 - Release con actions pinneadas, SBOM, provenance y firma cosign.
+- Drift Resolution en implementación: policies por asset, ancestors, `.lufy-new`, `merge-block` para `AGENTS.md`, `--scope`, `merge` y restore por ID/listado.
 
 ## Pendiente o futuro
 
+- Cerrar validación final y delivery de Drift Resolution `v0.2.0` antes de documentarlo como release estable.
+- OpenSpec v2 `v0.3.0`: paridad con OpenSpec v1.3.1, delta markers, scenarios testables, `/opsx-sync`, profiles core/expanded y fallback stay-updated de 3 capas.
+- Reconciliation hook opt-in para detectar cambios sin spec asociada.
 - Autocomplete/help avanzado mediante Cobra u otro framework.
 - Verificación cosign integrada en `upgrade`.
 - Deep verify de plugins y schemas externos.

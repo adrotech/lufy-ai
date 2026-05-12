@@ -195,6 +195,31 @@ func TestRestoreCapturedFilesRestoresWithoutRecoveryBackup(t *testing.T) {
 	}
 }
 
+func TestListAndRestoreByBackupID(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	backupID := filepath.Base(backupDir)
+	var out bytes.Buffer
+	if err := NewService().List(target, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), backupID) || !strings.Contains(out.String(), "manifest.json") {
+		t.Fatalf("backup list output unexpected: %s", out.String())
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	if err := NewService().Restore(target, backupID, false, true, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Restore(id) error = %v", err)
+	}
+	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "original\n" {
+		t.Fatalf("restore by id did not restore file: %q", got)
+	}
+}
+
 func TestBackupPrunesOldBackups(t *testing.T) {
 	target := t.TempDir()
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
