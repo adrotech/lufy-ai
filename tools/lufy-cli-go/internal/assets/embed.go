@@ -29,16 +29,22 @@ func BuildEmbeddedCatalog() (Catalog, error) {
 		if err != nil {
 			return Catalog{}, err
 		}
+		if !ent.policy.Valid() {
+			return Catalog{}, fmt.Errorf("policy de asset no soportada: %s", ent.policy)
+		}
+		if !ent.scope.Valid() {
+			return Catalog{}, fmt.Errorf("scope de asset no soportado: %s", ent.scope)
+		}
 		if ent.kind == KindDir {
-			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy})
-			files, err := expandEmbeddedDir(sourceRel, targetRel, ent.policy)
+			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope})
+			files, err := expandEmbeddedDir(sourceRel, targetRel, ent.policy, ent.scope)
 			if err != nil {
 				return Catalog{}, err
 			}
 			out = append(out, files...)
 			continue
 		}
-		asset, err := embeddedFileAsset(sourceRel, targetRel, ent.policy)
+		asset, err := embeddedFileAsset(sourceRel, targetRel, ent.policy, ent.scope)
 		if err != nil {
 			return Catalog{}, err
 		}
@@ -63,7 +69,7 @@ func ReadSourceFile(sourceRoot, sourceRel string) ([]byte, error) {
 	return body, nil
 }
 
-func expandEmbeddedDir(sourceRel, targetRel string, policy Policy) ([]Asset, error) {
+func expandEmbeddedDir(sourceRel, targetRel string, policy Policy, scope Scope) ([]Asset, error) {
 	root := filepath.ToSlash(filepath.Join("embedded", sourceRel))
 	info, err := fs.Stat(embeddedFS, root)
 	if err != nil || !info.IsDir() {
@@ -101,10 +107,10 @@ func expandEmbeddedDir(sourceRel, targetRel string, policy Policy) ([]Asset, err
 			return err
 		}
 		if d.IsDir() {
-			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy})
+			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope})
 			return nil
 		}
-		asset, err := embeddedFileAsset(src, dst, policy)
+		asset, err := embeddedFileAsset(src, dst, policy, scope)
 		if err != nil {
 			return err
 		}
@@ -114,11 +120,11 @@ func expandEmbeddedDir(sourceRel, targetRel string, policy Policy) ([]Asset, err
 	return out, err
 }
 
-func embeddedFileAsset(sourceRel, targetRel string, policy Policy) (Asset, error) {
+func embeddedFileAsset(sourceRel, targetRel string, policy Policy, scope Scope) (Asset, error) {
 	body, err := ReadSourceFile(EmbeddedSourceRoot, sourceRel)
 	if err != nil {
 		return Asset{}, err
 	}
 	h := sha256.Sum256(body)
-	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, SourceSHA256: hex.EncodeToString(h[:])}, nil
+	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hex.EncodeToString(h[:])}, nil
 }

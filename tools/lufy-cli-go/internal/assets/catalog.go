@@ -24,9 +24,58 @@ const (
 type Policy string
 
 const (
-	PolicyManaged  Policy = "managed"
-	PolicyMetadata Policy = "metadata"
+	PolicyManaged    Policy = "managed"
+	PolicyNoReplace  Policy = "no-replace"
+	PolicyMergeBlock Policy = "merge-block"
+	PolicyMergeJSON  Policy = "merge-json"
+	PolicyMetadata   Policy = "metadata"
 )
+
+func (p Policy) Valid() bool {
+	switch p {
+	case PolicyManaged, PolicyNoReplace, PolicyMergeBlock, PolicyMergeJSON, PolicyMetadata:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p Policy) SupportsAncestor() bool {
+	switch p {
+	case PolicyManaged, PolicyNoReplace, PolicyMergeBlock:
+		return true
+	default:
+		return false
+	}
+}
+
+type Scope string
+
+const (
+	ScopeProject Scope = "project"
+	ScopeGlobal  Scope = "global"
+	ScopeBoth    Scope = "both"
+)
+
+func (s Scope) Valid() bool {
+	switch s {
+	case ScopeProject, ScopeGlobal, ScopeBoth:
+		return true
+	default:
+		return false
+	}
+}
+
+func ParseScope(value string) (Scope, error) {
+	if value == "" {
+		value = string(ScopeProject)
+	}
+	scope := Scope(value)
+	if !scope.Valid() {
+		return "", fmt.Errorf("scope no soportado %q; valores permitidos: project, global, both", value)
+	}
+	return scope, nil
+}
 
 type Asset struct {
 	ID           string `json:"id"`
@@ -34,6 +83,7 @@ type Asset struct {
 	TargetRel    string `json:"targetRel"`
 	Kind         Kind   `json:"kind"`
 	Policy       Policy `json:"policy"`
+	Scope        Scope  `json:"scope"`
 	SourceSHA256 string `json:"sourceSHA256,omitempty"`
 }
 
@@ -68,22 +118,23 @@ type entry struct {
 	targetRel string
 	kind      Kind
 	policy    Policy
+	scope     Scope
 }
 
 var allowedEntries = []entry{
-	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/skills", targetRel: ".opencode/skills", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/policies", targetRel: ".opencode/policies", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/plugins", targetRel: ".opencode/plugins", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/agent-observatory", targetRel: ".opencode/agent-observatory", kind: KindDir, policy: PolicyManaged},
-	{sourceRel: ".opencode/README.md", targetRel: ".opencode/README.md", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: ".opencode/package.json", targetRel: ".opencode/package.json", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: ".opencode/package-lock.json", targetRel: ".opencode/package-lock.json", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: ".opencode/.gitignore", targetRel: ".opencode/.gitignore", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: "AGENTS.md.template", targetRel: "AGENTS.md", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: "tui.json", targetRel: "tui.json", kind: KindFile, policy: PolicyManaged},
-	{sourceRel: "openspec", targetRel: "openspec", kind: KindDir, policy: PolicyManaged},
+	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/skills", targetRel: ".opencode/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/policies", targetRel: ".opencode/policies", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/plugins", targetRel: ".opencode/plugins", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/agent-observatory", targetRel: ".opencode/agent-observatory", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/README.md", targetRel: ".opencode/README.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/package.json", targetRel: ".opencode/package.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/package-lock.json", targetRel: ".opencode/package-lock.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/.gitignore", targetRel: ".opencode/.gitignore", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: "AGENTS.md.template", targetRel: "AGENTS.md", kind: KindFile, policy: PolicyMergeBlock, scope: ScopeProject},
+	{sourceRel: "tui.json", targetRel: "tui.json", kind: KindFile, policy: PolicyNoReplace, scope: ScopeProject},
+	{sourceRel: "openspec", targetRel: "openspec", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 }
 
 func BuildCatalog(sourceRoot string) (Catalog, error) {
@@ -97,16 +148,22 @@ func BuildCatalog(sourceRoot string) (Catalog, error) {
 		if err != nil {
 			return Catalog{}, err
 		}
+		if !ent.policy.Valid() {
+			return Catalog{}, fmt.Errorf("policy de asset no soportada: %s", ent.policy)
+		}
+		if !ent.scope.Valid() {
+			return Catalog{}, fmt.Errorf("scope de asset no soportado: %s", ent.scope)
+		}
 		if ent.kind == KindDir {
-			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy})
-			files, err := expandDir(sourceRoot, sourceRel, targetRel, ent.policy)
+			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope})
+			files, err := expandDir(sourceRoot, sourceRel, targetRel, ent.policy, ent.scope)
 			if err != nil {
 				return Catalog{}, err
 			}
 			out = append(out, files...)
 			continue
 		}
-		asset, err := fileAsset(sourceRoot, sourceRel, targetRel, ent.policy)
+		asset, err := fileAsset(sourceRoot, sourceRel, targetRel, ent.policy, ent.scope)
 		if err != nil {
 			return Catalog{}, err
 		}
@@ -116,7 +173,7 @@ func BuildCatalog(sourceRoot string) (Catalog, error) {
 	return Catalog{SourceRoot: sourceRoot, Assets: out}, nil
 }
 
-func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy) ([]Asset, error) {
+func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy, scope Scope) ([]Asset, error) {
 	root := filepath.Join(sourceRoot, sourceRel)
 	if info, err := os.Lstat(root); err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return nil, fmt.Errorf("directorio fuente inválido: %s", sourceRel)
@@ -153,10 +210,10 @@ func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy) ([]Asset,
 			return err
 		}
 		if d.IsDir() {
-			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy})
+			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope})
 			return nil
 		}
-		asset, err := fileAsset(sourceRoot, src, dst, policy)
+		asset, err := fileAsset(sourceRoot, src, dst, policy, scope)
 		if err != nil {
 			return err
 		}
@@ -166,12 +223,12 @@ func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy) ([]Asset,
 	return out, err
 }
 
-func fileAsset(sourceRoot, sourceRel, targetRel string, policy Policy) (Asset, error) {
+func fileAsset(sourceRoot, sourceRel, targetRel string, policy Policy, scope Scope) (Asset, error) {
 	hash, err := FileSHA256(filepath.Join(sourceRoot, sourceRel))
 	if err != nil {
 		return Asset{}, err
 	}
-	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, SourceSHA256: hash}, nil
+	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hash}, nil
 }
 
 func FileSHA256(path string) (string, error) {

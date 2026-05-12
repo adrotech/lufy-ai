@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
@@ -30,6 +32,8 @@ func Run(args []string, deps Dependencies) int {
 		return runBackup(args[1:], deps)
 	case "restore":
 		return runRestore(args[1:], deps)
+	case "merge":
+		return runMerge(args[1:], deps)
 	case "sync":
 		return runSync(args[1:], deps)
 	case "status":
@@ -46,6 +50,32 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runMerge(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai merge [--target <dir>] <path>")
+		fmt.Fprintln(deps.Stderr, "Reconcilia target, ancestor y .lufy-new usando LUFY_MERGE_TOOL.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0]}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runUpgrade(args []string, deps Dependencies) int {
@@ -72,6 +102,7 @@ func runStatus(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("status", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	verbose := fs.Bool("verbose", false, "Mostrar detalle por asset")
 	if err := fs.Parse(args); err != nil {
@@ -81,7 +112,12 @@ func runStatus(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "status no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
-	if err := status.NewService().Run(status.Options{Target: *target, JSON: *jsonOutput, Verbose: *verbose}, deps.Stdout); err != nil {
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := status.NewService().Run(status.Options{Target: *target, JSON: *jsonOutput, Verbose: *verbose, Scope: scope}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -107,12 +143,13 @@ func runSync(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 
 	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--dry-run] [--yes] [--no-engram]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram]")
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -129,8 +166,13 @@ func runSync(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := syncer.NewService()
-	err := service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram}, deps.Stdout)
+	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope}, deps.Stdout)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -142,6 +184,7 @@ func runVerify(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("verify", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	noEngram := fs.Bool("no-engram", false, "Omitir chequeo Engram")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	quiet := fs.Bool("quiet", false, "Omitir salida humana si no hay errores")
@@ -151,7 +194,12 @@ func runVerify(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	svc := verify.NewService()
-	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep}, deps.Stdout); err != nil {
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -178,10 +226,18 @@ func runRestore(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
 	backupPath := fs.String("backup", "", "Ruta a backup o manifest.json")
+	list := fs.Bool("list", false, "Lista backups disponibles")
 	dryRun := fs.Bool("dry-run", false, "Mostrar restore sin mutaciones")
 	yes := fs.Bool("yes", false, "Acepta confirmaciones")
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
+	}
+	if *list {
+		if err := backup.NewService().List(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+		return ExitOK
 	}
 	if *backupPath == "" {
 		fmt.Fprintln(deps.Stderr, "restore requiere --backup <ruta>")
@@ -200,13 +256,14 @@ func runInstall(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 
 	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 	backup := fs.Bool("backup", false, "Forzar backup cuando aplique")
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--dry-run] [--yes] [--no-engram] [--backup]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram] [--backup]")
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -220,13 +277,19 @@ func runInstall(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := installer.NewService()
-	err := service.Run(installer.Options{
+	err = service.Run(installer.Options{
 		Target:   *target,
 		DryRun:   *dryRun,
 		Yes:      *yes,
 		NoEngram: *noEngram,
 		Backup:   *backup,
+		Scope:    scope,
 	}, deps.Stdout)
 	if err != nil {
 		var actionable ActionableError
@@ -251,6 +314,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
+	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")

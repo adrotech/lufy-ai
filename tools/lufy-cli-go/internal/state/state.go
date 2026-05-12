@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 const (
-	SchemaVersion = 1
+	LegacySchemaVersion = 1
+	SchemaVersion       = 2
 )
 
 type InstallState struct {
@@ -34,6 +36,10 @@ type AssetState struct {
 	TargetRel    string `json:"targetRel"`
 	SourceSHA256 string `json:"sourceSHA256"`
 	TargetSHA256 string `json:"targetSHA256"`
+	Policy       string `json:"policy,omitempty"`
+	Scope        string `json:"scope,omitempty"`
+	AncestorRel  string `json:"ancestorRel,omitempty"`
+	AncestorHash string `json:"ancestorSHA256,omitempty"`
 	InstalledAt  string `json:"installedAt"`
 	LastAction   string `json:"lastAction"`
 }
@@ -54,13 +60,45 @@ func Load(targetRoot string) (*InstallState, error) {
 	if err := json.Unmarshal(body, &st); err != nil {
 		return nil, fmt.Errorf("install-state.json inválido: %w", err)
 	}
-	if st.SchemaVersion != SchemaVersion {
+	if st.SchemaVersion != SchemaVersion && st.SchemaVersion != LegacySchemaVersion {
 		return nil, fmt.Errorf("schema de install-state.json no soportado: %d", st.SchemaVersion)
+	}
+	if err := normalize(&st); err != nil {
+		return nil, err
 	}
 	return &st, nil
 }
 
+func normalize(st *InstallState) error {
+	st.SchemaVersion = SchemaVersion
+	for i := range st.Assets {
+		asset := &st.Assets[i]
+		if asset.Policy == "" {
+			asset.Policy = string(assets.PolicyManaged)
+		}
+		if !assets.Policy(asset.Policy).Valid() {
+			return fmt.Errorf("policy de install-state.json no soportada para %s: %s", asset.TargetRel, asset.Policy)
+		}
+		if asset.Scope == "" {
+			asset.Scope = string(assets.ScopeProject)
+		}
+		if !assets.Scope(asset.Scope).Valid() {
+			return fmt.Errorf("scope de install-state.json no soportado para %s: %s", asset.TargetRel, asset.Scope)
+		}
+	}
+	return nil
+}
+
 func WriteAtomic(targetRoot string, st InstallState) error {
+	if st.SchemaVersion == 0 {
+		st.SchemaVersion = SchemaVersion
+	}
+	if st.SchemaVersion != SchemaVersion && st.SchemaVersion != LegacySchemaVersion {
+		return fmt.Errorf("schema de install-state.json no soportado: %d", st.SchemaVersion)
+	}
+	if err := normalize(&st); err != nil {
+		return err
+	}
 	path := Path(targetRoot)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -80,7 +118,9 @@ func New(targetRoot string, previous *InstallState, assets []AssetState, sourceR
 		installedAt = previous.InstalledAt
 	}
 	info := version.Current()
-	return InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
+	st := InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
+	_ = normalize(&st)
+	return st
 }
 
 func (s InstallState) AssetMap() map[string]AssetState {

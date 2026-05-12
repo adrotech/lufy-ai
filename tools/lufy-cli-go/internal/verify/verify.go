@@ -22,11 +22,14 @@ type Options struct {
 	Verbose               bool
 	Deep                  bool
 	AllowCatalogNewAssets bool
+	Scope                 assets.Scope
 }
 
 type Report struct {
 	OK            bool    `json:"ok"`
 	TargetRoot    string  `json:"targetRoot"`
+	Scope         string  `json:"scope,omitempty"`
+	GlobalRoot    string  `json:"globalRoot,omitempty"`
 	SchemaVersion int     `json:"schemaVersion,omitempty"`
 	Assets        int     `json:"assets,omitempty"`
 	Failures      int     `json:"failures"`
@@ -36,9 +39,11 @@ type Report struct {
 }
 
 type Check struct {
-	Level   string `json:"level"`
-	Path    string `json:"path,omitempty"`
-	Message string `json:"message"`
+	Level             string `json:"level"`
+	Path              string `json:"path,omitempty"`
+	Policy            string `json:"policy,omitempty"`
+	RecommendedAction string `json:"recommendedAction,omitempty"`
+	Message           string `json:"message"`
 }
 
 type Service struct{}
@@ -76,7 +81,18 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
-	report := Report{TargetRoot: target}
+	scope, err := assets.ParseScope(string(opts.Scope))
+	if err != nil {
+		return err
+	}
+	report := Report{TargetRoot: target, Scope: string(scope)}
+	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
+		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		if err != nil {
+			return err
+		}
+		report.GlobalRoot = globalRoot
+	}
 	emit := func(level, path, format string, args ...any) {
 		message := fmt.Sprintf(format, args...)
 		report.Checks = append(report.Checks, Check{Level: level, Path: path, Message: message})
@@ -93,6 +109,21 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 				fmt.Fprintf(stdout, "%s: %s\n", level, message)
 				return
 			}
+			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
+		}
+	}
+	emitAsset := func(level, path, policy, recommendedAction, format string, args ...any) {
+		message := fmt.Sprintf(format, args...)
+		report.Checks = append(report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
+		switch level {
+		case "fail":
+			report.Failures++
+		case "warn":
+			report.Warnings++
+		case "info":
+			report.Infos++
+		}
+		if !opts.JSON && !opts.Quiet {
 			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
 		}
 	}
@@ -225,6 +256,10 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return err
 		}
 		if actual != asset.TargetSHA256 {
+			if asset.Policy == string(assets.PolicyNoReplace) && regularFile(path+".lufy-new") {
+				emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
+				continue
+			}
 			emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 			continue
 		}

@@ -25,7 +25,11 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+		policy := "managed"
+		if rel == "tui.json" {
+			policy = "no-replace"
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
 	}
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
@@ -60,6 +64,33 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	}
 }
 
+func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeVerifyFile(t, filepath.Join(target, "tui.json.lufy-new"), "{\"new\":true}\n")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, JSON: true}, &out); err != nil {
+		t.Fatalf("Run() error = %v body=%s", err, out.String())
+	}
+	var report Report
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK || report.Warnings == 0 {
+		t.Fatalf("expected ok report with warning, got %#v", report)
+	}
+	found := false
+	for _, check := range report.Checks {
+		if check.Path == "tui.json" && check.Policy == "no-replace" && check.RecommendedAction == "review-lufy-new" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing no-replace lufy-new check: %#v", report.Checks)
+	}
+}
+
 func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
@@ -75,7 +106,11 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+		policy := "managed"
+		if rel == "tui.json" {
+			policy = "no-replace"
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
 	}
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
@@ -120,7 +155,11 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+		policy := "managed"
+		if rel == "tui.json" {
+			policy = "no-replace"
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
 	}
 	if err := state.WriteAtomic(actual, state.New(t.TempDir(), nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
@@ -146,7 +185,11 @@ func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+		policy := "managed"
+		if rel == "tui.json" {
+			policy = "no-replace"
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
 	}
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
@@ -337,7 +380,11 @@ func validVerifyTarget(t *testing.T) string {
 		if err != nil {
 			t.Fatal(err)
 		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
+		policy := "managed"
+		if rel == "tui.json" {
+			policy = "no-replace"
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
 	}
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)

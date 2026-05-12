@@ -48,23 +48,101 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(conflict) error = %v", err)
 	}
-	if len(conflictPlan.Conflicts) != 1 || conflictPlan.Conflicts[0].Path != "AGENTS.md" {
-		t.Fatalf("expected AGENTS.md conflict, got %#v", conflictPlan.Conflicts)
+	if len(conflictPlan.Conflicts) != 0 || !hasAction(conflictPlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("expected AGENTS.md merge-block drift resolution, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
 	}
 
 	updatedTarget := t.TempDir()
 	if err := svc.Run(Options{Target: updatedTarget, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(updated initial) error = %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("upstream changed\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget, NoEngram: true})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
-	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "update-managed", "AGENTS.md") {
-		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("update plan missing backup/merge-block: %#v", updatePlan.Actions)
+	}
+}
+
+func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+
+	plan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
+		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
+		t.Fatalf("no-replace original was overwritten: %q", got)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agents := st.AssetMap()["AGENTS.md"]
+	if agents.AncestorRel != filepath.Join(".lufy-ai", "ancestors", "AGENTS.md") || agents.AncestorHash != agents.SourceSHA256 {
+		t.Fatalf("ancestor metadata not recorded: %#v", agents)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
+		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
+func TestRunLufyNewDoesNotBackupOrRefreshAncestor(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	before, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+	if strings.Contains(out.String(), "- [backup]") {
+		t.Fatalf("lufy-new should not backup original target: %s", out.String())
+	}
+	after, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.AssetMap()["tui.json"].AncestorHash != before.AssetMap()["tui.json"].AncestorHash {
+		t.Fatalf("lufy-new refreshed ancestor unexpectedly: before=%#v after=%#v", before.AssetMap()["tui.json"], after.AssetMap()["tui.json"])
 	}
 }
 
@@ -440,7 +518,7 @@ func minimalInstallerSource(t *testing.T) string {
 	root := t.TempDir()
 	files := map[string]string{
 		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "agents template\n",
+		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"tui.json":                                                     "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",

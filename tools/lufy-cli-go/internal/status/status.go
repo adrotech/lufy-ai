@@ -15,11 +15,14 @@ type Options struct {
 	Target  string
 	JSON    bool
 	Verbose bool
+	Scope   assets.Scope
 }
 
 type Report struct {
 	OK                    bool          `json:"ok"`
 	TargetRoot            string        `json:"targetRoot"`
+	Scope                 string        `json:"scope,omitempty"`
+	GlobalRoot            string        `json:"globalRoot,omitempty"`
 	Installed             bool          `json:"installed"`
 	SchemaVersion         int           `json:"schemaVersion,omitempty"`
 	ToolVersion           string        `json:"toolVersion,omitempty"`
@@ -36,11 +39,15 @@ type Report struct {
 }
 
 type AssetDetail struct {
-	TargetRel string `json:"targetRel"`
-	Status    string `json:"status"`
-	Expected  string `json:"expected,omitempty"`
-	Actual    string `json:"actual,omitempty"`
-	Error     string `json:"error,omitempty"`
+	TargetRel         string `json:"targetRel"`
+	Status            string `json:"status"`
+	Policy            string `json:"policy,omitempty"`
+	Scope             string `json:"scope,omitempty"`
+	Expected          string `json:"expected,omitempty"`
+	Actual            string `json:"actual,omitempty"`
+	LufyNew           string `json:"lufyNew,omitempty"`
+	RecommendedAction string `json:"recommendedAction,omitempty"`
+	Error             string `json:"error,omitempty"`
 }
 
 type Service struct{}
@@ -50,7 +57,7 @@ func NewService() Service {
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
-	report, err := s.Build(opts.Target, opts.Verbose)
+	report, err := s.Build(opts.Target, opts.Verbose, opts.Scope)
 	if err != nil {
 		return err
 	}
@@ -67,6 +74,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return nil
 	}
 	fmt.Fprintf(stdout, "Status para %s\n", report.TargetRoot)
+	fmt.Fprintf(stdout, "Scope: %s", report.Scope)
+	if report.GlobalRoot != "" {
+		fmt.Fprintf(stdout, " globalRoot=%s", report.GlobalRoot)
+	}
+	fmt.Fprintln(stdout)
 	fmt.Fprintf(stdout, "Instalado: sí schema=%d tool=%s\n", report.SchemaVersion, report.ToolVersion)
 	fmt.Fprintf(stdout, "Assets gestionados: %d\n", report.Assets)
 	fmt.Fprintf(stdout, "Drift local: %d\n", report.Drifted)
@@ -91,12 +103,23 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	return nil
 }
 
-func (s Service) Build(target string, verbose bool) (Report, error) {
+func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Report, error) {
 	resolved, err := platform.ResolveTargetPath(target)
 	if err != nil {
 		return Report{}, err
 	}
-	report := Report{TargetRoot: resolved, OK: true}
+	scope, err := assets.ParseScope(string(rawScope))
+	if err != nil {
+		return Report{}, err
+	}
+	report := Report{TargetRoot: resolved, OK: true, Scope: string(scope)}
+	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
+		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		if err != nil {
+			return Report{}, err
+		}
+		report.GlobalRoot = globalRoot
+	}
 	st, err := state.Load(resolved)
 	if err != nil {
 		return Report{}, err
@@ -115,7 +138,7 @@ func (s Service) Build(target string, verbose bool) (Report, error) {
 	report.UpdatedAt = st.UpdatedAt
 	report.Assets = len(st.Assets)
 	for _, asset := range st.Assets {
-		detail := AssetDetail{TargetRel: asset.TargetRel, Expected: asset.TargetSHA256}
+		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Expected: asset.TargetSHA256}
 		path, err := platform.SafeJoin(resolved, asset.TargetRel)
 		if err != nil {
 			report.Errors++
@@ -146,6 +169,15 @@ func (s Service) Build(target string, verbose bool) (Report, error) {
 		}
 		detail.Actual = actual
 		if actual != asset.TargetSHA256 {
+			if asset.Policy == string(assets.PolicyNoReplace) && regularStatusFile(path+".lufy-new") {
+				detail.Status = "lufy-new"
+				detail.LufyNew = asset.TargetRel + ".lufy-new"
+				detail.RecommendedAction = "review-lufy-new"
+				if verbose {
+					report.AssetDetails = append(report.AssetDetails, detail)
+				}
+				continue
+			}
 			report.Drifted++
 			detail.Status = "drift"
 		} else {
@@ -157,6 +189,11 @@ func (s Service) Build(target string, verbose bool) (Report, error) {
 	}
 	report.OK = report.Missing == 0 && report.Drifted == 0 && report.Errors == 0
 	return report, nil
+}
+
+func regularStatusFile(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
 }
 
 func shortHash(hash string) string {
