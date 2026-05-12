@@ -25,7 +25,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -34,11 +34,42 @@ jobs:
         env:
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           if [[ -z "$MERGE_COMMIT_SHA" ]]; then
             echo "No se recibió merge_commit_sha para el PR #${PR_NUMBER}" >&2
             exit 2
           fi
+
+          bump="$(python3 <<'PY'
+          import json, os, sys
+          labels = set(json.loads(os.environ.get("PR_LABELS_JSON") or "[]"))
+          bumps = sorted(labels.intersection({"release:patch", "release:minor", "release:major"}))
+          skip = "release:skip" in labels
+          if skip and bumps:
+              print("release:skip no puede combinarse con release:* bump labels", file=sys.stderr)
+              sys.exit(2)
+          if len(bumps) > 1:
+              print(f"labels de release conflictivos: {', '.join(bumps)}", file=sys.stderr)
+              sys.exit(2)
+          if skip:
+              print("skip")
+          elif bumps:
+              print(bumps[0].split(":", 1)[1])
+          else:
+              print("patch")
+          PY
+          )"
+
+          title_sanitized="$(python3 <<'PY'
+          import os, re
+          title = os.environ.get("PR_TITLE", "")
+          title = re.sub(r"[\x00-\x1f\x7f]+", " ", title)
+          title = re.sub(r"\s+", " ", title).strip()
+          print(title[:160] or "sin titulo")
+          PY
+          )"
 
           git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
           git fetch --tags origin
@@ -58,6 +89,15 @@ jobs:
             exit 2
           fi
 
+          if [[ "$bump" == "skip" ]]; then
+            echo "release:skip detectado para PR #${PR_NUMBER}; no se creará tag estable."
+            echo "skip_release=true" >> "$GITHUB_OUTPUT"
+            echo "tag_created=false" >> "$GITHUB_OUTPUT"
+            echo "merge_commit_sha=$MERGE_COMMIT_SHA" >> "$GITHUB_OUTPUT"
+            echo "pr_title_sanitized=$title_sanitized" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           latest_tag="$({
             for tag in $(git tag --list 'v*'); do
               if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -71,50 +111,95 @@ jobs:
           else
             version="${latest_tag#v}"
             IFS='.' read -r major minor patch <<< "$version"
-            next_tag="v${major}.${minor}.$((patch + 1))"
+            case "$bump" in
+              major) next_tag="v$((major + 1)).0.0" ;;
+              minor) next_tag="v${major}.$((minor + 1)).0" ;;
+              patch) next_tag="v${major}.${minor}.$((patch + 1))" ;;
+              *) echo "bump desconocido: $bump" >&2; exit 2 ;;
+            esac
           fi
 
+          echo "skip_release=false" >> "$GITHUB_OUTPUT"
           echo "merge_commit_sha=$MERGE_COMMIT_SHA" >> "$GITHUB_OUTPUT"
           echo "next_tag=$next_tag" >> "$GITHUB_OUTPUT"
-          echo "Siguiente tag calculado: ${next_tag} (último tag simple: ${latest_tag:-ninguno})"
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+          echo "pr_title_sanitized=$title_sanitized" >> "$GITHUB_OUTPUT"
+          echo "Siguiente tag calculado: ${next_tag} (bump: ${bump}, último tag simple: ${latest_tag:-ninguno})"
 
       - name: Create and push annotated tag
+        if: steps.release-tag.outputs.skip_release != 'true'
         id: create-tag
         env:
           MERGE_COMMIT_SHA: ${{ steps.release-tag.outputs.merge_commit_sha }}
           NEXT_TAG: ${{ steps.release-tag.outputs.next_tag }}
+          BUMP: ${{ steps.release-tag.outputs.bump }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_TITLE_SANITIZED: ${{ steps.release-tag.outputs.pr_title_sanitized }}
         run: |
-          if git rev-parse -q --verify "refs/tags/${NEXT_TAG}" >/dev/null; then
-            echo "No-op: el tag calculado ${NEXT_TAG} ya existe localmente; no se sobrescribe."
-            echo "tag_created=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          if git ls-remote --exit-code --tags origin "refs/tags/${NEXT_TAG}" >/dev/null 2>&1; then
-            echo "No-op: el tag calculado ${NEXT_TAG} ya existe en origin; no se sobrescribe."
-            echo "tag_created=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git tag -a "$NEXT_TAG" "$MERGE_COMMIT_SHA" \
-            -m "Release automático ${NEXT_TAG}" \
-            -m "Creado al mergear PR #${PR_NUMBER}: ${PR_TITLE}" \
-            -m "Merge commit: ${MERGE_COMMIT_SHA}"
+          calculate_next_tag() {
+            local latest="$1"
+            local bump="$2"
+            if [[ -z "$latest" ]]; then
+              printf 'v0.1.0\n'
+              return 0
+            fi
+            local version="${latest#v}"
+            local major minor patch
+            IFS='.' read -r major minor patch <<< "$version"
+            case "$bump" in
+              major) printf 'v%s.0.0\n' "$((major + 1))" ;;
+              minor) printf 'v%s.%s.0\n' "$major" "$((minor + 1))" ;;
+              patch) printf 'v%s.%s.%s\n' "$major" "$minor" "$((patch + 1))" ;;
+              *) echo "bump desconocido: $bump" >&2; return 2 ;;
+            esac
+          }
 
-          git push origin "refs/tags/${NEXT_TAG}"
-          echo "tag_created=true" >> "$GITHUB_OUTPUT"
-          echo "Tag anotado ${NEXT_TAG} creado sobre ${MERGE_COMMIT_SHA} y pusheado a origin."
+          latest_stable_tag() {
+            for tag in $(git tag --list 'v*'); do
+              if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                printf '%s\n' "$tag"
+              fi
+            done | sort -V | tail -n 1
+          }
+
+          next_tag="$NEXT_TAG"
+          for attempt in 1 2 3; do
+            git fetch --tags origin
+            if git rev-parse -q --verify "refs/tags/${next_tag}" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/${next_tag}" >/dev/null 2>&1; then
+              next_tag="$(calculate_next_tag "$(latest_stable_tag)" "$BUMP")"
+              echo "Tag existente detectado; reintentando con ${next_tag}."
+              sleep "$attempt"
+              continue
+            fi
+
+            git tag -a "$next_tag" "$MERGE_COMMIT_SHA" \
+              -m "Release automático ${next_tag}" \
+              -m "Creado al mergear PR #${PR_NUMBER}: ${PR_TITLE_SANITIZED}" \
+              -m "Merge commit: ${MERGE_COMMIT_SHA}"
+
+            if git push origin "refs/tags/${next_tag}"; then
+              echo "tag_created=true" >> "$GITHUB_OUTPUT"
+              echo "created_tag=$next_tag" >> "$GITHUB_OUTPUT"
+              echo "Tag anotado ${next_tag} creado sobre ${MERGE_COMMIT_SHA} y pusheado a origin."
+              exit 0
+            fi
+
+            git tag -d "$next_tag" >/dev/null 2>&1 || true
+            next_tag="$(calculate_next_tag "$(latest_stable_tag)" "$BUMP")"
+            sleep "$attempt"
+          done
+
+          echo "No se pudo crear tag estable tras reintentos acotados." >&2
+          exit 1
 
       - name: Dispatch release workflow for created tag
         if: steps.create-tag.outputs.tag_created == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          NEXT_TAG: ${{ steps.release-tag.outputs.next_tag }}
+          NEXT_TAG: ${{ steps.create-tag.outputs.created_tag }}
         run: |
           gh workflow run release.yml --ref "$NEXT_TAG" --field "tag=$NEXT_TAG"
           echo "Workflow release.yml invocado explícitamente para ${NEXT_TAG}."

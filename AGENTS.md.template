@@ -2,6 +2,8 @@
 
 Operational guide for coding agents working in this repository.
 
+<!-- LUFY:BEGIN project-guide -->
+
 ## Project Snapshot
 
 - **Stack**: Fill in your stack without assuming Node/TypeScript unless the repo actually uses it
@@ -40,6 +42,7 @@ Run from repository root.
 ```bash
 # Replace with real validation commands.
 # Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
+# For PR-bound changes, reproduce the PR whitespace range, for example: git diff --check origin/develop...HEAD after commits, or git diff --check origin/develop with pending worktree changes.
 ```
 
 ## Architecture Rules
@@ -68,3 +71,4 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
+<!-- LUFY:END project-guide -->

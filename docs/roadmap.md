@@ -25,10 +25,17 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 
 Esta página contiene ideas futuras y decisiones estratégicas. Salvo que una sección indique explícitamente que algo ya existe en la rama actual, no debe leerse como contrato instalable.
 
+Para el backlog priorizado de mejoras detectadas por análisis externo, ver [`docs/backlog.md`](backlog.md). Ese backlog agrupa oportunidades por olas y sirve como entrada para futuras proposals OpenSpec.
+
+Para política de firma, provenance, SBOM y labels de release, ver [`docs/release-security.md`](release-security.md).
+
+Para gates de coverage, lint, shellcheck, matriz multi-OS y E2E post-release, ver [`docs/ci-quality-gates.md`](ci-quality-gates.md).
+
 Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.
 - Assets gestionados con estado `.lufy-ai/install-state.json`, hashes SHA-256, idempotencia y backups antes de actualizaciones gestionadas.
+- Drift Resolution en rama: policies declarativas, `AGENTS.md` como `merge-block`, `tui.json` como `no-replace`, `.lufy-new`, ancestors, `--scope=project|global|both`, `lufy-ai merge <path>` y restore con `--list`/ID.
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
@@ -50,7 +57,31 @@ No son capacidades instalables actuales:
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.
 
-## Prioridades por fases
+## Prioridad estrategica 2026-05
+
+Los RFCs externos revisados el 2026-05-11 cambian el foco inmediato del roadmap: antes de sumar mas superficie OpenSpec, el instalador debe resolver upgrades con drift sin bloquear ni destruir trabajo local. Despues de eso, el proyecto puede modernizar su flujo OpenSpec hacia paridad v1.3.1 y una arquitectura stay-updated.
+
+RFCs incorporados como input de roadmap:
+
+| RFC | Objetivo | Target sugerido | Orden |
+| --- | --- | --- | --- |
+| `LUFY-AI-DRIFT-RESOLUTION-RFC.md` | Resolver drift/upgrades con policies declarativas, `.lufy-new`, merge/restore y scope global/proyecto | `v0.2.0` | Primero |
+| `LUFY-AI-OPENSPEC-V2-RFC.md` | Modernizar OpenSpec a paridad v1.3.1 con deltas, scenarios, sync, profiles y fallback 3 capas | `v0.3.0` | Segundo |
+| `LUFY-AI-ROADMAP-RFC.md` | Coordinar releases, dependencias, testing sandbox y comunicacion | `v0.2.0` -> `v0.3.0` | Guia operativa |
+
+Decisiones de roadmap:
+
+- Implementar Drift Resolution antes de OpenSpec v2; no hay dependencia tecnica dura, pero si una dependencia operativa de UX y menor riesgo.
+- Mantener PRs normales contra `develop` y releases estables desde `main` con tags `v*` alcanzables desde `origin/main`.
+- Tratar cada tier/sprint como entregable independiente y mergeable; no mezclar Drift Resolution y OpenSpec v2 en una sola rama.
+- No documentar `v0.2.0` o `v0.3.0` como disponibles hasta que existan tags y artifacts publicados.
+- Mantener Go stdlib-only para la CLI salvo decision explicita posterior.
+
+Plan de implementacion detallado: ver [`docs/implementation-plan.md`](implementation-plan.md).
+
+## Prioridades por fases historicas
+
+Las fases siguientes se conservan como trazabilidad del roadmap original. Varias ya estan implementadas o archivadas en OpenSpec; las nuevas prioridades ejecutables son las de la seccion anterior y el plan de implementacion.
 
 ### Fase 1 — Hardening del installer y seguridad de instalación
 
@@ -159,6 +190,8 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - Para `opencode.json`, usar estrategia especial `merge-json`: merge conservador, backup antes de escribir cuando exista, preservación de claves desconocidas y fallo accionable ante JSON inválido.
 - Para otros JSON como `tui.json`, preferir estrategia explícita futura (`skip`, `backup-and-replace`, `merge`) antes de permitir sobrescrituras amplias.
 - El instalador repetido debe reportar `unchanged`, `updated`, `skipped` o `conflict` por asset.
+
+**Siguiente evolucion aprobada por RFC Drift Resolution:** reemplazar el bloqueo generico ante drift por policies declarativas por asset: `managed`, `no-replace`, `merge-block`, `merge-json` y `metadata`. `AGENTS.md` pasa a `merge-block`; configuraciones user-owned reciben nueva version como `.lufy-new`; JSON estructurado usa merge conservador.
 
 ### `RM-006` — GitHub Actions básica
 
@@ -364,6 +397,8 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - Publicar binarios sin resolver assets standalone puede crear una falsa promesa de instalación sin clone; la documentación final debe esperar a `go:embed` o bundle verificado.
 - `curl | bash` requiere comunicación cuidadosa: pinning e inspección deben estar documentados junto al comando directo.
 - Matrices OS/arch, Homebrew y Scoop aumentan mantenimiento; conviene estabilizar GitHub Releases + checksums antes de sumar canales.
+- Cambiar el default de instalacion a scope global puede sorprender a usuarios actuales; debe incluir flag `--scope=project`, migracion documentada y smoke brownfield antes de release.
+- OpenSpec v2 cambia reglas de authoring al exigir delta markers y scenarios; debe introducirse con validator accionable y migracion clara, no solo con templates nuevos.
 
 ## Etiquetas sugeridas
 

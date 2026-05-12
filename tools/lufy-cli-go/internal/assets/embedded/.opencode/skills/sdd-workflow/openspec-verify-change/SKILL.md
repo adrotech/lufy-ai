@@ -106,12 +106,13 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
        - Recommendation: "Update implementation or revise design.md to match reality"
    - If no design.md: Skip design adherence check, note "No design.md to verify against"
 
-   **Code Pattern Consistency**:
-   - Review new code for consistency with project patterns
-   - Check file naming, directory structure, coding style
-   - If significant deviations found:
-     - Add SUGGESTION: "Code pattern deviation: <details>"
-     - Recommendation: "Consider following project pattern: <example>"
+    **Code Pattern Consistency**:
+    - Review new code for consistency with project patterns
+    - Check file naming, directory structure, coding style
+    - Review changed/affected old files or diffs for coherence with initial analysis, dependencies, feedback paths, and expected structure/behavior
+    - If significant deviations found:
+      - Add SUGGESTION: "Code pattern deviation: <details>"
+      - Recommendation: "Consider following project pattern: <example>"
 
 8. **Generate Verification Report**
 
@@ -151,7 +152,9 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
     - If verifying `migrate-installer-to-go-cli` and any task remains incomplete: "Archive blocked by repo policy until all tasks are complete."
 
    Validation preference:
-   - Use validación agrupada at the end of a coherent block/proposal.
+   - Use systemic workflow: verify that implementation reflects initial analysis, interconnections, dependencies, feedback loops, and structure/behavior expectations.
+   - Use validación agrupada at the end of a coherent block/proposal after all tasks are complete.
+   - Include tests and coverage in final evidence when real commands exist for the scope; otherwise report the limitation explicitly.
    - Do not run tests constantly during verification unless diagnosing or handling a risky/blocking change.
 
 **Verification Heuristics**
@@ -159,6 +162,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 - **Completeness**: Focus on objective checklist items (checkboxes, requirements list)
 - **Correctness**: Use keyword search, file path analysis, reasonable inference - don't require perfect certainty
 - **Coherence**: Look for glaring inconsistencies, don't nitpick style
+- **Systemic fit**: Confirm changed/affected old files align with dependencies and expected behavior without rereading unrelated old files
 - **False Positives**: When uncertain, prefer SUGGESTION over WARNING, WARNING over CRITICAL
 - **Actionability**: Every issue must have a specific recommendation with file/line references where applicable
 

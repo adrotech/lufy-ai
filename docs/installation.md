@@ -10,7 +10,7 @@ Versión estable actual: `v0.1.0`.
 - Acceso a una release publicada de GitHub con artifacts y checksums.
 - Un repositorio destino donde instalar los assets de OpenCode/OpenSpec.
 
-El bootstrap Bash aplica a entornos Unix-like: macOS, Linux y WSL. En Windows nativo usa el binario manual si la release incluye `lufy-ai_<version>_windows_amd64.zip`.
+El bootstrap Bash aplica a entornos Unix-like: macOS, Linux y WSL. En Windows nativo usa el binario manual si la release incluye `lufy-ai_<version>_windows_amd64.zip` o `lufy-ai_<version>_windows_arm64.zip`.
 
 ## Instalación rápida con bootstrap
 
@@ -144,20 +144,66 @@ lufy-ai version
 Luego revisa el plan de instalación en el repositorio destino:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --dry-run --yes --no-engram
 ```
 
 Aplica la instalación:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
 ```
+
+`--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
 
 Después de `install`, ejecuta el verificador canónico:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --scope project --no-engram
 ```
+
+Para automatización o CI puedes usar salida JSON:
+
+```bash
+lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --json
+lufy-ai status --target /ruta/a/tu/proyecto --json --verbose
+```
+
+Si un asset `no-replace` tiene drift local, install/sync preservan el archivo original y escriben `<archivo>.lufy-new`. Revisa el estado y resuelve manualmente o con un merge tool:
+
+```bash
+lufy-ai status --target /ruta/a/tu/proyecto --verbose
+LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto tui.json
+```
+
+Para descubrir y restaurar backups:
+
+```bash
+lufy-ai restore --target /ruta/a/tu/proyecto --list
+lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --dry-run
+lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
+```
+
+Para validaciones opt-in de referencias de plugins en `tui.json`/`opencode.json`:
+
+```bash
+lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --deep
+```
+
+## Actualizar el binario
+
+Usa una versión fija; `upgrade` rechaza `latest` para mantener reproducibilidad:
+
+```bash
+lufy-ai upgrade --to v0.1.1
+```
+
+Para revisar sin reemplazar el binario:
+
+```bash
+lufy-ai upgrade --to v0.1.1 --dry-run
+```
+
+`upgrade` descarga el artifact de la plataforma actual, verifica SHA-256 contra `checksums.txt`, extrae el binario y reemplaza el ejecutable actual de forma atómica.
 
 ## Flujo con clone local para desarrollo
 
@@ -214,4 +260,4 @@ Revisa el error exacto. `verify` valida estructura, estado `.lufy-ai/install-sta
 
 ### No existe artifact para mi plataforma
 
-Los artifacts actuales cubren `darwin/amd64`, `darwin/arm64`, `linux/amd64`, `linux/arm64` y `windows/amd64`. Si tu plataforma no está publicada, usa un entorno soportado o compila desde el clone local con Go.
+Los artifacts actuales cubren `darwin/amd64`, `darwin/arm64`, `linux/amd64`, `linux/arm64`, `windows/amd64` y `windows/arm64`. Si tu plataforma no está publicada, usa un entorno soportado o compila desde el clone local con Go.

@@ -9,6 +9,8 @@ INSTALL_DIR="${LUFY_AI_INSTALL_DIR:-$HOME/.local/bin}"
 BASE_URL="${LUFY_AI_RELEASE_BASE_URL:-}"
 DRY_RUN="false"
 
+curl_common_args=(--fail --silent --show-error --location --retry 3 --retry-all-errors --connect-timeout 10 --max-time 120)
+
 usage() {
   cat <<'EOF'
 Uso: scripts/bootstrap.sh --version <vX.Y.Z|latest> [--install-dir <dir>] [--dry-run] [--repo owner/name] [--base-url <url>]
@@ -62,7 +64,8 @@ if [[ "$VERSION" == "latest" ]]; then
     echo "Error: latest no se resuelve en --base-url fixture; usa versión fija" >&2
     exit 2
   fi
-  VERSION="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+  echo "Aviso: --version latest no es reproducible; para automatización usa una versión fija." >&2
+  VERSION="$(curl "${curl_common_args[@]}" "https://api.github.com/repos/${REPO}/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
   if [[ -z "$VERSION" ]]; then
     echo "Error: no se pudo resolver latest para $REPO" >&2
     exit 1
@@ -147,8 +150,8 @@ validate_tarball_entries() {
   fi
 }
 
-curl -fsSL "$artifact_url" -o "$tmp/$artifact"
-curl -fsSL "$checksums_url" -o "$tmp/$checksums"
+curl "${curl_common_args[@]}" "$artifact_url" -o "$tmp/$artifact"
+curl "${curl_common_args[@]}" "$checksums_url" -o "$tmp/$checksums"
 expected="$(awk -v file="$artifact" '$2 == file {print $1}' "$tmp/$checksums")"
 if [[ -z "$expected" ]]; then
   echo "Error: $checksums no contiene entrada para $artifact" >&2

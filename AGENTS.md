@@ -33,9 +33,11 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 
 - OpenSpec/OpenCode: usar `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-archive` cuando corresponda.
 - Observatory TUI: `/observatory`, `/observatory-agents`, `/observatory-subagents`, `/observatory-cost`.
-- Git inspección: `git status --short`, `git diff`, `git diff --check`, `git log` según permisos del rol.
+- Validación agrupada local: `scripts/validate.sh` ejecuta el whitespace check con rango/base de PR y la validación Go disponible.
+- Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
 - Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
+- Para cambios que terminarán en PR contra `develop`, el chequeo de whitespace debe reproducir el rango del PR: usar `git diff --check origin/develop...HEAD` sobre commits ya preparados y `git diff --check origin/develop` cuando haya cambios pendientes en worktree. No basta `git diff --check` local, porque puede omitir whitespace introducido en commits anteriores de la rama.
 - Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
 
 ## Reglas de arquitectura y workflow

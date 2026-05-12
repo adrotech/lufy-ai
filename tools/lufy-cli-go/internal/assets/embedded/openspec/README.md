@@ -28,5 +28,12 @@ Usa los skills de `.opencode/skills/sdd-workflow/`:
 
 1. **Propose**: Crear spec en `openspec/specs/`
 2. **Apply**: Implementar tareas checklist
-3. **Verify**: Correr tests y coverage
+3. **Verify**: Correr validación final agrupada, incluyendo tests y coverage cuando existan para el alcance real
 4. **Archive**: Mover a `openspec/changes/archive/`
+
+## Workflow sistémico
+
+- Analizar al inicio los archivos existentes relevantes, dependencias, interconexiones, feedback y relación estructura-comportamiento.
+- Implementar tareas sin relecturas repetidas de archivos viejos ya analizados, salvo modificación, conflicto, bloqueo, nueva evidencia, cambio de alcance o riesgo explícito.
+- Revisar al final los archivos viejos modificados o afectados antes de la validación.
+- Ejecutar tests, coverage y validación completa al final de todas las tareas de la propuesta cuando los comandos existan; si no existen, reportar la limitación y la evidencia real disponible.

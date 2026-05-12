@@ -35,6 +35,9 @@ func TestBackupAndRestoreMultiassetCreatesPreRestoreRecovery(t *testing.T) {
 	if len(manifest.Files) != 2 || manifest.Files[0].SHA256 == "" || manifest.Files[0].Size == 0 {
 		t.Fatalf("manifest incompleto: %#v", manifest.Files)
 	}
+	if manifest.ToolVersion == "" || manifest.ToolCommit == "" || manifest.ToolBuildDate == "" {
+		t.Fatalf("manifest missing runtime tool metadata: %#v", manifest)
+	}
 
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "agents broken\n")
 	out.Reset()
@@ -171,6 +174,80 @@ func TestRestoreRejectsCorruptBackupBeforeRecoveryBackup(t *testing.T) {
 	}
 }
 
+func TestRestoreCapturedFilesRestoresWithoutRecoveryBackup(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	restored, err := RestoreCapturedFiles(target, backupDir, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("RestoreCapturedFiles() error = %v", err)
+	}
+	if restored != 1 {
+		t.Fatalf("RestoreCapturedFiles() restored %d, want 1", restored)
+	}
+	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "original\n" {
+		t.Fatalf("RestoreCapturedFiles() did not restore file: %q", got)
+	}
+}
+
+func TestListAndRestoreByBackupID(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	backupID := filepath.Base(backupDir)
+	var out bytes.Buffer
+	if err := NewService().List(target, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), backupID) || !strings.Contains(out.String(), "manifest.json") {
+		t.Fatalf("backup list output unexpected: %s", out.String())
+	}
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "changed\n")
+	if err := NewService().Restore(target, backupID, false, true, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Restore(id) error = %v", err)
+	}
+	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "original\n" {
+		t.Fatalf("restore by id did not restore file: %q", got)
+	}
+}
+
+func TestBackupPrunesOldBackups(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
+	stateWithFiles(t, target, []string{"AGENTS.md"})
+	backupsRoot := filepath.Join(target, ".lufy-ai", "backups")
+	for i := 0; i < defaultBackupRetention; i++ {
+		path := filepath.Join(backupsRoot, "20000101T000000.00000000"+string(rune('0'+i))+"Z")
+		if err := os.MkdirAll(path, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	entries, err := os.ReadDir(backupsRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != defaultBackupRetention {
+		t.Fatalf("backup retention kept %d entries, want %d", len(entries), defaultBackupRetention)
+	}
+	if _, err := os.Stat(backupDir); err != nil {
+		t.Fatalf("current backup pruned: %v", err)
+	}
+}
+
 func stateWithFiles(t *testing.T, target string, rels []string) {
 	t.Helper()
 	var states []state.AssetState
@@ -181,7 +258,7 @@ func stateWithFiles(t *testing.T, target string, rels []string) {
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, LastAction: "copy"})
 	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states)); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
 }

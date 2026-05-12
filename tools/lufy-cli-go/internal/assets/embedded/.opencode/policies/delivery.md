@@ -6,7 +6,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
 - `explorer` investigates impact and repository context read-only; must not edit files.
-- `implementer` implements bounded changes and uses validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
+- `implementer` implements bounded changes and uses systemic workflow: initial context analysis, no repeated old-file rereads during normal implementation, bounded final reread of changed/affected old files, and validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
 - `reviewer` reviews only; must not modify files.
 - `delivery` owns Git/GH operations, PR creation, project sync, traceability comments, and final validation evidence.
@@ -26,9 +26,13 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 ## Validation Tiers
 
-- **Block/proposal gate** for `implementer` and `validator`: prefer validación agrupada at the end of a coherent block/proposal. Do not run tests constantly during normal implementation.
-- **Exception gate**: run focused validation earlier only when a blocker, risky change, or failure diagnosis requires it.
+- **Systemic analysis gate** for `explorer`/`implementer`: analyze existing files, dependencies, interconnections, feedback paths, and structure/behavior impact at the beginning of a coherent block/proposal.
+- **Implementation gate** for `implementer`: do not reread old files repeatedly during normal implementation after the initial analysis. Reread old files only when they were modified/affected, conflicts appear, new evidence invalidates the initial analysis, scope changes, a blocker appears, or risk requires confirmation.
+- **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
+- **Exception gate**: run focused rereads or validation earlier only when a blocker, risky change, feedback loop, or failure diagnosis requires it.
 - **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
+- **PR whitespace gate** for `validator`/`delivery`: for PR-bound changes, reproduce the PR diff range against the target base. Use `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` while local worktree changes are still pending. Plain `git diff --check` is insufficient because it only checks uncommitted worktree/staged changes.
+- **Local grouped validation**: prefer `scripts/validate.sh` when the change scope matches this repository's Go CLI/assets workflow; it runs the PR-aware whitespace gate plus available Go validation.
 - If change affects behavior, include functional evidence when practical.
 - Never claim validation passed without command evidence.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.

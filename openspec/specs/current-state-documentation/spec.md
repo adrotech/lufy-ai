@@ -1,7 +1,8 @@
 # current-state-documentation Specification
 
 ## Purpose
-TBD - created by archiving change align-readme-with-current-state. Update Purpose after archive.
+Keep public and operational documentation aligned with the repository's real capabilities, supported workflows, validation commands and release model.
+
 ## Requirements
 ### Requirement: README centrado en estado real
 El README SHALL funcionar como landing page operativa del repositorio y MUST describir solo capacidades actuales o explícitamente marcadas como trabajo en curso/futuro.
@@ -37,7 +38,7 @@ La documentación SHALL ubicar templates, stacks, subagentes futuros y decisione
 - **THEN** `docs/roadmap.md` o una doc enlazada conserva el contexto relevante y aclara que no son assets instalables hasta que existan y se validen
 
 ### Requirement: Consistencia documental entre README y docs auxiliares
-`README.md`, `docs/getting-started.md` y `tools/lufy-cli-go/README.md` SHALL describir un estado compatible entre sí sobre CLI Go, assets gestionados, backup/restore, verify, sync y CI.
+`README.md`, `docs/getting-started.md`, `tools/lufy-cli-go/README.md` y `docs/roadmap.md` SHALL describir un estado compatible entre sí sobre CLI Go, assets gestionados, backup/restore, verify, sync, CI, releases y el flujo de ramas `develop`/`main`.
 
 #### Scenario: Getting started en español y sincronizado
 - **WHEN** una persona lee `docs/getting-started.md`
@@ -45,7 +46,15 @@ La documentación SHALL ubicar templates, stacks, subagentes futuros y decisione
 
 #### Scenario: README de CLI refleja alcance técnico
 - **WHEN** una persona lee `tools/lufy-cli-go/README.md`
-- **THEN** entiende los comandos implementados o en curso, la validación local real, y el estado de assets gestionados sin contradicción con el README raíz
+- **THEN** entiende los comandos implementados o en curso, la validación local real, el estado de assets gestionados y la regla de releases `v*` desde `main` sin contradicción con el README raíz
+
+#### Scenario: Flujo de ramas documentado
+- **WHEN** la documentación pública u operativa describe contribución, CI o releases
+- **THEN** explica que el trabajo normal entra por PR a `develop`, `main` es productiva, la promoción es `develop` → `main` y los tags `v*` se crean desde commits alcanzables desde `main`
+
+#### Scenario: Configuración GitHub documentada
+- **WHEN** un maintainer necesita aplicar settings remotos
+- **THEN** existe una guía local breve para default branch `develop` y protección de `develop`/`main`
 
 #### Scenario: Trabajo en curso claramente marcado
 - **WHEN** la documentación menciona CI o sync si aún dependen de proposals/implementaciones activas
@@ -87,3 +96,13 @@ The roadmap SHALL record this distribution roadmap as planned future work and MU
 - **WHEN** a reader opens `docs/roadmap.md` during this proposal stage
 - **THEN** it includes a planned block for versioned binary releases, bootstrap installation and standalone assets without claiming them as current capabilities
 
+### Requirement: Documentacion del workflow sistemico
+La documentacion operativa SHALL describir el workflow sistemico vigente como una practica de analisis inicial, implementacion por bloques, relectura final acotada y validacion final agrupada.
+
+#### Scenario: Documentacion refleja fases reales
+- **WHEN** una persona revisa guias operativas como `AGENTS.md`, `.opencode/policies/delivery.md` u OpenSpec docs relevantes
+- **THEN** encuentra que el analisis de archivos existentes ocurre al inicio, las relecturas se evitan salvo justificacion, y tests/coverage se agrupan al final de la propuesta cuando apliquen
+
+#### Scenario: Documentacion conserva limites de toolchain
+- **WHEN** la documentacion menciona tests, coverage o validacion final
+- **THEN** aclara que solo se ejecutan comandos reales disponibles para el alcance y que las limitaciones se reportan explicitamente

@@ -3,6 +3,8 @@ package assets
 import (
 	"os"
 	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -80,6 +82,86 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 			t.Fatalf("embedded catalog missing %s", path)
 		}
 	}
+}
+
+func TestCatalogFingerprintIsStableForSameFileAssets(t *testing.T) {
+	catalog := Catalog{Assets: []Asset{
+		{TargetRel: "b.txt", Kind: KindFile, SourceSHA256: "bbb"},
+		{TargetRel: "dir", Kind: KindDir},
+		{TargetRel: "a.txt", Kind: KindFile, SourceSHA256: "aaa"},
+	}}
+	reordered := Catalog{Assets: []Asset{
+		{TargetRel: "a.txt", Kind: KindFile, SourceSHA256: "aaa"},
+		{TargetRel: "b.txt", Kind: KindFile, SourceSHA256: "bbb"},
+	}}
+	one, err := catalog.Fingerprint()
+	if err != nil {
+		t.Fatal(err)
+	}
+	two, err := reordered.Fingerprint()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if one == "" || one != two {
+		t.Fatalf("fingerprints mismatch: %q != %q", one, two)
+	}
+}
+
+func TestEmbeddedCatalogMatchesRepositoryAssets(t *testing.T) {
+	root := repoRoot(t)
+	rootCatalog, err := BuildCatalog(root)
+	if err != nil {
+		t.Fatalf("BuildCatalog() error = %v", err)
+	}
+	embeddedCatalog, err := BuildEmbeddedCatalog()
+	if err != nil {
+		t.Fatalf("BuildEmbeddedCatalog() error = %v", err)
+	}
+	rootAssets := comparableAssets(rootCatalog)
+	embeddedAssets := comparableAssets(embeddedCatalog)
+	if !reflect.DeepEqual(rootAssets, embeddedAssets) {
+		t.Fatalf("root and embedded catalogs drifted\nroot=%#v\nembedded=%#v", rootAssets, embeddedAssets)
+	}
+}
+
+type comparableAsset struct {
+	TargetRel    string
+	Kind         Kind
+	Policy       Policy
+	Scope        Scope
+	SourceSHA256 string
+}
+
+func comparableAssets(c Catalog) []comparableAsset {
+	out := make([]comparableAsset, 0, len(c.Assets))
+	for _, asset := range c.Assets {
+		out = append(out, comparableAsset{TargetRel: filepath.ToSlash(asset.TargetRel), Kind: asset.Kind, Policy: asset.Policy, Scope: asset.Scope, SourceSHA256: asset.SourceSHA256})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].TargetRel < out[j].TargetRel })
+	return out
+}
+
+func repoRoot(t *testing.T) string {
+	t.Helper()
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		if fileExists(filepath.Join(dir, "AGENTS.md")) && fileExists(filepath.Join(dir, "tools", "lufy-cli-go", "go.mod")) {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("repo root not found")
+		}
+		dir = parent
+	}
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
 }
 
 func minimalSource(t *testing.T) string {

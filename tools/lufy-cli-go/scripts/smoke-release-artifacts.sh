@@ -9,8 +9,17 @@ trap 'rm -rf "$DIST" "$TARGET"' EXIT
 cd "$ROOT"
 LUFY_AI_DIST_DIR="$DIST" LUFY_AI_VERSION="v0.0.0-smoke" LUFY_AI_COMMIT="smoke" LUFY_AI_BUILD_DATE="1970-01-01T00:00:00Z" \
   bash scripts/build-release-artifacts.sh v0.0.0-smoke
+LUFY_AI_DIST_DIR="$DIST" LUFY_AI_VERSION="v0.0.0-smoke" LUFY_AI_COMMIT="smoke" LUFY_AI_BUILD_DATE="1970-01-01T00:00:00Z" \
+  bash scripts/generate-release-metadata.sh v0.0.0-smoke
 
 (cd "$DIST" && shasum -a 256 -c lufy-ai_v0.0.0-smoke_checksums.txt)
+[ -s "$DIST/lufy-ai_v0.0.0-smoke_sbom.spdx.json" ] || { echo "SBOM faltante" >&2; exit 1; }
+[ -s "$DIST/lufy-ai_v0.0.0-smoke_provenance.intoto.jsonl" ] || { echo "provenance faltante" >&2; exit 1; }
+if [[ "${LUFY_AI_REQUIRE_SIGNATURES:-false}" == "true" ]]; then
+  shopt -s nullglob
+  bundles=("$DIST"/*.bundle)
+  [ "${#bundles[@]}" -gt 0 ] || { echo "firmas cosign faltantes" >&2; exit 1; }
+fi
 
 artifact="$DIST/lufy-ai_v0.0.0-smoke_$(go env GOOS)_$(go env GOARCH).tar.gz"
 if [[ ! -f "$artifact" ]]; then

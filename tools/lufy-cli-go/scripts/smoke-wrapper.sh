@@ -7,6 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$CLI_ROOT/../.." && pwd)"
 BIN="$CLI_ROOT/bin/lufy-ai"
+work_root=""
 
 fail() {
     printf 'Error: %s\n' "$1" >&2
@@ -23,15 +24,19 @@ assert_empty_dir() {
     fi
 }
 
+cleanup() {
+    rm -rf "$work_root"
+}
+
 main() {
     if [ ! -x "$BIN" ]; then
         mkdir -p "$(dirname "$BIN")"
         (cd "$CLI_ROOT" && go build -o "$BIN" ./cmd/lufy-ai)
     fi
 
-    local work_root dry_target target
+    local dry_target target
     work_root="$(mktemp -d)"
-    trap "rm -rf '$work_root'" EXIT
+    trap cleanup EXIT
 
     dry_target="$work_root/wrapper-dry-run"
     mkdir -p "$dry_target"

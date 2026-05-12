@@ -5,11 +5,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -46,23 +48,101 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(conflict) error = %v", err)
 	}
-	if len(conflictPlan.Conflicts) != 1 || conflictPlan.Conflicts[0].Path != "AGENTS.md" {
-		t.Fatalf("expected AGENTS.md conflict, got %#v", conflictPlan.Conflicts)
+	if len(conflictPlan.Conflicts) != 0 || !hasAction(conflictPlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("expected AGENTS.md merge-block drift resolution, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
 	}
 
 	updatedTarget := t.TempDir()
 	if err := svc.Run(Options{Target: updatedTarget, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(updated initial) error = %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("upstream changed\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget, NoEngram: true})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
-	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "update-managed", "AGENTS.md") {
-		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "merge-block", "AGENTS.md") {
+		t.Fatalf("update plan missing backup/merge-block: %#v", updatePlan.Actions)
+	}
+}
+
+func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+
+	plan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
+		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
+		t.Fatalf("no-replace original was overwritten: %q", got)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agents := st.AssetMap()["AGENTS.md"]
+	if agents.AncestorRel != ".lufy-ai/ancestors/AGENTS.md" || agents.AncestorHash != agents.SourceSHA256 {
+		t.Fatalf("ancestor metadata not recorded: %#v", agents)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
+		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
+func TestRunLufyNewDoesNotBackupOrRefreshAncestor(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	before, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+	if strings.Contains(out.String(), "- [backup]") {
+		t.Fatalf("lufy-new should not backup original target: %s", out.String())
+	}
+	after, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.AssetMap()["tui.json"].AncestorHash != before.AssetMap()["tui.json"].AncestorHash {
+		t.Fatalf("lufy-new refreshed ancestor unexpectedly: before=%#v after=%#v", before.AssetMap()["tui.json"], after.AssetMap()["tui.json"])
 	}
 }
 
@@ -114,6 +194,35 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	}
 }
 
+func TestInstallDryRunPlanOutputRegression(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	var out bytes.Buffer
+	resolvedTarget, err := filepath.EvalSymlinks(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(dry-run) error = %v", err)
+	}
+
+	for _, want := range []string{
+		"Plan de instalación para " + resolvedTarget,
+		"Source root: ",
+		"- [mkdir] .opencode (directorio padre requerido)",
+		"- [copy] AGENTS.md (archivo gestionado ausente)",
+		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
+		"Engram: omitido por --no-engram",
+		"Modo dry-run: sin mutaciones en filesystem",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("dry-run output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
 func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
@@ -133,6 +242,9 @@ func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *
 	st, err := state.Load(target)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
+		t.Fatalf("install state metadata not populated from runtime/catalog: %#v", st)
 	}
 	if _, ok := st.AssetMap()["opencode.json"]; ok {
 		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
@@ -220,6 +332,24 @@ func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "- [backup]") {
 		t.Fatalf("backup flag did not create backup action: %s", out.String())
+	}
+}
+
+func TestInstallRecoveryErrorRestoresBackup(t *testing.T) {
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "before\n")
+	backupDir, err := backup.BackupFiles(target, []string{"AGENTS.md"}, "test-install-rollback", &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "after\n")
+
+	err = installRecoveryError(errors.New("boom"), target, backupDir, 1)
+	if err == nil || !strings.Contains(err.Error(), "rollback automático restauró 1") {
+		t.Fatalf("unexpected recovery error: %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != "before\n" {
+		t.Fatalf("rollback did not restore file: %q", got)
 	}
 }
 
@@ -388,7 +518,7 @@ func minimalInstallerSource(t *testing.T) string {
 	root := t.TempDir()
 	files := map[string]string{
 		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "agents template\n",
+		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"tui.json":                                                     "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",

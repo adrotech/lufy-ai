@@ -6,9 +6,13 @@ on:
       - develop
       - main
     paths:
-      - ".github/workflows/go-cli-install.yml"
-      - ".github/workflows/release.yml"
+      - ".github/workflows/**"
       - "scripts/install.sh"
+      - "scripts/validate.sh"
+      - "scripts/check-actions-pinned.sh"
+      - "scripts/check-shell.sh"
+      - "scripts/check-workflows-yaml.rb"
+      - "scripts/quality-go.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -20,9 +24,13 @@ on:
       - main
       - develop
     paths:
-      - ".github/workflows/go-cli-install.yml"
-      - ".github/workflows/release.yml"
+      - ".github/workflows/**"
       - "scripts/install.sh"
+      - "scripts/validate.sh"
+      - "scripts/check-actions-pinned.sh"
+      - "scripts/check-shell.sh"
+      - "scripts/check-workflows-yaml.rb"
+      - "scripts/quality-go.sh"
       - "tools/lufy-cli-go/**"
       - "README.md"
       - "docs/**"
@@ -34,8 +42,8 @@ permissions:
   contents: read
 
 jobs:
-  go-cli-install:
-    name: Test, build and smoke Go installer
+  quality:
+    name: Quality gates
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,12 +51,42 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
+
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Validate
+        env:
+          LUFY_AI_VALIDATE_BASE: ${{ github.base_ref || 'develop' }}
+        run: scripts/validate.sh
+
+  platform-go:
+    name: Go tests and build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
 
@@ -56,9 +94,28 @@ jobs:
         working-directory: tools/lufy-cli-go
         run: go test ./...
 
-      - name: Go build package
+      - name: Go build
         working-directory: tools/lufy-cli-go
         run: go build ./cmd/lufy-ai
+
+  go-cli-install:
+    name: Test, build and smoke Go installer
+    runs-on: ubuntu-latest
+    needs: [quality, platform-go]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: tools/lufy-cli-go/go.mod
 
       - name: Build local wrapper binary
         working-directory: tools/lufy-cli-go
@@ -78,20 +135,4 @@ jobs:
             openspec list --json
           else
             echo "::notice::openspec CLI no disponible en el runner; sanity OpenSpec omitido"
-          fi
-
-      - name: Whitespace check
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          EVENT_BEFORE: ${{ github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
-          GITHUB_SHA: ${{ github.sha }}
-        run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            git fetch --no-tags --prune --depth=1 origin "$BASE_REF"
-            git diff --check "origin/${BASE_REF}...HEAD"
-          elif [[ -n "$EVENT_BEFORE" && "$EVENT_BEFORE" != "0000000000000000000000000000000000000000" ]]; then
-            git diff --check "${EVENT_BEFORE}..${GITHUB_SHA}"
-          else
-            git diff --check HEAD~1..HEAD
           fi
