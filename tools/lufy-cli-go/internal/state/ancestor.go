@@ -15,7 +15,7 @@ func AncestorRel(targetRel string) (string, error) {
 		return "", err
 	}
 	parts := strings.Split(filepath.ToSlash(clean), "/")
-	return filepath.Join(append([]string{".lufy-ai", AncestorsDir}, parts...)...), nil
+	return filepath.ToSlash(filepath.Join(append([]string{".lufy-ai", AncestorsDir}, parts...)...)), nil
 }
 
 func AncestorPath(targetRoot, targetRel string) (string, error) {
