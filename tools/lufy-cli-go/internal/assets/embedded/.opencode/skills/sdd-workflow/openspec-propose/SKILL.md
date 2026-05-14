@@ -15,6 +15,7 @@ I'll create a change with artifacts:
 - proposal.md (what & why)
 - design.md (how)
 - tasks.md (implementation steps)
+- specs/**/*.md (core v2 delta specs with requirements and scenarios)
 
 When ready to implement, run /opsx-apply
 
@@ -101,6 +102,12 @@ After completing all artifacts, summarize:
 - **IMPORTANT**: `context` and `rules` are constraints for YOU, not content for the file
   - Do NOT copy `<context>`, `<rules>`, `<project_context>` blocks into the artifact
   - These guide what you write, but should never appear in the output
+- Change specs must use explicit core v2 delta sections:
+  - `## ADDED Requirements` for new requirements
+  - `## MODIFIED Requirements` for complete replacement of existing requirements
+  - `## REMOVED Requirements` for removals with reason and migration guidance
+- Each added or modified `### Requirement:` must include at least one `#### Scenario:` with `WHEN` and `THEN` clauses; use `GIVEN` only when setup context is needed.
+- Do not place proposed requirements directly into `openspec/specs/`; proposals write deltas under `openspec/changes/<name>/specs/` and `/opsx-sync` applies them later.
 
 **Guardrails**
 - Create ALL artifacts needed for implementation (as defined by schema's `apply.requires`)

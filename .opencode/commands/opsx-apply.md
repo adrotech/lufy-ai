@@ -8,6 +8,8 @@ Run the concrete OpenSpec apply skill for approved tasks.
 ## Command behavior
 
 - Verify change artifacts exist before implementation.
+- Verify change specs use core v2 delta markers before relying on them for implementation.
+- Treat scenarios as testable acceptance criteria: each added or modified requirement needs `WHEN` and `THEN`, with optional `GIVEN`.
 - Use `implementer` for bounded code changes.
 - Use validación agrupada at the end of a coherent block/proposal; do not run tests constantly unless blocked, risky, or diagnosing.
 - Do not create PRs, delegate to `delivery`.

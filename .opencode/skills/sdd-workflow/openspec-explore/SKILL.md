@@ -79,6 +79,8 @@ Depending on what the user brings, you might:
 
 You have full context of the OpenSpec system. Use it naturally, don't force it.
 
+When exploring OpenSpec workflow state, read `openspec/UPSTREAM.json` and `openspec/config.yaml` if present to understand the installed baseline, action map and core profile. For proposed OpenSpec changes, call out whether specs use core v2 delta markers and testable scenarios with `WHEN`/`THEN`.
+
 ### Check for context
 
 At the start, quickly check what exists:
