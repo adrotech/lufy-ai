@@ -8,6 +8,9 @@ Verify implementation against OpenSpec change artifacts.
 ## Command behavior
 
 - Check artifacts exist (proposal, design, tasks, specs).
+- Verify delta specs use `ADDED`, `MODIFIED` or `REMOVED` sections.
+- Verify scenarios are testable with `WHEN` and `THEN`; `GIVEN` is optional.
+- Report unsynced delta specs as blockers for archive and recommend `/opsx-sync <change>`.
 - Run grouped validation evidence for the block/proposal when applicable; avoid constant tests unless blocked, risky, or diagnosing.
 - Report findings.
 - Report incomplete tasks as archive blockers.

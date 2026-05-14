@@ -1,5 +1,11 @@
 # OpenSpec Configuration
-# Configuración genérica para proyectos que usan el workflow SDD
+# Core v2 action-based workflow instalado por lufy-ai.
+
+version: 2
+
+baseline:
+  file: openspec/UPSTREAM.json
+  profile: core
 
 specs:
   # Directorio donde viven las specs activas
@@ -33,3 +39,60 @@ workflow:
     - bugfix
     - refactor
     - docs
+
+  # Acciones core resueltas por comandos/skills instalados.
+  actions:
+    explore:
+      command: /opsx-explore
+      skill: openspec-explore
+      description: Explore ideas, impact and existing specs without mutating files.
+      artifacts: []
+    propose:
+      command: /opsx-propose
+      skill: openspec-propose
+      description: Create proposal, design, tasks and delta specs for a change.
+      artifacts:
+        - proposal
+        - design
+        - tasks
+        - specs
+    apply:
+      command: /opsx-apply
+      skill: openspec-apply-change
+      description: Implement tasks from an apply-ready change.
+      artifacts:
+        - tasks
+    verify:
+      command: /opsx-verify
+      skill: openspec-verify-change
+      description: Verify implementation, delta markers and testable scenarios before delivery or archive.
+      artifacts:
+        - proposal
+        - design
+        - tasks
+        - specs
+    sync:
+      command: /opsx-sync
+      skill: openspec-sync
+      description: Apply validated change deltas to main specs without archiving the change.
+      artifacts:
+        - specs
+    archive:
+      command: /opsx-archive
+      skill: openspec-archive-change
+      description: Archive a completed change after tasks, validation and spec sync gates pass.
+      artifacts:
+        - tasks
+        - specs
+
+  changeSpecs:
+    deltaMarkers:
+      - ADDED
+      - MODIFIED
+      - REMOVED
+    scenarioClauses:
+      required:
+        - WHEN
+        - THEN
+      optional:
+        - GIVEN

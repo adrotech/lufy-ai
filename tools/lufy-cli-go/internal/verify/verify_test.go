@@ -446,5 +446,8 @@ func verifyFileContent(rel string) string {
 	if rel == "tui.json" {
 		return "{}\n"
 	}
+	if rel == filepath.Join("openspec", "UPSTREAM.json") {
+		return "{}\n"
+	}
 	return rel + "\n"
 }

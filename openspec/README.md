@@ -1,12 +1,13 @@
 # OpenSpec
 
-Workflow de especificación驱动 desenvolvimento (SDD) para este proyecto.
+Workflow de especificación dirigida por specs (SDD) para este proyecto.
 
 ## Estructura
 
 ```
 openspec/
-├── config.yaml          # Configuración del workflow
+├── config.yaml          # Configuración core v2 action-based
+├── UPSTREAM.json        # Baseline local de versión/perfil/fuente
 ├── specs/               # Specs activas
 │   └── <feature-name>/
 │       ├── spec.md      # Especificación técnica
@@ -17,19 +18,34 @@ openspec/
 
 ## Comandos
 
-Usa los skills de `.opencode/skills/sdd-workflow/`:
-- `/openspec-propose` - Crear nueva feature spec
-- `/openspec-apply` - Implementar tareas de un cambio
-- `/openspec-verify` - Verificar implementación
-- `/openspec-archive` - Archivar cambio completado
-- `/openspec-explore` - Explorar specs existentes
+Usa los comandos instalados en `.opencode/commands/` y skills de `.opencode/skills/sdd-workflow/`:
+- `/opsx-explore` - Explorar specs, impacto o ideas en modo read-only
+- `/opsx-propose` - Crear artefactos de cambio con specs delta
+- `/opsx-apply` - Implementar tareas de un cambio
+- `/opsx-verify` - Verificar implementación, deltas y scenarios
+- `/opsx-sync` - Aplicar deltas validados a specs principales sin archivar
+- `/opsx-archive` - Archivar cambio completado tras sync y gates
+- `opsx-version` - Reportar baseline local desde `openspec/UPSTREAM.json`
 
 ## Flujo
 
-1. **Propose**: Crear spec en `openspec/specs/`
+1. **Propose**: Crear artefactos en `openspec/changes/<change>/`, incluyendo specs delta
 2. **Apply**: Implementar tareas checklist
 3. **Verify**: Correr validación final agrupada, incluyendo tests y coverage cuando existan para el alcance real
-4. **Archive**: Mover a `openspec/changes/archive/`
+4. **Sync**: Aplicar deltas validados a `openspec/specs/` sin mover el cambio
+5. **Archive**: Mover a `openspec/changes/archive/`
+
+## Specs delta core v2
+
+Los specs bajo `openspec/changes/<change>/specs/` deben usar secciones explícitas:
+
+- `## ADDED Requirements`
+- `## MODIFIED Requirements`
+- `## REMOVED Requirements`
+
+Cada requisito añadido o modificado debe incluir al menos un `#### Scenario:` con cláusulas `WHEN` y `THEN`. Usa `GIVEN` solo cuando el contexto inicial sea necesario. Los requisitos removidos deben incluir razón o guía de migración.
+
+`/opsx-sync` es la acción explícita para llevar esos deltas a `openspec/specs/` antes de `/opsx-archive`; archive debe bloquear si detecta deltas sin sincronizar.
 
 ## Workflow sistémico
 

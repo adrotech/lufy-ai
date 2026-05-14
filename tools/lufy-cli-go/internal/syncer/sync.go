@@ -187,7 +187,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			if managed {
 				plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: "asset gestionado ausente; no se recrea sin estrategia explícita", SourceHash: asset.SourceSHA256, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			} else {
-				plan.Actions = append(plan.Actions, Action{Kind: "skip", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "asset del catálogo ausente y no registrado; sync no instala nuevos assets", SourceHash: asset.SourceSHA256})
+				plan.Actions = append(plan.Actions, Action{Kind: "create-managed", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset nuevo del catálogo ausente; se instala sin tocar drift local", SourceHash: asset.SourceSHA256})
 			}
 			continue
 		}
@@ -292,7 +292,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		plan.Actions = append(plan.Actions, Action{Kind: "skip", Target: config.OpenCodeFile, Reason: "configuración OpenCode merge-managed sin cambios"})
 	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"backup": 0, "update-managed": 1, "merge-block": 2, "write-lufy-new": 3, "merge-json": 4, "retired": 5, "skip": 6}
+		order := map[string]int{"backup": 0, "create-managed": 1, "update-managed": 2, "merge-block": 3, "write-lufy-new": 4, "merge-json": 5, "retired": 6, "skip": 7}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -302,7 +302,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 }
 
 func (s Service) apply(plan Plan, stdout io.Writer) error {
-	updates := uniqueTargets(append(targetsForKind(plan.Actions, "update-managed"), targetsForKind(plan.Actions, "merge-block")...))
+	updates := uniqueTargets(append(append(targetsForKind(plan.Actions, "create-managed"), targetsForKind(plan.Actions, "update-managed")...), targetsForKind(plan.Actions, "merge-block")...))
 	lufyNew := targetsForKind(plan.Actions, "write-lufy-new")
 	merges := targetsForKind(plan.Actions, "merge-json")
 	if len(updates) == 0 && len(lufyNew) == 0 && len(merges) == 0 {
@@ -322,6 +322,17 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	applied := 0
 	for _, action := range plan.Actions {
 		switch action.Kind {
+		case "create-managed":
+			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
+			}
+			if action.Policy.SupportsAncestor() {
+				if err := writeAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+					return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
+				}
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [create-managed] %s\n", action.Target)
 		case "update-managed":
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
@@ -543,7 +554,7 @@ func writeTargetFile(targetRoot, targetRel string, body []byte) error {
 
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
-		if action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "write-lufy-new" || action.Kind == "backup" || action.Kind == "merge-json" {
+		if action.Kind == "create-managed" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "write-lufy-new" || action.Kind == "backup" || action.Kind == "merge-json" {
 			return true
 		}
 	}

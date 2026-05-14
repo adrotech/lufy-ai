@@ -18,8 +18,12 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 
 	want := map[string]bool{
 		"AGENTS.md": false,
-		filepath.Join(".opencode", "agents", "orchestrator.md"): false,
-		filepath.Join("openspec", "config.yaml"):                false,
+		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
+		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
+		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
+		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join("openspec", "config.yaml"):                                          false,
+		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -63,8 +67,12 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 
 	want := map[string]bool{
 		"AGENTS.md": false,
-		filepath.Join(".opencode", "agents", "orchestrator.md"): false,
-		filepath.Join("openspec", "config.yaml"):                false,
+		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
+		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
+		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
+		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join("openspec", "config.yaml"):                                          false,
+		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -168,24 +176,28 @@ func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "agents template\n",
-		"tui.json":                                                     "{}\n",
-		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
-		filepath.Join(".opencode", "README.md"):                        "readme\n",
-		filepath.Join(".opencode", "package.json"):                     "{}\n",
-		filepath.Join(".opencode", "package-lock.json"):                "{}\n",
-		filepath.Join(".opencode", "agents", "orchestrator.md"):        "orchestrator\n",
-		filepath.Join(".opencode", "commands", "opsx-apply.md"):        "apply\n",
-		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):   "skill\n",
-		filepath.Join(".opencode", "policies", "delivery.md"):          "delivery\n",
-		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
-		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",
-		filepath.Join("openspec", "config.yaml"):                       "config\n",
-		filepath.Join("openspec", "README.md"):                         "openspec\n",
-		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
-		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
-		filepath.Join("openspec", "changes", "active", "proposal.md"):  "must not copy\n",
+		"AGENTS.md":                                                                       "agents root\n",
+		"AGENTS.md.template":                                                              "agents template\n",
+		"tui.json":                                                                        "{}\n",
+		filepath.Join(".opencode", ".gitignore"):                                          "node_modules\n",
+		filepath.Join(".opencode", "README.md"):                                           "readme\n",
+		filepath.Join(".opencode", "package.json"):                                        "{}\n",
+		filepath.Join(".opencode", "package-lock.json"):                                   "{}\n",
+		filepath.Join(".opencode", "agents", "orchestrator.md"):                           "orchestrator\n",
+		filepath.Join(".opencode", "commands", "opsx-apply.md"):                           "apply\n",
+		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            "sync\n",
+		filepath.Join(".opencode", "commands", "opsx-version.md"):                         "version\n",
+		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):                      "skill\n",
+		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): "sync skill\n",
+		filepath.Join(".opencode", "policies", "delivery.md"):                             "delivery\n",
+		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):                    "plugin\n",
+		filepath.Join(".opencode", "agent-observatory", "state.ts"):                       "state\n",
+		filepath.Join("openspec", "config.yaml"):                                          "config\n",
+		filepath.Join("openspec", "UPSTREAM.json"):                                        "{}\n",
+		filepath.Join("openspec", "README.md"):                                            "openspec\n",
+		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
+		filepath.Join("tools", "lufy-cli-go", "go.mod"):                                   "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
+		filepath.Join("openspec", "changes", "active", "proposal.md"):                     "must not copy\n",
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

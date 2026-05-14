@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "workflow": "openspec-core-v2",
+  "effectiveOpenSpecVersion": "1.3.1",
+  "profile": "core",
+  "source": {
+    "type": "local-embedded",
+    "repository": "adrotech/lufy-ai",
+    "assetRoot": "openspec",
+    "description": "Baseline local gestionado por lufy-ai; no resuelve assets remotos ni cache runtime."
+  },
+  "capabilities": [
+    "action-based-workflow",
+    "delta-markers",
+    "testable-scenarios",
+    "sync-before-archive"
+  ]
+}
