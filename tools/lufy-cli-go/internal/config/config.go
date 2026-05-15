@@ -9,12 +9,9 @@ import (
 	"reflect"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
 const OpenCodeFile = "opencode.json"
-
-const managedNamespace = "x-lufy-ai"
 
 type Options struct {
 	TargetRoot string
@@ -121,6 +118,10 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 	if desired == nil {
 		desired = map[string]any{}
 	}
+	// OpenCode rejects unknown top-level keys, so do not persist lufy metadata
+	// inside opencode.json. Existing installs from older versions are cleaned up
+	// during the next merge.
+	delete(desired, "x-lufy-ai")
 	if _, ok := desired["$schema"]; !ok {
 		desired["$schema"] = "https://opencode.ai/config.json"
 	}
@@ -128,18 +129,12 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 		desired["plugin"] = []any{}
 	}
 	engramPath, engramFound := platform.ResolveEngram(opts.NoEngram, resolver)
-	managedKeys := []any{"$schema", "plugin"}
 	if !opts.NoEngram && engramFound {
 		mcp, err := objectAt(desired, "mcp")
 		if err != nil {
 			return nil, nil, "", "", false, err
 		}
 		mcp["engram"] = mergeEngramConfig(mcp["engram"], engramPath)
-		managedKeys = append(managedKeys, "mcp.engram")
-	}
-	desired[managedNamespace] = map[string]any{
-		"version":     version.Current().Version,
-		"managedKeys": managedKeys,
 	}
 	return current, desired, path, engramPath, engramFound, nil
 }
