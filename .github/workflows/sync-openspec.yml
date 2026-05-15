@@ -91,28 +91,18 @@ jobs:
           git add openspec/UPSTREAM.json tools/lufy-cli-go/internal/assets/embedded/openspec/UPSTREAM.json
           git commit -m "chore: sync OpenSpec baseline $VERSION"
           git push --set-upstream origin "$BRANCH"
+          body="$(printf '%s\n' \
+            '## Summary' \
+            "- Proposes OpenSpec baseline $VERSION through reviewable metadata changes." \
+            '- Keeps root and embedded UPSTREAM.json in parity.' \
+            '- Does not automerge, tag or publish releases.' \
+            '' \
+            '## Validation' \
+            '- scripts/validate.sh')"
           gh pr create \
             --base develop \
             --head "$BRANCH" \
             --title "chore: sync OpenSpec baseline $VERSION" \
-            --body "$(cat <<EOF
-          ## Summary
-          - Proposes OpenSpec baseline $VERSION through reviewable metadata changes.
-          - Keeps root and embedded UPSTREAM.json in parity.
-          - Does not automerge, tag or publish releases.
-
-          ## Validation
-          - scripts/validate.sh
-          EOF
-          )" || gh pr edit "$BRANCH" \
+            --body "$body" || gh pr edit "$BRANCH" \
             --title "chore: sync OpenSpec baseline $VERSION" \
-            --body "$(cat <<EOF
-          ## Summary
-          - Proposes OpenSpec baseline $VERSION through reviewable metadata changes.
-          - Keeps root and embedded UPSTREAM.json in parity.
-          - Does not automerge, tag or publish releases.
-
-          ## Validation
-          - scripts/validate.sh
-          EOF
-          )"
+            --body "$body"
