@@ -37,10 +37,10 @@ El repositorio incluye hoy:
 | Skills OpenSpec | `.opencode/skills/sdd-workflow/` para explorar, proponer, aplicar, sincronizar, verificar y archivar cambios. |
 | Delivery | `.opencode/policies/delivery.md` con validación por tiers, branch safety, PRs y trazabilidad. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` y comandos `/observatory*` para la TUI local. |
-| CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync` y `version`. |
+| CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `merge`, `upgrade` y `version`. |
 | Instalador Bash | `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy. |
 | Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Al mergear un PR hacia `main`, `.github/workflows/auto-release-tag.yml` crea el siguiente tag patch `vMAJOR.MINOR.PATCH` sobre el merge commit e invoca explícitamente la publicación. |
-| OpenSpec core v2 | `openspec/` con configuración action-based, `UPSTREAM.json`, documentación y estructura base. |
+| OpenSpec core v2 | `openspec/` con configuración action-based, `UPSTREAM.json`, specs delta, `/opsx-sync` y resolución stay-updated PATH/cache/embedded. |
 | CI mínimo | `.github/workflows/go-cli-install.yml` para PRs/pushes a `develop` y `main`: tests/build/smokes de la CLI Go, sanity OpenSpec condicional y `git diff --check`. |
 
 No son capacidades instalables actuales:
@@ -53,16 +53,16 @@ El cambio `route-orchestrator-to-domain-agents` sigue siendo trabajo activo/futu
 
 ## Instalación rápida
 
-Versión estable actual: `v0.2.0`.
+Versión estable actual: `v0.3.0`.
 
 Para instalación completa por OS/shell —incluyendo macOS, Linux, Windows/WSL y configuración de `PATH` para bash, zsh y fish— ver [`docs/installation.md`](docs/installation.md).
 
 Resumen sin clone desde release estable:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.2.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.2.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 Si el bootstrap indica que el directorio no está en `PATH`, aplica la instrucción correspondiente a tu shell (bash/zsh o fish) desde la guía dedicada y abre una terminal nueva.
@@ -70,8 +70,8 @@ Si el bootstrap indica que el directorio no está en `PATH`, aplica la instrucci
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.2.0/scripts/bootstrap.sh \
-  | bash -s -- --version v0.2.0 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh \
+  | bash -s -- --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap detecta OS/arch, descarga el artifact `lufy-ai_<version>_<os>_<arch>`, verifica su SHA-256 contra el archivo de checksums de la misma release y solo instala el binario. No ejecuta `lufy-ai install` contra tu proyecto.
@@ -138,6 +138,9 @@ La CLI actual vive en [`tools/lufy-cli-go/`](tools/lufy-cli-go/) y es la impleme
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/manifest.json`. |
 | `lufy-ai restore` | Restaura desde backup validando `targetRoot`, paths seguros y hashes. |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
+| `lufy-ai status` | Resume estado instalado, drift local, faltantes y errores; soporta `--json` y `--verbose`. |
+| `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
+| `lufy-ai upgrade` | Actualiza el binario a una versión fija verificando checksum antes de reemplazarlo. |
 | `lufy-ai version` | Muestra versión semántica, commit, build date, GOOS y GOARCH; builds locales sin metadata se declaran como development build. |
 
 El estado de instalación se guarda en `.lufy-ai/install-state.json`. Los assets completos gestionados usan SHA-256 para distinguir `skip`, `create`, `update-managed` y `conflict`; `opencode.json` usa una estrategia especial `merge-json` para preservar configuración local.
@@ -154,7 +157,7 @@ flowchart LR
     C --> G["delivery: commit, push y PR solo con autorización"]
 ```
 
-El workflow OpenSpec core v2 instalado declara acciones explícitas en `openspec/config.yaml`, registra baseline local en `openspec/UPSTREAM.json` y exige specs de cambio con markers `ADDED`, `MODIFIED` o `REMOVED`. Cada requisito añadido o modificado debe tener escenarios con `WHEN` y `THEN`; `GIVEN` es opcional. `/opsx-sync` aplica deltas validados a `openspec/specs/` antes de archivar, sin mover el cambio.
+El workflow OpenSpec core v2 instalado declara acciones explícitas en `openspec/config.yaml`, registra baseline local en `openspec/UPSTREAM.json` y exige specs de cambio con markers `ADDED`, `MODIFIED` o `REMOVED`. Cada requisito añadido o modificado debe tener escenarios con `WHEN` y `THEN`; `GIVEN` es opcional. `/opsx-sync` aplica deltas validados a `openspec/specs/` antes de archivar, sin mover el cambio. `opsx-version` reporta la fuente OpenSpec efectiva con fallback `PATH` → cache local `.lufy-ai/openspec-cache/<version>/manifest.json` → baseline embebida offline.
 
 Roles instalados:
 
