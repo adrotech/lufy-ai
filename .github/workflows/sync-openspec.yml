@@ -1,0 +1,118 @@
+name: Sync OpenSpec baseline
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_version:
+        description: "Compatible OpenSpec version to propose"
+        required: false
+        type: string
+  schedule:
+    - cron: "23 9 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  propose-bump:
+    name: Propose baseline bump by PR
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Resolve requested bump
+        id: bump
+        run: |
+          set -euo pipefail
+          current="$(ruby -rjson -e 'puts JSON.parse(File.read("openspec/UPSTREAM.json"))["effectiveOpenSpecVersion"]')"
+          requested="${{ github.event.inputs.upstream_version || '' }}"
+          if [ -z "$requested" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no upstream_version input provided; scheduled discovery is intentionally non-mutating" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$requested" = "$current" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=requested version already matches baseline $current" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! [[ "$requested" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "reason=requested version is not semver: $requested" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "version=$requested" >> "$GITHUB_OUTPUT"
+          echo "branch=chore/sync-openspec-$requested" >> "$GITHUB_OUTPUT"
+
+      - name: Report no-op
+        if: steps.bump.outputs.changed != 'true'
+        run: |
+          printf 'OpenSpec baseline sync skipped: %s\n' "${{ steps.bump.outputs.reason }}"
+
+      - name: Update baseline metadata
+        if: steps.bump.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.bump.outputs.version }}"
+          ruby -rjson -e '
+            version = ENV.fetch("VERSION")
+            files = ["openspec/UPSTREAM.json", "tools/lufy-cli-go/internal/assets/embedded/openspec/UPSTREAM.json"]
+            files.each do |file|
+              data = JSON.parse(File.read(file))
+              data["effectiveOpenSpecVersion"] = version
+              File.write(file, JSON.pretty_generate(data) + "\n")
+            end
+          ' VERSION="$version"
+
+      - name: Validate proposed bump
+        if: steps.bump.outputs.changed == 'true'
+        run: scripts/validate.sh
+
+      - name: Create or update pull request
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.bump.outputs.branch }}
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add openspec/UPSTREAM.json tools/lufy-cli-go/internal/assets/embedded/openspec/UPSTREAM.json
+          git commit -m "chore: sync OpenSpec baseline $VERSION"
+          git push --set-upstream origin "$BRANCH"
+          gh pr create \
+            --base develop \
+            --head "$BRANCH" \
+            --title "chore: sync OpenSpec baseline $VERSION" \
+            --body "$(cat <<EOF
+          ## Summary
+          - Proposes OpenSpec baseline $VERSION through reviewable metadata changes.
+          - Keeps root and embedded UPSTREAM.json in parity.
+          - Does not automerge, tag or publish releases.
+
+          ## Validation
+          - scripts/validate.sh
+          EOF
+          )" || gh pr edit "$BRANCH" \
+            --title "chore: sync OpenSpec baseline $VERSION" \
+            --body "$(cat <<EOF
+          ## Summary
+          - Proposes OpenSpec baseline $VERSION through reviewable metadata changes.
+          - Keeps root and embedded UPSTREAM.json in parity.
+          - Does not automerge, tag or publish releases.
+
+          ## Validation
+          - scripts/validate.sh
+          EOF
+          )"

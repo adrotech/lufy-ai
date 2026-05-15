@@ -2,16 +2,30 @@
   "schemaVersion": 1,
   "workflow": "openspec-core-v2",
   "effectiveOpenSpecVersion": "1.3.1",
+  "minimumCompatibleOpenSpecVersion": "1.3.1",
   "profile": "core",
   "source": {
-    "type": "local-embedded",
+    "type": "embedded-baseline",
     "repository": "adrotech/lufy-ai",
     "assetRoot": "openspec",
-    "description": "Baseline local gestionado por lufy-ai; no resuelve assets remotos ni cache runtime."
+    "description": "Baseline local gestionado por lufy-ai; fallback offline del resolver stay-updated."
+  },
+  "resolver": {
+    "layers": [
+      "PATH",
+      "cache",
+      "embedded"
+    ],
+    "cacheRoot": ".lufy-ai/openspec-cache",
+    "manifestName": "manifest.json",
+    "offlineFallback": "embedded",
+    "pathCommand": "openspec",
+    "mutationByDefault": false
   },
   "capabilities": [
     "action-based-workflow",
     "delta-markers",
+    "openspec-stay-updated",
     "testable-scenarios",
     "sync-before-archive"
   ]

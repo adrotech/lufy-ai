@@ -166,12 +166,12 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 2. Reinicia OpenCode para cargar agentes, comandos y plugin.
 3. Usa `/opsx-explore` para investigar antes de cambios amplios.
 4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync` y `/opsx-archive` para cambios OpenSpec.
-5. Usa `opsx-version` para reportar el baseline local desde `openspec/UPSTREAM.json`.
+5. Usa `opsx-version` para reportar la fuente OpenSpec efectiva: `PATH`, cache local o baseline embebida offline.
 6. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
 
 ### Migración mínima desde assets `v0.2.0`
 
-Al sincronizar desde una fuente con OpenSpec core v2, `lufy-ai sync` agrega `openspec/UPSTREAM.json`, `/opsx-sync`, `opsx-version` y la skill `openspec-sync` como assets gestionados. Si un target tenía cambios locales en assets gestionados, aplican las mismas reglas de drift de `v0.2.0`: se preserva el cambio local, se reporta conflicto o `.lufy-new` según la policy y no se pisa trabajo del usuario.
+Al sincronizar desde una fuente con OpenSpec core v2, `lufy-ai sync` agrega `openspec/UPSTREAM.json`, `/opsx-sync`, `opsx-version` y la skill `openspec-sync` como assets gestionados. `UPSTREAM.json` ahora también declara la versión mínima compatible y el orden de resolución stay-updated: `openspec` en `PATH`, cache `.lufy-ai/openspec-cache/<version>/manifest.json` y baseline embebida offline. `install` y `sync` no descargan ni ejecutan OpenSpec remoto por defecto. Si un target tenía cambios locales en assets gestionados, aplican las mismas reglas de drift de `v0.2.0`: se preserva el cambio local, se reporta conflicto o `.lufy-new` según la policy y no se pisa trabajo del usuario.
 
 Los cambios OpenSpec nuevos deben escribir specs delta bajo `openspec/changes/<change>/specs/` con markers `ADDED`, `MODIFIED` o `REMOVED`. Antes de archivar, corre `/opsx-sync <change>` para aplicar esos deltas a `openspec/specs/` sin mover el change.
 
@@ -192,7 +192,7 @@ Los cambios OpenSpec nuevos deben escribir specs delta bajo `openspec/changes/<c
 | `/opsx-verify` | Verifica completitud y coherencia contra artefactos. |
 | `/opsx-sync` | Aplica deltas validados a specs principales sin archivar. |
 | `/opsx-archive` | Archiva un cambio terminado cuando cumple gates. |
-| `opsx-version` | Reporta baseline local OpenSpec desde `openspec/UPSTREAM.json`. |
+| `opsx-version` | Reporta fuente OpenSpec efectiva y diagnósticos de fallback desde `openspec/UPSTREAM.json`. |
 
 ## Validación local disponible
 
