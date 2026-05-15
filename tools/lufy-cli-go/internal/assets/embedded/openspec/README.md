@@ -7,7 +7,7 @@ Workflow de especificación dirigida por specs (SDD) para este proyecto.
 ```
 openspec/
 ├── config.yaml          # Configuración core v2 action-based
-├── UPSTREAM.json        # Baseline local de versión/perfil/fuente
+├── UPSTREAM.json        # Baseline, versión mínima y metadata de resolución stay-updated
 ├── specs/               # Specs activas
 │   └── <feature-name>/
 │       ├── spec.md      # Especificación técnica
@@ -25,7 +25,7 @@ Usa los comandos instalados en `.opencode/commands/` y skills de `.opencode/skil
 - `/opsx-verify` - Verificar implementación, deltas y scenarios
 - `/opsx-sync` - Aplicar deltas validados a specs principales sin archivar
 - `/opsx-archive` - Archivar cambio completado tras sync y gates
-- `opsx-version` - Reportar baseline local desde `openspec/UPSTREAM.json`
+- `opsx-version` - Reportar fuente efectiva OpenSpec: PATH, cache local o baseline embebida
 
 ## Flujo
 
