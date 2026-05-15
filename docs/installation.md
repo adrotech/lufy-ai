@@ -2,7 +2,7 @@
 
 Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino.
 
-Versión estable actual: `v0.1.0`.
+Versión estable actual: `v0.3.0`.
 
 ## Requisitos
 
@@ -17,16 +17,16 @@ El bootstrap Bash aplica a entornos Unix-like: macOS, Linux y WSL. En Windows na
 Usa una versión explícita; `latest` existe, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 Atajo directo solo si ya revisaste el script y aceptas ejecutarlo desde la URL fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh \
-  | bash -s -- --version v0.1.0 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh \
+  | bash -s -- --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap detecta OS/arch, descarga el artifact `lufy-ai_<version>_<os>_<arch>`, verifica SHA-256 contra los checksums de la misma release e instala solo el binario. No ejecuta `lufy-ai install` contra tu proyecto.
@@ -38,7 +38,7 @@ macOS usa `zsh` por defecto. Apple Silicon normalmente usa `darwin_arm64`; Intel
 Instala en `~/.local/bin`:
 
 ```bash
-bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 Si `~/.local/bin` no está en tu `PATH`, agrega una de estas configuraciones y abre una terminal nueva:
@@ -76,7 +76,7 @@ set -gx PATH $HOME/.local/bin $PATH
 En Linux se recomienda `~/.local/bin` para instalaciones de usuario:
 
 ```bash
-bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 Configura el `PATH` según tu shell:
@@ -113,9 +113,9 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo: PowerShell/cmd
 
-El bootstrap Bash no está pensado para PowerShell/cmd nativos. Si la release incluye `lufy-ai_v0.1.0_windows_amd64.zip`:
+El bootstrap Bash no está pensado para PowerShell/cmd nativos. Si la release incluye `lufy-ai_v0.3.0_windows_amd64.zip`:
 
-1. Descarga el zip y el archivo `lufy-ai_v0.1.0_checksums.txt` desde la release.
+1. Descarga el zip y el archivo `lufy-ai_v0.3.0_checksums.txt` desde la release.
 2. Verifica el checksum antes de usar el binario.
 3. Extrae `lufy-ai.exe` en un directorio de usuario, por ejemplo `%USERPROFILE%\\bin`.
 4. Agrega ese directorio al `Path` de usuario desde la configuración de Windows.
@@ -124,7 +124,7 @@ El bootstrap Bash no está pensado para PowerShell/cmd nativos. Si la release in
 Verificación de hash en PowerShell:
 
 ```powershell
-Get-FileHash .\lufy-ai_v0.1.0_windows_amd64.zip -Algorithm SHA256
+Get-FileHash .\lufy-ai_v0.3.0_windows_amd64.zip -Algorithm SHA256
 ```
 
 Compara el resultado con la entrada del archivo de checksums.
@@ -194,13 +194,13 @@ lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --deep
 Usa una versión fija; `upgrade` rechaza `latest` para mantener reproducibilidad:
 
 ```bash
-lufy-ai upgrade --to v0.1.1
+lufy-ai upgrade --to v0.3.0
 ```
 
 Para revisar sin reemplazar el binario:
 
 ```bash
-lufy-ai upgrade --to v0.1.1 --dry-run
+lufy-ai upgrade --to v0.3.0 --dry-run
 ```
 
 `upgrade` descarga el artifact de la plataforma actual, verifica SHA-256 contra `checksums.txt`, extrae el binario y reemplaza el ejecutable actual de forma atómica.
