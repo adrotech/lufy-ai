@@ -7,7 +7,7 @@
 Incluye:
 
 - agentes OpenCode con responsabilidades separadas;
-- comandos slash `/opsx-*` para el ciclo OpenSpec;
+- comandos slash `/opsx-*` para el ciclo OpenSpec core v2;
 - política de delivery en `.opencode/policies/delivery.md`;
 - plugin local Agent Observatory para la TUI;
 - CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore`, `sync`, `status`, `upgrade` y `version`;
@@ -22,14 +22,14 @@ Incluye:
 
 ## Instalación rápida
 
-Versión estable actual: `v0.1.0`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
+Versión estable actual: `v0.3.0`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
 
 ### 1. Instalar el binario sin clone desde una release estable
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.1.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.1.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
 ```
 
 Si `~/.local/bin` no está en `PATH`, configura tu shell antes de continuar. Ejemplos rápidos:
@@ -165,8 +165,15 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 1. Revisa `AGENTS.md` en el repositorio destino y ajusta convenciones locales.
 2. Reinicia OpenCode para cargar agentes, comandos y plugin.
 3. Usa `/opsx-explore` para investigar antes de cambios amplios.
-4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify` y `/opsx-archive` para cambios OpenSpec.
-5. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
+4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync` y `/opsx-archive` para cambios OpenSpec.
+5. Usa `opsx-version` para reportar la fuente OpenSpec efectiva: `PATH`, cache local o baseline embebida offline.
+6. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
+
+### Migración mínima desde assets `v0.2.0`
+
+Al sincronizar desde una fuente con OpenSpec core v2, `lufy-ai sync` agrega `openspec/UPSTREAM.json`, `/opsx-sync`, `opsx-version` y la skill `openspec-sync` como assets gestionados. `UPSTREAM.json` ahora también declara la versión mínima compatible y el orden de resolución stay-updated: `openspec` en `PATH`, cache `.lufy-ai/openspec-cache/<version>/manifest.json` y baseline embebida offline. `install` y `sync` no descargan ni ejecutan OpenSpec remoto por defecto. Si un target tenía cambios locales en assets gestionados, aplican las mismas reglas de drift de `v0.2.0`: se preserva el cambio local, se reporta conflicto o `.lufy-new` según la policy y no se pisa trabajo del usuario.
+
+Los cambios OpenSpec nuevos deben escribir specs delta bajo `openspec/changes/<change>/specs/` con markers `ADDED`, `MODIFIED` o `REMOVED`. Antes de archivar, corre `/opsx-sync <change>` para aplicar esos deltas a `openspec/specs/` sin mover el change.
 
 ## Flujo de contribución y release del repositorio
 
@@ -183,7 +190,9 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 | `/opsx-propose` | Genera artefactos OpenSpec de un cambio. |
 | `/opsx-apply` | Implementa tareas de un cambio activo. |
 | `/opsx-verify` | Verifica completitud y coherencia contra artefactos. |
+| `/opsx-sync` | Aplica deltas validados a specs principales sin archivar. |
 | `/opsx-archive` | Archiva un cambio terminado cuando cumple gates. |
+| `opsx-version` | Reporta fuente OpenSpec efectiva y diagnósticos de fallback desde `openspec/UPSTREAM.json`. |
 
 ## Validación local disponible
 

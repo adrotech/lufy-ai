@@ -56,6 +56,13 @@ Implement tasks from an OpenSpec change.
    - **spec-driven**: proposal, specs, design, tasks
    - Other schemas: follow the contextFiles from CLI output
 
+   For core v2 change specs, confirm delta sections are present before implementation:
+   - `## ADDED Requirements`
+   - `## MODIFIED Requirements`
+   - `## REMOVED Requirements`
+
+   Added and modified requirements must include scenarios with `WHEN` and `THEN`; `GIVEN` is optional.
+
 5. **Show current progress**
 
    Display:
@@ -74,6 +81,7 @@ Implement tasks from an OpenSpec change.
    - Keep changes minimal and focused
    - Mark task complete in the tasks file: `- [ ]` → `- [x]`
    - Continue to next task
+   - If implementation changes requirement behavior, update the change delta spec rather than editing main specs directly; use `/opsx-sync` after validation to apply deltas.
 
    Validation preference:
    - Use systemic workflow: analyze old files, dependencies, interconnections, feedback paths, and structure/behavior risks at the beginning of the coherent block/proposal.

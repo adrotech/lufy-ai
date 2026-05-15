@@ -62,12 +62,13 @@ Archive a completed change in the experimental workflow.
    - Compare each delta spec with its corresponding main spec at `openspec/specs/<capability>/spec.md`
    - Determine what changes would be applied (adds, modifications, removals, renames)
    - Show a combined summary before prompting
+   - If changes are still needed, return `blocked` and instruct the user to run `/opsx-sync <name>`; do not archive unsynced deltas
 
    **Prompt options:**
-   - If changes needed: "Sync now (recommended)", "Archive without syncing"
    - If already synced: "Archive now", "Sync anyway", "Cancel"
+   - If changes are needed: "Run /opsx-sync now", "Cancel"
 
-   If user chooses sync, use the installed concrete sync skill if available. Do not proceed to archive unless all artifact and task gates remain satisfied.
+   If the user chooses sync, use the installed concrete sync skill and then re-check all artifact, task and sync gates before archive.
 
 5. **Perform the archive**
 
@@ -116,4 +117,5 @@ All artifacts complete. All tasks complete.
 - Show clear summary of what happened
 - If sync is requested, use available concrete OpenSpec sync tooling; do not reference generic workflow modes.
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting
+- Never archive a change with unsynced delta specs, even if the user asks to skip sync.
 - Use validación agrupada evidence from the completed block/proposal; do not run tests constantly solely for archive.

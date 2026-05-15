@@ -65,6 +65,7 @@ var fallbackRequiredManagedFiles = []string{
 	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
 	filepath.Join("openspec", "config.yaml"),
+	filepath.Join("openspec", "UPSTREAM.json"),
 }
 
 var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
@@ -74,6 +75,7 @@ var jsonValidationFiles = []string{
 	"tui.json",
 	filepath.Join(".opencode", "package.json"),
 	filepath.Join(".opencode", "package-lock.json"),
+	filepath.Join("openspec", "UPSTREAM.json"),
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {

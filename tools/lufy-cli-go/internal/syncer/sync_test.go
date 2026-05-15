@@ -259,7 +259,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	}
 }
 
-func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T) {
+func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
@@ -274,11 +274,11 @@ func TestRunSkipsNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := st.AssetMap()[newRel]; ok {
-		t.Fatalf("new catalog asset absent from target should not be registered")
+	if got, ok := st.AssetMap()[newRel]; !ok || got.LastAction != "sync-update-managed" {
+		t.Fatalf("new catalog asset was not registered as managed: %#v", got)
 	}
-	if _, err := os.Stat(filepath.Join(target, newRel)); !os.IsNotExist(err) {
-		t.Fatalf("sync copied new catalog asset unexpectedly, stat err=%v", err)
+	if got := string(readFile(t, filepath.Join(target, newRel))); got != "new command\n" {
+		t.Fatalf("sync did not copy new catalog asset, got %q", got)
 	}
 	if st.AssetMap()["AGENTS.md"].LastAction != "sync-update-managed" {
 		t.Fatalf("existing managed asset was not updated: %#v", st.AssetMap()["AGENTS.md"])
@@ -465,6 +465,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
 		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",
 		filepath.Join("openspec", "config.yaml"):                       "config\n",
+		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",

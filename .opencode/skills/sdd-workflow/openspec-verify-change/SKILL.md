@@ -68,10 +68,12 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
    **Spec Coverage**:
    - If delta specs exist in `openspec/changes/<name>/specs/`:
-     - Extract all requirements (marked with "### Requirement:")
-     - For each requirement:
-       - Search codebase for keywords related to the requirement
-       - Assess if implementation likely exists
+      - Verify every delta spec contains at least one `## ADDED Requirements`, `## MODIFIED Requirements` or `## REMOVED Requirements` section
+      - Verify each added or modified requirement has at least one `#### Scenario:` with `WHEN` and `THEN`; `GIVEN` is optional
+      - Extract all requirements (marked with "### Requirement:")
+      - For each requirement:
+        - Search codebase for keywords related to the requirement
+        - Assess if implementation likely exists
      - If requirements appear unimplemented:
        - Add CRITICAL issue: "Requirement not found: <requirement name>"
        - Recommendation: "Implement requirement X: <description>"
@@ -91,9 +93,14 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    - For each scenario in delta specs (marked with "#### Scenario:"):
      - Check if conditions are handled in code
      - Check if tests exist covering the scenario
-     - If scenario appears uncovered:
-       - Add WARNING: "Scenario not covered: <scenario name>"
-       - Recommendation: "Add test or implementation for scenario: <description>"
+      - If scenario appears uncovered:
+        - Add WARNING: "Scenario not covered: <scenario name>"
+        - Recommendation: "Add test or implementation for scenario: <description>"
+
+    **Sync Readiness**:
+    - If delta specs exist, compare their requirement titles against corresponding main specs in `openspec/specs/<capability>/spec.md`
+    - If deltas appear unapplied after implementation, add CRITICAL issue for archive readiness: "Run `/opsx-sync <change>` before archive"
+    - Do not require archive during verification; only report whether archive is blocked by unsynced specs.
 
 7. **Verify Coherence**
 

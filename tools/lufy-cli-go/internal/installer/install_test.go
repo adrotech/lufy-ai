@@ -531,6 +531,7 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
 		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",
 		filepath.Join("openspec", "config.yaml"):                       "config\n",
+		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",

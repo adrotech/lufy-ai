@@ -12,6 +12,8 @@ Run the concrete OpenSpec proposal skill.
 - Resolve change name from command argument or user request.
 - Invoke concrete skill `openspec-propose`.
 - Ensure generated artifacts are ready for implementation.
+- Ensure change specs use explicit delta sections: `## ADDED Requirements`, `## MODIFIED Requirements` or `## REMOVED Requirements`.
+- Ensure each added or modified requirement has at least one `#### Scenario:` with `WHEN` and `THEN`; `GIVEN` is optional.
 - Write proposal, design, tasks, specs in Spanish by default; keep filenames unchanged.
 - If GitHub Project tracking enabled, call sync with status Ready.
 
