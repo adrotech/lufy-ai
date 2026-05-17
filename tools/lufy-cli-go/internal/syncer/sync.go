@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
@@ -249,6 +250,25 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		)
 	}
 	for _, prev := range previous.Assets {
+		if prev.TargetRel == agentsref.AgentsFile {
+			exists, hasReference, err := agentsref.Status(target)
+			if err != nil {
+				plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: err.Error(), RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+				continue
+			}
+			if exists && !hasReference {
+				currentHash, hashErr := assets.FileSHA256(filepath.Join(target, prev.TargetRel))
+				if hashErr != nil {
+					return Plan{}, hashErr
+				}
+				if currentHash != prev.TargetSHA256 {
+					plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "AGENTS.md legacy gestionado tiene drift local y falta @lufy-ia.harness.md; preservado, agrega la referencia manualmente o resuelve el drift antes de reintentar sync", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+				} else {
+					plan.Actions = append(plan.Actions, Action{Kind: "warn-agents-reference", Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega @lufy-ia.harness.md con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+				}
+			}
+			continue
+		}
 		if catalogTargets[prev.TargetRel] {
 			continue
 		}
@@ -279,6 +299,14 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		}
 		plan.Actions = append(plan.Actions, Action{Kind: "retired", Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo; se preserva y queda rastreado", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 	}
+	if previousAssets[agentsref.AgentsFile].TargetRel == "" {
+		exists, hasReference, err := agentsref.Status(target)
+		if err != nil {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error()})
+		} else if !exists || !hasReference {
+			plan.Actions = append(plan.Actions, Action{Kind: "warn-agents-reference", Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega @lufy-ia.harness.md con install --yes o edición manual"})
+		}
+	}
 	configPlan, err := config.NewService().Plan(config.Options{TargetRoot: target, NoEngram: opts.NoEngram})
 	if err != nil {
 		return Plan{}, err
@@ -292,7 +320,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		plan.Actions = append(plan.Actions, Action{Kind: "skip", Target: config.OpenCodeFile, Reason: "configuración OpenCode merge-managed sin cambios"})
 	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"backup": 0, "create-managed": 1, "update-managed": 2, "merge-block": 3, "write-lufy-new": 4, "merge-json": 5, "retired": 6, "skip": 7}
+		order := map[string]int{"backup": 0, "create-managed": 1, "update-managed": 2, "merge-block": 3, "write-lufy-new": 4, "merge-json": 5, "retired": 6, "warn-agents-reference": 7, "skip": 8}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -305,7 +333,8 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	updates := uniqueTargets(append(append(targetsForKind(plan.Actions, "create-managed"), targetsForKind(plan.Actions, "update-managed")...), targetsForKind(plan.Actions, "merge-block")...))
 	lufyNew := targetsForKind(plan.Actions, "write-lufy-new")
 	merges := targetsForKind(plan.Actions, "merge-json")
-	if len(updates) == 0 && len(lufyNew) == 0 && len(merges) == 0 {
+	stateOnly := hasActionKind(plan.Actions, "retired") || hasActionKind(plan.Actions, "warn-agents-reference")
+	if len(updates) == 0 && len(lufyNew) == 0 && len(merges) == 0 && !stateOnly {
 		fmt.Fprintln(stdout, "- [skip] sin cambios gestionados")
 		return nil
 	}
@@ -386,7 +415,7 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
-	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram, AllowCatalogNewAssets: true}, stdout); err != nil {
+	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram, AllowCatalogNewAssets: true, AllowMissingAgentsRef: true}, stdout); err != nil {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
 	fmt.Fprintf(stdout, "- [verify] %s\n", plan.TargetRoot)
@@ -454,6 +483,9 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		}
 	}
 	for _, prev := range plan.Previous.Assets {
+		if prev.TargetRel == agentsref.AgentsFile {
+			continue
+		}
 		if catalogTargets[prev.TargetRel] {
 			continue
 		}
@@ -569,6 +601,15 @@ func targetsForKind(actions []Action, kind string) []string {
 		}
 	}
 	return out
+}
+
+func hasActionKind(actions []Action, kind string) bool {
+	for _, action := range actions {
+		if action.Kind == kind {
+			return true
+		}
+	}
+	return false
 }
 
 func uniqueTargets(in []string) []string {

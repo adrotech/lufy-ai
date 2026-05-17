@@ -25,17 +25,17 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(skip) error = %v", err)
 	}
-	if !hasSyncAction(skipPlan.Actions, "skip", "AGENTS.md") || hasSyncActionKind(skipPlan.Actions, "update-managed") {
+	if !hasSyncAction(skipPlan.Actions, "skip", "lufy-ia.harness.md") || hasSyncActionKind(skipPlan.Actions, "update-managed") {
 		t.Fatalf("skip plan unexpected: actions=%#v conflicts=%#v", skipPlan.Actions, skipPlan.Conflicts)
 	}
 
 	updateTarget := installedTarget(t)
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 	updatePlan, err := svc.BuildPlan(Options{Target: updateTarget, NoEngram: true})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
-	if !hasSyncAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasSyncAction(updatePlan.Actions, "merge-block", "AGENTS.md") {
+	if !hasSyncAction(updatePlan.Actions, "backup", "lufy-ia.harness.md") || !hasSyncAction(updatePlan.Actions, "update-managed", "lufy-ia.harness.md") {
 		t.Fatalf("update plan missing backup/merge-block: actions=%#v conflicts=%#v", updatePlan.Actions, updatePlan.Conflicts)
 	}
 
@@ -45,8 +45,8 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(drift) error = %v", err)
 	}
-	if len(driftPlan.Conflicts) != 0 || !hasSyncAction(driftPlan.Actions, "merge-block", "AGENTS.md") {
-		t.Fatalf("expected merge-block drift resolution, actions=%#v conflicts=%#v", driftPlan.Actions, driftPlan.Conflicts)
+	if len(driftPlan.Conflicts) != 0 || !hasSyncAction(driftPlan.Actions, "warn-agents-reference", "AGENTS.md") {
+		t.Fatalf("expected agents reference warning, actions=%#v conflicts=%#v", driftPlan.Actions, driftPlan.Conflicts)
 	}
 
 	untrackedTarget := t.TempDir()
@@ -58,8 +58,8 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(untracked) error = %v", err)
 	}
-	if !hasSyncConflict(untrackedPlan.Conflicts, "AGENTS.md", "no gestionado") {
-		t.Fatalf("expected untracked conflict, got %#v", untrackedPlan.Conflicts)
+	if !hasSyncAction(untrackedPlan.Actions, "warn-agents-reference", "AGENTS.md") {
+		t.Fatalf("expected untracked AGENTS warning, got actions=%#v conflicts=%#v", untrackedPlan.Actions, untrackedPlan.Conflicts)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
@@ -101,11 +101,11 @@ func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	agents := st.AssetMap()["AGENTS.md"]
-	if agents.AncestorRel != ".lufy-ai/ancestors/AGENTS.md" || agents.AncestorHash != agents.SourceSHA256 {
-		t.Fatalf("ancestor metadata not refreshed: %#v", agents)
+	harness := st.AssetMap()["lufy-ia.harness.md"]
+	if harness.AncestorRel != ".lufy-ai/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
+		t.Fatalf("ancestor metadata not refreshed: %#v", harness)
 	}
-	if got := string(readFile(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n" {
+	if got := string(readFile(t, filepath.Join(target, harness.AncestorRel))); got != "upstream changed\n" {
 		t.Fatalf("ancestor content mismatch: %q", got)
 	}
 }
@@ -116,7 +116,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	stateBefore := readFile(t, state.Path(target))
 	targetBefore := readFile(t, filepath.Join(target, "AGENTS.md"))
@@ -124,7 +124,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
 	}
-	if !strings.Contains(out.String(), "Modo dry-run") || !strings.Contains(out.String(), "merge-block") {
+	if !strings.Contains(out.String(), "Modo dry-run") || !strings.Contains(out.String(), "update-managed") {
 		t.Fatalf("dry-run output unexpected: %s", out.String())
 	}
 	if !bytes.Equal(stateBefore, readFile(t, state.Path(target))) {
@@ -144,7 +144,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
@@ -162,7 +162,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	if err := json.Unmarshal(readFile(t, manifests[0]), &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if manifest.Cause != "sync" || len(manifest.Files) == 0 || manifest.Files[0].Path != "AGENTS.md" || manifest.Files[0].Status != "captured" || manifest.Files[0].Cause != "sync" {
+	if manifest.Cause != "sync" || len(manifest.Files) == 0 || manifest.Files[0].Path != "lufy-ia.harness.md" || manifest.Files[0].Status != "captured" || manifest.Files[0].Cause != "sync" {
 		t.Fatalf("manifest unexpected: %#v", manifest)
 	}
 
@@ -170,13 +170,13 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	agents := st.AssetMap()["AGENTS.md"]
-	current, err := assets.FileSHA256(filepath.Join(target, "AGENTS.md"))
+	harness := st.AssetMap()["lufy-ia.harness.md"]
+	current, err := assets.FileSHA256(filepath.Join(target, "lufy-ia.harness.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if agents.TargetSHA256 != current || agents.LastAction != "sync-update-managed" {
-		t.Fatalf("state was not refreshed for AGENTS.md: %#v current=%s", agents, current)
+	if harness.TargetSHA256 != current || harness.LastAction != "sync-update-managed" {
+		t.Fatalf("state was not refreshed for harness: %#v current=%s", harness, current)
 	}
 	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
 		t.Fatalf("sync state metadata not populated from runtime/catalog: %#v", st)
@@ -207,6 +207,112 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	}
 }
 
+func TestSyncWarnsWhenAgentsReferenceMissingWithoutMutatingAgents(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	agentsPath := filepath.Join(target, "AGENTS.md")
+	writeFile(t, agentsPath, "# Proyecto\n\nConvenciones locales\n")
+	before := readFile(t, agentsPath)
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(sync missing reference) error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "warn-agents-reference") || !strings.Contains(out.String(), "@lufy-ia.harness.md") {
+		t.Fatalf("sync output missing agents reference warning: %s", out.String())
+	}
+	if got := readFile(t, agentsPath); !bytes.Equal(got, before) {
+		t.Fatalf("sync mutated AGENTS.md: before=%q after=%q", before, got)
+	}
+}
+
+func TestSyncMigratesLegacyManagedAgentsStateNonDestructively(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	agentsPath := filepath.Join(target, "AGENTS.md")
+	legacyAgents := []byte("legacy managed AGENTS\n")
+	writeFile(t, agentsPath, string(legacyAgents))
+	agentsHash, err := assets.FileSHA256(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Assets = append(st.Assets, state.AssetState{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: agentsHash, TargetSHA256: agentsHash, Policy: "merge-block", Scope: "project", LastAction: "legacy-managed"})
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(sync legacy) error = %v, output=%s", err, out.String())
+	}
+	if got := readFile(t, agentsPath); !bytes.Equal(got, legacyAgents) {
+		t.Fatalf("legacy AGENTS.md was mutated: %q", got)
+	}
+	after, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := after.AssetMap()["AGENTS.md"]; ok {
+		t.Fatalf("legacy AGENTS.md entry remained in manifest: %#v", after.AssetMap()["AGENTS.md"])
+	}
+	if _, ok := after.AssetMap()["lufy-ia.harness.md"]; !ok {
+		t.Fatal("harness missing from manifest after legacy migration")
+	}
+}
+
+func TestSyncBlocksLegacyManagedAgentsDriftWithoutMutations(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	agentsPath := filepath.Join(target, "AGENTS.md")
+	legacyAgents := []byte("legacy managed AGENTS\n")
+	writeFile(t, agentsPath, string(legacyAgents))
+	agentsHash, err := assets.FileSHA256(agentsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Assets = append(st.Assets, state.AssetState{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: agentsHash, TargetSHA256: agentsHash, Policy: "merge-block", Scope: "project", LastAction: "legacy-managed"})
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+	stateBefore := readFile(t, state.Path(target))
+	writeFile(t, agentsPath, "legacy managed AGENTS\nlocal drift\n")
+	agentsBefore := readFile(t, agentsPath)
+
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if !hasSyncConflict(plan.Conflicts, "AGENTS.md", "legacy gestionado tiene drift local") || hasSyncAction(plan.Actions, "warn-agents-reference", "AGENTS.md") {
+		t.Fatalf("expected actionable legacy drift conflict, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+
+	var out bytes.Buffer
+	err = NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out)
+	if err == nil || !strings.Contains(err.Error(), "sync bloqueado") {
+		t.Fatalf("Run(sync legacy drift) expected blocked conflict, err=%v output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "agrega la referencia manualmente") || !strings.Contains(out.String(), "recordedTarget") {
+		t.Fatalf("sync output missing actionable legacy drift details: %s", out.String())
+	}
+	if got := readFile(t, agentsPath); !bytes.Equal(got, agentsBefore) {
+		t.Fatalf("legacy drift AGENTS.md was mutated: before=%q after=%q", agentsBefore, got)
+	}
+	if got := readFile(t, state.Path(target)); !bytes.Equal(got, stateBefore) {
+		t.Fatalf("blocked sync rewrote install-state: before=%q after=%q", stateBefore, got)
+	}
+}
+
 func TestSyncRecoveryErrorRestoresBackup(t *testing.T) {
 	target := t.TempDir()
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "before\n")
@@ -234,7 +340,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	if err := os.Remove(filepath.Join(source, obsoleteRel)); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
@@ -265,7 +371,7 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	target := installedTarget(t)
 	newRel := filepath.Join(".opencode", "commands", "new-command.md")
 	writeFile(t, filepath.Join(source, newRel), "new command\n")
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
@@ -280,8 +386,8 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	if got := string(readFile(t, filepath.Join(target, newRel))); got != "new command\n" {
 		t.Fatalf("sync did not copy new catalog asset, got %q", got)
 	}
-	if st.AssetMap()["AGENTS.md"].LastAction != "sync-update-managed" {
-		t.Fatalf("existing managed asset was not updated: %#v", st.AssetMap()["AGENTS.md"])
+	if st.AssetMap()["lufy-ia.harness.md"].LastAction != "sync-update-managed" {
+		t.Fatalf("existing managed asset was not updated: %#v", st.AssetMap()["lufy-ia.harness.md"])
 	}
 }
 
@@ -340,7 +446,7 @@ func TestBuildPlanRejectsInvalidOpenCodeManagedKeyTypesWithoutAssetUpdates(t *te
 	chdirForTest(t, source)
 	target := installedTarget(t)
 	stateBefore := readFile(t, state.Path(target))
-	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nupstream changed but must not apply\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed but must not apply\n")
 	writeFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":{}}`)
 
 	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
@@ -453,6 +559,7 @@ func minimalSource(t *testing.T) string {
 	files := map[string]string{
 		"AGENTS.md":                                                    "agents root\n",
 		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
+		"lufy-ia.harness.md":                                           "harness template\n",
 		"tui.json":                                                     "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",

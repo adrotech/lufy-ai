@@ -17,7 +17,7 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 	}
 
 	want := map[string]bool{
-		"AGENTS.md": false,
+		"lufy-ia.harness.md": false,
 		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
@@ -68,7 +68,7 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 	}
 
 	want := map[string]bool{
-		"AGENTS.md": false,
+		"lufy-ia.harness.md": false,
 		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
@@ -182,6 +182,7 @@ func minimalSource(t *testing.T) string {
 	files := map[string]string{
 		"AGENTS.md":                                                                       "agents root\n",
 		"AGENTS.md.template":                                                              "agents template\n",
+		"lufy-ia.harness.md":                                                              "agents template\n",
 		"tui.json":                                                                        "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                                          "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                                           "readme\n",
