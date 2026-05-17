@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Kit instalable para sumar OpenCode, OpenSpec, harness SDD proporcional, agentes especializados y delivery trazable a repositorios existentes.
+  Harness operativo instalable para trabajar con OpenCode y OpenSpec usando routing SDD proporcional, agentes especializados, assets gestionados y delivery trazable.
 </p>
 
 <p align="center">
@@ -22,7 +22,9 @@
 
 ## Qué es `lufy-ai`
 
-`lufy-ai` es una capa operativa AI-first que se instala sobre un repositorio destino. Su alcance actual es copiar y mantener assets de OpenCode/OpenSpec, convenciones de agentes, routing SDD proporcional, políticas de delivery y tooling auxiliar para trabajar con cambios trazables.
+`lufy-ai` es un harness operativo AI-first que se instala sobre un repositorio destino para ordenar cómo se exploran, proponen, implementan, verifican y entregan cambios con agentes. No reemplaza tu stack de aplicación: agrega una capa de trabajo alrededor del repo con OpenCode, OpenSpec, routing SDD proporcional, contratos de resultado, políticas de delivery y una CLI Go que mantiene esos assets bajo control.
+
+En la práctica, `lufy-ai` busca que cada pedido use el flujo más pequeño que lo resuelva con seguridad: T1 Full SDD para cambios sistémicos, T2 SDD Lite para trabajo funcional acotado y T3 Express para cambios simples. También instala reglas para aislar subagentes, preservar contexto mínimo, producir handoffs revisables y mantener trazabilidad de validación antes de delivery.
 
 No es un framework de aplicación, no genera proyectos por stack y no instala templates de frontend/backend/mobile. Las capacidades futuras viven en [`docs/roadmap.md`](docs/roadmap.md) hasta que existan como assets reales, instalables y validados.
 
@@ -36,10 +38,10 @@ El repositorio incluye hoy:
 | Comandos slash | `.opencode/commands/` con `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `opsx-version`. |
 | Skills OpenSpec | `.opencode/skills/sdd-workflow/` para explorar, proponer, aplicar, sincronizar, verificar y archivar cambios. |
 | Harness SDD | T1 Full SDD, T2 SDD Lite y T3 Express para elegir el flujo más pequeño que resuelva el pedido con seguridad. |
-| Templates operativos | `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md` para mini-specs T2 y handoffs recuperables. |
+| Templates operativos | `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md` para mini-specs T2, contratos de salida y handoffs recuperables. |
 | Delivery | `.opencode/policies/delivery.md` con invariantes compartidas; `.opencode/agents/delivery.md` como runbook operativo para Git/GH autorizado. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` y comandos `/observatory*` para la TUI local. |
-| CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `merge`, `upgrade` y `version`. |
+| CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `merge`, `upgrade` y `version`; usa hashes SHA-256, manifest de estado y backups para proteger assets gestionados. |
 | Instalador Bash | `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy. |
 | Releases binarios | Workflow `.github/workflows/release.yml`, scripts de build/checksum y bootstrap seguro. Al mergear un PR hacia `main`, `.github/workflows/auto-release-tag.yml` crea el siguiente tag patch `vMAJOR.MINOR.PATCH` sobre el merge commit e invoca explícitamente la publicación. |
 | OpenSpec core v2 | `openspec/` con configuración action-based, `UPSTREAM.json`, specs delta, `/opsx-sync` y resolución stay-updated PATH/cache/embedded. |
@@ -56,16 +58,16 @@ El cambio `route-orchestrator-to-domain-agents` sigue siendo trabajo activo/futu
 
 ## Instalación rápida
 
-Versión estable actual: `v0.3.0`.
+Versión estable actual: `v0.3.1`.
 
 Para instalación completa por OS/shell —incluyendo macOS, Linux, Windows/WSL y configuración de `PATH` para bash, zsh y fish— ver [`docs/installation.md`](docs/installation.md).
 
 Resumen sin clone desde release estable:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.1/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.1 --install-dir "$HOME/.local/bin"
 ```
 
 Si el bootstrap indica que el directorio no está en `PATH`, aplica la instrucción correspondiente a tu shell (bash/zsh o fish) desde la guía dedicada y abre una terminal nueva.
@@ -73,8 +75,8 @@ Si el bootstrap indica que el directorio no está en `PATH`, aplica la instrucci
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh \
-  | bash -s -- --version v0.3.0 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.1/scripts/bootstrap.sh \
+  | bash -s -- --version v0.3.1 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap detecta OS/arch, descarga el artifact `lufy-ai_<version>_<os>_<arch>`, verifica su SHA-256 contra el archivo de checksums de la misma release y solo instala el binario. No ejecuta `lufy-ai install` contra tu proyecto.
