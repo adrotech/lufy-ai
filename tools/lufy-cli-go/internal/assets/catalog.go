@@ -125,6 +125,7 @@ var allowedEntries = []entry{
 	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/skills", targetRel: ".opencode/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".opencode/templates", targetRel: ".opencode/templates", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/policies", targetRel: ".opencode/policies", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/plugins", targetRel: ".opencode/plugins", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/agent-observatory", targetRel: ".opencode/agent-observatory", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},

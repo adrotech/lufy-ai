@@ -1,6 +1,6 @@
 # lufy-cli-go
 
-CLI Go del instalador de `lufy-ai`, ubicada en carpeta dedicada para separar runtime/infra del resto de assets del kit.
+CLI Go del instalador de `lufy-ai`, ubicada en carpeta dedicada para separar runtime/infra del resto de assets del kit. El binario instala el harness OpenCode/OpenSpec vigente, incluyendo `sdd-router`, templates T2/result, Review Workload Harness, policies y comandos gestionados.
 
 ## Propósito
 
@@ -76,11 +76,11 @@ La CLI expone estos comandos en el slice actual:
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
 | `lufy-ai version` | Muestra versión semántica, commit, fecha de build, GOOS y GOARCH; los builds sin metadata se marcan como `development build`. | n/a |
 
-No hay comandos de detección de stack ni instalación de templates por stack en esta CLI.
+No hay comandos de detección de stack ni instalación de templates por stack en esta CLI. Los templates instalables actuales son templates de proceso del harness: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
 
 ## Assets gestionados, SHA-256 e idempotencia
 
-`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
+`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. El catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `.opencode/README.md`, `AGENTS.md`, `tui.json` y `openspec`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
 
 - `skip`: el target ya coincide con el estado gestionado.
 - `create`: el asset gestionado aún no existe y puede crearse.
@@ -187,6 +187,7 @@ cd ../..
 - `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
 - Las escrituras rechazan paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
 - Los artifacts standalone pueden instalar assets embebidos cuando no se encuentra un checkout fuente válido; el checkout fuente ahora requiere el marcador adicional `tools/lufy-cli-go/go.mod` para evitar falsos positivos en repositorios destino ya instalados.
+- Cuando cambian assets del harness, genera un nuevo installer local con `mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai` desde `tools/lufy-cli-go/` y valida con `scripts/validate.sh` desde la raíz.
 - La publicación pública requiere promover a `main` y crear un tag `v*` sobre un commit alcanzable desde `origin/main`; esta rama no implica que exista ya una release publicada.
 
 ## Próximos pasos

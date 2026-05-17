@@ -41,8 +41,24 @@ func TestEnsureCreatesOpenCodeJSONWithPortableEngram(t *testing.T) {
 	if cmd[0] != "/usr/local/bin/engram" {
 		t.Fatalf("unexpected engram command: %#v", cmd)
 	}
-	if decoded[managedNamespace] == nil {
-		t.Fatalf("managed namespace not written: %s", string(body))
+	if _, ok := decoded["x-lufy-ai"]; ok {
+		t.Fatalf("opencode.json contiene clave no soportada por OpenCode: %s", string(body))
+	}
+}
+
+func TestEnsureRemovesLegacyManagedNamespace(t *testing.T) {
+	target := t.TempDir()
+	writeConfig(t, target, `{"$schema":"https://opencode.ai/config.json","plugin":[],"x-lufy-ai":{"version":"v0.3.0"}}`)
+	if _, err := NewService().Ensure(Options{TargetRoot: target, NoEngram: true, Resolver: fakeResolver{}}); err != nil {
+		t.Fatalf("Ensure() error = %v", err)
+	}
+	body := readConfig(t, target)
+	var decoded map[string]any
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := decoded["x-lufy-ai"]; ok {
+		t.Fatalf("legacy managed namespace not removed: %s", string(body))
 	}
 }
 

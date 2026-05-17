@@ -16,7 +16,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 
 ## Estructura relevante
 
-- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`).
+- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`).
 - `.opencode/commands/`: slash commands del flujo OpenSpec: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`.
 - `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar y archivar cambios OpenSpec.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
@@ -56,10 +56,25 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 12. Mantener `scripts/install.sh` como wrapper estricto de `tools/lufy-cli-go`; no reintroducir rutas legacy.
 13. Aplicar pensamiento sistémico: entender el todo, interconexiones, dependencias, bucles de feedback y cómo la estructura estática produce comportamiento dinámico.
 14. Durante una propuesta, concentrar el análisis de código viejo al inicio y la revisión final en archivos viejos modificados/afectados; no releer archivos ya analizados salvo conflicto, bloqueo, nueva evidencia, cambio de alcance o riesgo explícito.
+15. Usar routing proporcional T1/T2/T3 para propuestas, funcionalidades y tareas: elegir el flujo más pequeño que resuelva el pedido con seguridad.
+16. Mantener aislamiento de subagentes: pasar contexto mínimo, permisos mínimos y contrato de salida claro.
+17. Resolver skills local-first desde `.opencode/skills`; AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
+18. Aplicar Review Workload Harness en T1 y T2 con varios riesgos: pensar en el reviewer humano, dividir features grandes en slices revisables y entregar por partes cuando reduzca carga cognitiva; no fragmentar T3 artificialmente.
+
+## Routing SDD proporcional
+
+- **T1 Full SDD**: nuevas capabilities, impacto transversal, arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre; usar OpenSpec completo.
+- **T2 SDD Lite**: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar mini-spec o handoff estructurado con criterios WHEN/THEN y validación agrupada.
+- **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante; permitir implementación directa acotada y validación proporcional.
+- Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
+- Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
+- Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
+- Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
 
 ## Roles de agentes
 
 - `orchestrator`: coordina y enruta; no edita ni ejecuta shell.
+- `sdd-router`: clasifica T1/T2/T3 en modo read-only, recomienda execution mode, contexto mínimo, skill status y review workload.
 - `explorer`: investiga en modo read-only y produce handoff para implementación.
 - `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
 - `validator`: valida y diagnostica en modo read-only; no edita.

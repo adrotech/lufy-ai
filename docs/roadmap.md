@@ -38,6 +38,9 @@ Estado actual documentable:
 - Drift Resolution en rama: policies declarativas, `AGENTS.md` como `merge-block`, `tui.json` como `no-replace`, `.lufy-new`, ancestors, `--scope=project|global|both`, `lufy-ai merge <path>` y restore con `--list`/ID.
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
+- Harness SDD proporcional instalable: `sdd-router`, T1/T2/T3, SDD Lite, result contracts, context slicing, review workload y skill resolution local-first.
+- Review Workload Harness instalable: slices revisables para features/propuestas grandes, sin forzar micro-entregables en T3.
+- Templates de proceso instalables: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
 - Distribución versionada implementada en la rama: `lufy-ai version`, artifacts release por OS/arch, checksums SHA-256, bootstrap `scripts/bootstrap.sh` y assets embebidos para instalar sin checkout fuente. Las releases públicas instalables dependen de publicar tags `v*` desde commits alcanzables desde `main` y sus artifacts en GitHub Releases; antes de que exista un tag publicado, el bootstrap solo funciona contra fixtures/local mirrors o fallará al intentar descargar la release inexistente.
 - README, `docs/getting-started.md` y README de la CLI ya describen el flujo sin clone con pinning/inspección, sujeto a que exista la release pública taggeada correspondiente.
@@ -52,8 +55,9 @@ Flujo operativo de ramas/release:
 No son capacidades instalables actuales:
 
 - templates por stack como `frontend-react`, `frontend-nextjs`, `frontend-astro`, `mobile-expo` o `backend-spring`;
-- detección automática de stack;
+- detección automática de stack integrada en la CLI;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
+- instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.
 
