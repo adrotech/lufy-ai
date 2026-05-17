@@ -9,6 +9,7 @@ permission:
   patch: deny
   bash:
     "*": ask
+    "openspec *": allow
     "rg *": allow
     "git status*": allow
     "git diff*": allow
