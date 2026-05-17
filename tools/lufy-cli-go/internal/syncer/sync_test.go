@@ -461,6 +461,8 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".opencode", "agents", "orchestrator.md"):        "orchestrator\n",
 		filepath.Join(".opencode", "commands", "opsx-apply.md"):        "apply\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):   "skill\n",
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):         "lite\n",
+		filepath.Join(".opencode", "templates", "result-contract.md"):  "result\n",
 		filepath.Join(".opencode", "policies", "delivery.md"):          "delivery\n",
 		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
 		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",

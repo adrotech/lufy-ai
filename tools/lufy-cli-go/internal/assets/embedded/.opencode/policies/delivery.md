@@ -5,6 +5,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 ## Roles
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
+- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run mutating commands, install external skills, or perform delivery.
 - `explorer` investigates impact and repository context read-only; must not edit files.
 - `implementer` implements bounded changes and uses systemic workflow: initial context analysis, no repeated old-file rereads during normal implementation, bounded final reread of changed/affected old files, and validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
@@ -26,6 +27,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 ## Validation Tiers
 
+- **Routing gate** for non-trivial or ambiguous work: classify the request as T1 Full SDD, T2 SDD Lite, or T3 Express before choosing agents, context, permissions, artifacts, and review workload. Tiers classify proposals, functionalities, and tasks by risk/uncertainty/impact; they do not authorize delivery.
 - **Systemic analysis gate** for `explorer`/`implementer`: analyze existing files, dependencies, interconnections, feedback paths, and structure/behavior impact at the beginning of a coherent block/proposal.
 - **Implementation gate** for `implementer`: do not reread old files repeatedly during normal implementation after the initial analysis. Reread old files only when they were modified/affected, conflicts appear, new evidence invalidates the initial analysis, scope changes, a blocker appears, or risk requires confirmation.
 - **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
@@ -35,6 +37,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - **Local grouped validation**: prefer `scripts/validate.sh` when the change scope matches this repository's Go CLI/assets workflow; it runs the PR-aware whitespace gate plus available Go validation.
 - If change affects behavior, include functional evidence when practical.
 - Never claim validation passed without command evidence.
+- Delivery remains explicitly authorized regardless of tier. A T1/T2/T3 classification can recommend delivery readiness but cannot authorize Git/GH operations.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
 ## OpenSpec Task Closure

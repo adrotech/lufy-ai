@@ -131,6 +131,36 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	}
 }
 
+func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
+	target := t.TempDir()
+	writeVerifyDirs(t, target)
+	for _, rel := range fallbackRequiredManagedFiles {
+		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
+	}
+	var states []state.AssetState
+	for _, rel := range fallbackRequiredManagedFiles {
+		hash, err := assets.FileSHA256(filepath.Join(target, rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: "managed", Scope: "project", LastAction: "copy"})
+	}
+	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "templates"))); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+		t.Fatalf("Run(missing templates) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "templates")) {
+		t.Fatalf("missing templates output unexpected: %s", out.String())
+	}
+}
+
 func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	target := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {

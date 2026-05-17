@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  Kit instalable para sumar OpenCode, OpenSpec, agentes especializados y delivery trazable a repositorios existentes.
+  Kit instalable para sumar OpenCode, OpenSpec, harness SDD proporcional, agentes especializados y delivery trazable a repositorios existentes.
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
 
 ## Qué es `lufy-ai`
 
-`lufy-ai` es una capa operativa AI-first que se instala sobre un repositorio destino. Su alcance actual es copiar y mantener assets de OpenCode/OpenSpec, convenciones de agentes, políticas de delivery y tooling auxiliar para trabajar con cambios trazables.
+`lufy-ai` es una capa operativa AI-first que se instala sobre un repositorio destino. Su alcance actual es copiar y mantener assets de OpenCode/OpenSpec, convenciones de agentes, routing SDD proporcional, políticas de delivery y tooling auxiliar para trabajar con cambios trazables.
 
 No es un framework de aplicación, no genera proyectos por stack y no instala templates de frontend/backend/mobile. Las capacidades futuras viven en [`docs/roadmap.md`](docs/roadmap.md) hasta que existan como assets reales, instalables y validados.
 
@@ -32,10 +32,12 @@ El repositorio incluye hoy:
 
 | Área | Estado real |
 | --- | --- |
-| Agentes OpenCode | `.opencode/agents/` con `orchestrator`, `explorer`, `implementer`, `validator`, `reviewer` y `delivery`. |
+| Agentes OpenCode | `.opencode/agents/` con `orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer` y `delivery`. |
 | Comandos slash | `.opencode/commands/` con `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `opsx-version`. |
 | Skills OpenSpec | `.opencode/skills/sdd-workflow/` para explorar, proponer, aplicar, sincronizar, verificar y archivar cambios. |
-| Delivery | `.opencode/policies/delivery.md` con validación por tiers, branch safety, PRs y trazabilidad. |
+| Harness SDD | T1 Full SDD, T2 SDD Lite y T3 Express para elegir el flujo más pequeño que resuelva el pedido con seguridad. |
+| Templates operativos | `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md` para mini-specs T2 y handoffs recuperables. |
+| Delivery | `.opencode/policies/delivery.md` con invariantes compartidas; `.opencode/agents/delivery.md` como runbook operativo para Git/GH autorizado. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` y comandos `/observatory*` para la TUI local. |
 | CLI Go | `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `merge`, `upgrade` y `version`. |
 | Instalador Bash | `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy. |
@@ -46,8 +48,9 @@ El repositorio incluye hoy:
 No son capacidades instalables actuales:
 
 - templates por stack como React, Next.js, Astro, Expo o Spring;
-- detección automática de stack;
+- detección automática de stack integrada en la CLI;
 - subagentes de dominio adicionales no presentes en `.opencode/agents/`.
+- instalación automática de skills externas; AutoSkills solo puede sugerirse como bootstrap opcional con `npx autoskills --dry-run` y autorización explícita antes de cualquier mutación.
 
 El cambio `route-orchestrator-to-domain-agents` sigue siendo trabajo activo/futuro; no debe tratarse como una capacidad completada hasta que sus assets y validación estén disponibles.
 
@@ -149,10 +152,17 @@ El estado de instalación se guarda en `.lufy-ai/install-state.json`. Los assets
 
 ```mermaid
 flowchart LR
-    A["/opsx-explore"] --> B["/opsx-propose"]
+    R["sdd-router: T1/T2/T3"] --> T1["T1 Full SDD"]
+    R --> T2["T2 SDD Lite"]
+    R --> T3["T3 Express"]
+    T1 --> A["/opsx-explore"]
+    A --> B["/opsx-propose"]
     B --> C["/opsx-apply"]
+    T2 --> L["mini-spec / handoff WHEN-THEN"]
+    L --> C
+    T3 --> C
     C --> D["/opsx-verify"]
-    D --> E["/opsx-sync"]
+    D --> E["/opsx-sync si aplica"]
     E --> F["/opsx-archive"]
     C --> G["delivery: commit, push y PR solo con autorización"]
 ```
@@ -164,11 +174,22 @@ Roles instalados:
 | Agente | Responsabilidad |
 | --- | --- |
 | `orchestrator` | Enruta el trabajo y coordina el mínimo contexto necesario. |
+| `sdd-router` | Clasifica T1/T2/T3, recomienda execution mode, contexto mínimo, skill status y review workload. |
 | `explorer` | Investiga en modo read-only y produce handoffs para implementación. |
 | `implementer` | Aplica cambios acotados de código, tests, docs o configuración. |
 | `validator` | Valida y diagnostica sin editar archivos. |
 | `reviewer` | Revisa calidad, riesgos y cobertura sin editar. |
 | `delivery` | Con autorización explícita, maneja Git/GitHub, PRs y trazabilidad. |
+
+Tiers SDD proporcionales:
+
+- **T1 Full SDD**: nuevas capabilities, arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre; usa OpenSpec completo.
+- **T2 SDD Lite**: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usa mini-spec o handoff estructurado con criterios `WHEN`/`THEN`.
+- **T3 Express**: cambio trivial, mecánico, documental o local; permite implementación directa acotada y validación proporcional.
+
+Review Workload Harness ayuda a pensar en quien revisa: T1 y T2 con varios ejes de riesgo pueden dividirse en `review_slices` pequeños, cada uno con objetivo, archivos esperados, criterios `WHEN`/`THEN`, validación, riesgo y guía de PR. No obliga a micro-PRs para cambios simples; T3 se mantiene directo salvo que aparezca riesgo nuevo.
+
+La resolución de skills es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. AutoSkills no es dependencia del producto; si falta cobertura local, el router puede sugerir `npx autoskills --dry-run` como exploración opcional y nunca instalar sin autorización explícita.
 
 ## Flujo de ramas y releases
 
@@ -212,6 +233,7 @@ No hay suite Node/TypeScript de producto en la raíz del repo; no se debe asumir
 - [`docs/github-branch-settings.md`](docs/github-branch-settings.md): settings esperados de ramas GitHub para `develop`/`main`.
 - [`docs/roadmap.md`](docs/roadmap.md): hardening, templates futuros, detección de stack y subagentes no instalables hoy.
 - [`openspec/README.md`](openspec/README.md): estructura y ciclo OpenSpec.
+- [`.opencode/README.md`](.opencode/README.md): agentes, templates y harness routing instalado.
 - [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md): detalles técnicos, comandos y validación de la CLI Go.
 - [`AGENTS.md.template`](AGENTS.md.template): plantilla base para convenciones del repositorio destino.
 

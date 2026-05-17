@@ -1,6 +1,6 @@
 # OpenSpec
 
-Workflow de especificación dirigida por specs (SDD) para este proyecto.
+Workflow de especificación dirigida por specs (SDD) para este proyecto. El flujo ahora se enruta proporcionalmente: T1 Full SDD usa OpenSpec completo, T2 SDD Lite usa mini-spec o handoff estructurado, y T3 Express permite implementación acotada con validación proporcional. Para cambios grandes, el Review Workload Harness ayuda a dividir features en slices revisables por humanos.
 
 ## Estructura
 
@@ -29,11 +29,14 @@ Usa los comandos instalados en `.opencode/commands/` y skills de `.opencode/skil
 
 ## Flujo
 
-1. **Propose**: Crear artefactos en `openspec/changes/<change>/`, incluyendo specs delta
-2. **Apply**: Implementar tareas checklist
-3. **Verify**: Correr validación final agrupada, incluyendo tests y coverage cuando existan para el alcance real
-4. **Sync**: Aplicar deltas validados a `openspec/specs/` sin mover el cambio
-5. **Archive**: Mover a `openspec/changes/archive/`
+1. **Route**: Clasificar con `sdd-router` cuando el pedido sea no trivial, ambiguo o riesgoso.
+2. **T1 Propose**: Crear artefactos en `openspec/changes/<change>/`, incluyendo specs delta.
+3. **T2 Lite**: Usar mini-spec o handoff estructurado con criterios `WHEN`/`THEN` cuando Full SDD sea excesivo.
+4. **Review slices**: Para T1 o T2 con varios riesgos, definir slices revisables con objetivo, archivos esperados, criterios, validación y riesgo.
+5. **Apply**: Implementar tareas checklist.
+6. **Verify**: Correr validación final agrupada, incluyendo tests y coverage cuando existan para el alcance real.
+7. **Sync**: Aplicar deltas validados a `openspec/specs/` sin mover el cambio cuando exista delta OpenSpec.
+8. **Archive**: Mover a `openspec/changes/archive/`.
 
 ## Specs delta core v2
 
