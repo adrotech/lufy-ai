@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
@@ -22,6 +23,7 @@ type Options struct {
 	Verbose               bool
 	Deep                  bool
 	AllowCatalogNewAssets bool
+	AllowMissingAgentsRef bool
 	Scope                 assets.Scope
 }
 
@@ -62,7 +64,7 @@ var fallbackRequiredDirs = []string{
 }
 
 var fallbackRequiredManagedFiles = []string{
-	"AGENTS.md",
+	agentsref.HarnessFile,
 	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
 	filepath.Join("openspec", "config.yaml"),
@@ -239,6 +241,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		emit("ok", clean, "archivo crítico")
 	}
+	verifyAgentsReference(target, opts.AllowMissingAgentsRef, emitAsset)
 
 	for _, asset := range st.Assets {
 		clean, err := platform.EnsureRelativeSafe(asset.TargetRel)
@@ -283,6 +286,31 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	emit("ok", "", "verify estructural completo")
 	return finish(nil)
+}
+
+func verifyAgentsReference(target string, allowMissing bool, emitAsset func(level, path, policy, recommendedAction, format string, args ...any)) {
+	exists, hasReference, err := agentsref.Status(target)
+	if err != nil {
+		emitAsset("fail", agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "integración AGENTS insegura: %s", err.Error())
+		return
+	}
+	if !exists {
+		level := "fail"
+		if allowMissing {
+			level = "warn"
+		}
+		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "falta AGENTS.md con referencia %s", agentsref.Reference)
+		return
+	}
+	if !hasReference {
+		level := "fail"
+		if allowMissing {
+			level = "warn"
+		}
+		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "AGENTS.md no referencia %s", agentsref.Reference)
+		return
+	}
+	emitAsset("ok", agentsref.AgentsFile, "user-owned-reference", "", "referencia %s presente", agentsref.Reference)
 }
 
 func catalogRequirements(assetMap map[string]state.AssetState) ([]string, []string) {

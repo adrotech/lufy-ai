@@ -156,7 +156,9 @@ lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
 
 `--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
 
-La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `AGENTS.md`, `tui.json` y `openspec` base. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
+La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `lufy-ia.harness.md`, `tui.json` y `openspec` base. `AGENTS.md` queda como archivo propio del proyecto: `install` solo crea o agrega la referencia mínima `@lufy-ia.harness.md` con backup/`--yes` cuando hace falta, y no lo registra como asset completo por hash. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
+
+Durante `sync`, la CLI actualiza `lufy-ia.harness.md` mediante manifest/SHA-256 y preserva `AGENTS.md` byte-for-byte. Si falta `@lufy-ia.harness.md`, `sync` reporta una acción explícita; para reparar, ejecuta `lufy-ai install --target /ruta/a/tu/proyecto --yes` o edita `AGENTS.md` manualmente. No existe flag `--repair-agents-reference` en este cambio.
 
 Después de `install`, ejecuta el verificador canónico:
 
@@ -259,7 +261,7 @@ El wrapper local `scripts/install.sh` busca primero `tools/lufy-cli-go/bin/lufy-
 
 ### `lufy-ai verify` falla después de instalar
 
-Revisa el error exacto. `verify` valida estructura, estado `.lufy-ai/install-state.json`, hashes SHA-256 y configuración gestionada. Si editaste assets gestionados localmente, puede reportar drift o conflictos que requieren revisión manual.
+Revisa el error exacto. `verify` valida estructura, estado `.lufy-ai/install-state.json`, hashes SHA-256, configuración gestionada y la integración user-owned de `AGENTS.md`. La ausencia de `@lufy-ia.harness.md` en `AGENTS.md` es un `fail` accionable: agrega la referencia con `lufy-ai install --target <dir> --yes` o por edición manual. Si editaste assets gestionados localmente, puede reportar drift o conflictos que requieren revisión manual.
 
 ### No existe artifact para mi plataforma
 
