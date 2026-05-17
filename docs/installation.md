@@ -1,6 +1,6 @@
 # Instalación de lufy-ai
 
-Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino.
+Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino. Los assets actuales incluyen OpenCode/OpenSpec, harness SDD proporcional, `sdd-router`, templates T2/result y políticas de delivery.
 
 Versión estable actual: `v0.3.0`.
 
@@ -9,6 +9,7 @@ Versión estable actual: `v0.3.0`.
 - Un directorio escribible para el binario, por ejemplo `~/.local/bin` en macOS/Linux/WSL.
 - Acceso a una release publicada de GitHub con artifacts y checksums.
 - Un repositorio destino donde instalar los assets de OpenCode/OpenSpec.
+- OpenCode para consumir agentes, comandos, templates y plugin instalados.
 
 El bootstrap Bash aplica a entornos Unix-like: macOS, Linux y WSL. En Windows nativo usa el binario manual si la release incluye `lufy-ai_<version>_windows_amd64.zip` o `lufy-ai_<version>_windows_arm64.zip`.
 
@@ -154,6 +155,8 @@ lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
 ```
 
 `--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
+
+La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `AGENTS.md`, `tui.json` y `openspec` base. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
 
 Después de `install`, ejecuta el verificador canónico:
 

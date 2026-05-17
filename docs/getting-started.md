@@ -2,12 +2,14 @@
 
 ## Qué es `lufy-ai`
 
-`lufy-ai` es un kit instalable para sumar un flujo AI-first a un repositorio existente. No crea una aplicación ni instala templates por stack; copia assets operativos para usar OpenCode, OpenSpec, subagentes especializados y reglas de delivery trazable.
+`lufy-ai` es un kit instalable para sumar un flujo AI-first a un repositorio existente. No crea una aplicación ni instala templates por stack; copia assets operativos para usar OpenCode, OpenSpec, harness SDD proporcional, subagentes especializados y reglas de delivery trazable.
 
 Incluye:
 
 - agentes OpenCode con responsabilidades separadas;
+- `sdd-router` para clasificar T1 Full SDD, T2 SDD Lite o T3 Express antes de usar flujos pesados;
 - comandos slash `/opsx-*` para el ciclo OpenSpec core v2;
+- templates operativos `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`;
 - política de delivery en `.opencode/policies/delivery.md`;
 - plugin local Agent Observatory para la TUI;
 - CLI Go `lufy-ai` para `install`, `verify`, `backup`, `restore`, `sync`, `status`, `upgrade` y `version`;
@@ -116,7 +118,7 @@ Verificar el target instalado:
 1. resuelve `--target` a una ruta segura;
 2. construye un plan de instalación;
 3. respeta `--dry-run` sin mutaciones;
-4. copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base);
+4. copia assets gestionados del catálogo (`.opencode`, `.opencode/templates`, `AGENTS.md`, `tui.json`, `openspec` base);
 5. crea o mergea `opencode.json` de forma conservadora: preserva claves desconocidas, agrega solo estructura mínima gestionada y, si Engram está habilitado, conserva otros MCP locales dentro de `mcp`;
 6. no trata `opencode.json` como asset completo por hash: queda fuera del manifest de assets completos y se valida por JSON/estructura mínima durante `verify`;
 7. registra `.lufy-ai/install-state.json` con hashes SHA-256 para assets completos gestionados;
@@ -163,11 +165,15 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 ## Uso después de instalar
 
 1. Revisa `AGENTS.md` en el repositorio destino y ajusta convenciones locales.
-2. Reinicia OpenCode para cargar agentes, comandos y plugin.
-3. Usa `/opsx-explore` para investigar antes de cambios amplios.
-4. Usa `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync` y `/opsx-archive` para cambios OpenSpec.
-5. Usa `opsx-version` para reportar la fuente OpenSpec efectiva: `PATH`, cache local o baseline embebida offline.
-6. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
+2. Reinicia OpenCode para cargar agentes, comandos, templates y plugin.
+3. Deja que `sdd-router` clasifique cambios no triviales: T1 Full SDD, T2 SDD Lite o T3 Express.
+4. Usa `/opsx-explore` y `/opsx-propose` para T1 o cambios con alta incertidumbre.
+5. Usa `.opencode/templates/sdd-lite.md` para T2 cuando baste un mini-spec profesional con criterios `WHEN`/`THEN`.
+6. Usa `/opsx-apply`, `/opsx-verify`, `/opsx-sync` y `/opsx-archive` según corresponda.
+7. Usa `opsx-version` para reportar la fuente OpenSpec efectiva: `PATH`, cache local o baseline embebida offline.
+8. Deja Git/GitHub en manos de `delivery` solo con autorización explícita.
+
+Para features grandes, piensa en el reviewer humano desde el diseño. El harness puede proponer `review_slices`: subproblemas pequeños con objetivo, archivos esperados, criterios `WHEN`/`THEN`, validación y guía de PR. Úsalos en T1 y T2 con varios riesgos; evita fragmentar T3 o cambios pequeños sin necesidad.
 
 ### Migración mínima desde assets `v0.2.0`
 
@@ -219,9 +225,9 @@ El workflow `.github/workflows/release.yml` construye artifacts versionados, che
 
 No hay toolchain Node/TypeScript de producto en la raíz; no asumas `npm test`, `npm run typecheck` ni `tsc` global.
 
-## Templates y stack detection
+## Harness routing, templates y stack detection
 
-Los templates por stack, detección de stack y subagentes adicionales son roadmap, no estado instalable actual. Ver [`docs/roadmap.md`](roadmap.md) para el contexto futuro.
+Los templates operativos de proceso (`sdd-lite` y `result-contract`) sí son assets instalables. Los templates por stack, detección de stack integrada en CLI y subagentes de dominio adicionales siguen siendo roadmap. AutoSkills puede sugerirse como bootstrap opcional mediante `npx autoskills --dry-run`, pero no reemplaza skills locales ni se ejecuta sin autorización explícita. Ver [`docs/roadmap.md`](roadmap.md) para el contexto futuro.
 
 ## Solución de problemas
 

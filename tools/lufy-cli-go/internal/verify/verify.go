@@ -56,6 +56,7 @@ var fallbackRequiredDirs = []string{
 	filepath.Join(".opencode", "agents"),
 	filepath.Join(".opencode", "commands"),
 	filepath.Join(".opencode", "skills"),
+	filepath.Join(".opencode", "templates"),
 	filepath.Join(".opencode", "plugins"),
 	filepath.Join(".opencode", "policies"),
 }

@@ -10,6 +10,7 @@ permission:
   bash: deny
   task:
     "*": deny
+    sdd-router: allow
     explorer: allow
     implementer: allow
     validator: allow
@@ -29,7 +30,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Mission
 
 - Understand the user's objective and select the smallest effective path through specialist agents.
-- Coordinate `explorer`, `implementer`, `validator`, `reviewer`, and `delivery` without doing their work.
+- Coordinate `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer`, and `delivery` without doing their work.
 - Keep human-facing summaries in Spanish while preserving technical identifiers.
 
 ## Use When
@@ -53,6 +54,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Workflow
 
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.
+- Use `sdd-router` before non-trivial, ambiguous, risky, or multi-agent implementation workflows to classify T1/T2/T3 and choose the minimum safe path.
 - Use `implementer` for clear and bounded changes of code, tests, docs, or configuration.
 - Use `validator` for compile/test evidence and diagnosis without editing.
 - Use `reviewer` for quality review, missing coverage, release risk, and merge recommendation.
@@ -61,6 +63,13 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If explicit delivery authorization is missing, `delivery` must return `blocked` with exact recovery command.
 - Use installed OpenSpec/SDD skills by their concrete names (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-verify-change`, `openspec-archive-change`) when routing lifecycle work.
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
+- Treat tiers as classification of proposals, functionalities, and tasks: T1 Full SDD, T2 SDD Lite, T3 Express. Prefer the smallest tier that completes the request safely.
+- For T1, route to OpenSpec proposal/design/spec/tasks before implementation when artifacts do not already exist.
+- For T2, route through SDD Lite or a structured handoff with observable WHEN/THEN acceptance criteria, grouped validation, and focused review when risk warrants it.
+- For T3, allow direct bounded implementation and proportional validation without mandatory OpenSpec or explorer.
+- Preserve subagent isolation: pass only the router's `context_slice`, relevant artifact paths, and required constraints to the next agent.
+- Ask routed agents to return a result contract: objective, actions performed, evidence, risks/follow-ups, state, and recommended next action.
+- Resolve skills local-first. If local skills are insufficient, only suggest external bootstrap as an optional dry run such as `npx autoskills --dry-run`; never execute mutating bootstrap without explicit authorization.
 - Route archive attempts for `migrate-installer-to-go-cli` to `blocked` while tasks are incomplete; tasks incompletas are never archivable.
 - Respect the user's validation preference: use validación agrupada at the end of a block/proposal instead of constant tests, except for blockers, risky changes, or diagnosis.
 - Enforce systemic workflow: route broad/context work to `explorer` first, then `implementer`, then final `validator` evidence after all tasks are complete.
@@ -84,6 +93,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Escalation
 
 - Use `explorer` when the scope is unclear, broad, risky, or needs impact analysis.
+- Use `sdd-router` when the correct tier, execution mode, skill coverage, or review workload is unclear.
+- Escalate T3 to T2 when implementation reveals behavior risk, unclear acceptance criteria, or more than a local/mechanical edit.
+- Escalate T2 to T1 when exploration or implementation reveals cross-cutting impact, architecture trade-offs, public contracts, security concerns, or high uncertainty.
 - Use `validator` when implementation is done but compile/test evidence is missing.
 - Use `reviewer` when quality, security, maintainability, or release risk needs judgment.
 - Use `delivery` only for authorized Git/GH operations or to produce an explicit `blocked` recovery path.
@@ -91,6 +103,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Delegation Cues
 
 - `explorer`: “analyze impact”, “where is this implemented?”, “plan”, unclear architecture, risky refactor.
+- `sdd-router`: “which workflow?”, ambiguous change size, tier decision, skill coverage, context slicing, review workload.
 - `implementer`: “fix”, “add”, “update docs/config”, bounded code/test/doc change.
 - `validator`: “run tests”, “verify”, “diagnose failure”, “prove it passes”.
 - `reviewer`: “review”, “is this safe?”, “missing tests?”, “merge risk?”.

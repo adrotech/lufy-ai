@@ -22,6 +22,8 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join(".opencode", "templates", "result-contract.md"):                     false,
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 	}
@@ -71,6 +73,8 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join(".opencode", "templates", "result-contract.md"):                     false,
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 	}
@@ -189,6 +193,8 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         "version\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):                      "skill\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): "sync skill\n",
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            "lite\n",
+		filepath.Join(".opencode", "templates", "result-contract.md"):                     "result\n",
 		filepath.Join(".opencode", "policies", "delivery.md"):                             "delivery\n",
 		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):                    "plugin\n",
 		filepath.Join(".opencode", "agent-observatory", "state.ts"):                       "state\n",
