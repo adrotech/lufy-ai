@@ -2,7 +2,7 @@
 description: Delivery dispatcher for branch safety, commit, push, PRs, and traceability gates.
 mode: subagent
 temperature: 0.1
-steps: 12
+steps: 24
 permission:
   edit: deny
   write: deny

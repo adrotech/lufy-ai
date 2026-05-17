@@ -2,7 +2,7 @@
 description: Read-only quality reviewer for code quality, architecture checks, missing tests, and release risk.
 mode: subagent
 temperature: 0.1
-steps: 12
+steps: 16
 permission:
   edit: deny
   write: deny

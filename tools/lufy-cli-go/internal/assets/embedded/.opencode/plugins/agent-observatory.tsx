@@ -545,6 +545,8 @@ function registerEvents(api: TuiPluginApi, ingest: (event: ObservatoryEvent) => 
 }
 
 function registerCommands(api: TuiPluginApi, prefs: Record<string, BooleanSignal>) {
+  if (!api.command) return;
+
   const cmds = [
     { title: 'Toggle Observatory', value: `${PLUGIN_ID}.toggle`, slash: { name: 'observatory' }, onSelect: prefs.enabled.toggle },
     { title: 'Toggle Agents', value: `${PLUGIN_ID}.toggle-agents`, slash: { name: 'observatory-agents' }, onSelect: prefs.availableAgentsExpanded.toggle },
