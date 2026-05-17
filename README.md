@@ -1,7 +1,7 @@
 # lufy-ai
 
 <p align="center">
-  <img src="docs/assets/brand/lufy-ai-banner.png" alt="Banner de lufy-ai para el flujo OpenCode y OpenSpec" width="920">
+  <img src="docs/assets/brand/lufy-ai-harness-banner.png" alt="Banner de lufy-ai para el flujo OpenCode y OpenSpec" width="920">
 </p>
 
 <p align="center">
