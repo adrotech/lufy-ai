@@ -2,7 +2,7 @@
 description: Read-only explorer for impact analysis, file discovery, and implementation planning.
 mode: subagent
 temperature: 0.1
-steps: 8
+steps: 16
 permission:
   edit: deny
   write: deny

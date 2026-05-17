@@ -2,7 +2,7 @@
 description: Implementation specialist for bounded code, tests, docs, and configuration changes.
 mode: subagent
 temperature: 0.1
-steps: 18
+steps: 24
 permission:
   edit: allow
   write: allow

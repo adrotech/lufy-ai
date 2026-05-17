@@ -2,7 +2,7 @@
 description: Lightweight read-only router for proportional SDD tiering, context slicing, and skill resolution.
 mode: subagent
 temperature: 0.1
-steps: 6
+steps: 8
 permission:
   edit: deny
   write: deny
@@ -35,6 +35,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Use When
 
 - A request is non-trivial, ambiguous, cross-cutting, risky, or may need multiple agents.
+- The request asks what remains, what is pending, how specs/backlog/roadmap/OpenSpec state relate, or whether work should continue/verify/archive/deliver.
 - The orchestrator needs to decide between OpenSpec, SDD Lite, Express implementation, validation, review, or delivery.
 - Local skill coverage is unclear and a safe bootstrap recommendation may be useful.
 

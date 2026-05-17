@@ -2,7 +2,7 @@
 description: Primary coordinator that routes work to subagents, reviewer, and delivery with minimal overhead.
 mode: primary
 temperature: 0.1
-steps: 8
+steps: 12
 permission:
   edit: deny
   write: deny
@@ -55,6 +55,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.
 - Use `sdd-router` before non-trivial, ambiguous, risky, or multi-agent implementation workflows to classify T1/T2/T3 and choose the minimum safe path.
+- Treat requests about specs, backlog, roadmap, active OpenSpec changes, pending work, or what remains to do as non-trivial routing questions; call `sdd-router` before `explorer` unless the user explicitly requested only read-only exploration.
 - Use `implementer` for clear and bounded changes of code, tests, docs, or configuration.
 - Use `validator` for compile/test evidence and diagnosis without editing.
 - Use `reviewer` for quality review, missing coverage, release risk, and merge recommendation.
@@ -92,8 +93,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Escalation
 
-- Use `explorer` when the scope is unclear, broad, risky, or needs impact analysis.
-- Use `sdd-router` when the correct tier, execution mode, skill coverage, or review workload is unclear.
+- Use `sdd-router` when the correct tier, execution mode, skill coverage, review workload, OpenSpec state, backlog scope, roadmap impact, or pending-work status is unclear.
+- Use `explorer` when impact analysis is needed after routing, or when the user explicitly asked only for read-only exploration.
 - Escalate T3 to T2 when implementation reveals behavior risk, unclear acceptance criteria, or more than a local/mechanical edit.
 - Escalate T2 to T1 when exploration or implementation reveals cross-cutting impact, architecture trade-offs, public contracts, security concerns, or high uncertainty.
 - Use `validator` when implementation is done but compile/test evidence is missing.
@@ -102,8 +103,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Delegation Cues
 
-- `explorer`: “analyze impact”, “where is this implemented?”, “plan”, unclear architecture, risky refactor.
-- `sdd-router`: “which workflow?”, ambiguous change size, tier decision, skill coverage, context slicing, review workload.
+- `sdd-router`: “which workflow?”, ambiguous change size, tier decision, specs/backlog/roadmap/OpenSpec status, skill coverage, context slicing, review workload.
+- `explorer`: “analyze impact”, “where is this implemented?”, “plan”, unclear architecture, risky refactor after routing or explicit read-only exploration.
 - `implementer`: “fix”, “add”, “update docs/config”, bounded code/test/doc change.
 - `validator`: “run tests”, “verify”, “diagnose failure”, “prove it passes”.
 - `reviewer`: “review”, “is this safe?”, “missing tests?”, “merge risk?”.

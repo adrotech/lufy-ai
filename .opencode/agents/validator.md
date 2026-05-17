@@ -2,7 +2,7 @@
 description: Read-only validator for compile/test evidence and failure diagnosis.
 mode: subagent
 temperature: 0.1
-steps: 8
+steps: 20
 permission:
   edit: deny
   write: deny
