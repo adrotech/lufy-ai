@@ -97,6 +97,40 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	}
 }
 
+func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	customAgents := "# AGENTS.md\n\nCustom project guide\n"
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), customAgents)
+
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "adopt-merge-block", "AGENTS.md") {
+		t.Fatalf("expected adopt-merge-block without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents {
+		t.Fatalf("custom AGENTS.md was rewritten: %q", got)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	agents := st.AssetMap()["AGENTS.md"]
+	if agents.LastAction != "adopt-merge-block" || agents.TargetSHA256 == agents.SourceSHA256 {
+		t.Fatalf("AGENTS.md was not adopted as custom merge-block asset: %#v", agents)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
+		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
 func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)

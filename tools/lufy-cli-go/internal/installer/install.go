@@ -217,6 +217,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		}
 		prev, managed := previousAssets[asset.TargetRel]
 		if !managed {
+			if asset.Policy == assets.PolicyMergeBlock {
+				plan.Actions = append(plan.Actions, Action{Kind: "adopt-merge-block", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "archivo merge-block existente no gestionado; se adopta preservando contenido local", Risk: "low", SourceHash: asset.SourceSHA256, CurrentHash: currentHash})
+				continue
+			}
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Policy: asset.Policy, Reason: "archivo existente no gestionado con contenido distinto", Risk: "high", CurrentHash: currentHash, SourceHash: asset.SourceSHA256})
 			continue
 		}
@@ -284,7 +288,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: config.OpenCodeFile, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
 	plan.Actions = append(plan.Actions, Action{Kind: "verify", Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "write-lufy-new": 5, "merge-json": 6, "verify": 7, "skip": 8}
+		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "adopt-merge-block": 5, "write-lufy-new": 6, "merge-json": 7, "verify": 8, "skip": 9}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -344,6 +348,12 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-block] %s\n", action.Target)
+		case "adopt-merge-block":
+			if err := writeAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [adopt-merge-block] %s\n", action.Target)
 		case "write-lufy-new":
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
@@ -441,7 +451,7 @@ func hasContentMutation(actions []Action) bool {
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
-		case "mkdir", "copy", "update-managed", "merge-block", "write-lufy-new", "merge-json", "backup":
+		case "mkdir", "copy", "update-managed", "merge-block", "adopt-merge-block", "write-lufy-new", "merge-json", "backup":
 			return true
 		}
 	}
@@ -453,7 +463,7 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 	lastAction := map[string]string{}
 	lufyNew := map[string]bool{}
 	for _, action := range plan.Actions {
-		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "skip" {
+		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "adopt-merge-block" || action.Kind == "skip" {
 			lastAction[action.Target] = action.Kind
 		}
 		if action.Kind == "write-lufy-new" {
@@ -493,7 +503,7 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 			assetState.AncestorRel = prev.AncestorRel
 			assetState.AncestorHash = prev.AncestorHash
 		}
-		if asset.Policy.SupportsAncestor() && (action == "copy" || action == "update-managed" || action == "merge-block") {
+		if asset.Policy.SupportsAncestor() && (action == "copy" || action == "update-managed" || action == "merge-block" || action == "adopt-merge-block") {
 			ancestorRel, err := state.AncestorRel(asset.TargetRel)
 			if err != nil {
 				return nil, err
