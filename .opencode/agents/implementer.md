@@ -19,9 +19,7 @@ permission:
     "go test*": allow
     "go build*": allow
     "go vet*": allow
-    "openspec status*": allow
-    "openspec list*": allow
-    "openspec instructions*": allow
+    "openspec *": allow
     "ruby -e *": allow
     "rg *": allow
     "git status*": allow
