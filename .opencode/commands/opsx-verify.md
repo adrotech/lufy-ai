@@ -12,6 +12,8 @@ Verify implementation against OpenSpec change artifacts.
 - Verify scenarios are testable with `WHEN` and `THEN`; `GIVEN` is optional.
 - Report unsynced delta specs as blockers for archive and recommend `/opsx-sync <change>`.
 - Run grouped validation evidence for the block/proposal when applicable; avoid constant tests unless blocked, risky, or diagnosing.
+- Evaluate gate state at task/block/review-slice scope, not per micro-checkbox.
+- If validation passes but Git/GH delivery or sync remains, report `validated` with `delivery_pending`, `sync_pending`, or `blocked`; do not perform delivery.
 - Report findings.
 - Report incomplete tasks as archive blockers.
 - `migrate-installer-to-go-cli` must be `blocked` for archive while tasks are incomplete.

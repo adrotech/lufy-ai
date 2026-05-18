@@ -53,6 +53,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Inspect diffs and tests to select focused validation.
 - Diagnose failures and identify likely owner of next fix.
 - Produce validation evidence for `orchestrator`, `reviewer`, or `delivery`.
+- Evaluate the coherent task/block/review-slice gate, not every micro-checkbox, and report whether the next state is `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state.
 - Build a matrix: static checks, compile/typecheck, targeted tests, full tests, lint/format, functional/manual evidence.
 - For final block/proposal gates, run the grouped validation available for the real scope, including tests and coverage when commands exist.
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` as the grouped local validation command because it includes the PR-aware whitespace gate before Go tests/build.
@@ -64,6 +65,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 - Do not edit files.
 - Do not commit, push, create PRs, or update GitHub Projects.
+- Do not report `closed` based on validation alone; if Git/GH delivery or sync remains, report `delivery_pending`, `sync_pending`, or `blocked`.
 - Do not claim validation passed without command evidence.
 - Prefer grouped block/proposal gates unless final delivery requires heavier gates or diagnosis requires focused checks.
 - Do not reread broad old-file context during validation unless it was modified/affected, conflicts with evidence, or is needed to diagnose a failure; prefer diffs and changed-file review for final coherence.
@@ -78,6 +80,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Root-cause diagnosis must separate observed failure from hypothesis.
 - For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
+- For OpenSpec verification, treat checked tasks as necessary but not sufficient for archive; closure also requires validation, delivery/sync, and blocker evidence according to `.opencode/policies/delivery.md`.
 
 ## Escalation
 

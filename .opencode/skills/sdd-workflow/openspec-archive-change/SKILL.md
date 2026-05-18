@@ -54,7 +54,20 @@ Archive a completed change in the experimental workflow.
 
    **If no tasks file exists:** Return `blocked` unless the schema explicitly has no tasks artifact.
 
-4. **Assess delta spec sync state**
+   **If all tasks are checked:** Continue gate checks; checked tasks are necessary but not sufficient for archive, `closed`, or delivery completion.
+
+4. **Assess closure gate state**
+
+   Before archive, require evidence that the change is `closed` or explicitly does not need the remaining gates:
+   - Proportional validation evidence exists for the coherent task/block/proposal.
+   - Required Git/GH delivery, PR, issue/project sync, or external publishing is either completed by authorized `delivery` or explicitly not required for this scope.
+   - No `delivery_pending`, `sync_pending`, validation, or blocker state remains.
+
+   **If closure evidence is missing:**
+   - Return `blocked`, `delivery_pending`, or `sync_pending` with exact recovery instruction.
+   - Do not treat task checkboxes or user confirmation as sufficient.
+
+5. **Assess delta spec sync state**
 
    Check for delta specs at `openspec/changes/<name>/specs/`. If none exist, proceed without sync prompt.
 
@@ -70,7 +83,7 @@ Archive a completed change in the experimental workflow.
 
    If the user chooses sync, use the installed concrete sync skill and then re-check all artifact, task and sync gates before archive.
 
-5. **Perform the archive**
+6. **Perform the archive**
 
    Create the archive directory if it doesn't exist:
    ```bash
@@ -87,7 +100,7 @@ Archive a completed change in the experimental workflow.
    mv openspec/changes/<name> openspec/changes/archive/YYYY-MM-DD-<name>
    ```
 
-6. **Display summary**
+7. **Display summary**
 
    Show archive completion summary including:
    - Change name
@@ -106,13 +119,14 @@ Archive a completed change in the experimental workflow.
 **Archived to:** openspec/changes/archive/YYYY-MM-DD-<name>/
 **Specs:** ✓ Synced to main specs (or "No delta specs" or "Sync skipped")
 
-All artifacts complete. All tasks complete.
+All artifacts complete. All task checkboxes complete. Closure gates satisfied.
 ```
 
 **Guardrails**
 - Always prompt for change selection if not provided
 - Use artifact graph (openspec status --json) for completion checking
 - Block archive on incomplete artifacts/tasks; do not override this with user confirmation
+- Block archive on unresolved validation, delivery, sync, or closure gate state; do not override this with user confirmation
 - Preserve .openspec.yaml when moving to archive (it moves with the directory)
 - Show clear summary of what happened
 - If sync is requested, use available concrete OpenSpec sync tooling; do not reference generic workflow modes.
