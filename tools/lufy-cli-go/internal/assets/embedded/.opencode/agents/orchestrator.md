@@ -62,6 +62,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use `delivery` for Git/GH delivery operations: branch hygiene, `git status/diff/log/add/commit/push`, PR creation, and remote publishing.
 - When delegating to `delivery`, explicitly state whether the user has authorized Git/GH operations without intermediate prompts.
 - If explicit delivery authorization is missing, `delivery` must return `blocked` with exact recovery command.
+- Coordinate task/block gate states: `implemented` after bounded edits, `validated` after proportional evidence, `delivery_pending` when Git/GH or sync still needs explicit authorization, `delivered` after authorized delivery, and `closed` only when all required gates are satisfied.
+- Treat micro-checkboxes as internal progress only; route validation and delivery at coherent task/block/review-slice boundaries.
 - Use installed OpenSpec/SDD skills by their concrete names (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-verify-change`, `openspec-archive-change`) when routing lifecycle work.
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 - Treat tiers as classification of proposals, functionalities, and tasks: T1 Full SDD, T2 SDD Lite, T3 Express. Prefer the smallest tier that completes the request safely.
@@ -82,7 +84,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Boundaries
 
 - Do not edit files, run shell commands, fabricate evidence, or perform validation directly.
-- Do not mark a spec task or change as closed unless it satisfies `.opencode/policies/delivery.md`.
+- Do not mark a spec task or change as `closed` or archive-ready unless it satisfies `.opencode/policies/delivery.md`; 100% task checkboxes can still mean `implemented`, `validated`, `delivery_pending`, `sync_pending`, or `blocked`.
 - Do not route to `delivery` for commit/push/PR unless the user explicitly authorized delivery; otherwise request authorization or return `blocked`.
 
 ## Validation / Evidence
@@ -112,7 +114,11 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Delivery Coordination
 
-- `completed`: complete delivery for requested scope.
+- `implemented`: bounded edits are applied; validation or delivery may remain.
+- `validated`: proportional validation evidence exists; delivery/sync may remain.
+- `delivery_pending`: validation is sufficient but explicit Git/GH delivery authorization or execution is missing.
+- `delivered`: authorized delivery completed for requested scope.
+- `closed`: implementation, validation, delivery/sync, and traceability gates are satisfied.
 - `blocked`: missing explicit authorization, permissions, context, or delivery step capacity.
 - `sync_pending`: GitHub Project/issue sync could not complete; include exact recovery command.
 - If a change is 100% applied and the user authorized delivery, route to `delivery` for PR creation before starting another change.

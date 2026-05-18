@@ -11,6 +11,7 @@ Operational guide for coding agents working in this repository.
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
+- **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 
 ## Source Layout
 
@@ -43,6 +44,7 @@ Run from repository root.
 ```bash
 # Replace with real validation commands.
 # Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
+# Evaluate validation at task/block/review-slice boundaries, not after every internal micro-checkbox.
 # For PR-bound changes, reproduce the PR whitespace range, for example: git diff --check origin/develop...HEAD after commits, or git diff --check origin/develop with pending worktree changes.
 ```
 
@@ -75,6 +77,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
+- Task/block states: `implemented` means edits are applied; `validated` means proportional evidence exists; `delivery_pending` means authorized Git/GH or sync still remains; `delivered` means authorized delivery ran; `closed` requires all implementation, validation, delivery/sync, and traceability gates.
 
 ## Skill Resolution
 
@@ -87,6 +90,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Make focused, minimal changes
 - Do not revert unrelated local modifications
 - Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
+- Do not treat `tasks.md` checkboxes or micro-checkboxes as `closed`/archive-ready without the task/block gate evidence
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
 - Pass only minimal role-scoped context to subagents and ask for a result contract: objective, actions, evidence, risks, state, and next action

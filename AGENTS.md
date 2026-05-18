@@ -37,6 +37,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
 - Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
+- Evaluar gates por task, bloque coherente o review slice; los micro-checkboxes internos no implican cierre, archive-ready ni delivery por sí solos.
 - Para cambios que terminarán en PR contra `develop`, el chequeo de whitespace debe reproducir el rango del PR: usar `git diff --check origin/develop...HEAD` sobre commits ya preparados y `git diff --check origin/develop` cuando haya cambios pendientes en worktree. No basta `git diff --check` local, porque puede omitir whitespace introducido en commits anteriores de la rama.
 - Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
 
@@ -70,6 +71,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
+- Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH o sync; `delivered` = delivery autorizado ejecutado; `closed` = implementación, validación, delivery/sync requeridos y precondiciones satisfechas.
 
 ## Roles de agentes
 
@@ -88,7 +90,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Implementar tareas: `opsx-apply` / skill `openspec-apply-change`.
 - Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
-- Una tarea OpenSpec solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md`.
+- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md` con estado explícito.
 - En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
