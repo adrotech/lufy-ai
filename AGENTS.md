@@ -76,7 +76,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 ## Roles de agentes
 
 - `orchestrator`: coordina y enruta; no edita ni ejecuta shell.
-- `sdd-router`: clasifica T1/T2/T3 en modo read-only, recomienda execution mode, contexto mínimo, skill status y review workload.
+- `sdd-router`: clasifica T1/T2/T3 en modo read-only/no-shell, recomienda execution mode, contexto mínimo, skill status y review workload; no ejecuta shell/Git/OpenSpec/validación y deriva a `explorer`, `validator` o `delivery` cuando se requiere estado, evidencia o Git/GH.
 - `explorer`: investiga en modo read-only y produce handoff para implementación.
 - `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
 - `validator`: valida y diagnostica en modo read-only; no edita.

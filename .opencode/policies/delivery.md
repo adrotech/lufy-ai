@@ -5,7 +5,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 ## Roles
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
-- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run mutating commands, install external skills, or perform delivery.
+- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run shell/Git/OpenSpec/validation commands, install external skills, or perform delivery. It routes to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
 - `explorer` investigates impact and repository context read-only; must not edit files.
 - `implementer` implements bounded changes and uses systemic workflow: initial context analysis, no repeated old-file rereads during normal implementation, bounded final reread of changed/affected old files, and validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
