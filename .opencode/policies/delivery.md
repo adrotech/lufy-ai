@@ -5,7 +5,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 ## Roles
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
-- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run mutating commands, install external skills, or perform delivery.
+- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run shell/Git/OpenSpec/validation commands, install external skills, or perform delivery. It routes to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
 - `explorer` investigates impact and repository context read-only; must not edit files.
 - `implementer` implements bounded changes and uses systemic workflow: initial context analysis, no repeated old-file rereads during normal implementation, bounded final reread of changed/affected old files, and validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
@@ -33,6 +33,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
 - **Exception gate**: run focused rereads or validation earlier only when a blocker, risky change, feedback loop, or failure diagnosis requires it.
 - **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
+- **Remote PR checks gate** for `delivery`: after `gh pr create`, consult or wait for remote PR pipelines/checks and record command evidence, for example `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url`. If checks report `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, evidence is missing, or required tooling is unavailable, do not report `delivered` or `closed`; report `blocked` with PR URL/status and recovery command. Use `delivery_pending` only when remote checks exist and are still pending without a successful conclusion.
 - **PR whitespace gate** for `validator`/`delivery`: for PR-bound changes, reproduce the PR diff range against the target base. Use `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` while local worktree changes are still pending. Plain `git diff --check` is insufficient because it only checks uncommitted worktree/staged changes.
 - **Local grouped validation**: prefer `scripts/validate.sh` when the change scope matches this repository's Go CLI/assets workflow; it runs the PR-aware whitespace gate plus available Go validation.
 - If change affects behavior, include functional evidence when practical.
@@ -48,9 +49,9 @@ Use these task/block states consistently:
 
 - `implemented`: scoped edits are applied and task checkboxes for the implementation block may be updated; proportional validation still remains.
 - `validated`: real applicable validation evidence exists, or static/manual evidence is documented when no toolchain applies; delivery or sync may still remain.
-- `delivery_pending`: the block is implemented/validated but needs Git/GH delivery, issue/project sync, PR, or external publishing that has not been explicitly authorized or completed.
-- `delivered`: explicitly authorized `delivery` completed the required commit, push, PR, traceability, or external sync for the requested scope.
-- `closed`: implementation, validation, required delivery, required sync, and archive/traceability preconditions are all satisfied for the declared scope.
+- `delivery_pending`: the block is implemented/validated but needs Git/GH delivery, issue/project sync, PR, external publishing that has not been explicitly authorized/completed, or existing remote PR checks are still pending.
+- `delivered`: explicitly authorized `delivery` completed the required commit, push, PR, traceability, or external sync for the requested scope, and any required remote PR checks have successful command evidence.
+- `closed`: implementation, validation, required delivery, required remote PR checks, required sync, and archive/traceability preconditions are all satisfied for the declared scope.
 
 Role boundaries for the gate:
 
