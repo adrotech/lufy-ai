@@ -26,7 +26,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(copy) error = %v", err)
 	}
-	if !hasAction(copyPlan.Actions, "copy", "AGENTS.md") || !hasAction(copyPlan.Actions, "mkdir", ".opencode") || !hasAction(copyPlan.Actions, "merge-json", "opencode.json") || !hasAction(copyPlan.Actions, "verify", copyPlan.TargetRoot) {
+	if !hasAction(copyPlan.Actions, "copy", "lufy-ia.harness.md") || !hasAction(copyPlan.Actions, "agents-reference-create", "AGENTS.md") || !hasAction(copyPlan.Actions, "mkdir", ".opencode") || !hasAction(copyPlan.Actions, "merge-json", "opencode.json") || !hasAction(copyPlan.Actions, "verify", copyPlan.TargetRoot) {
 		t.Fatalf("copy plan missing expected actions: %#v", copyPlan.Actions)
 	}
 
@@ -37,7 +37,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(skip) error = %v", err)
 	}
-	if !hasAction(skipPlan.Actions, "skip", "AGENTS.md") || hasActionKind(skipPlan.Actions, "copy") {
+	if !hasAction(skipPlan.Actions, "agents-reference-skip", "AGENTS.md") || !hasAction(skipPlan.Actions, "skip", "lufy-ia.harness.md") || hasActionKind(skipPlan.Actions, "copy") {
 		t.Fatalf("skip plan unexpected actions: %#v", skipPlan.Actions)
 	}
 
@@ -48,23 +48,23 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(conflict) error = %v", err)
 	}
-	if len(conflictPlan.Conflicts) != 0 || !hasAction(conflictPlan.Actions, "merge-block", "AGENTS.md") {
-		t.Fatalf("expected AGENTS.md merge-block drift resolution, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
+	if len(conflictPlan.Conflicts) != 0 || !hasAction(conflictPlan.Actions, "backup", "AGENTS.md") || !hasAction(conflictPlan.Actions, "agents-reference-insert", "AGENTS.md") {
+		t.Fatalf("expected AGENTS.md reference insertion, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
 	}
 
 	updatedTarget := t.TempDir()
 	if err := svc.Run(Options{Target: updatedTarget, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(updated initial) error = %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(source, "AGENTS.md.template"), []byte("<!-- LUFY:BEGIN project-guide -->\nupstream changed\n<!-- LUFY:END project-guide -->\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(source, "lufy-ia.harness.md"), []byte("upstream changed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget, NoEngram: true})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
-	if !hasAction(updatePlan.Actions, "backup", "AGENTS.md") || !hasAction(updatePlan.Actions, "merge-block", "AGENTS.md") {
-		t.Fatalf("update plan missing backup/merge-block: %#v", updatePlan.Actions)
+	if !hasAction(updatePlan.Actions, "backup", "lufy-ia.harness.md") || !hasAction(updatePlan.Actions, "update-managed", "lufy-ia.harness.md") {
+		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
 	}
 }
 
@@ -108,26 +108,22 @@ func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
-	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "adopt-merge-block", "AGENTS.md") {
-		t.Fatalf("expected adopt-merge-block without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "backup", "AGENTS.md") || !hasAction(plan.Actions, "agents-reference-insert", "AGENTS.md") {
+		t.Fatalf("expected agents reference insertion without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
 	}
 
 	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents {
+	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents+"\n@lufy-ia.harness.md\n" {
 		t.Fatalf("custom AGENTS.md was rewritten: %q", got)
 	}
 	st, err := state.Load(target)
 	if err != nil {
 		t.Fatal(err)
 	}
-	agents := st.AssetMap()["AGENTS.md"]
-	if agents.LastAction != "adopt-merge-block" || agents.TargetSHA256 == agents.SourceSHA256 {
-		t.Fatalf("AGENTS.md was not adopted as custom merge-block asset: %#v", agents)
-	}
-	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
-		t.Fatalf("ancestor content mismatch: %q", got)
+	if _, ok := st.AssetMap()["AGENTS.md"]; ok {
+		t.Fatal("AGENTS.md no debe quedar registrado como asset completo")
 	}
 }
 
@@ -142,11 +138,11 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	agents := st.AssetMap()["AGENTS.md"]
-	if agents.AncestorRel != ".lufy-ai/ancestors/AGENTS.md" || agents.AncestorHash != agents.SourceSHA256 {
-		t.Fatalf("ancestor metadata not recorded: %#v", agents)
+	harness := st.AssetMap()["lufy-ia.harness.md"]
+	if harness.AncestorRel != ".lufy-ai/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
+		t.Fatalf("ancestor metadata not recorded: %#v", harness)
 	}
-	if got := string(readFileForTest(t, filepath.Join(target, agents.AncestorRel))); got != "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n" {
+	if got := string(readFileForTest(t, filepath.Join(target, harness.AncestorRel))); got != "harness template\n" {
 		t.Fatalf("ancestor content mismatch: %q", got)
 	}
 }
@@ -246,7 +242,8 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 		"Plan de instalación para " + resolvedTarget,
 		"Source root: ",
 		"- [mkdir] .opencode (directorio padre requerido)",
-		"- [copy] AGENTS.md (archivo gestionado ausente)",
+		"- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea referencia mínima al harness)",
+		"- [copy] lufy-ia.harness.md (archivo gestionado ausente)",
 		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
 		"Engram: omitido por --no-engram",
 		"Modo dry-run: sin mutaciones en filesystem",
@@ -553,6 +550,7 @@ func minimalInstallerSource(t *testing.T) string {
 	files := map[string]string{
 		"AGENTS.md":                                                    "agents root\n",
 		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
+		"lufy-ia.harness.md":                                           "harness template\n",
 		"tui.json":                                                     "{}\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",

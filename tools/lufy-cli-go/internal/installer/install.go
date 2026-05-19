@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
@@ -258,6 +259,35 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			Action{Kind: kind, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: reason, Risk: "medium", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, PreviousInstalledHash: prev.TargetSHA256},
 		)
 	}
+	if legacy, ok := previousAssets[agentsref.AgentsFile]; ok {
+		exists, hasReference, err := agentsref.Status(target)
+		if err != nil {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error(), Risk: "high", CurrentHash: legacy.TargetSHA256, SourceHash: legacy.SourceSHA256})
+		} else if exists && !hasReference {
+			currentHash, hashErr := assets.FileSHA256(filepath.Join(target, agentsref.AgentsFile))
+			if hashErr != nil {
+				return Plan{}, hashErr
+			}
+			if currentHash != legacy.TargetSHA256 {
+				plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: "AGENTS.md legacy gestionado tiene drift local y falta referencia; preservado, agrega @lufy-ia.harness.md manualmente", Risk: "high", CurrentHash: currentHash, SourceHash: legacy.SourceSHA256})
+			}
+		}
+	}
+	if !hasConflictForPath(plan.Conflicts, agentsref.AgentsFile) {
+		exists, hasReference, err := agentsref.Status(target)
+		if err != nil {
+			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error(), Risk: "high"})
+		} else if !exists {
+			plan.Actions = append(plan.Actions, Action{Kind: "agents-reference-create", Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned ausente; se crea referencia mínima al harness", Risk: "low"})
+		} else if hasReference {
+			plan.Actions = append(plan.Actions, Action{Kind: "agents-reference-skip", Target: agentsref.AgentsFile, Reason: "referencia al harness ya presente; AGENTS.md no se reescribe", Risk: "none"})
+		} else {
+			plan.Actions = append(plan.Actions,
+				Action{Kind: "backup", Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned recibirá referencia al harness", Risk: "medium"},
+				Action{Kind: "agents-reference-insert", Target: agentsref.AgentsFile, Reason: "se agrega solo @lufy-ia.harness.md sin copiar contenido completo de Lufy", Risk: "medium"},
+			)
+		}
+	}
 	if opts.Backup && previous != nil {
 		alreadyBackup := map[string]bool{}
 		for _, action := range plan.Actions {
@@ -288,7 +318,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: config.OpenCodeFile, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
 	plan.Actions = append(plan.Actions, Action{Kind: "verify", Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "adopt-merge-block": 5, "write-lufy-new": 6, "merge-json": 7, "verify": 8, "skip": 9}
+		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "adopt-merge-block": 5, "write-lufy-new": 6, "agents-reference-create": 7, "agents-reference-insert": 8, "merge-json": 9, "verify": 10, "agents-reference-skip": 11, "skip": 12}
 		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
@@ -366,8 +396,14 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
+		case "agents-reference-create", "agents-reference-insert":
+			if err := agentsref.InsertReference(plan.TargetRoot); err != nil {
+				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
+			}
+			applied++
+			fmt.Fprintf(stdout, "- [%s] %s\n", action.Kind, action.Target)
 		case "verify":
-		case "skip", "backup":
+		case "skip", "backup", "agents-reference-skip":
 		}
 	}
 	if plan.Previous != nil && !hasContentMutation(plan.Actions) {
@@ -441,7 +477,7 @@ func targetsForKind(actions []Action, kind string) []string {
 
 func hasContentMutation(actions []Action) bool {
 	for _, action := range actions {
-		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "write-lufy-new" || action.Kind == "merge-json" {
+		if action.Kind == "copy" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "write-lufy-new" || action.Kind == "merge-json" || action.Kind == "agents-reference-create" || action.Kind == "agents-reference-insert" {
 			return true
 		}
 	}
@@ -451,7 +487,16 @@ func hasContentMutation(actions []Action) bool {
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
-		case "mkdir", "copy", "update-managed", "merge-block", "adopt-merge-block", "write-lufy-new", "merge-json", "backup":
+		case "mkdir", "copy", "update-managed", "merge-block", "adopt-merge-block", "write-lufy-new", "merge-json", "agents-reference-create", "agents-reference-insert", "backup":
+			return true
+		}
+	}
+	return false
+}
+
+func hasConflictForPath(conflicts []Conflict, path string) bool {
+	for _, conflict := range conflicts {
+		if conflict.Path == path {
 			return true
 		}
 	}

@@ -1,0 +1,93 @@
+# AGENTS.md
+
+Operational guide for coding agents working in this repository.
+
+<!-- LUFY:BEGIN project-guide -->
+
+## Project Snapshot
+
+- **Stack**: Fill in your stack without assuming Node/TypeScript unless the repo actually uses it
+- **Routing/CLI/API**: Fill in the relevant entrypoints for this repo
+- **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
+- **Spec workflow**: OpenSpec change artifacts in `openspec/`
+- **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
+
+## Source Layout
+
+Describe your project source layout here. For example:
+
+- `app/`: route files and screen implementations
+- `src/components/`: reusable UI primitives
+- `src/api/`: API clients and services
+- `tests/`: test suites mirroring app areas
+
+## Required Commands
+
+Run from repository root.
+
+### Install
+
+```bash
+# Replace with the repository's real install command, if any.
+# Do not add generic npm/yarn commands unless package.json exists and they are supported.
+```
+
+### Development
+
+```bash
+# Replace with the repository's real development command, if any.
+```
+
+### Validation
+
+```bash
+# Replace with real validation commands.
+# Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
+# For PR-bound changes, reproduce the PR whitespace range, for example: git diff --check origin/develop...HEAD after commits, or git diff --check origin/develop with pending worktree changes.
+```
+
+## Architecture Rules
+
+1. Keep controllers/handlers thin
+2. Services own business rules
+3. Keep persistence entities out of HTTP contracts
+4. Use constructor injection
+5. Keep transactional scopes narrow
+
+## Testing Expectations
+
+- Add smallest useful tests for changed behavior
+- Test contracts at API level
+- Test business logic at service level
+- Never report tests as passing without command evidence
+
+## OpenSpec Workflow
+
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
+
+## Proportional SDD Routing
+
+- **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full OpenSpec.
+- **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use `.opencode/templates/sdd-lite.md` or a structured handoff with observable WHEN/THEN criteria.
+- **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough.
+- Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
+- Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
+- For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
+- Do not split T3 work into artificial micro-deliverables.
+- Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
+
+## Skill Resolution
+
+- Prefer local `.opencode/skills` and this `AGENTS.md` over external skills.
+- AutoSkills may be used only as optional bootstrap/fallback discovery, starting with `npx autoskills --dry-run`.
+- Do not run mutating external skill installation commands without explicit user authorization.
+
+## Agent Behavior Guidelines
+
+- Make focused, minimal changes
+- Do not revert unrelated local modifications
+- Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
+- When asked to commit/push, follow repository branch standards
+- When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
+- Pass only minimal role-scoped context to subagents and ask for a result contract: objective, actions, evidence, risks, state, and next action
+<!-- LUFY:END project-guide -->
