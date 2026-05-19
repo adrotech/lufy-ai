@@ -71,7 +71,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
-- Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH o sync; `delivered` = delivery autorizado ejecutado; `closed` = implementación, validación, delivery/sync requeridos y precondiciones satisfechas.
+- Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
 
 ## Roles de agentes
 
@@ -104,6 +104,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Tags de release estable: `v*` creados desde commits alcanzables desde `origin/main`; no publicar releases desde `develop` sin promoción.
 - No hacer commit, push, PR ni actualizar GitHub Projects sin autorización explícita del usuario y rol `delivery`.
 - No crear PR desde ramas protegidas como `develop`, `main`, `master` o `development`, salvo promoción `develop` → `main` explícitamente autorizada.
+- Al crear PR, `delivery` debe consultar/esperar checks remotos con evidencia (`gh pr checks <PR>` o `gh pr view ... statusCheckRollup/mergeStateStatus`) y no reportar `delivered`/`closed` si fallan, quedan pendientes o falta evidencia; usar `blocked` o `delivery_pending` con recovery.
 - Nunca usar force push salvo solicitud explícita.
 
 ## Formato de reporte
