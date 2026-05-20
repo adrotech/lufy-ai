@@ -5,7 +5,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 ## Roles
 
 - `orchestrator` coordinates and routes; must not edit files or run shell commands.
-- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run mutating commands, install external skills, or perform delivery.
+- `sdd-router` classifies work into T1/T2/T3, recommends execution mode, context slice, skill status, and review workload read-only; must not edit files, run shell/Git/OpenSpec/validation commands, install external skills, or perform delivery. It routes to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
 - `explorer` investigates impact and repository context read-only; must not edit files.
 - `implementer` implements bounded changes and uses systemic workflow: initial context analysis, no repeated old-file rereads during normal implementation, bounded final reread of changed/affected old files, and validación agrupada at the end of a work block/proposal unless blocked, risky, or diagnosing; must not commit, push, create PRs, or update GitHub Projects.
 - `validator` runs compile/test evidence and diagnoses failures read-only; must not edit files.
@@ -33,6 +33,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
 - **Exception gate**: run focused rereads or validation earlier only when a blocker, risky change, feedback loop, or failure diagnosis requires it.
 - **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
+- **Remote PR checks gate** for `delivery`: after `gh pr create`, consult or wait for remote PR pipelines/checks and record command evidence, for example `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url`. If checks report `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, evidence is missing, or required tooling is unavailable, do not report `delivered` or `closed`; report `blocked` with PR URL/status and recovery command. Use `delivery_pending` only when remote checks exist and are still pending without a successful conclusion.
 - **PR whitespace gate** for `validator`/`delivery`: for PR-bound changes, reproduce the PR diff range against the target base. Use `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` while local worktree changes are still pending. Plain `git diff --check` is insufficient because it only checks uncommitted worktree/staged changes.
 - **Local grouped validation**: prefer `scripts/validate.sh` when the change scope matches this repository's Go CLI/assets workflow; it runs the PR-aware whitespace gate plus available Go validation.
 - If change affects behavior, include functional evidence when practical.
@@ -40,19 +41,26 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - Delivery remains explicitly authorized regardless of tier. A T1/T2/T3 classification can recommend delivery readiness but cannot authorize Git/GH operations.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
-## OpenSpec Task Closure
+## OpenSpec Task/Block Gate
 
-An OpenSpec task is complete only when:
+Evaluate completion at the smallest coherent delivery unit: a `tasks.md` task, an implementation block, or a review slice. Nested micro-checkboxes can track internal progress, but they do not trigger full validation, delivery, archive readiness, or closure unless explicitly declared as the coherent unit.
 
-1. Implementation and local validation evidence.
-2. Commit.
-3. Push.
-4. OpenSpec/artifacts updated, including task checkbox.
-5. GitHub Project or issue updated when tracking exists.
-6. Issue comment with summary, commit ID/link, continuity, and trace markers.
-7. PR when change is 100% complete or user explicitly requests it.
+Use these task/block states consistently:
 
-If any item is missing, report `blocked` or `sync_pending` with exact recovery command.
+- `implemented`: scoped edits are applied and task checkboxes for the implementation block may be updated; proportional validation still remains.
+- `validated`: real applicable validation evidence exists, or static/manual evidence is documented when no toolchain applies; delivery or sync may still remain.
+- `delivery_pending`: the block is implemented/validated but needs Git/GH delivery, issue/project sync, PR, external publishing that has not been explicitly authorized/completed, or existing remote PR checks are still pending.
+- `delivered`: explicitly authorized `delivery` completed the required commit, push, PR, traceability, or external sync for the requested scope, and any required remote PR checks have successful command evidence.
+- `closed`: implementation, validation, required delivery, required remote PR checks, required sync, and archive/traceability preconditions are all satisfied for the declared scope.
+
+Role boundaries for the gate:
+
+1. `implementer` may move a coherent block to `implemented`; it must not commit, push, create PRs, update GitHub Projects, or report `closed` without validation and delivery evidence from the proper roles.
+2. `validator` may move a block to `validated` with read-only command/static evidence; it must not edit files or perform Git/GH delivery.
+3. `delivery` may move a validated block to `delivered` or `closed` only after explicit user authorization and only when closure evidence is complete.
+4. `orchestrator` coordinates transitions and requests explicit authorization before routing Git/GH delivery.
+
+If any gate item is missing, report the precise next state (`implemented`, `validated`, `delivery_pending`, `sync_pending`, or `blocked`) with exact recovery instruction. Delivery remains explicitly authorized regardless of tier, task completion, validation status, or user acceptance of implementation.
 
 Tasks incompletas always block archive. Do not archive a change with unchecked tasks, even with user confirmation. `migrate-installer-to-go-cli` is explicitly blocked from archive while any tasks remain incomplete.
 
@@ -60,7 +68,9 @@ Current active/focus spec context: `install-managed-assets-with-hash-idempotency
 
 ## Completed Change Gate
 
-- If a change reaches 100% tasks complete, create PR before starting another change.
+- If a change reaches 100% tasks complete, treat it as `implemented` or `validated` according to available evidence, not automatically `closed` or archive-ready.
+- If the change requires Git/GH delivery and the user has explicitly authorized it, route to `delivery` for PR creation before starting another change.
+- If delivery is required but not authorized, report `delivery_pending` or `blocked` and ask for explicit authorization before Git/GH operations.
 - Do not begin new change while completed-change PR is pending, unless explicitly authorized.
 - Use `.opencode/templates/pr-evidence.md` or skill helpers for PR body.
 

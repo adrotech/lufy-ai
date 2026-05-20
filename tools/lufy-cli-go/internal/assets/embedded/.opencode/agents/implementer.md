@@ -69,6 +69,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Reuse initial analysis/handoffs for old files; do not reread old files repeatedly during normal implementation.
 - Edit with the smallest safe patch.
 - Run grouped validation only at the end of all assigned tasks when available; use static/manual review when no toolchain exists.
+- Treat assigned work as a coherent task/block gate: implementation can reach `implemented`; validation and delivery are separate states unless explicitly completed by the proper role.
 - Prefer validación agrupada at the end of the current block/proposal, including tests/coverage only when real commands exist; do not run tests constantly unless blocked, risky, or diagnosing a failure.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
@@ -80,11 +81,13 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - During iteration, avoid repeated old-file rereads. Reread old files only if modified/affected, conflicted, blocked, risky, scope changes, or new evidence invalidates the initial analysis.
 - Before final validation, review changed/affected old files or diffs for coherence with dependencies and expected behavior.
 - Do not commit, push, create PRs, or update GitHub Projects.
+- Do not report a task/block as `closed` only because files changed or `tasks.md` checkboxes were marked; report `implemented` or validation pending unless proportional validation evidence is also included.
 - Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist. Basic navigation/copy commands like `ls`, `dir`, and `cp` are allowed for implementation work.
 - Do not delegate to other agents.
 - Do not fabricate validation evidence.
 - If change needs broader impact analysis, report that `explorer` should run first.
 - If change reaches 100% complete and needs delivery, report readiness for `delivery` without executing delivery.
+- If delivery is required but not authorized, report `delivery_pending`/`blocked` and the exact next role; never infer delivery authorization from tier, completion, or validation.
 - Default human-facing artifacts to Spanish while preserving technical identifiers.
 
 ## Validation / Evidence
@@ -119,3 +122,5 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ### Validation Evidence
 ### Risks / Follow-ups
 ### Ready State
+
+Use `implemented`, `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state; use `closed` only when policy gates and required delivery evidence are complete.

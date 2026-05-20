@@ -7,12 +7,7 @@ permission:
   edit: deny
   write: deny
   patch: deny
-  bash:
-    "*": ask
-    "rg *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
+  bash: deny
   task:
     "*": deny
   skill:
@@ -30,7 +25,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
 - Produce a structured handoff with execution mode, context slice, required permissions, skill status, review workload, review slices, and stop reason when blocked.
-- Keep routing read-only, low-context, and proportional.
+- Keep routing read-only, no-shell, low-context, and proportional.
+- Do not execute shell, Git, OpenSpec, validation, package-manager, or discovery commands; use only context already provided in the prompt and route to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
 
 ## Use When
 
@@ -43,7 +39,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - The request is already clearly trivial and can be answered or handled directly.
 - The user explicitly asks only for validation, review, delivery, or a specific OpenSpec lifecycle command.
-- The next step requires editing, shell mutation, commits, pushes, PRs, or installing external tools.
+- The next step requires editing, shell commands, commits, pushes, PRs, or installing external tools.
 
 ## Inputs Expected
 
@@ -74,6 +70,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Check whether local `.opencode/skills` cover the requested workflow before recommending external bootstrap.
 - If local skills are sufficient, set `bootstrap_recommended: false`.
 - If local skills are missing or insufficient, you may recommend `npx autoskills --dry-run` as a first non-mutating discovery command.
+- Do not run skill discovery commands yourself; only include the recommended command in the handoff when appropriate.
 - Never recommend a mutating AutoSkills install without explicit user authorization.
 - Record AutoSkills as optional bootstrap/fallback only; it does not replace local skills, `AGENTS.md`, or repository policies.
 
@@ -108,10 +105,13 @@ Each slice should include:
 ## Boundaries
 
 - Do not edit files.
+- Do not execute shell commands of any kind, including read-only Git, OpenSpec, validation, search, or discovery commands.
 - Do not commit, push, create PRs, update GitHub Projects, or perform delivery.
-- Do not install tools, run package managers, or execute mutating shell commands.
+- Do not install tools or run package managers.
 - Do not claim validation or tests passed.
 - Do not replace `explorer`; route to it when impact analysis is needed.
+- Do not replace `validator`; route to it when command evidence, tests, or validation are needed.
+- Do not replace `delivery`; route to it when Git/GH state, commits, PRs, sync, or delivery are needed.
 - Do not replace `orchestrator`; return routing guidance only.
 
 ## Output Contract

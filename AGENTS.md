@@ -37,6 +37,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
 - Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
+- Evaluar gates por task, bloque coherente o review slice; los micro-checkboxes internos no implican cierre, archive-ready ni delivery por sí solos.
 - Para cambios que terminarán en PR contra `develop`, el chequeo de whitespace debe reproducir el rango del PR: usar `git diff --check origin/develop...HEAD` sobre commits ya preparados y `git diff --check origin/develop` cuando haya cambios pendientes en worktree. No basta `git diff --check` local, porque puede omitir whitespace introducido en commits anteriores de la rama.
 - Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
 
@@ -70,11 +71,12 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
+- Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
 
 ## Roles de agentes
 
 - `orchestrator`: coordina y enruta; no edita ni ejecuta shell.
-- `sdd-router`: clasifica T1/T2/T3 en modo read-only, recomienda execution mode, contexto mínimo, skill status y review workload.
+- `sdd-router`: clasifica T1/T2/T3 en modo read-only/no-shell, recomienda execution mode, contexto mínimo, skill status y review workload; no ejecuta shell/Git/OpenSpec/validación y deriva a `explorer`, `validator` o `delivery` cuando se requiere estado, evidencia o Git/GH.
 - `explorer`: investiga en modo read-only y produce handoff para implementación.
 - `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
 - `validator`: valida y diagnostica en modo read-only; no edita.
@@ -88,7 +90,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Implementar tareas: `opsx-apply` / skill `openspec-apply-change`.
 - Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
-- Una tarea OpenSpec solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md`.
+- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md` con estado explícito.
 - En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
@@ -102,6 +104,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Tags de release estable: `v*` creados desde commits alcanzables desde `origin/main`; no publicar releases desde `develop` sin promoción.
 - No hacer commit, push, PR ni actualizar GitHub Projects sin autorización explícita del usuario y rol `delivery`.
 - No crear PR desde ramas protegidas como `develop`, `main`, `master` o `development`, salvo promoción `develop` → `main` explícitamente autorizada.
+- Al crear PR, `delivery` debe consultar/esperar checks remotos con evidencia (`gh pr checks <PR>` o `gh pr view ... statusCheckRollup/mergeStateStatus`) y no reportar `delivered`/`closed` si fallan, quedan pendientes o falta evidencia; usar `blocked` o `delivery_pending` con recovery.
 - Nunca usar force push salvo solicitud explícita.
 
 ## Formato de reporte

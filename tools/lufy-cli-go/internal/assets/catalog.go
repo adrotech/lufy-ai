@@ -133,7 +133,7 @@ var allowedEntries = []entry{
 	{sourceRel: ".opencode/package.json", targetRel: ".opencode/package.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/package-lock.json", targetRel: ".opencode/package-lock.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/.gitignore", targetRel: ".opencode/.gitignore", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: "AGENTS.md.template", targetRel: "AGENTS.md", kind: KindFile, policy: PolicyMergeBlock, scope: ScopeProject},
+	{sourceRel: "lufy-ia.harness.md", targetRel: "lufy-ia.harness.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: "tui.json", targetRel: "tui.json", kind: KindFile, policy: PolicyNoReplace, scope: ScopeProject},
 	{sourceRel: "openspec", targetRel: "openspec", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 }

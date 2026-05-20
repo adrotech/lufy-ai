@@ -18,12 +18,12 @@
 - Review Workload Harness: `review_slices` proporcionales para T1 y T2 con varios riesgos, orientados al reviewer humano y a entregables pequeños cuando conviene.
 - Templates instalables de proceso: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
 - Skill resolution local-first con AutoSkills documentado solo como bootstrap opcional mediante `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
+- `sdd-router` limitado a clasificación read-only/no-shell y delivery con gate explícito de checks remotos de PR antes de `delivered`/`closed`.
 
 ## Pendiente o futuro
 
-- Publicar/promover `v0.3.0` desde `main` con evidencia de CI/release.
-- Publicar una release posterior que incluya los assets embebidos del harness SDD proporcional, una vez promovida a `main` y taggeada desde un commit alcanzable desde `origin/main`.
-- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.3.0` actual.
+- Promover `develop` a `main` y publicar `v0.3.5` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
+- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.3.5` objetivo.
 - Reconciliation hook opt-in para detectar cambios sin spec asociada.
 - Autocomplete/help avanzado mediante Cobra u otro framework.
 - Verificación cosign integrada en `upgrade`.

@@ -44,18 +44,20 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Package completed work through branch safety, commit, push, PR, and traceability gates when explicitly authorized.
 - Enforce `.opencode/policies/delivery.md` and repository `AGENTS.md`.
 - Do not duplicate or override shared policy; when this runbook and policy conflict, policy wins.
-- Return precise states: `completed`, `blocked`, or `sync_pending`.
+- Return precise states: `delivered`, `closed`, `delivery_pending`, `blocked`, or `sync_pending`.
 
 ## Use When
 
 - The user explicitly asks to commit, push, create PR, publish, comment on issues, or sync GitHub Projects.
 - A completed change needs final validation evidence and delivery packaging.
+- A validated task/block has explicit user authorization to perform Git/GH delivery or required external sync.
 - Orchestrator needs branch/workspace safety assessment.
 
 ## Do Not Use When
 
 - Authorization for Git/GH operations is missing; return `blocked` with exact authorization needed.
 - The change still needs implementation, validation, or review.
+- The change is only `implemented` and lacks proportional validation evidence, unless the user explicitly asks for branch/workspace safety assessment only.
 - The current branch is `main` or another protected production branch and the request is to create a PR from it, or the current branch is a protected integration branch without an explicit promotion request.
 
 ## Inputs Expected
@@ -78,6 +80,9 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Before pushing or reporting a PR-ready branch, include the PR-range whitespace gate for the target base: `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` if validating pending local changes before commit. Plain `git diff --check` is not enough for PR readiness.
 - Prefer validación agrupada evidence from the completed block/proposal; do not require repeated test loops unless needed for final delivery or diagnosis.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.
+- After `gh pr create`, consult or wait for remote PR checks and record the exact command and outcome. Prefer `gh pr checks <PR> --watch` when waiting is appropriate; otherwise use `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url` and report unresolved/pending checks explicitly.
+- If remote checks show `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, remain pending without a successful conclusion, or no remote-check evidence exists, do not report `delivered` or `closed`; report `blocked` for terminal failures/action required, or `delivery_pending` for still-pending checks, with PR URL/status and a recovery command such as `gh pr checks <PR> --watch`.
+- Move validated blocks to `delivered` only after authorized Git/GH work and successful required remote PR-check evidence; report `closed` only when implementation, validation, required delivery/sync, remote checks, traceability, and archive preconditions are complete.
 - Sync issues/projects only when required and configured.
 
 ## Boundaries
@@ -85,6 +90,7 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Read-only branch/workspace inspections (`git status`, `git diff`, `git log`, `git branch`, `git rev-parse`) may run to evaluate delivery safety.
 - If user gives explicit delivery authorization, execute normal mutating Git/GH delivery commands without intermediate prompts.
 - If explicit authorization missing, return `blocked` with authorization needed.
+- If validation exists but delivery authorization is missing, return `delivery_pending` or `blocked`; do not treat validation or task completion as authorization.
 - Never force push unless explicitly requested.
 - Default PR base is `develop` unless explicitly requested.
 - Normal work opens PRs from feature/fix/chore branches to `develop`.
@@ -99,14 +105,17 @@ You handle safe delivery operations only. This file is the operational runbook f
 ## Validation / Evidence
 
 - Include exact Git/GH/validation commands and outcomes.
-- Never claim validation, push, PR, issue comment, or project sync completed without command evidence.
+- Never claim validation, push, PR, remote checks, issue comment, or project sync completed without command evidence.
 - If remote/project sync fails, return `sync_pending` with exact recovery command.
 
 ## Escalation
 
 - Return `blocked` when authorization, branch safety, validation evidence, or required tooling is missing.
+- Return `blocked` when remote PR checks fail, are cancelled, time out, require action, or evidence is missing after PR creation.
+- Return `delivery_pending` when a PR exists but remote checks are still pending and have not concluded successfully.
 - Return `sync_pending` when core delivery is done but issue/project remote sync is incomplete.
-- Return `completed` only when requested delivery scope and required gates are complete.
+- Return `delivered` when the requested authorized Git/GH delivery scope is done and required remote checks, when applicable, concluded successfully with evidence, but closure gates remain.
+- Return `closed` only when requested delivery scope, required remote checks when applicable, and all required gates are complete and evidenced.
 
 ## Required Output
 

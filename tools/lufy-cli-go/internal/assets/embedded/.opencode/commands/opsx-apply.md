@@ -12,7 +12,8 @@ Run the concrete OpenSpec apply skill for approved tasks.
 - Treat scenarios as testable acceptance criteria: each added or modified requirement needs `WHEN` and `THEN`, with optional `GIVEN`.
 - Use `implementer` for bounded code changes.
 - Use validación agrupada at the end of a coherent block/proposal; do not run tests constantly unless blocked, risky, or diagnosing.
-- Do not create PRs, delegate to `delivery`.
+- Treat task/block completion by `implementer` as `implemented` or validation pending unless proportional validation evidence exists; task checkboxes and micro-checkboxes are not `closed` or archive-ready by themselves.
+- Do not create PRs; delegate to `delivery` only after explicit delivery authorization.
 - Preserve repo context: CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto with no legacy fallback.
 - Current active/focus spec: `install-managed-assets-with-hash-idempotency` (managed assets, SHA-256, manifest, idempotency, backup/restore, structural verify).
 - Do not suggest archive for `migrate-installer-to-go-cli` while tasks are incomplete.
@@ -20,4 +21,4 @@ Run the concrete OpenSpec apply skill for approved tasks.
 ## Recommended execution
 
 1. Use skill `openspec-apply-change`.
-2. Run the repository's real grouped validation for the block/proposal when appropriate.
+2. Report state as `implemented`/validation pending and run or request the repository's real grouped validation for the block/proposal when appropriate.

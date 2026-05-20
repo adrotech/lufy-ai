@@ -19,6 +19,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(target, rel), content)
 	}
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "# Proyecto\n\n@lufy-ia.harness.md\n")
 	var states []state.AssetState
 	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
@@ -43,12 +44,12 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		t.Fatalf("valid verify output unexpected: %s", out.String())
 	}
 
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "drift\n")
+	writeVerifyFile(t, filepath.Join(target, "lufy-ia.harness.md"), "drift\n")
 	out.Reset()
 	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
 		t.Fatalf("Run(drift) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: drift en AGENTS.md") {
+	if !strings.Contains(out.String(), "fail: drift en lufy-ia.harness.md") {
 		t.Fatalf("drift output unexpected: %s", out.String())
 	}
 
@@ -315,7 +316,7 @@ func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 
 func TestVerifyJSONReportsFailures(t *testing.T) {
 	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "drift\n")
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin referencia\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, NoEngram: true, JSON: true}, &out); err == nil {
@@ -328,14 +329,43 @@ func TestVerifyJSONReportsFailures(t *testing.T) {
 	if report.OK || report.Failures == 0 || report.TargetRoot == "" || report.Assets == 0 {
 		t.Fatalf("unexpected JSON report: %#v", report)
 	}
-	foundDrift := false
+	foundMissingReference := false
 	for _, check := range report.Checks {
-		if check.Level == "fail" && strings.Contains(check.Message, "drift en AGENTS.md") {
-			foundDrift = true
+		if check.Level == "fail" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no referencia") {
+			foundMissingReference = true
 		}
 	}
-	if !foundDrift {
-		t.Fatalf("drift check not found in JSON: %#v", report.Checks)
+	if !foundMissingReference {
+		t.Fatalf("missing reference check not found in JSON: %#v", report.Checks)
+	}
+}
+
+func TestVerifyAllowMissingAgentsRefDoesNotHideCriticalFailures(t *testing.T) {
+	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin referencia\n")
+	writeVerifyFile(t, filepath.Join(target, "lufy-ia.harness.md"), "drift crítico\n")
+
+	var out bytes.Buffer
+	err := NewService().Run(Options{Target: target, NoEngram: true, AllowMissingAgentsRef: true, JSON: true}, &out)
+	if err == nil {
+		t.Fatalf("Run(allow missing agents ref with critical drift) expected error, output=%s", out.String())
+	}
+	var report Report
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatalf("invalid JSON output: %v body=%s", err, out.String())
+	}
+	foundAgentsWarn := false
+	foundHarnessFail := false
+	for _, check := range report.Checks {
+		if check.Level == "warn" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no referencia") {
+			foundAgentsWarn = true
+		}
+		if check.Level == "fail" && strings.Contains(check.Message, "drift en lufy-ia.harness.md") {
+			foundHarnessFail = true
+		}
+	}
+	if report.OK || report.Failures == 0 || !foundAgentsWarn || !foundHarnessFail {
+		t.Fatalf("allow missing AGENTS ref masked critical failure: report=%#v", report)
 	}
 }
 
@@ -404,6 +434,7 @@ func validVerifyTarget(t *testing.T) string {
 	for _, rel := range fallbackRequiredManagedFiles {
 		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
 	}
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "# Proyecto\n\n@lufy-ia.harness.md\n")
 	var states []state.AssetState
 	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))

@@ -62,21 +62,21 @@ AutoSkills puede sugerirse solo como bootstrap opcional con `npx autoskills --dr
 
 ## Quickstart
 
-Versión estable actual: `v0.3.1`.
+Versión estable objetivo: `v0.3.5`.
 
 Para la guía completa por sistema operativo y shell, usa [`docs/installation.md`](docs/installation.md). Este resumen instala primero el binario y después aplica assets sobre un repositorio destino.
 
 ### 1. Descargar y revisar el bootstrap
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.1/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.5/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
 ```
 
 ### 2. Instalar el binario
 
 ```bash
-bash /tmp/lufy-bootstrap.sh --version v0.3.1 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.5 --install-dir "$HOME/.local/bin"
 ```
 
 Si el bootstrap indica que `install-dir` no está en `PATH`, aplica la instrucción sugerida para tu shell y abre una terminal nueva.
@@ -98,8 +98,8 @@ lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.1/scripts/bootstrap.sh \
-  | bash -s -- --version v0.3.1 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.5/scripts/bootstrap.sh \
+  | bash -s -- --version v0.3.5 --install-dir "$HOME/.local/bin"
 ```
 
 `latest` existe como conveniencia explícita (`--version latest`), pero no es reproducible. Prefiere `vX.Y.Z` en documentación, CI y onboarding automatizado.
@@ -139,7 +139,7 @@ flowchart TD
 
     O --> Q{¿Pedido trivial, específico y bajo riesgo?}
     Q -->|sí| T3["T3 Express"]
-    Q -->|no / ambiguo / riesgoso| R["sdd-router: clasifica T1/T2/T3"]
+    Q -->|no / ambiguo / riesgoso| R["sdd-router: clasifica T1/T2/T3 read-only/no-shell"]
 
     R --> C1{"¿Falta claridad bloqueante?"}
     C1 -->|sí| CL["clarify: pregunta corta al usuario"] --> O
@@ -208,7 +208,7 @@ flowchart TD
 | Agente | Rol | Puede editar | Puede hacer delivery |
 | --- | --- | --- | --- |
 | `orchestrator` | Coordina y enruta al mínimo flujo seguro. | No | No |
-| `sdd-router` | Clasifica T1/T2/T3, `execution_mode`, skills, contexto y review workload. | No | No |
+| `sdd-router` | Clasifica T1/T2/T3, `execution_mode`, skills, contexto y review workload en modo read-only/no-shell. | No | No |
 | `explorer` | Investiga impacto, archivos, dependencias y riesgos. | No | No |
 | `implementer` | Aplica cambios acotados en código, tests, docs o configuración. | Sí | No |
 | `validator` | Ejecuta o diagnostica validación sin mutar código. | No | No |

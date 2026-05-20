@@ -32,6 +32,12 @@
 - JSON/curls: <resumen/link/bloque o `No aplica`>
 - Validación manual/estática: <detalle o `Pendiente de confirmar`>
 
+### Checks remotos del PR
+
+- Comando: <`gh pr checks <PR>` / `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url` / `Pendiente de delivery`>
+- Estado: <`pass` / `fail` / `pending` / `no disponible` / `Pendiente de delivery`>
+- Notas/recovery: <link al PR, checks pendientes/fallidos o `No aplica`>
+
 ## Monitors
 
 | Sistema | Monitor/Dashboard | Link | Estado |
@@ -52,6 +58,7 @@
 
 - [ ] Branch/base revisados por `delivery` según `.opencode/policies/delivery.md`.
 - [ ] Evidencia de validación incluida o limitación declarada.
+- [ ] Checks remotos del PR consultados/esperados por `delivery` antes de reportar `delivered`/`closed`, o marcados como pendientes con recovery.
 - [ ] Tarea asociada/tracking declarado o marcado como no configurado.
 - [ ] Monitors declarados o marcados como no aplica/no configurado.
 - [ ] Migraciones revisadas con heurística y estado explícito.

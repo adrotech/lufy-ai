@@ -46,7 +46,7 @@ Implement tasks from an OpenSpec change.
 
    **Handle states:**
    - If `state: "blocked"` (missing artifacts): show message, suggest using openspec-continue-change
-   - If `state: "all_done"`: congratulate, suggest archive
+   - If `state: "all_done"`: report that task checkboxes are complete, then verify validation/delivery/sync gates before suggesting archive
    - Otherwise: proceed to implementation
 
 4. **Read context files**
@@ -67,11 +67,12 @@ Implement tasks from an OpenSpec change.
 
    Display:
    - Schema being used
-   - Progress: "N/M tasks complete"
+   - Progress: "N/M task checkboxes complete"
    - Remaining tasks overview
    - Dynamic instruction from CLI
    - Repo context when relevant: CLI Go is in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto and must not use legacy fallback paths.
    - Active/focus spec context: `install-managed-assets-with-hash-idempotency` covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
+   - Task/block gate context: micro-checkboxes are internal progress only; `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` are distinct states.
 
 6. **Implement tasks (loop until done or blocked)**
 
@@ -79,7 +80,7 @@ Implement tasks from an OpenSpec change.
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
-   - Mark task complete in the tasks file: `- [ ]` → `- [x]`
+   - Mark task complete in the tasks file: `- [ ]` → `- [x]` only when the coherent implementation task/block is actually done
    - Continue to next task
    - If implementation changes requirement behavior, update the change delta spec rather than editing main specs directly; use `/opsx-sync` after validation to apply deltas.
 
@@ -90,6 +91,7 @@ Implement tasks from an OpenSpec change.
    - Use validación agrupada at the end of all tasks in a coherent block/proposal, including tests/coverage only when real commands exist for the scope.
    - Do not run tests constantly during normal implementation.
    - Run focused validation earlier only for blockers, risky changes, feedback loops, or failure diagnosis.
+   - Finishing edits usually means `implemented`; use `validated` only with proportional evidence, and never report `closed` or archive-ready solely from task checkboxes.
 
    **Pause if:**
    - Task is unclear → ask for clarification
@@ -101,8 +103,8 @@ Implement tasks from an OpenSpec change.
 
    Display:
    - Tasks completed this session
-   - Overall progress: "N/M tasks complete"
-   - If all done: suggest archive
+   - Overall progress: "N/M task checkboxes complete"
+   - If all done: report `implemented` or validation-pending state and recommend `/opsx-verify`; suggest archive only after validation, sync, and delivery gates are resolved
    - If paused: explain why and wait for guidance
 
 **Output During Implementation**
@@ -126,14 +128,15 @@ Working on task 4/7: <task description>
 
 **Change:** <change-name>
 **Schema:** <schema-name>
-**Progress:** 7/7 tasks complete ✓
+**Progress:** 7/7 task checkboxes complete ✓
+**State:** implemented / validation pending unless evidence proves otherwise
 
 ### Completed This Session
 - [x] Task 1
 - [x] Task 2
 ...
 
-All tasks complete! Ready to archive this change.
+Task checkboxes complete. Run `/opsx-verify <change-name>` and resolve validation, sync, and delivery gates before archive.
 ```
 
 **Output On Pause (Issue Encountered)**
@@ -143,7 +146,7 @@ All tasks complete! Ready to archive this change.
 
 **Change:** <change-name>
 **Schema:** <schema-name>
-**Progress:** 4/7 tasks complete
+**Progress:** 4/7 task checkboxes complete
 
 ### Issue Encountered
 <description of the issue>

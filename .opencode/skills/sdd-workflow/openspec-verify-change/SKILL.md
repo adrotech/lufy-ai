@@ -48,10 +48,11 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
 4. **Initialize verification report structure**
 
-   Create a report structure with three dimensions:
+   Create a report structure with four dimensions:
    - **Completeness**: Track tasks and spec coverage
    - **Correctness**: Track requirement implementation and scenario coverage
    - **Coherence**: Track design adherence and pattern consistency
+   - **Gate State**: Track validation evidence, delivery/sync needs, and whether the verified unit is `validated`, `delivery_pending`, `blocked`, or `closed`
 
    Each dimension can have CRITICAL, WARNING, or SUGGESTION issues.
 
@@ -65,6 +66,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
       - Add CRITICAL issue for each incomplete task
       - Recommendation: "Complete task: <description>" or "Mark as done if already implemented"
       - Archive assessment: `blocked`; tasks incompletas are never archivable
+   - Treat completed task checkboxes as necessary but not sufficient for `closed` or archive-ready.
 
    **Spec Coverage**:
    - If delta specs exist in `openspec/changes/<name>/specs/`:
@@ -101,6 +103,11 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
     - If delta specs exist, compare their requirement titles against corresponding main specs in `openspec/specs/<capability>/spec.md`
     - If deltas appear unapplied after implementation, add CRITICAL issue for archive readiness: "Run `/opsx-sync <change>` before archive"
     - Do not require archive during verification; only report whether archive is blocked by unsynced specs.
+    - If sync remains required, final state is `sync_pending` or `blocked`, not `closed`.
+
+    **Delivery Readiness**:
+    - If validation passes but commit, push, PR, issue/project sync, or other Git/GH delivery is required and not explicitly authorized/completed, report `validated` with next state `delivery_pending` or `blocked`.
+    - Do not perform delivery; recommend `delivery` only after explicit user authorization.
 
 7. **Verify Coherence**
 
@@ -133,6 +140,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    | Completeness | X/Y tasks, N reqs|
    | Correctness  | M/N reqs covered |
    | Coherence    | Followed/Issues  |
+   | Gate State   | validated / delivery_pending / sync_pending / blocked / closed |
    ```
 
    **Issues by Priority**:
@@ -154,13 +162,14 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
     **Final Assessment**:
     - If CRITICAL issues: "X critical issue(s) found. Fix before archiving."
-    - If only warnings: "No critical issues. Y warning(s) to consider. Ready for archive (with noted improvements)."
-    - If all clear: "All checks passed. Ready for archive."
+    - If only warnings and delivery/sync remains: "No critical issues. State: `validated`; next: `delivery_pending`/`sync_pending`."
+    - If all validation checks pass but delivery is not authorized/completed: "State: `validated`; next: `delivery_pending` or `blocked` for explicit delivery authorization."
+    - If all validation, delivery, sync, and closure gates pass: "State: `closed`; archive may proceed."
     - If verifying `migrate-installer-to-go-cli` and any task remains incomplete: "Archive blocked by repo policy until all tasks are complete."
 
    Validation preference:
    - Use systemic workflow: verify that implementation reflects initial analysis, interconnections, dependencies, feedback loops, and structure/behavior expectations.
-   - Use validación agrupada at the end of a coherent block/proposal after all tasks are complete.
+   - Use validación agrupada at the end of a coherent block/proposal after all coherent implementation tasks are complete; do not validate each micro-checkbox.
    - Include tests and coverage in final evidence when real commands exist for the scope; otherwise report the limitation explicitly.
    - Do not run tests constantly during verification unless diagnosing or handling a risky/blocking change.
 
@@ -170,6 +179,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 - **Correctness**: Use keyword search, file path analysis, reasonable inference - don't require perfect certainty
 - **Coherence**: Look for glaring inconsistencies, don't nitpick style
 - **Systemic fit**: Confirm changed/affected old files align with dependencies and expected behavior without rereading unrelated old files
+- **Gate semantics**: Task checkboxes are not enough for archive; assess proportional validation, delivery authorization/execution, sync, and blockers separately
 - **False Positives**: When uncertain, prefer SUGGESTION over WARNING, WARNING over CRITICAL
 - **Actionability**: Every issue must have a specific recommendation with file/line references where applicable
 
