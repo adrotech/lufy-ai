@@ -24,14 +24,14 @@ Incluye:
 
 ## Instalación rápida
 
-Versión estable actual: `v0.3.0`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
+Versión estable objetivo: `v0.3.5`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
 
 ### 1. Instalar el binario sin clone desde una release estable
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.5/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.3.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.5 --install-dir "$HOME/.local/bin"
 ```
 
 Si `~/.local/bin` no está en `PATH`, configura tu shell antes de continuar. Ejemplos rápidos:
@@ -167,7 +167,7 @@ Detalles técnicos y comandos de validación: [`tools/lufy-cli-go/README.md`](..
 
 1. Revisa `AGENTS.md` en el repositorio destino y ajusta convenciones locales; conserva una referencia `@lufy-ia.harness.md` para cargar el harness gestionado.
 2. Reinicia OpenCode para cargar agentes, comandos, templates y plugin.
-3. Deja que `sdd-router` clasifique cambios no triviales: T1 Full SDD, T2 SDD Lite o T3 Express.
+3. Deja que `sdd-router` clasifique cambios no triviales en modo read-only/no-shell: T1 Full SDD, T2 SDD Lite o T3 Express.
 4. Usa `/opsx-explore` y `/opsx-propose` para T1 o cambios con alta incertidumbre.
 5. Usa `.opencode/templates/sdd-lite.md` para T2 cuando baste un mini-spec profesional con criterios `WHEN`/`THEN`.
 6. Usa `/opsx-apply`, `/opsx-verify`, `/opsx-sync` y `/opsx-archive` según corresponda.
@@ -184,7 +184,7 @@ Los cambios OpenSpec nuevos deben escribir specs delta bajo `openspec/changes/<c
 
 ## Flujo de contribución y release del repositorio
 
-- Abre PRs normales desde ramas `feature/*`, `fix/*`, `chore/*` o equivalentes hacia `develop`.
+- Abre PRs normales desde ramas `feature/*`, `fix/*`, `chore/*` o equivalentes hacia `develop`; `delivery` debe consultar/esperar checks remotos del PR con evidencia antes de reportar `delivered` o `closed`.
 - Reserva `main` para producción/estabilidad: promociones `develop` → `main` o hotfix/release explícitamente autorizados.
 - Crea tags estables `v*` solo sobre commits alcanzables desde `origin/main`. El workflow de release bloquea publicación si el tag apunta a un commit que aún vive solo en `develop`.
 - Consulta [`docs/github-branch-settings.md`](github-branch-settings.md) para configurar default branch `develop` y protección de `develop`/`main` en GitHub.
