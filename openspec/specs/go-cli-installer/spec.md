@@ -389,3 +389,74 @@ La CLI Go SHALL validar cache OpenSpec por manifiesto y paths seguros antes de u
 #### Scenario: Unsafe cache paths are blocked
 - **WHEN** el manifiesto de cache contiene paths absolutos, traversal o symlinks inseguros
 - **THEN** la CLI rechaza la cache y no lee ni escribe fuera del target
+
+### Requirement: CLI init command
+The CLI Go SHALL expose `lufy-ai init` as the command for generating stack-aware project configuration.
+
+#### Scenario: Help includes init
+- **WHEN** the user requests CLI help
+- **THEN** the output lists `init` as the command for generating `.opencode/project.yaml`
+
+#### Scenario: Init delegates outside main
+- **WHEN** `cmd/lufy-ai/main.go` receives the `init` command
+- **THEN** it delegates scanning, merging and writing logic to internal packages instead of implementing that logic in `main.go`
+
+#### Scenario: Init supports target flag
+- **WHEN** the user runs `lufy-ai init --target <dir>`
+- **THEN** the CLI resolves `<dir>` with the same safe target handling used by managed commands before reading or writing `.opencode/project.yaml`
+
+### Requirement: CLI init write safety
+The `init` command SHALL use safe write semantics consistent with the existing CLI safety model.
+
+#### Scenario: Init creates parent directory safely
+- **WHEN** `.opencode/` does not exist and the user runs `lufy-ai init --target <dir>`
+- **THEN** the CLI creates only the required `.opencode/` directory and `.opencode/project.yaml` inside the resolved target
+
+#### Scenario: Init dry-run is not required
+- **WHEN** the user runs `lufy-ai init --target <dir>`
+- **THEN** the command may write `.opencode/project.yaml` because initialization is its explicit purpose, but it MUST NOT modify managed assets, install state, backups or unrelated files
+
+#### Scenario: Init reports generated path
+- **WHEN** `lufy-ai init` completes successfully
+- **THEN** the CLI prints the generated config path and summary of detected stacks
+
+### Requirement: CLI init validation
+The implementation of `lufy-ai init` SHALL be validated with Go tests and fixture repositories for supported and unsupported stacks.
+
+#### Scenario: Fixture tests cover supported stacks
+- **WHEN** Go tests run for the CLI packages
+- **THEN** fixtures verify Go, TypeScript/Next, JavaScript, Python, Java/Kotlin and multistack detection
+
+#### Scenario: Fixture tests cover unsupported stacks
+- **WHEN** Go tests run for the CLI packages
+- **THEN** fixtures verify unsupported stacks such as Rust are emitted with `supported: false` rather than causing init failure
+
+#### Scenario: Validation command covers init
+- **WHEN** `scripts/validate.sh` runs after this change is implemented
+- **THEN** the Go validation includes tests for `lufy-ai init` and still validates existing install/sync/verify behavior
+
+### Requirement: CLI rescan drift reporting
+The CLI Go SHALL expose `lufy-ai init --rescan` as the stack-aware project rescan mode that reports drift between `.opencode/project.yaml` and current repository evidence.
+
+#### Scenario: Help describes rescan drift behavior
+- **WHEN** the user requests help for `lufy-ai init`
+- **THEN** the output describes `--rescan` as refreshing stack evidence, preserving user overrides and reporting drift without destructive cleanup
+
+#### Scenario: Rescan delegates outside main
+- **WHEN** `cmd/lufy-ai/main.go` receives `init --rescan`
+- **THEN** it delegates scanning, drift comparison, merge planning, reporting and writing logic to internal packages instead of implementing that logic in `main.go`
+
+#### Scenario: Rescan reports clean idempotent state
+- **WHEN** the user runs `lufy-ai init --target <dir> --rescan` twice without target or config changes between runs
+- **THEN** the second run exits successfully, reports no drift and does not create backups or modify unrelated install state
+
+### Requirement: CLI rescan validation coverage
+The implementation of `lufy-ai init --rescan` SHALL be validated with Go tests and confined filesystem fixtures for drift, stale detection and idempotency.
+
+#### Scenario: Fixture tests cover rescan drift categories
+- **WHEN** Go tests run for the CLI packages
+- **THEN** fixtures verify at least no-drift, new stack drift, tooling drift, CI drift, stale stack detection, invalid existing config and unknown field preservation
+
+#### Scenario: Validation command covers rescan
+- **WHEN** `scripts/validate.sh` runs after this change is implemented
+- **THEN** the Go validation includes tests for `lufy-ai init --rescan` and still validates existing install, sync, verify and init behavior

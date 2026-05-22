@@ -10,6 +10,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
@@ -24,6 +25,8 @@ func Run(args []string, deps Dependencies) int {
 	}
 
 	switch args[0] {
+	case "init":
+		return runInit(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
 	case "verify":
@@ -50,6 +53,40 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runInit(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("init", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	force := fs.Bool("force", false, "Reemplazar .opencode/project.yaml existente")
+	rescan := fs.Bool("rescan", false, "Refrescar evidencia de stacks, preservar overrides y reportar drift sin cleanup destructivo")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan]")
+		fmt.Fprintln(deps.Stderr, "Genera .opencode/project.yaml con reglas stack-aware editables.")
+		fmt.Fprintln(deps.Stderr, "--rescan compara evidencia actual, preserva overrides de usuario y reporta drift sin borrar stacks ni archivos.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "init no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if *force && *rescan {
+		fmt.Fprintln(deps.Stderr, "init no permite combinar --force y --rescan")
+		return ExitUsageErr
+	}
+	if err := projectconfig.NewService().Run(projectconfig.Options{Target: *target, Force: *force, Rescan: *rescan}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runMerge(args []string, deps Dependencies) int {
@@ -310,6 +347,7 @@ func runInstall(args []string, deps Dependencies) int {
 func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai <comando> [flags]")
 	fmt.Fprintln(out, "Comandos:")
+	fmt.Fprintln(out, "  init      Genera .opencode/project.yaml stack-aware")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
