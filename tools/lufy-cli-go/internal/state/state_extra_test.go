@@ -12,7 +12,7 @@ func TestAncestorPathAndAssetMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rel != filepath.Join(".lufy-ai", "ancestors", ".opencode", "agents", "test-writer.md") {
+	if rel != ".lufy-ai/ancestors/.opencode/agents/test-writer.md" {
 		t.Fatalf("unexpected ancestor rel: %s", rel)
 	}
 	path, err := AncestorPath(target, ".opencode/agents/test-writer.md")
