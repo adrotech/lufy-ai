@@ -91,7 +91,7 @@ Comportamiento:
 - `lufy-ai init --target <repo>` crea `.opencode/project.yaml` si no existe.
 - Si el archivo existe, el comando falla sin sobrescribir.
 - `--force` reemplaza el archivo con una detección nueva.
-- `--rescan` compara la configuración existente con la evidencia actual, reporta drift por stack/tooling/CI/stale, fusiona solo campos detectados seguros y preserva overrides como `coverage_threshold`, `anti_patterns`, `loc_budget`, `delivery_strategy` y campos desconocidos; si no hay drift, no reescribe el archivo.
+- `--rescan` compara la configuración existente con la evidencia actual, reporta drift por stack/tooling/CI/stale, fusiona solo campos detectados seguros y preserva overrides como `coverage_threshold`, `anti_patterns`, `workflow_limits` y campos desconocidos; si detecta `loc_budget` o `delivery_strategy` top-level los reporta como legacy no canónico; si no hay drift, no reescribe el archivo.
 - Stacks soportados v1: Go, JavaScript/TypeScript con frameworks React/Next/Remix/Vue/Svelte, Python y Java/Kotlin.
 - Stacks conocidos no soportados, como Rust, se emiten con `supported: false` y placeholders editables.
 

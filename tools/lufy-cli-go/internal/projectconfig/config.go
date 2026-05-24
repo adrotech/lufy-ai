@@ -36,14 +36,13 @@ func NewService() Service {
 }
 
 type ProjectConfig struct {
-	SchemaVersion    int            `yaml:"schema_version"`
-	DetectedAt       time.Time      `yaml:"detected_at"`
-	Stacks           []Stack        `yaml:"stacks"`
-	CI               CIConfig       `yaml:"ci"`
-	TDD              TDDConfig      `yaml:"tdd"`
-	LocBudget        int            `yaml:"loc_budget"`
-	DeliveryStrategy string         `yaml:"delivery_strategy"`
-	Extra            map[string]any `yaml:",inline,omitempty"`
+	SchemaVersion  int            `yaml:"schema_version"`
+	DetectedAt     time.Time      `yaml:"detected_at"`
+	Stacks         []Stack        `yaml:"stacks"`
+	CI             CIConfig       `yaml:"ci"`
+	TDD            TDDConfig      `yaml:"tdd"`
+	WorkflowLimits WorkflowLimits `yaml:"workflow_limits"`
+	Extra          map[string]any `yaml:",inline,omitempty"`
 }
 
 type Stack struct {
@@ -100,6 +99,26 @@ type TDDConfig struct {
 	Strict              bool     `yaml:"strict"`
 	TriangulateRequired bool     `yaml:"triangulate_required"`
 	EdgeCaseCategories  []string `yaml:"edge_case_categories"`
+}
+
+type WorkflowLimits struct {
+	Sizing                  WorkflowSizing  `yaml:"sizing"`
+	Routing                 WorkflowRouting `yaml:"routing"`
+	ProposalSlicingStrategy string          `yaml:"proposal_slicing_strategy"`
+	DeliveryBatchStrategy   string          `yaml:"delivery_batch_strategy"`
+	StopRules               []string        `yaml:"stop_rules"`
+	Preflight               []string        `yaml:"preflight"`
+	Extra                   map[string]any  `yaml:",inline,omitempty"`
+}
+
+type WorkflowSizing struct {
+	LOCBudget int            `yaml:"loc_budget"`
+	Extra     map[string]any `yaml:",inline,omitempty"`
+}
+
+type WorkflowRouting struct {
+	Strategy string         `yaml:"strategy"`
+	Extra    map[string]any `yaml:",inline,omitempty"`
 }
 
 func (s Service) Run(opts Options, out io.Writer) error {
@@ -201,13 +220,12 @@ func Scan(root string, now time.Time) (ProjectConfig, error) {
 	}
 	sort.SliceStable(stacks, func(i, j int) bool { return stacks[i].ID < stacks[j].ID })
 	return ProjectConfig{
-		SchemaVersion:    SchemaVersion,
-		DetectedAt:       now.UTC(),
-		Stacks:           stacks,
-		CI:               scanCI(root),
-		TDD:              defaultTDD(),
-		LocBudget:        400,
-		DeliveryStrategy: "ask-on-risk",
+		SchemaVersion:  SchemaVersion,
+		DetectedAt:     now.UTC(),
+		Stacks:         stacks,
+		CI:             scanCI(root),
+		TDD:            defaultTDD(),
+		WorkflowLimits: defaultWorkflowLimits(),
 	}, nil
 }
 
@@ -217,17 +235,19 @@ func MergeRescan(current, detected ProjectConfig) ProjectConfig {
 
 func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 	merged := detected
-	merged.Extra = current.Extra
-	if current.LocBudget != 0 {
-		merged.LocBudget = current.LocBudget
-	}
-	if current.DeliveryStrategy != "" {
-		merged.DeliveryStrategy = current.DeliveryStrategy
+	merged.Extra = sanitizedTopLevelExtra(current.Extra)
+	items := legacyWorkflowFieldItems(current.Extra)
+	if !isZeroWorkflowLimits(current.WorkflowLimits) {
+		merged.WorkflowLimits = mergeWorkflowLimits(current.WorkflowLimits, detected.WorkflowLimits)
+		if !reflect.DeepEqual(current.WorkflowLimits, merged.WorkflowLimits) {
+			items = append(items, DriftItem{Category: "workflow_limits", Severity: "info", Path: "workflow_limits", Status: "applied", SuggestedAction: "Se completaron defaults canónicos faltantes dentro de workflow_limits preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "workflow_limits", Severity: "info", Path: "workflow_limits", Status: "applied", SuggestedAction: "Se agregó workflow_limits como fuente canónica única para sizing, slicing, delivery, stop rules y preflight."})
 	}
 	if len(current.TDD.EdgeCaseCategories) > 0 || current.TDD.Strict || current.TDD.TriangulateRequired {
 		merged.TDD = current.TDD
 	}
-	items := []DriftItem{}
 	if !reflect.DeepEqual(current.CI, detected.CI) {
 		items = append(items, DriftItem{Category: "ci", Severity: "info", Path: "ci", Status: "applied", SuggestedAction: "Revisa workflows detectados y ajusta manualmente si necesitas una política distinta."})
 	}
@@ -262,6 +282,85 @@ func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 		merged.DetectedAt = current.DetectedAt
 	}
 	return RescanPlan{Merged: merged, Items: items, HasChanges: hasChanges}
+}
+
+func sanitizedTopLevelExtra(extra map[string]any) map[string]any {
+	if len(extra) == 0 {
+		return extra
+	}
+	cleaned := map[string]any{}
+	for key, value := range extra {
+		if key == "loc_budget" || key == "delivery_strategy" {
+			continue
+		}
+		cleaned[key] = value
+	}
+	if len(cleaned) == 0 {
+		return nil
+	}
+	return cleaned
+}
+
+func legacyWorkflowFieldItems(extra map[string]any) []DriftItem {
+	items := []DriftItem{}
+	for _, key := range []string{"loc_budget", "delivery_strategy"} {
+		if _, ok := extra[key]; ok {
+			items = append(items, DriftItem{Category: "workflow_limits", Severity: "warning", Path: key, Status: "unsupported", SuggestedAction: "Mueve este override legacy a workflow_limits; los campos top-level loc_budget y delivery_strategy ya no son fuentes canónicas."})
+		}
+	}
+	return items
+}
+
+func isZeroWorkflowLimits(limits WorkflowLimits) bool {
+	return reflect.DeepEqual(limits, WorkflowLimits{})
+}
+
+func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
+	merged := defaults
+	if current.Sizing.LOCBudget != 0 || len(current.Sizing.Extra) > 0 {
+		merged.Sizing = mergeWorkflowSizing(current.Sizing, defaults.Sizing)
+	}
+	if current.Routing.Strategy != "" || len(current.Routing.Extra) > 0 {
+		merged.Routing = mergeWorkflowRouting(current.Routing, defaults.Routing)
+	}
+	if current.ProposalSlicingStrategy != "" {
+		merged.ProposalSlicingStrategy = current.ProposalSlicingStrategy
+	}
+	if current.DeliveryBatchStrategy != "" {
+		merged.DeliveryBatchStrategy = current.DeliveryBatchStrategy
+	}
+	if len(current.StopRules) > 0 {
+		merged.StopRules = current.StopRules
+	}
+	if len(current.Preflight) > 0 {
+		merged.Preflight = current.Preflight
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func mergeWorkflowSizing(current, defaults WorkflowSizing) WorkflowSizing {
+	merged := defaults
+	if current.LOCBudget != 0 {
+		merged.LOCBudget = current.LOCBudget
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func mergeWorkflowRouting(current, defaults WorkflowRouting) WorkflowRouting {
+	merged := defaults
+	if current.Strategy != "" {
+		merged.Strategy = current.Strategy
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
 }
 
 func hasProjectMutation(current, merged ProjectConfig) bool {
@@ -470,6 +569,10 @@ func scanCI(root string) CIConfig {
 
 func defaultTDD() TDDConfig {
 	return TDDConfig{Strict: true, TriangulateRequired: true, EdgeCaseCategories: []string{"boundary", "error_path", "concurrency", "data_shape", "time_sensitive"}}
+}
+
+func defaultWorkflowLimits() WorkflowLimits {
+	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
 
 func scanCommonSubdirs(root string) []Stack {

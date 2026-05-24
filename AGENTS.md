@@ -10,6 +10,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
+- **Workflow limits**: `.opencode/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
 - **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
@@ -70,6 +71,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
+- Para sizing/routing/slicing, leer `workflow_limits.sizing`, `workflow_limits.routing` y `workflow_limits.proposal_slicing_strategy`; no confundirlo con `workflow_limits.delivery_batch_strategy`.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
 - Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
 

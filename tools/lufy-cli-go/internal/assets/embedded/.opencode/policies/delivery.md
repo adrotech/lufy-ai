@@ -41,6 +41,15 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - Delivery remains explicitly authorized regardless of tier. A T1/T2/T3 classification can recommend delivery readiness but cannot authorize Git/GH operations.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
+## Workflow Limits Config
+
+- `.opencode/project.yaml` top-level `workflow_limits` is the only canonical source for project workflow limits.
+- Delivery batching decisions use `workflow_limits.delivery_batch_strategy` after a block/change is validated and delivery is explicitly authorized.
+- Proposal or review splitting uses `workflow_limits.proposal_slicing_strategy` before implementation/review; do not reinterpret proposal slicing as delivery batching or as Git/GH delivery authorization.
+- Delivery preflight checks use `workflow_limits.preflight` when present and must be verified or reported before moving to delivery-ready, delivered, or closed states.
+- Delivery stop conditions use `workflow_limits.stop_rules`; when a configured stop condition is hit, pause and report `blocked` or `delivery_pending` with the exact recovery path instead of continuing silently.
+- Top-level `loc_budget` and `delivery_strategy` are legacy/non-canonical and must not drive sizing, routing, slicing, batching, preflight, stop rules, delivery authorization, or closure.
+
 ## OpenSpec Task/Block Gate
 
 Evaluate completion at the smallest coherent delivery unit: a `tasks.md` task, an implementation block, or a review slice. Nested micro-checkboxes can track internal progress, but they do not trigger full validation, delivery, archive readiness, or closure unless explicitly declared as the coherent unit.

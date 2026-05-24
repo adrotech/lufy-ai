@@ -67,6 +67,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use installed OpenSpec/SDD skills by their concrete names (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-verify-change`, `openspec-archive-change`) when routing lifecycle work.
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 - Treat tiers as classification of proposals, functionalities, and tasks: T1 Full SDD, T2 SDD Lite, T3 Express. Prefer the smallest tier that completes the request safely.
+- When routing rationale, handoff constraints, review slices or result contracts depend on project workflow limits, reference `.opencode/project.yaml` top-level `workflow_limits` as the source of truth.
+- Keep proposal/review slicing (`workflow_limits.proposal_slicing_strategy`) separate from delivery grouping (`workflow_limits.delivery_batch_strategy`).
+- Do not report top-level `loc_budget` or top-level `delivery_strategy` as canonical workflow-limit fields.
 - For T1, route to OpenSpec proposal/design/spec/tasks before implementation when artifacts do not already exist.
 - For T2, route through SDD Lite or a structured handoff with observable WHEN/THEN acceptance criteria, grouped validation, and focused review when risk warrants it.
 - For T3, allow direct bounded implementation and proportional validation without mandatory OpenSpec or explorer.

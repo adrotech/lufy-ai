@@ -24,6 +24,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
+- When `.opencode/project.yaml` context is available, read sizing, routing, proposal slicing and escalation limits from top-level `workflow_limits` only.
 - Produce a structured handoff with execution mode, context slice, required permissions, skill status, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
 - Do not execute shell, Git, OpenSpec, validation, package-manager, or discovery commands; use only context already provided in the prompt and route to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
@@ -86,6 +87,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - `focused`: T2 or localized T1 changes where review should target changed files, acceptance criteria, and risk points.
 - `full`: broad T1 changes, security-sensitive changes, public contracts, delivery policy, or high uncertainty.
 - For T1 and multi-risk T2, recommend `review_slices` that keep the human reviewer oriented around small deliverables.
+- Use `workflow_limits.proposal_slicing_strategy` for proposal/review-slice splitting and do not use `workflow_limits.delivery_batch_strategy` as a slicing rule.
 - Do not split T3 work into artificial slices unless new risk appears.
 - PR split guidance is advisory only; delivery still requires explicit user authorization.
 
@@ -113,6 +115,7 @@ Each slice should include:
 - Do not replace `validator`; route to it when command evidence, tests, or validation are needed.
 - Do not replace `delivery`; route to it when Git/GH state, commits, PRs, sync, or delivery are needed.
 - Do not replace `orchestrator`; return routing guidance only.
+- Do not treat top-level `loc_budget` or top-level `delivery_strategy` in `.opencode/project.yaml` as valid workflow-limit sources; if mentioned, report them as legacy/non-canonical and route actionable migration or validation as needed.
 
 ## Output Contract
 
@@ -139,6 +142,12 @@ context_slice:
     - <path or unknown>
   acceptance_criteria:
     - WHEN <observable trigger> THEN <observable outcome>
+  workflow_limits_source: workflow_limits | not_available
+  workflow_limits_paths:
+    sizing: workflow_limits.sizing | not_available
+    routing: workflow_limits.routing | not_available
+    proposal_slicing: workflow_limits.proposal_slicing_strategy | not_available
+    delivery_batching: workflow_limits.delivery_batch_strategy | not_applicable_for_routing
 skill_status:
   local_skills_found:
     - <skill or none>

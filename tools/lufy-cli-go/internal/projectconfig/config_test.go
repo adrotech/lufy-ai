@@ -157,6 +157,35 @@ func TestServiceRunBlocksForceAndRescan(t *testing.T) {
 	if err := svc.Run(Options{Target: codeRoot, Force: true}, &out); err != nil {
 		t.Fatalf("force should replace config: %v", err)
 	}
+	data, err := os.ReadFile(filepath.Join(codeRoot, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertWorkflowLimitsOnly(t, string(data))
+}
+
+func TestScanGeneratesCanonicalWorkflowLimits(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+
+	cfg, err := Scan(root, fixedTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.WorkflowLimits.Sizing.LOCBudget != 400 {
+		t.Fatalf("unexpected workflow sizing defaults: %#v", cfg.WorkflowLimits.Sizing)
+	}
+	if cfg.WorkflowLimits.Routing.Strategy == "" || cfg.WorkflowLimits.ProposalSlicingStrategy == "" || cfg.WorkflowLimits.DeliveryBatchStrategy == "" {
+		t.Fatalf("missing workflow limits defaults: %#v", cfg.WorkflowLimits)
+	}
+	if len(cfg.WorkflowLimits.StopRules) == 0 || len(cfg.WorkflowLimits.Preflight) == 0 {
+		t.Fatalf("missing workflow gates: %#v", cfg.WorkflowLimits)
+	}
+	data, err := Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertWorkflowLimitsOnly(t, string(data))
 }
 
 func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
@@ -171,8 +200,9 @@ func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg.LocBudget = 250
-	cfg.DeliveryStrategy = "single-pr"
+	cfg.WorkflowLimits.Sizing.LOCBudget = 250
+	cfg.WorkflowLimits.DeliveryBatchStrategy = "single-pr"
+	cfg.WorkflowLimits.ProposalSlicingStrategy = "custom-review-slices"
 	cfg.Stacks[0].TestRunner.CoverageThreshold = 70
 	cfg.Stacks[0].AntiPatterns = []string{"custom-go-smell"}
 	data, err := Marshal(cfg)
@@ -200,10 +230,186 @@ func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
 	if goStack.TestRunner.CoverageThreshold != 70 || !contains(goStack.AntiPatterns, "custom-go-smell") {
 		t.Fatalf("rescan did not preserve go overrides: %#v", goStack)
 	}
-	if merged.LocBudget != 250 || merged.DeliveryStrategy != "single-pr" {
-		t.Fatalf("rescan did not preserve global overrides: %#v", merged)
+	if merged.WorkflowLimits.Sizing.LOCBudget != 250 || merged.WorkflowLimits.DeliveryBatchStrategy != "single-pr" || merged.WorkflowLimits.ProposalSlicingStrategy != "custom-review-slices" {
+		t.Fatalf("rescan did not preserve workflow limits overrides: %#v", merged.WorkflowLimits)
 	}
 	_ = requireStack(t, merged, "typescript")
+}
+
+func TestRescanMergesPartialWorkflowLimitsWithDefaults(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+workflow_limits:
+  sizing:
+    loc_budget: 250
+`)
+
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	merged, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.WorkflowLimits.Sizing.LOCBudget != 250 {
+		t.Fatalf("rescan did not preserve partial sizing override: %#v", merged.WorkflowLimits)
+	}
+	if merged.WorkflowLimits.Routing.Strategy == "" || merged.WorkflowLimits.ProposalSlicingStrategy == "" || merged.WorkflowLimits.DeliveryBatchStrategy == "" {
+		t.Fatalf("rescan did not fill missing workflow defaults: %#v", merged.WorkflowLimits)
+	}
+	if len(merged.WorkflowLimits.StopRules) == 0 || len(merged.WorkflowLimits.Preflight) == 0 {
+		t.Fatalf("rescan did not fill missing workflow gates: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestRescanPersistsOnlyWorkflowLimitDefaultCompletion(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	svc := Service{Now: fixedTime}
+	if err := svc.Run(Options{Target: root}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, ProjectConfigPath)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.WorkflowLimits = WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 250}}
+	data, err := Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out strings.Builder
+	if err := svc.Run(Options{Target: root, Rescan: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "category=workflow_limits") || !strings.Contains(out.String(), "status=applied") {
+		t.Fatalf("rescan did not report workflow default completion: %s", out.String())
+	}
+	merged, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.WorkflowLimits.Sizing.LOCBudget != 250 || merged.WorkflowLimits.Routing.Strategy == "" || len(merged.WorkflowLimits.Preflight) == 0 {
+		t.Fatalf("rescan did not persist completed workflow defaults: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestRescanAddsMissingWorkflowLimitsWithoutOtherDrift(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	svc := Service{Now: fixedTime}
+	if err := svc.Run(Options{Target: root}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, ProjectConfigPath)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.WorkflowLimits = WorkflowLimits{}
+	data, err := Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var out strings.Builder
+	if err := svc.Run(Options{Target: root, Rescan: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "category=workflow_limits") || !strings.Contains(out.String(), "status=applied") {
+		t.Fatalf("rescan did not report missing workflow_limits completion: %s", out.String())
+	}
+	merged, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isZeroWorkflowLimits(merged.WorkflowLimits) || merged.WorkflowLimits.Routing.Strategy == "" || len(merged.WorkflowLimits.StopRules) == 0 {
+		t.Fatalf("rescan did not persist missing workflow defaults: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestWorkflowLimitsNestedExtrasDoNotDropDefaults(t *testing.T) {
+	detected := ProjectConfig{WorkflowLimits: defaultWorkflowLimits()}
+	current := detected
+	current.WorkflowLimits = WorkflowLimits{
+		Sizing:  WorkflowSizing{Extra: map[string]any{"custom_sizing": "keep"}},
+		Routing: WorkflowRouting{Extra: map[string]any{"custom_routing": "keep"}},
+	}
+
+	plan := BuildRescanPlan(current, detected)
+	if !plan.HasChanges {
+		t.Fatalf("expected workflow default completion to require write: %#v", plan)
+	}
+	if plan.Merged.WorkflowLimits.Sizing.LOCBudget != 400 || plan.Merged.WorkflowLimits.Routing.Strategy == "" {
+		t.Fatalf("nested extras dropped defaults: %#v", plan.Merged.WorkflowLimits)
+	}
+	if plan.Merged.WorkflowLimits.Sizing.Extra["custom_sizing"] != "keep" || plan.Merged.WorkflowLimits.Routing.Extra["custom_routing"] != "keep" {
+		t.Fatalf("nested extras were not preserved: %#v", plan.Merged.WorkflowLimits)
+	}
+}
+
+func TestRescanReportsAndRemovesLegacyWorkflowFields(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+loc_budget: 250
+delivery_strategy: single-pr
+workflow_limits:
+  sizing:
+    loc_budget: 300
+  routing:
+    strategy: custom
+  proposal_slicing_strategy: custom-slices
+  delivery_batch_strategy: custom-batches
+  stop_rules: [custom-stop]
+  preflight: [custom-preflight]
+`)
+
+	var out strings.Builder
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "category=workflow_limits") || !strings.Contains(out.String(), "status=unsupported") {
+		t.Fatalf("rescan report missing legacy workflow warning: %s", out.String())
+	}
+	mergedData, err := os.ReadFile(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(mergedData)
+	assertWorkflowLimitsOnly(t, text)
+	for _, want := range []string{"loc_budget: 300", "strategy: custom", "proposal_slicing_strategy: custom-slices", "delivery_batch_strategy: custom-batches", "custom-stop", "custom-preflight"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("merged config missing workflow override %q:\n%s", want, text)
+		}
+	}
 }
 
 func TestRescanNoDriftDoesNotRewriteConfig(t *testing.T) {
@@ -314,8 +520,15 @@ tdd:
   strict: true
   triangulate_required: true
   edge_case_categories: [boundary]
-loc_budget: 250
-delivery_strategy: single-pr
+workflow_limits:
+  sizing:
+    loc_budget: 250
+  routing:
+    strategy: custom
+  proposal_slicing_strategy: custom-review-slices
+  delivery_batch_strategy: single-pr
+  stop_rules: [custom-stop]
+  preflight: [custom-preflight]
 `)
 	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &strings.Builder{}); err != nil {
 		t.Fatal(err)
@@ -325,7 +538,7 @@ delivery_strategy: single-pr
 		t.Fatal(err)
 	}
 	text := string(data)
-	for _, want := range []string{"custom_top: keep-me", "custom_stack: keep-stack", "coverage_threshold: 70", "custom-go-smell"} {
+	for _, want := range []string{"custom_top: keep-me", "custom_stack: keep-stack", "coverage_threshold: 70", "custom-go-smell", "proposal_slicing_strategy: custom-review-slices", "delivery_batch_strategy: single-pr"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("merged config missing %q:\n%s", want, text)
 		}
@@ -387,4 +600,16 @@ func contains(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func assertWorkflowLimitsOnly(t *testing.T, text string) {
+	t.Helper()
+	if !strings.Contains(text, "workflow_limits:") {
+		t.Fatalf("missing workflow_limits block:\n%s", text)
+	}
+	for _, legacy := range []string{"\nloc_budget:", "\ndelivery_strategy:"} {
+		if strings.Contains(text, legacy) {
+			t.Fatalf("found legacy top-level workflow field %q:\n%s", legacy, text)
+		}
+	}
 }
