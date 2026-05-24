@@ -18,7 +18,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 
 ## Estructura relevante
 
-- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`).
+- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`).
 - `.opencode/commands/`: slash commands del flujo OpenSpec: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`.
 - `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar y archivar cambios OpenSpec.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
@@ -116,7 +116,7 @@ workflow_decision:
 risks:
   - <risk/follow-up or none>
 next_recommended:
-  owner: orchestrator | explorer | implementer | validator | reviewer | delivery | user | none
+  owner: orchestrator | explorer | implementer | test-writer | validator | reviewer | delivery | user | none
   action: <next action>
 skill_resolution:
   local_skills_used:
@@ -131,8 +131,9 @@ skill_resolution:
 - `sdd-router`: clasifica T1/T2/T3 en modo read-only/no-shell, recomienda execution mode, contexto mínimo, skill status y review workload; no ejecuta shell/Git/OpenSpec/validación y deriva a `explorer`, `validator` o `delivery` cuando se requiere estado, evidencia o Git/GH.
 - `explorer`: investiga en modo read-only y produce handoff para implementación.
 - `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
+- `test-writer`: escribe o ajusta pruebas TDD stack-aware para cambios T1/T2 sustantivos y reporta evidencia RED/GREEN/TRIANGULATE/REFACTOR; no hace delivery.
 - `validator`: valida y diagnostica en modo read-only; no edita.
-- `reviewer`: revisa calidad, riesgos y cobertura; no edita.
+- `reviewer`: revisa calidad, riesgos y cobertura con scoring L1-L5 stack-aware; no edita.
 - `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.opencode/policies/delivery.md`.
 
 ## OpenSpec workflow

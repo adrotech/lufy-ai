@@ -147,6 +147,47 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	}
 }
 
+func TestRenderMergeBlockPreservesLocalTextAndUpdatesBlocks(t *testing.T) {
+	source := t.TempDir()
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nnew lufy\n<!-- LUFY:END project-guide -->\n")
+	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "local intro\n<!-- LUFY:BEGIN project-guide -->\nold lufy\n<!-- LUFY:END project-guide -->\nlocal outro\n")
+
+	merged, err := renderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
+	if err != nil {
+		t.Fatalf("renderMergeBlock() error = %v", err)
+	}
+	got := string(merged)
+	for _, want := range []string{"local intro", "new lufy", "local outro"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("merged output missing %q: %s", want, got)
+		}
+	}
+	if strings.Contains(got, "old lufy") {
+		t.Fatalf("old block was not replaced: %s", got)
+	}
+}
+
+func TestReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "source.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readSourceContent(root, "source.md"); err == nil {
+		t.Fatalf("expected directory source to fail")
+	}
+
+	target := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	writeInstallerFile(t, outside, "outside\n")
+	if err := os.Symlink(outside, filepath.Join(target, "dest.md")); err != nil {
+		t.Skipf("symlink no soportado en este entorno: %v", err)
+	}
+	if err := writeTargetFile(target, "dest.md", []byte("new\n")); err == nil {
+		t.Fatalf("expected symlink target to fail")
+	}
+}
+
 func TestRunLufyNewDoesNotBackupOrRefreshAncestor(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)

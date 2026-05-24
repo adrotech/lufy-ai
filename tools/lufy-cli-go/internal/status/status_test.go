@@ -90,6 +90,27 @@ func TestStatusReportsLufyNewForNoReplaceDrift(t *testing.T) {
 	}
 }
 
+func TestStatusHumanOutputAndShortHash(t *testing.T) {
+	target := t.TempDir()
+	writeStatusFile(t, filepath.Join(target, "AGENTS.md"), "ok\n")
+	hash := hashStatusFile(t, filepath.Join(target, "AGENTS.md"))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "AGENTS.md", TargetRel: "AGENTS.md", TargetSHA256: hash}}, "test-fingerprint")); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Verbose: true, Scope: assets.ScopeBoth}, &out); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	for _, want := range []string{"Status para", "Scope: both", "globalRoot=", "Instalado: sí", "expected=" + hash[:12]} {
+		if !bytes.Contains(out.Bytes(), []byte(want)) {
+			t.Fatalf("human status output missing %q: %s", want, out.String())
+		}
+	}
+	if shortHash("short") != "short" || shortHash("1234567890abcdef") != "1234567890ab" {
+		t.Fatalf("shortHash unexpected")
+	}
+}
+
 func writeStatusFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
