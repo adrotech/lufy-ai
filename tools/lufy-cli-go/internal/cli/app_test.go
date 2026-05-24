@@ -87,6 +87,54 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	}
 }
 
+func TestRunMergeHelpAndRequiresPath(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	if code := Run([]string{"merge", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("merge --help expected ExitOK, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+		t.Fatalf("merge help unexpected: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"merge"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("merge without path expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
+		t.Fatalf("merge missing path output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunBackupAndScopeErrors(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	if code := Run([]string{"backup", "--bad"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("backup bad flag expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"status", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("status invalid scope expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"sync", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("sync invalid scope expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"install", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("install invalid scope expected ExitUsageErr, got %d", code)
+	}
+}
+
 func TestRunInitCreatesProjectConfig(t *testing.T) {
 	target := t.TempDir()
 	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {

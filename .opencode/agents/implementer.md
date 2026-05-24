@@ -26,6 +26,7 @@ permission:
     "git diff*": allow
     "git log*": allow
   task:
+    "test-writer": allow
     "*": deny
 ---
 
@@ -64,6 +65,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Feature and bug implementation.
 - Focused refactors with clear scope.
 - Tests and documentation tied directly to implementation.
+- For T1/T2 changes with substantive test creation or revision, delegate the test-focused portion to `test-writer` when a TDD cycle is applicable, or record why TDD delegation is `not_applicable`.
 - Minimal repository exploration needed to complete assigned change.
 - Inspect only the files needed to understand the local pattern.
 - Reuse initial analysis/handoffs for old files; do not reread old files repeatedly during normal implementation.
@@ -83,7 +85,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not report a task/block as `closed` only because files changed or `tasks.md` checkboxes were marked; report `implemented` or validation pending unless proportional validation evidence is also included.
 - Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist. Basic navigation/copy commands like `ls`, `dir`, and `cp` are allowed for implementation work.
-- Do not delegate to other agents.
+- Do not delegate to other agents except `test-writer` for assigned T1/T2 test-focused work that requires TDD evidence.
 - Do not fabricate validation evidence.
 - If change needs broader impact analysis, report that `explorer` should run first.
 - If change reaches 100% complete and needs delivery, report readiness for `delivery` without executing delivery.
@@ -96,6 +98,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Include exact commands run and their results.
 - If no toolchain exists, state that explicitly and describe manual/static checks performed.
 - Do not promise tests; add/run them only when appropriate and available.
+- For T1/T2 work that requires tests, include `test-writer` RED/GREEN/TRIANGULATE/REFACTOR evidence or an explicit `not_applicable` reason in the Result Contract.
 - If tests or coverage are applicable, run them after all tasks in the assigned block/proposal are complete, not after each task.
 
 ## Escalation

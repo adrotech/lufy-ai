@@ -123,7 +123,7 @@ workflow_decision:
 risks:
   - <risk/follow-up or none>
 next_recommended:
-  owner: orchestrator | explorer | implementer | validator | reviewer | delivery | user | none
+  owner: orchestrator | explorer | implementer | test-writer | validator | reviewer | delivery | user | none
   action: <next action>
 skill_resolution:
   local_skills_used:

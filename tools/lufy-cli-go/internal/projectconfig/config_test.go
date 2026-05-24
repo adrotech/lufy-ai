@@ -567,6 +567,58 @@ func TestRescanInvalidYAMLFailsWithoutMutation(t *testing.T) {
 	}
 }
 
+func TestScanShallowDetectsSupportedAndUnsupportedStacks(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, "package.json", `{"scripts":{"test":"vitest","lint":"eslint ."},"dependencies":{"next":"latest","react":"latest","@opentelemetry/api":"latest"},"devDependencies":{"prettier":"latest"}}`)
+	writeFile(t, root, "tsconfig.json", `{}`)
+	writeFile(t, root, "pnpm-lock.yaml", "lock\n")
+	writeFile(t, root, "pyproject.toml", "[project]\ndependencies=['fastapi','pytest','ruff']\n")
+	writeFile(t, root, "pom.xml", "<project></project>")
+	writeFile(t, root, "Cargo.toml", "[package]\nname='rusty'\n")
+	writeFile(t, root, "composer.json", `{}`)
+	writeFile(t, root, "Gemfile", "source 'https://rubygems.org'\n")
+	writeFile(t, root, "mix.exs", "defmodule App.MixProject do end\n")
+	writeFile(t, root, "app.csproj", "<Project />")
+
+	stacks, err := ScanShallow(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]Stack{}
+	for _, stack := range stacks {
+		ids[stack.ID] = stack
+	}
+	for _, id := range []string{"go", "typescript", "python", "java", "rust", "php", "ruby", "elixir", "dotnet"} {
+		if _, ok := ids[id]; !ok {
+			t.Fatalf("missing stack %s in %#v", id, stacks)
+		}
+	}
+	if ids["typescript"].PackageManager != "pnpm" || !contains(ids["typescript"].Frameworks, "next") || !contains(ids["typescript"].ObservabilityLibs, "@opentelemetry/api") {
+		t.Fatalf("typescript stack unexpected: %#v", ids["typescript"])
+	}
+	if ids["rust"].Supported || ids["php"].Supported {
+		t.Fatalf("unsupported stacks should be marked unsupported: rust=%#v php=%#v", ids["rust"], ids["php"])
+	}
+}
+
+func TestProjectConfigHelpers(t *testing.T) {
+	stacks := upsertStack([]Stack{{ID: "typescript", Frameworks: []string{"react"}, ObservabilityLibs: []string{"pino"}}}, Stack{ID: "typescript", Frameworks: []string{"next", "react"}, ObservabilityLibs: []string{"pino", "winston"}})
+	if len(stacks) != 1 || !contains(stacks[0].Frameworks, "next") || !contains(stacks[0].ObservabilityLibs, "winston") {
+		t.Fatalf("upsertStack did not merge unique fields: %#v", stacks)
+	}
+	stacks = upsertStack(stacks, Stack{ID: "go"})
+	if len(stacks) != 2 {
+		t.Fatalf("upsertStack did not append new stack: %#v", stacks)
+	}
+	if equalStrings([]string{"a"}, []string{"a", "b"}) || equalStrings([]string{"a"}, []string{"b"}) || !equalStrings([]string{"a", "b"}, []string{"a", "b"}) {
+		t.Fatalf("equalStrings returned unexpected result")
+	}
+	if stackSummary(nil) != "ninguno" || !strings.Contains(stackSummary([]Stack{{ID: "old", Deprecated: true}}), "deprecated") {
+		t.Fatalf("stackSummary unexpected")
+	}
+}
+
 func fixedTime() time.Time {
 	return time.Date(2026, 5, 20, 14, 0, 0, 0, time.UTC)
 }

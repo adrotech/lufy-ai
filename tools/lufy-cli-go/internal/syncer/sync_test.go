@@ -110,6 +110,41 @@ func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
 	}
 }
 
+func TestRenderMergeBlockForSync(t *testing.T) {
+	source := t.TempDir()
+	target := t.TempDir()
+	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nnew sync\n<!-- LUFY:END project-guide -->\n")
+	writeFile(t, filepath.Join(target, "AGENTS.md"), "local\n<!-- LUFY:BEGIN project-guide -->\nold sync\n<!-- LUFY:END project-guide -->\n")
+
+	merged, err := renderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
+	if err != nil {
+		t.Fatalf("renderMergeBlock() error = %v", err)
+	}
+	if got := string(merged); !strings.Contains(got, "local") || !strings.Contains(got, "new sync") || strings.Contains(got, "old sync") {
+		t.Fatalf("unexpected merge-block output: %s", got)
+	}
+}
+
+func TestSyncReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "source.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readSourceContent(root, "source.md"); err == nil {
+		t.Fatalf("expected directory source to fail")
+	}
+
+	target := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.md")
+	writeFile(t, outside, "outside\n")
+	if err := os.Symlink(outside, filepath.Join(target, "dest.md")); err != nil {
+		t.Skipf("symlink no soportado en este entorno: %v", err)
+	}
+	if err := writeTargetFile(target, "dest.md", []byte("new\n")); err == nil {
+		t.Fatalf("expected symlink target to fail")
+	}
+}
+
 func TestDryRunPerformsNoMutations(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)

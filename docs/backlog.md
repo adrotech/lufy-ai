@@ -47,6 +47,8 @@ Effort estimado:
 
 ### LUFY-0 - `lufy-ai init` y `.opencode/project.yaml`
 
+**Estado:** cubierto en repo; `init` genera `.opencode/project.yaml` stack-aware y `workflow_limits` es la fuente canónica de límites de workflow.
+
 **Problema:** la disciplina operativa del harness no puede depender de Go. El repo destino debe declarar reglas detectadas y editables para test, lint, format, coverage, observabilidad y anti-patrones.
 
 **Alcance:**
@@ -71,6 +73,8 @@ Effort estimado:
 
 ### LUFY-1 - Agent `test-writer` parametrizado por `project.yaml`
 
+**Estado:** implementado y validado localmente mediante `add-stack-aware-test-writer`; pendiente de sync/archive y delivery autorizado.
+
 **Problema:** el ciclo TDD debe ser consistente y verificable sin asumir lenguaje.
 
 **Alcance:**
@@ -92,6 +96,8 @@ Effort estimado:
 **Effort:** M.
 
 ### LUFY-2 - Reviewer L1-L5 ponderado y HTML capability-aware
+
+**Estado:** implementado y validado localmente mediante `add-scored-stack-aware-reviewer`; pendiente de sync/archive y delivery autorizado. El slice actual cubre el reviewer ponderado stack-aware; la skill HTML opcional queda fuera de este slice.
 
 **Problema:** el reviewer debe producir evaluación consistente, exportable y adaptada al stack.
 
@@ -220,9 +226,7 @@ Effort estimado:
 
 ### LUFY-15 - Result Contract envelope v1 unificado
 
-**Estado:** validado localmente mediante `standardize-result-contract-workflow-decisions`; envelope v1 definido para agentes locales, conectado a decisiones `workflow_limits` y sincronizado a specs principales.
-
-**Alcance restante:** cerrar delivery autorizado y archive del change.
+**Estado:** entregado; `standardize-result-contract-workflow-decisions` fue validado, sincronizado y archivado el 2026-05-24.
 
 **Acceptance:** cada agent produce YAML válido con `schema_version`, `status`, `executive_summary`, `artifacts`, `next_recommended`, `risks` y `skill_resolution`.
 
@@ -292,7 +296,7 @@ Objetivo: introducir configuración stack-aware sin cambiar aún todos los agent
 
 | Slice | Items | Proposal sugerida | Riesgo | Validación mínima |
 | --- | --- | --- | --- | --- |
-| A1 | LUFY-0 núcleo | `add-stack-aware-project-init` | Alto: schema nuevo y persistencia config | Cubierto en repo; validar/limpiar change local stale antes de archive si reaparece activo |
+| A1 | LUFY-0 núcleo | `add-stack-aware-project-init` | Alto: schema nuevo y persistencia config | Cubierto en repo |
 | A2 | LUFY-16 rescan/drift | `add-project-rescan-stack-drift` | Medio: merge de overrides | Cubierto por PR #65 y archive correspondiente |
 | A3 | LUFY-12 docs namespace | `document-lufy-command-namespace` | Bajo | Revisión documental y `git diff --check` |
 
@@ -302,8 +306,8 @@ Objetivo: hacer que el workflow use `project.yaml` en TDD, review y routing.
 
 | Slice | Items | Proposal sugerida | Riesgo | Validación mínima |
 | --- | --- | --- | --- | --- |
-| B1 | LUFY-15 | `standardize-result-contract-workflow-decisions` | Medio: coordinación entre agentes | Revisión de agentes, fixtures de outputs, validación documental |
-| B2 | LUFY-1 | `add-stack-aware-test-writer` | Alto: cambio de flujo T1/T2 | Simulaciones Go/TS/Python y revisión de gates validator |
+| B1 | LUFY-15 | `standardize-result-contract-workflow-decisions` | Medio: coordinación entre agentes | Entregado; change validado y archivado el 2026-05-24 |
+| B2 | LUFY-1 | `add-stack-aware-test-writer` | Alto: cambio de flujo T1/T2 | Implementado y validado localmente; pendiente de sync/archive y delivery autorizado |
 | B3 | LUFY-2 | `add-scored-stack-aware-reviewer` | Medio | PR dry-run o fixture de review, HTML si se incluye skill |
 | B4 | LUFY-5 + LUFY-6 | `add-numeric-stop-rules-workload-guard` | Medio | Casos de router/orchestrator con estimated LOC y slices |
 | B5 | LUFY-14 | `add-active-post-spec-verification` | Bajo-medio | Simulación de spec faltante y spec válido |
