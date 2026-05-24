@@ -11,7 +11,9 @@ Operational guide for coding agents working in this repository.
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
+- **Workflow limits**: Use `.opencode/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
+- **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
 
 ## Source Layout
 
@@ -75,10 +77,60 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
+- For sizing/routing/slicing, read `workflow_limits.sizing`, `workflow_limits.routing`, and `workflow_limits.proposal_slicing_strategy`; do not confuse these with `workflow_limits.delivery_batch_strategy`.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - When `delivery` creates a PR, it must consult or wait for remote checks with command evidence such as `gh pr checks <PR>` or `gh pr view ... statusCheckRollup/mergeStateStatus`; failed, cancelled, timed out, action-required, undocumented, or tooling-missing checks are `blocked`, while existing pending checks are `delivery_pending`; neither state may be reported as `delivered`/`closed`.
 - Task/block states: `implemented` means edits are applied; `validated` means proportional evidence exists; `delivery_pending` means authorized Git/GH, existing pending remote PR checks, or sync still remains; `delivered` means authorized delivery ran and required remote PR checks passed with evidence; `closed` requires all implementation, validation, delivery/checks/sync, and traceability gates.
+
+## Result Contract Envelope V1
+
+Use this envelope for substantive local-agent handoffs and final workflow results. Keep T3 Express results compact with `not_applicable` values; normalize legacy or third-party outputs with `legacy_fallback: true` and missing evidence as `not_available`.
+
+```yaml
+schema_version: result-contract/v1
+status: ready | implemented | validated | delivery_pending | sync_pending | blocked | escalated | delivered | closed
+legacy_fallback: false
+executive_summary: <1-3 lines>
+artifacts:
+  changed:
+    - <path or none>
+  referenced:
+    - <path/spec/PR or none>
+evidence:
+  commands:
+    - command: <command or none>
+      result: passed | failed | blocked | not_run
+      notes: <key output or reason>
+  static:
+    - <manual/static evidence or not_applicable>
+workflow_decision:
+  tier: T1 | T2 | T3 | not_applicable
+  workflow_limits_source: workflow_limits | not_available
+  workflow_limits_paths:
+    sizing: workflow_limits.sizing | not_available
+    routing: workflow_limits.routing | not_available
+    proposal_slicing: workflow_limits.proposal_slicing_strategy | not_available
+    delivery_batching: workflow_limits.delivery_batch_strategy | not_applicable
+    preflight: workflow_limits.preflight | not_available
+    stop_rules: workflow_limits.stop_rules | not_available
+  workload_decision_needed: true | false
+  review_slices:
+    - <slice summary or not_applicable>
+  preflight_status: passed | blocked | not_applicable | not_available
+  stop_rule_status: clear | triggered | not_applicable | not_available
+  delivery_batching_guidance: <guidance or not_applicable>
+risks:
+  - <risk/follow-up or none>
+next_recommended:
+  owner: orchestrator | explorer | implementer | validator | reviewer | delivery | user | none
+  action: <next action>
+skill_resolution:
+  local_skills_used:
+    - <skill or none>
+  bootstrap_recommended: true | false
+  notes: <notes or none>
+```
 
 ## Skill Resolution
 
@@ -94,5 +146,5 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Do not treat `tasks.md` checkboxes or micro-checkboxes as `closed`/archive-ready without the task/block gate evidence
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
-- Pass only minimal role-scoped context to subagents and ask for a result contract: objective, actions, evidence, risks, state, and next action
+- Pass only minimal role-scoped context to subagents and ask for Result Contract envelope v1
 <!-- LUFY:END project-guide -->

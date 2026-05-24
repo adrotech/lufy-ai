@@ -66,6 +66,7 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 - Treat this as the initial systemic analysis for the block/proposal: read enough old files once to plan safely, then summarize what does not need rereading unless changed, conflicted, or invalidated by new evidence.
 - Summarize findings without pasting large source excerpts.
 - If implementation scope is unclear, return missing decision.
+- Return Result Contract envelope v1 for substantive exploration handoffs, preserving any carried-forward `workflow_decision` and placing the implementer handoff in `next_recommended` plus concise static evidence.
 
 ## Validation / Evidence
 
@@ -81,12 +82,4 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 
 ## Required Output
 
-### Objective
-### Thoroughness
-### Relevant Files
-### Existing Patterns
-### Interconnections / Dependencies
-### Feedback / Structure-Behavior
-### Risks / Constraints
-### Implementer Handoff
-### Recommended Next Step
+Return Result Contract envelope v1. Include relevant files, patterns, interconnections, structure/behavior risks and implementer handoff in `evidence.static`, `risks` and `next_recommended`.

@@ -81,6 +81,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
 - For OpenSpec verification, treat checked tasks as necessary but not sufficient for archive; closure also requires validation, delivery/sync, and blocker evidence according to `.opencode/policies/delivery.md`.
+- Return Result Contract envelope v1 for validation handoffs, preserving carried-forward `workflow_decision` fields and filling `evidence.commands` with exact command results.
 
 ## Escalation
 
@@ -90,9 +91,4 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 ## Required Output
 
-### Validation Matrix
-### Commands Run
-### Results
-### Failures
-### Diagnosis
-### Recommended Owner
+Return Result Contract envelope v1 plus a concise validation matrix in `evidence.static` when useful. Set `status: validated` only when proportional evidence exists; otherwise use `blocked`, `escalated`, or `delivery_pending` as appropriate.

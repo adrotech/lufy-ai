@@ -220,9 +220,9 @@ Effort estimado:
 
 ### LUFY-15 - Result Contract envelope v1 unificado
 
-**Estado:** existen templates y uso parcial.
+**Estado:** validado localmente mediante `standardize-result-contract-workflow-decisions`; envelope v1 definido para agentes locales, conectado a decisiones `workflow_limits` y sincronizado a specs principales.
 
-**Alcance restante:** definir envelope canónico en `AGENTS.md` y exigirlo en agentes; `orchestrator` debe preferir envelope v1 y tolerar fallback legacy.
+**Alcance restante:** cerrar delivery autorizado y archive del change.
 
 **Acceptance:** cada agent produce YAML válido con `schema_version`, `status`, `executive_summary`, `artifacts`, `next_recommended`, `risks` y `skill_resolution`.
 
@@ -302,7 +302,7 @@ Objetivo: hacer que el workflow use `project.yaml` en TDD, review y routing.
 
 | Slice | Items | Proposal sugerida | Riesgo | Validación mínima |
 | --- | --- | --- | --- | --- |
-| B1 | LUFY-15 | `standardize-result-contract-v1` | Medio: coordinación entre agentes | Revisión de agentes, fixtures de outputs, validación documental |
+| B1 | LUFY-15 | `standardize-result-contract-workflow-decisions` | Medio: coordinación entre agentes | Revisión de agentes, fixtures de outputs, validación documental |
 | B2 | LUFY-1 | `add-stack-aware-test-writer` | Alto: cambio de flujo T1/T2 | Simulaciones Go/TS/Python y revisión de gates validator |
 | B3 | LUFY-2 | `add-scored-stack-aware-reviewer` | Medio | PR dry-run o fixture de review, HTML si se incluye skill |
 | B4 | LUFY-5 + LUFY-6 | `add-numeric-stop-rules-workload-guard` | Medio | Casos de router/orchestrator con estimated LOC y slices |

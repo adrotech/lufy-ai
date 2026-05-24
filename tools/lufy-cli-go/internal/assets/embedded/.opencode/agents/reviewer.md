@@ -69,6 +69,7 @@ Use `AGENTS.md` for project conventions and `.opencode/policies/delivery.md` for
 - Use available diffs, file reads, and validation evidence; do not claim commands passed unless evidence exists.
 - Distinguish review findings from missing validation.
 - Include release-impact rationale for any `blocker` or `high` finding.
+- Return Result Contract envelope v1 for substantive review results, preserving carried-forward `workflow_decision` and reporting findings, residual risk and merge recommendation in `risks` and `evidence.static`.
 
 ## Escalation
 
@@ -88,8 +89,4 @@ Use `AGENTS.md` for project conventions and `.opencode/policies/delivery.md` for
 
 ## Required Output
 
-### Findings
-### Checklist
-### Missing Tests
-### Release Risk
-### Merge Recommendation
+Return Result Contract envelope v1. Put findings first inside `executive_summary` and `risks`; use `status: blocked` for blocker/high findings that prevent safe progress.

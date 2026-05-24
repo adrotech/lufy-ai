@@ -89,6 +89,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If change reaches 100% complete and needs delivery, report readiness for `delivery` without executing delivery.
 - If delivery is required but not authorized, report `delivery_pending`/`blocked` and the exact next role; never infer delivery authorization from tier, completion, or validation.
 - Default human-facing artifacts to Spanish while preserving technical identifiers.
+- Return Result Contract envelope v1 for substantive routed work; include `workflow_decision` fields received from router/orchestrator and update only status/evidence/risks that the implementation step actually changed.
 
 ## Validation / Evidence
 
@@ -117,10 +118,4 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Required Output
 
-### Objective
-### Changes Applied
-### Validation Evidence
-### Risks / Follow-ups
-### Ready State
-
-Use `implemented`, `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state; use `closed` only when policy gates and required delivery evidence are complete.
+Return Result Contract envelope v1. Use `implemented`, `validated`, `delivery_pending`, `blocked`, or `escalated`; use `closed` only when policy gates and required delivery evidence are complete.
