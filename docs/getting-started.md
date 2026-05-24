@@ -24,14 +24,14 @@ Incluye:
 
 ## Instalación rápida
 
-Versión estable objetivo: `v0.3.5`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
+Versión estable objetivo: `v0.3.6`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
 
 ### 1. Instalar el binario sin clone desde una release estable
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.5/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.6/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.3.5 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.3.6 --install-dir "$HOME/.local/bin"
 ```
 
 Si `~/.local/bin` no está en `PATH`, configura tu shell antes de continuar. Ejemplos rápidos:

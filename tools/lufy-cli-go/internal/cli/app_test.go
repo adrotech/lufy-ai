@@ -73,7 +73,7 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	if code := Run([]string{"help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) || !bytes.Contains(out.Bytes(), []byte("status")) || !bytes.Contains(out.Bytes(), []byte("upgrade")) {
+	if !bytes.Contains(out.Bytes(), []byte("init")) || !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) || !bytes.Contains(out.Bytes(), []byte("status")) || !bytes.Contains(out.Bytes(), []byte("upgrade")) {
 		t.Fatalf("help output missing commands: %s", out.String())
 	}
 
@@ -84,6 +84,93 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("restore requiere --backup")) {
 		t.Fatalf("restore missing backup output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeHelpAndRequiresPath(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	if code := Run([]string{"merge", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("merge --help expected ExitOK, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+		t.Fatalf("merge help unexpected: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"merge"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("merge without path expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
+		t.Fatalf("merge missing path output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunBackupAndScopeErrors(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	if code := Run([]string{"backup", "--bad"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("backup bad flag expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"status", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("status invalid scope expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"sync", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("sync invalid scope expected ExitUsageErr, got %d", code)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"install", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("install invalid scope expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunInitCreatesProjectConfig(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"init", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("init expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("project.yaml")) || !bytes.Contains(out.Bytes(), []byte("go (supported)")) {
+		t.Fatalf("init output unexpected: %s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".opencode", "project.yaml")); err != nil {
+		t.Fatalf("project config not written: %v", err)
+	}
+}
+
+func TestRunInitHelpAndRejectsPositionals(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	if code := Run([]string{"init", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("init --help expected ExitOK, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai init")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("reporta drift sin borrar")) {
+		t.Fatalf("init help unexpected: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"init", "extra"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("init positional expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("init no acepta argumentos posicionales")) {
+		t.Fatalf("init positional error unexpected: %s", errOut.String())
 	}
 }
 

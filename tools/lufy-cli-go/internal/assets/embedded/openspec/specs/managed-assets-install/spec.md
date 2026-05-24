@@ -2,11 +2,15 @@
 Definir la instalación gestionada de assets de `lufy-ai` mediante la CLI Go, incluyendo catálogo permitido, idempotencia por SHA-256, manifest de estado, backups/restores y verificación estructural confinada al target.
 ## Requirements
 ### Requirement: Catálogo completo de assets gestionados
-La CLI Go SHALL instalar el conjunto completo de assets gestionados de `lufy-ai` desde el repo fuente hacia un proyecto destino y SHALL distinguir assets completos gestionados de configuraciones merge-managed especiales.
+La CLI Go SHALL instalar el conjunto completo de assets gestionados de `lufy-ai` desde el repo fuente o assets embebidos hacia un proyecto destino y SHALL distinguir assets completos gestionados de configuraciones merge-managed o integraciones user-owned especiales.
 
 #### Scenario: Catálogo incluye assets requeridos
 - **WHEN** la CLI construye el catálogo de instalación
-- **THEN** el catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `AGENTS.md`, `tui.json`, `openspec/` y metadatos requeridos bajo `.lufy-ai/`
+- **THEN** el catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `lufy-ia.harness.md`, `tui.json`, `openspec/` y metadatos requeridos bajo `.lufy-ai/`
+
+#### Scenario: AGENTS es integración user-owned
+- **WHEN** la CLI construye el catálogo de instalación
+- **THEN** `AGENTS.md` no se trata como asset completo gestionado por SHA-256 y se maneja únicamente mediante la integración especial de referencia `@lufy-ia.harness.md`
 
 #### Scenario: Catálogo excluye archivos fuera de alcance
 - **WHEN** el repo fuente contiene archivos no listados dentro del set raíz permitido
@@ -15,6 +19,10 @@ La CLI Go SHALL instalar el conjunto completo de assets gestionados de `lufy-ai`
 #### Scenario: Opencode es merge-managed especial
 - **WHEN** la CLI planifica `opencode.json`
 - **THEN** lo trata como `merge-json` especial fuera del catálogo de archivos completos con SHA-256 y preserva claves desconocidas del usuario
+
+#### Scenario: Assets embebidos conservan paridad del harness
+- **WHEN** la CLI se compila como binario standalone
+- **THEN** el catálogo embebido contiene `lufy-ia.harness.md` con el mismo target, policy y SHA-256 que el catálogo raíz efectivo
 
 ### Requirement: Resolución segura de source y target
 La CLI SHALL resolver el source root y el target project root de forma portable y segura antes de planificar o escribir, y SHALL rechazar paths relativos que escapen del root con separadores Unix, Windows o mixtos.
@@ -93,11 +101,11 @@ La CLI MUST detectar conflictos y MUST NOT sobrescribir archivos no gestionados 
 - **THEN** install MUST fail de forma accionable o marcar conflictos bloqueantes y MUST NOT asumir que archivos son seguros de sobrescribir
 
 ### Requirement: Manifest de estado de instalación
-La CLI SHALL persistir estado de instalación en `.lufy-ai/install-state.json` con schema versionado, metadata real del binario, fingerprint estable del catalogo y hashes por asset completo gestionado, excluyendo configuraciones merge-managed especiales como `opencode.json`.
+La CLI SHALL persistir estado de instalación en `.lufy-ai/install-state.json` con schema versionado, metadata real del binario, fingerprint estable del catalogo y hashes por asset completo gestionado, excluyendo configuraciones merge-managed especiales como `opencode.json` e integraciones user-owned especiales como `AGENTS.md`.
 
 #### Scenario: Estado escrito tras install exitoso
 - **WHEN** install aplica acciones exitosamente
-- **THEN** escribe `.lufy-ai/install-state.json` con `schemaVersion`, `toolVersion`, `sourceChangeID`, `sourceRootFingerprint`, timestamps y lista de assets completos gestionados con `sourceSHA256` y `targetSHA256`
+- **THEN** escribe `.lufy-ai/install-state.json` con `schemaVersion`, `toolVersion`, `sourceChangeID`, `sourceRootFingerprint`, timestamps y lista de assets completos gestionados con `sourceSHA256` y `targetSHA256`, incluyendo `lufy-ia.harness.md` y excluyendo `AGENTS.md`
 
 #### Scenario: Estado usa paths relativos
 - **WHEN** la CLI registra assets en install state
@@ -110,6 +118,10 @@ La CLI SHALL persistir estado de instalación en `.lufy-ai/install-state.json` c
 #### Scenario: Merge-managed no tiene hash completo
 - **WHEN** `opencode.json` se crea o actualiza por `merge-json`
 - **THEN** el manifest de estado no registra `opencode.json` como asset completo ni usa su hash para detectar drift
+
+#### Scenario: AGENTS user-owned no tiene hash completo
+- **WHEN** `AGENTS.md` se crea o recibe la referencia `@lufy-ia.harness.md` como integración user-owned
+- **THEN** el manifest de estado no registra `AGENTS.md` como asset completo ni usa su hash para detectar drift
 
 ### Requirement: Backup multiasset antes de mutar
 La CLI SHALL crear backups de todos los assets afectados antes de actualizaciones gestionadas o restore que sobrescriba archivos.
@@ -146,14 +158,14 @@ El comando `restore` SHALL restaurar backups multiasset de forma controlada, ver
 - **THEN** la CLI crea un backup del estado actual antes de aplicar la restauración
 
 ### Requirement: Verify estructural completo
-El comando `verify` SHALL validar estructura, estado y hashes de una instalación gestionada, además de validar configuraciones merge-managed especiales sin exigir hash completo.
+El comando `verify` SHALL validar estructura, estado y hashes de una instalación gestionada, además de validar configuraciones merge-managed e integraciones user-owned especiales sin exigir hash completo para esas integraciones.
 
 #### Scenario: Instalación completa válida
-- **WHEN** el target contiene todos los assets gestionados, `opencode.json` merge-managed válido y el install state coincide por hash para assets completos
+- **WHEN** el target contiene todos los assets gestionados, `lufy-ia.harness.md` gestionado por manifest/hash, `AGENTS.md` con referencia al harness, `opencode.json` merge-managed válido y el install state coincide por hash para assets completos
 - **THEN** `verify --target <dir>` reporta checks `ok` y exit code cero
 
 #### Scenario: Asset crítico faltante
-- **WHEN** falta un asset requerido del catálogo
+- **WHEN** falta un asset requerido del catálogo, incluyendo `lufy-ia.harness.md`
 - **THEN** `verify` reporta `fail` y retorna exit code distinto de cero
 
 #### Scenario: Drift local detectado
@@ -167,6 +179,10 @@ El comando `verify` SHALL validar estructura, estado y hashes de una instalació
 #### Scenario: Opencode merge-managed inválido
 - **WHEN** `opencode.json` falta, no parsea como JSON o carece de estructura merge-managed mínima
 - **THEN** `verify` reporta `fail` para `opencode.json` sin buscarlo en `.lufy-ai/install-state.json` como asset completo
+
+#### Scenario: Referencia AGENTS ausente o incompleta
+- **WHEN** `AGENTS.md` falta o no contiene la referencia `@lufy-ia.harness.md`
+- **THEN** `verify` reporta un requisito incumplido o warning accionable para la integración de `AGENTS.md` sin requerir hash completo ni entrada de manifest para ese archivo
 
 ### Requirement: Wrapper Bash permanece estricto
 `scripts/install.sh` SHALL seguir delegando en la CLI Go y MUST NOT reintroducir lógica de instalación de assets.
@@ -195,7 +211,7 @@ La CLI MUST mantener la instalación confinada y MUST NOT hardcodear rutas local
 - **THEN** cualquier escritura se limita al target y a `.lufy-ai/` dentro del target
 
 ### Requirement: Sync seguro de assets gestionados
-El comando `sync` SHALL reaplicar assets gestionados desde el source hacia un target existente usando el catálogo permitido, estado de instalación, SHA-256 y políticas de conflicto existentes.
+El comando `sync` SHALL reaplicar assets gestionados desde el source hacia un target existente usando el catálogo permitido, estado de instalación, SHA-256 y políticas de conflicto existentes, y MUST treat `AGENTS.md` as user-owned reference integration rather than a managed file payload.
 
 #### Scenario: Sync planifica antes de escribir
 - **WHEN** el usuario ejecuta `lufy-ai sync --target <dir>`
@@ -212,6 +228,14 @@ El comando `sync` SHALL reaplicar assets gestionados desde el source hacia un ta
 #### Scenario: Escritura de sync confinada al target
 - **WHEN** una acción de sync normaliza a un path fuera de `--target`
 - **THEN** la CLI MUST reject la acción y MUST NOT escribir archivos
+
+#### Scenario: Sync actualiza harness sin mutar AGENTS
+- **WHEN** `lufy-ia.harness.md` tiene upstream nuevo sin drift local y `AGENTS.md` contiene contenido user-owned
+- **THEN** `sync` planifica backup y `update-managed` para `lufy-ia.harness.md`, actualiza su manifest al aplicar y MUST NOT modificar `AGENTS.md`
+
+#### Scenario: Sync advierte referencia faltante
+- **WHEN** `AGENTS.md` no contiene `@lufy-ia.harness.md` durante sync
+- **THEN** `sync` reporta warning o acción explícita requerida y MUST NOT insertar la referencia silenciosamente
 
 ### Requirement: Sync idempotente por manifest y hash
 El comando `sync` SHALL decidir acciones por hash de source actual, target actual y último estado registrado para preservar idempotencia y detectar cambios seguros.

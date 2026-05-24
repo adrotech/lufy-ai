@@ -10,8 +10,9 @@ Las reglas compartidas viven en `../AGENTS.md` (guía real del repositorio). La 
 - `agents/sdd-router.md`: subagente read-only para clasificación T1/T2/T3, contexto mínimo y routing proporcional.
 - `agents/explorer.md`: subagente read-only para exploración.
 - `agents/implementer.md`: subagente de implementación.
+- `agents/test-writer.md`: subagente TDD stack-aware para pruebas sustantivas T1/T2.
 - `agents/validator.md`: subagente read-only para validación.
-- `agents/reviewer.md`: subagente read-only para revisión.
+- `agents/reviewer.md`: subagente read-only para revisión stack-aware con scoring L1-L5.
 - `agents/delivery.md`: subagente de delivery para Git/GH y PRs.
 
 Todos los agentes siguen un estándar común de frontmatter (`description`, `mode`, `temperature`, `steps`, permisos mínimos) y secciones: `Mission`, `Use When`, `Do Not Use When`, `Inputs Expected`, `Workflow`, `Boundaries`, `Validation / Evidence`, `Escalation`, `Required Output`.

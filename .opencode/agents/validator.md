@@ -56,6 +56,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Evaluate the coherent task/block/review-slice gate, not every micro-checkbox, and report whether the next state is `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state.
 - Build a matrix: static checks, compile/typecheck, targeted tests, full tests, lint/format, functional/manual evidence.
 - For final block/proposal gates, run the grouped validation available for the real scope, including tests and coverage when commands exist.
+- For T1/T2 changes where tests were required, verify that TDD evidence from `test-writer` or equivalent carried-forward evidence includes RED, GREEN, TRIANGULATE and REFACTOR statuses, or explicit `not_applicable` reasons.
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` as the grouped local validation command because it includes the PR-aware whitespace gate before Go tests/build.
 - For PR-bound validation, include the PR-range whitespace check against the target base: `git diff --check origin/develop...HEAD` after commits exist, or `git diff --check origin/develop` before committing pending worktree changes. Do not rely only on plain `git diff --check`.
 - Start with the smallest useful validation only for blockers, risky changes, or diagnosis; otherwise validate after implementation tasks are complete.
@@ -67,6 +68,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not report `closed` based on validation alone; if Git/GH delivery or sync remains, report `delivery_pending`, `sync_pending`, or `blocked`.
 - Do not claim validation passed without command evidence.
+- Do not report `validated` for a T1/T2 change that required TDD evidence when RED/GREEN/TRIANGULATE/REFACTOR evidence is absent, incomplete, or lacks explicit `not_applicable` reasons; report `blocked` or `escalated` with the missing evidence and next owner.
 - Prefer grouped block/proposal gates unless final delivery requires heavier gates or diagnosis requires focused checks.
 - Do not reread broad old-file context during validation unless it was modified/affected, conflicts with evidence, or is needed to diagnose a failure; prefer diffs and changed-file review for final coherence.
 - If validation requires a command outside allowed set, state exact command and why needed.
@@ -77,10 +79,12 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - When diagnosing GitHub Actions whitespace failures, compare the local command to the workflow command; PR workflows usually run against `origin/${BASE_REF}...HEAD`, so a clean local `git diff --check` does not rule out committed whitespace in the branch.
 - If a command is unavailable, report `blocked` for that matrix cell with the missing tool/config.
 - If tests or coverage do not exist for the scope, report the limitation explicitly instead of implying success.
+- For required TDD evidence, report whether each phase is `passed`, `failed`, `blocked`, `not_available`, or `not_applicable`, and cite the source result contract or files reviewed.
 - Root-cause diagnosis must separate observed failure from hypothesis.
 - For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
 - For OpenSpec verification, treat checked tasks as necessary but not sufficient for archive; closure also requires validation, delivery/sync, and blocker evidence according to `.opencode/policies/delivery.md`.
+- Return Result Contract envelope v1 for validation handoffs, preserving carried-forward `workflow_decision` fields and filling `evidence.commands` with exact command results.
 
 ## Escalation
 
@@ -90,9 +94,4 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 ## Required Output
 
-### Validation Matrix
-### Commands Run
-### Results
-### Failures
-### Diagnosis
-### Recommended Owner
+Return Result Contract envelope v1 plus a concise validation matrix in `evidence.static` when useful. Set `status: validated` only when proportional evidence exists; otherwise use `blocked`, `escalated`, or `delivery_pending` as appropriate.

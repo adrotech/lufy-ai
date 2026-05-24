@@ -10,13 +10,15 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
+- **Workflow limits**: `.opencode/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
+- **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
 - **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
 
 ## Estructura relevante
 
-- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer`, `delivery`).
+- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`).
 - `.opencode/commands/`: slash commands del flujo OpenSpec: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`.
 - `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar y archivar cambios OpenSpec.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
@@ -70,8 +72,58 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
+- Para sizing/routing/slicing, leer `workflow_limits.sizing`, `workflow_limits.routing` y `workflow_limits.proposal_slicing_strategy`; no confundirlo con `workflow_limits.delivery_batch_strategy`.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
 - Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
+
+## Result Contract envelope v1
+
+Usar este envelope para handoffs y resultados sustantivos de agentes locales. Para T3 simples, mantenerlo compacto con `not_applicable`; para salidas legacy/terceros, `orchestrator` puede normalizar con `legacy_fallback: true` y marcar evidencia faltante como `not_available`.
+
+```yaml
+schema_version: result-contract/v1
+status: ready | implemented | validated | delivery_pending | sync_pending | blocked | escalated | delivered | closed
+legacy_fallback: false
+executive_summary: <1-3 lineas en espanol>
+artifacts:
+  changed:
+    - <path or none>
+  referenced:
+    - <path/spec/PR or none>
+evidence:
+  commands:
+    - command: <command or none>
+      result: passed | failed | blocked | not_run
+      notes: <key output or reason>
+  static:
+    - <manual/static evidence or not_applicable>
+workflow_decision:
+  tier: T1 | T2 | T3 | not_applicable
+  workflow_limits_source: workflow_limits | not_available
+  workflow_limits_paths:
+    sizing: workflow_limits.sizing | not_available
+    routing: workflow_limits.routing | not_available
+    proposal_slicing: workflow_limits.proposal_slicing_strategy | not_available
+    delivery_batching: workflow_limits.delivery_batch_strategy | not_applicable
+    preflight: workflow_limits.preflight | not_available
+    stop_rules: workflow_limits.stop_rules | not_available
+  workload_decision_needed: true | false
+  review_slices:
+    - <slice summary or not_applicable>
+  preflight_status: passed | blocked | not_applicable | not_available
+  stop_rule_status: clear | triggered | not_applicable | not_available
+  delivery_batching_guidance: <guidance or not_applicable>
+risks:
+  - <risk/follow-up or none>
+next_recommended:
+  owner: orchestrator | explorer | implementer | test-writer | validator | reviewer | delivery | user | none
+  action: <next action>
+skill_resolution:
+  local_skills_used:
+    - <skill or none>
+  bootstrap_recommended: true | false
+  notes: <notes or none>
+```
 
 ## Roles de agentes
 
@@ -79,8 +131,9 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - `sdd-router`: clasifica T1/T2/T3 en modo read-only/no-shell, recomienda execution mode, contexto mínimo, skill status y review workload; no ejecuta shell/Git/OpenSpec/validación y deriva a `explorer`, `validator` o `delivery` cuando se requiere estado, evidencia o Git/GH.
 - `explorer`: investiga en modo read-only y produce handoff para implementación.
 - `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
+- `test-writer`: escribe o ajusta pruebas TDD stack-aware para cambios T1/T2 sustantivos y reporta evidencia RED/GREEN/TRIANGULATE/REFACTOR; no hace delivery.
 - `validator`: valida y diagnostica en modo read-only; no edita.
-- `reviewer`: revisa calidad, riesgos y cobertura; no edita.
+- `reviewer`: revisa calidad, riesgos y cobertura con scoring L1-L5 stack-aware; no edita.
 - `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.opencode/policies/delivery.md`.
 
 ## OpenSpec workflow

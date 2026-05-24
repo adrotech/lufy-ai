@@ -25,6 +25,13 @@ func TestResolvePrefersCompatiblePathOpenSpec(t *testing.T) {
 	}
 }
 
+func TestNewServiceUsesDefaultResolvers(t *testing.T) {
+	svc := NewService()
+	if svc.lookPath == nil || svc.commandOutput == nil {
+		t.Fatalf("NewService did not initialize resolvers: %#v", svc)
+	}
+}
+
 func TestResolveUsesValidCacheWhenPathUnavailable(t *testing.T) {
 	target := t.TempDir()
 	writeCacheAsset(t, target, "1.3.2", "bin/openspec", "cache binary")
@@ -118,6 +125,33 @@ func TestWriteCacheManifestWritesReadableManifest(t *testing.T) {
 	}
 	if read.Version != manifest.Version || len(read.Assets) != 1 {
 		t.Fatalf("manifest = %#v", read)
+	}
+}
+
+func TestResolverHelpers(t *testing.T) {
+	if got := compareVersionSafe("1.2.0", "1.1.9"); got <= 0 {
+		t.Fatalf("expected left version greater, got %d", got)
+	}
+	if got := compareVersionSafe("bad", "1.1.9"); got != -1 {
+		t.Fatalf("invalid left should sort low, got %d", got)
+	}
+	if got := compareVersionSafe("1.2.0", "bad"); got != 1 {
+		t.Fatalf("invalid right should sort low, got %d", got)
+	}
+
+	joined := joinDiagnosticMessages([]Diagnostic{{Layer: LayerPath, Message: "missing"}, {Layer: LayerCache, Message: "stale"}})
+	if !strings.Contains(joined, "PATH: missing") || !strings.Contains(joined, "cache: stale") || !strings.Contains(joined, "; ") {
+		t.Fatalf("unexpected joined diagnostics: %q", joined)
+	}
+}
+
+func TestDefaultCommandOutput(t *testing.T) {
+	out, err := defaultCommandOutput("go", "version")
+	if err != nil {
+		t.Fatalf("go version failed: %v", err)
+	}
+	if !strings.Contains(string(out), "go version") {
+		t.Fatalf("unexpected go version output: %s", string(out))
 	}
 }
 

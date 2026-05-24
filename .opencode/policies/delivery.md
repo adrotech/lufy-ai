@@ -41,6 +41,16 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - Delivery remains explicitly authorized regardless of tier. A T1/T2/T3 classification can recommend delivery readiness but cannot authorize Git/GH operations.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
+## Workflow Limits Config
+
+- `.opencode/project.yaml` top-level `workflow_limits` is the only canonical source for project workflow limits.
+- Delivery batching decisions use `workflow_limits.delivery_batch_strategy` after a block/change is validated and delivery is explicitly authorized.
+- Delivery batching guidance may be recorded before authorization, but it remains advisory and MUST NOT authorize Git/GH operations or produce `delivered`/`closed` state by itself.
+- Proposal or review splitting uses `workflow_limits.proposal_slicing_strategy` before implementation/review; do not reinterpret proposal slicing as delivery batching or as Git/GH delivery authorization.
+- Delivery preflight checks use `workflow_limits.preflight` when present and must be verified or reported before moving to delivery-ready, delivered, or closed states.
+- Delivery stop conditions use `workflow_limits.stop_rules`; when a configured stop condition is hit, pause and report `blocked` or `delivery_pending` with the exact recovery path instead of continuing silently.
+- Top-level `loc_budget` and `delivery_strategy` are legacy/non-canonical and must not drive sizing, routing, slicing, batching, preflight, stop rules, delivery authorization, or closure.
+
 ## OpenSpec Task/Block Gate
 
 Evaluate completion at the smallest coherent delivery unit: a `tasks.md` task, an implementation block, or a review slice. Nested micro-checkboxes can track internal progress, but they do not trigger full validation, delivery, archive readiness, or closure unless explicitly declared as the coherent unit.
@@ -61,6 +71,8 @@ Role boundaries for the gate:
 4. `orchestrator` coordinates transitions and requests explicit authorization before routing Git/GH delivery.
 
 If any gate item is missing, report the precise next state (`implemented`, `validated`, `delivery_pending`, `sync_pending`, or `blocked`) with exact recovery instruction. Delivery remains explicitly authorized regardless of tier, task completion, validation status, or user acceptance of implementation.
+
+Substantive delivery handoffs and final delivery results use Result Contract envelope v1. Include the relevant `workflow_decision` fields from `.opencode/project.yaml` or upstream routing, especially delivery batching guidance, preflight status, stop-rule status, remote check state and authorization status.
 
 Tasks incompletas always block archive. Do not archive a change with unchecked tasks, even with user confirmation. `migrate-installer-to-go-cli` is explicitly blocked from archive while any tasks remain incomplete.
 

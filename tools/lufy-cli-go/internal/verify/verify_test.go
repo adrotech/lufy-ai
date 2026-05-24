@@ -412,6 +412,28 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	if !strings.Contains(out.String(), "plugin path inseguro") {
 		t.Fatalf("deep invalid output unexpected: %s", out.String())
 	}
+
+	target = validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":{}}`)
+	refreshVerifyAssetHash(t, target, "tui.json")
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+		t.Fatalf("Run(deep non-array plugin) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "plugin debe ser array") {
+		t.Fatalf("deep non-array output unexpected: %s", out.String())
+	}
+
+	target = validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":[123,"./.opencode/plugins/missing.ts"]}`)
+	refreshVerifyAssetHash(t, target, "tui.json")
+	out.Reset()
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+		t.Fatalf("Run(deep bad plugin entries) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "plugin contiene entrada no string") || !strings.Contains(out.String(), "plugin referenciado no existe") {
+		t.Fatalf("deep bad entries output unexpected: %s", out.String())
+	}
 }
 
 func TestCatalogRequirementsIncludeRegisteredCatalogAssets(t *testing.T) {

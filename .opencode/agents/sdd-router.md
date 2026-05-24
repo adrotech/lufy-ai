@@ -24,7 +24,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
-- Produce a structured handoff with execution mode, context slice, required permissions, skill status, review workload, review slices, and stop reason when blocked.
+- When `.opencode/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
+- Produce Result Contract envelope v1 with execution mode, context slice, required permissions, skill status, workflow-limit decisions, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
 - Do not execute shell, Git, OpenSpec, validation, package-manager, or discovery commands; use only context already provided in the prompt and route to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
 
@@ -86,8 +87,19 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - `focused`: T2 or localized T1 changes where review should target changed files, acceptance criteria, and risk points.
 - `full`: broad T1 changes, security-sensitive changes, public contracts, delivery policy, or high uncertainty.
 - For T1 and multi-risk T2, recommend `review_slices` that keep the human reviewer oriented around small deliverables.
+- Use `workflow_limits.proposal_slicing_strategy` for proposal/review-slice splitting and do not use `workflow_limits.delivery_batch_strategy` as a slicing rule; delivery batching is advisory guidance only and never authorizes Git/GH delivery.
+- Compare `estimated_loc > workflow_limits.sizing.loc_budget` explicitly when both values are known; if true, set `workload_decision_needed: true` and recommend a workload/slice decision before implementation continues.
+- Escalate tier or propose bounded `review_slices` when `estimated_files >= 5`, using `workflow_limits.proposal_slicing_strategy` when available and risk/context when it is `not_available`.
+- Set `workload_decision_needed: true` when configured sizing, routing, risk, file-count, LOC, stop-rule, or uncertainty limits require a user/orchestrator decision before continuing.
 - Do not split T3 work into artificial slices unless new risk appears.
 - PR split guidance is advisory only; delivery still requires explicit user authorization.
+
+## Workflow Limits Metadata
+
+- Report `.opencode/project.yaml` top-level `workflow_limits` as `workflow_limits_source: workflow_limits` only when that configuration is available in provided context; otherwise report `not_available`.
+- Report each canonical path independently: `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, and `workflow_limits.stop_rules`; use `not_available` for missing file/path values.
+- Do not read, consume, or migrate top-level legacy `loc_budget` or top-level legacy `delivery_strategy` as sizing, routing, slicing, batching, preflight, stop-rule, authorization, or closure inputs.
+- Resolve optional `chain_strategy` as routing metadata in this order: top-level `.opencode/project.yaml` `chain_strategy`, then `workflow_limits.routing.chain_strategy`, then `not_available`. Do not require CLI struct changes to report this metadata.
 
 ## Review Slices
 
@@ -113,24 +125,66 @@ Each slice should include:
 - Do not replace `validator`; route to it when command evidence, tests, or validation are needed.
 - Do not replace `delivery`; route to it when Git/GH state, commits, PRs, sync, or delivery are needed.
 - Do not replace `orchestrator`; return routing guidance only.
+- Do not treat top-level `loc_budget` or top-level `delivery_strategy` in `.opencode/project.yaml` as valid workflow-limit sources; if mentioned, report them as legacy/non-canonical and route actionable migration or validation as needed.
+- Do not use `workflow_limits.delivery_batch_strategy` to create `review_slices`; use only `workflow_limits.proposal_slicing_strategy` plus observed risk/scope.
 
 ## Output Contract
 
-Return this structure in Spanish, preserving technical identifiers:
+Return Result Contract envelope v1 in Spanish, preserving technical identifiers. Put routing-specific fields under `workflow_decision` and `context_slice`:
 
 ```yaml
-tier: T1 | T2 | T3
-confidence: high | medium | low
-reason: <short rationale>
-execution_mode: full_sdd | sdd_lite | express | clarify | explore_only | verify_only | delivery_pending
-recommended_flow:
-  - <ordered step>
-required_subagents:
-  - sdd-router | explorer | implementer | validator | reviewer | delivery
-required_permissions:
-  edit: deny | allow
-  bash: none | read_only | validation | mutating_requires_authorization
-  delivery: blocked | authorized | not_needed
+schema_version: result-contract/v1
+status: ready | blocked | escalated | delivery_pending
+legacy_fallback: false
+executive_summary: <short routing rationale>
+artifacts:
+  changed:
+    - none
+  referenced:
+    - <relevant spec/doc/path or none>
+evidence:
+  commands:
+    - command: none
+      result: not_run
+      notes: sdd-router is read-only/no-shell
+  static:
+    - <routing evidence from provided context>
+workflow_decision:
+  tier: T1 | T2 | T3
+  confidence: high | medium | low
+  reason: <short rationale>
+  execution_mode: full_sdd | sdd_lite | express | clarify | explore_only | verify_only | delivery_pending
+  workflow_limits_source: workflow_limits | not_available
+  workflow_limits_paths:
+    sizing: workflow_limits.sizing | not_available
+    routing: workflow_limits.routing | not_available
+    proposal_slicing: workflow_limits.proposal_slicing_strategy | not_available
+    delivery_batching: workflow_limits.delivery_batch_strategy | not_available
+    preflight: workflow_limits.preflight | not_available
+    stop_rules: workflow_limits.stop_rules | not_available
+  workload_inputs:
+    estimated_files: <number or unknown>
+    estimated_loc: <number or unknown>
+    loc_budget: <number or not_available>
+    risk_flags:
+      - <risk or none>
+  chain_strategy: auto-chain | <configured value> | not_available
+  workload_decision_needed: true | false
+  review_workload: none | focused | full
+  review_slices:
+    - name: <short slice name or not_applicable>
+      objective: <reviewable subproblem>
+      expected_files:
+        - <path or area>
+      acceptance_criteria:
+        - WHEN <observable trigger> THEN <observable outcome>
+      validation:
+        - <command or static/manual evidence>
+      risk: <main reviewer concern>
+      pr_guidance: same_pr | separate_pr_recommended | separate_pr_required_if_authorized
+  preflight_status: not_applicable | not_available | blocked
+  stop_rule_status: clear | triggered | not_applicable | not_available
+  delivery_batching_guidance: <advisory guidance from workflow_limits.delivery_batch_strategy or not_available; never delivery authorization>
 context_slice:
   user_intent: <summary>
   constraints:
@@ -149,30 +203,18 @@ skill_status:
   bootstrap_tool: autoskills | none
   first_command: npx autoskills --dry-run | none
   requires_user_authorization: true | false
-review_workload: none | focused | full
-review_slices:
-  - name: <short slice name>
-    objective: <reviewable subproblem>
-    expected_files:
-      - <path or area>
-    acceptance_criteria:
-      - WHEN <observable trigger> THEN <observable outcome>
-    validation:
-      - <command or static/manual evidence>
-    risk: <main reviewer concern>
-    pr_guidance: same_pr | separate_pr_recommended | separate_pr_required_if_authorized
-stop_reason: <reason or none>
-next_agent: explorer | implementer | validator | reviewer | delivery | user | none
-notes: <optional concise notes>
+risks:
+  - <risk/follow-up or none>
+next_recommended:
+  owner: explorer | implementer | validator | reviewer | delivery | user | none
+  action: <next action or stop reason>
 ```
 
 ## Result Contract For Routed Steps
 
 When recommending a next agent, ask it to return:
 
-- Objective.
-- Actions performed.
+- Result Contract envelope v1.
 - Evidence produced, including commands only when actually run.
-- Risks or follow-ups.
-- Ready, blocked, escalated, or pending state.
-- Recommended next action.
+- The carried-forward `workflow_decision` fields that are relevant to that role.
+- Risks, follow-ups, exact state, and recommended next action.
