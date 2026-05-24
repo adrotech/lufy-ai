@@ -23,8 +23,8 @@
 
 ## Pendiente o futuro
 
-- Promover `develop` a `main` y publicar `v0.3.5` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
-- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.3.5` objetivo.
+- Promover `develop` a `main` y publicar `v0.3.6` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
+- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.3.6` objetivo.
 - Backlog stack-aware: Release A (`lufy-ai init`, `.opencode/project.yaml` y rescan/drift) queda cubierta por PRs previos; `/lufy.timereport` (LUFY-3) fue entregado por PR #66 y archivado post-merge. Siguen pendientes consumidores como `test-writer`, reviewer ponderado, `/lufy.onboard`, hooks dinámicos y planner 8-state; ver `docs/backlog.md`.
 - Reconciliation hook opt-in para detectar cambios sin spec asociada.
 - Autocomplete/help avanzado mediante Cobra u otro framework.
