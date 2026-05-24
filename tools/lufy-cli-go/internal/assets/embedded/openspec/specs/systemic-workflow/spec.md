@@ -2,7 +2,6 @@
 
 ## Purpose
 Define the systemic working model for agents: initial context analysis, bounded rereads, final grouped validation and evidence-based reporting.
-
 ## Requirements
 ### Requirement: Analisis inicial sistemico
 El workflow SHALL analizar el sistema al inicio de una propuesta o bloque antes de implementar, identificando archivos existentes relevantes, componentes, dependencias, interconexiones y riesgos de comportamiento.
@@ -143,3 +142,47 @@ The workflow SHALL scale Result Contract detail by tier while preserving the can
 #### Scenario: T1 or multi-risk T2 uses full evidence
 - **WHEN** work is classified as T1 or a multi-risk T2 review slice
 - **THEN** the result contract includes explicit acceptance criteria status, validation evidence, workflow-limit decisions, risks and follow-ups sufficient for review without replaying the full conversation
+
+### Requirement: TDD delegation for substantive T1 and T2 changes
+The workflow SHALL route substantive test design or test implementation for T1 and T2 changes through `test-writer` when a TDD cycle is applicable.
+
+#### Scenario: Implementer delegates test work
+- **WHEN** `implementer` is assigned a T1 or T2 change with substantive test creation or revision needs
+- **THEN** `implementer` delegates the test-focused portion to `test-writer` or records why TDD delegation is not applicable in the Result Contract envelope
+
+#### Scenario: T3 change does not require delegation
+- **WHEN** a T3 Express change is trivial, mechanical or documentation-only and does not require substantive test behavior
+- **THEN** the workflow does not require `test-writer` delegation and may record TDD evidence as `not_applicable`
+
+### Requirement: Validator gates required TDD evidence
+The workflow SHALL require validator review of TDD evidence for T1 and T2 changes where TDD delegation or equivalent TDD evidence is required.
+
+#### Scenario: Required TDD evidence is present
+- **WHEN** `validator` evaluates a T1 or T2 change that required TDD evidence
+- **THEN** it verifies that RED, GREEN, TRIANGULATE and REFACTOR evidence is present or explicitly marked `not_applicable` with reasons before reporting the block as `validated`
+
+#### Scenario: Required TDD evidence is missing
+- **WHEN** `validator` evaluates a T1 or T2 change that required TDD evidence but the evidence is absent or incomplete
+- **THEN** it reports `blocked` or `escalated` with the missing evidence and next owner instead of reporting `validated`
+
+### Requirement: Weighted review gate for substantive changes
+The workflow SHALL use weighted reviewer output as a quality gate for T1 and T2 changes that require independent review.
+
+#### Scenario: Review gate passes
+- **WHEN** a T1 or T2 change has reviewer score at least 80%, zero L1/L2 findings and proportional validation evidence
+- **THEN** the workflow may treat review as approval-ready while still requiring explicit delivery authorization for Git/GH actions
+
+#### Scenario: Review gate blocks
+- **WHEN** reviewer score is below 80% or any L1/L2 finding exists
+- **THEN** the workflow reports the block with findings, score, affected categories and next owner instead of advancing to delivery-ready
+
+### Requirement: Review remains separate from validation and delivery
+The workflow SHALL keep reviewer qualitative scoring separate from validator command evidence and delivery authorization.
+
+#### Scenario: Reviewer lacks command evidence
+- **WHEN** reviewer identifies missing tests or validation evidence
+- **THEN** it escalates to `validator` for command evidence rather than claiming commands passed
+
+#### Scenario: Review is approval-ready
+- **WHEN** reviewer reports approval-ready
+- **THEN** Git/GH delivery remains blocked until the user explicitly authorizes `delivery`
