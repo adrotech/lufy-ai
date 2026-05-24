@@ -55,7 +55,7 @@ Effort estimado:
 - Detectar stacks por archivos raíz: `go.mod`, `package.json`, `tsconfig.json`, `pyproject.toml`, `requirements.txt`, `setup.py`, `pom.xml`, `build.gradle`, `build.gradle.kts` y equivalentes conocidos.
 - Detectar frameworks TS/JS: React, Next.js, Remix, Vue y Svelte; Vue/Svelte pueden quedar como placeholders si no hay reglas completas.
 - Detectar test runners, linters, formatters, static analysis, CI y librerías de observabilidad.
-- Generar `.opencode/project.yaml` con `schema_version`, `detected_at`, `stacks`, `ci`, `tdd`, `loc_budget` y `delivery_strategy`.
+- Generar `.opencode/project.yaml` con `schema_version`, `detected_at`, `stacks`, `ci`, `tdd` y `workflow_limits`.
 - No sobrescribir un archivo existente sin `--force`.
 - `--rescan` debe preservar overrides manuales y agregar stacks nuevos sin borrar configuración previa.
 
@@ -142,9 +142,9 @@ Effort estimado:
 
 ### LUFY-6 - Workload Guard config-driven
 
-**Alcance:** extender `sdd-router.md` y `orchestrator.md` para leer `loc_budget`, `delivery_strategy` y `chain_strategy` desde `.opencode/project.yaml`.
+**Alcance:** extender `sdd-router.md` y `orchestrator.md` para leer `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, `workflow_limits.stop_rules` y `chain_strategy` desde `.opencode/project.yaml`.
 
-**Acceptance:** si `estimated_loc > loc_budget`, el router emite `workload_decision_needed: true` y propone `review_slices`; con `auto-chain`, propaga estrategia sin preguntar salvo riesgo alto.
+**Acceptance:** si `estimated_loc > workflow_limits.sizing.loc_budget`, el router emite `workload_decision_needed: true` y propone `review_slices` según `workflow_limits.proposal_slicing_strategy`; delivery agrupa con `workflow_limits.delivery_batch_strategy`; con `auto-chain`, propaga estrategia sin preguntar salvo riesgo alto.
 
 **Effort:** M.
 

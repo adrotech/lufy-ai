@@ -11,6 +11,7 @@ Operational guide for coding agents working in this repository.
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
+- **Workflow limits**: Use `.opencode/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 
 ## Source Layout
@@ -75,6 +76,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
+- For sizing/routing/slicing, read `workflow_limits.sizing`, `workflow_limits.routing`, and `workflow_limits.proposal_slicing_strategy`; do not confuse these with `workflow_limits.delivery_batch_strategy`.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - When `delivery` creates a PR, it must consult or wait for remote checks with command evidence such as `gh pr checks <PR>` or `gh pr view ... statusCheckRollup/mergeStateStatus`; failed, cancelled, timed out, action-required, undocumented, or tooling-missing checks are `blocked`, while existing pending checks are `delivery_pending`; neither state may be reported as `delivered`/`closed`.
