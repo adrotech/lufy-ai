@@ -45,6 +45,7 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Enforce `.opencode/policies/delivery.md` and repository `AGENTS.md`.
 - Do not duplicate or override shared policy; when this runbook and policy conflict, policy wins.
 - Return precise states: `delivered`, `closed`, `delivery_pending`, `blocked`, or `sync_pending`.
+- Return Result Contract envelope v1 for delivery handoffs and final delivery status.
 
 ## Use When
 
@@ -81,6 +82,7 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Prefer validación agrupada evidence from the completed block/proposal; do not require repeated test loops unless needed for final delivery or diagnosis.
 - Read project workflow delivery controls only from `.opencode/project.yaml` top-level `workflow_limits`: use `workflow_limits.delivery_batch_strategy` for delivery grouping, `workflow_limits.preflight` for delivery preflight checks, and `workflow_limits.stop_rules` for pause/escalation conditions.
 - Keep `workflow_limits.proposal_slicing_strategy` limited to proposal/review slicing before delivery readiness; do not treat it as delivery batching or authorization.
+- Treat delivery batching guidance as advisory until the user explicitly authorizes Git/GH operations; report missing authorization as `delivery_pending` or `blocked` even when batching guidance is clear.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.
 - After `gh pr create`, consult or wait for remote PR checks and record the exact command and outcome. Prefer `gh pr checks <PR> --watch` when waiting is appropriate; otherwise use `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url` and report unresolved/pending checks explicitly.
 - If remote checks show `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, remain pending without a successful conclusion, or no remote-check evidence exists, do not report `delivered` or `closed`; report `blocked` for terminal failures/action required, or `delivery_pending` for still-pending checks, with PR URL/status and a recovery command such as `gh pr checks <PR> --watch`.
@@ -121,9 +123,4 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 ## Required Output
 
-### Branch and Workspace State
-### Validation Evidence
-### Functional Evidence
-### Delivery Package
-### Project Sync
-### Final Status
+Return Result Contract envelope v1 with branch/workspace state, validation evidence, delivery package, project sync, remote check evidence and final status represented in `evidence`, `artifacts`, `risks` and `next_recommended`.

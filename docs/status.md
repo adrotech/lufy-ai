@@ -17,6 +17,7 @@
 - Harness SDD proporcional: `sdd-router`, T1 Full SDD, T2 SDD Lite, T3 Express, execution modes, result contracts, context slicing y review workload.
 - Review Workload Harness: `review_slices` proporcionales para T1 y T2 con varios riesgos, orientados al reviewer humano y a entregables pequeños cuando conviene.
 - Templates instalables de proceso: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
+- Result Contract envelope v1 validado localmente: agentes locales y template usan envelope YAML canónico con `workflow_decision` para `workflow_limits`, estados de gate, evidencia, riesgos y siguiente acción; delivery/archive quedan pendientes de autorización.
 - Skill resolution local-first con AutoSkills documentado solo como bootstrap opcional mediante `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
 - `sdd-router` limitado a clasificación read-only/no-shell y delivery con gate explícito de checks remotos de PR antes de `delivered`/`closed`.
 

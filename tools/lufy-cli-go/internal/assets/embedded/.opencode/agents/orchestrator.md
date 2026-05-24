@@ -74,7 +74,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - For T2, route through SDD Lite or a structured handoff with observable WHEN/THEN acceptance criteria, grouped validation, and focused review when risk warrants it.
 - For T3, allow direct bounded implementation and proportional validation without mandatory OpenSpec or explorer.
 - Preserve subagent isolation: pass only the router's `context_slice`, relevant artifact paths, and required constraints to the next agent.
-- Ask routed agents to return a result contract: objective, actions performed, evidence, risks/follow-ups, state, and recommended next action.
+- Ask routed agents to return Result Contract envelope v1 with status, evidence, risks/follow-ups, `workflow_decision` when applicable, and recommended next action.
+- Carry forward router `workflow_decision` fields instead of asking every downstream role to rediscover the same workflow limits from conversation history.
+- Normalize legacy, third-party or interrupted outputs into Result Contract envelope v1 with `legacy_fallback: true` and missing evidence marked `not_available` rather than treating them as fully evidenced results.
 - Resolve skills local-first. If local skills are insufficient, only suggest external bootstrap as an optional dry run such as `npx autoskills --dry-run`; never execute mutating bootstrap without explicit authorization.
 - Route archive attempts for `migrate-installer-to-go-cli` to `blocked` while tasks are incomplete; tasks incompletas are never archivable.
 - Respect the user's validation preference: use validación agrupada at the end of a block/proposal instead of constant tests, except for blockers, risky changes, or diagnosis.
@@ -128,8 +130,4 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Required Output
 
-### Objective
-### Delegation
-### Outcome
-### Risks
-### Next Step
+Return Result Contract envelope v1. Use compact `not_applicable` values for simple T3 coordination, and include `workflow_decision` for any routed, sliced, blocked, validation-ready or delivery-pending workflow.
