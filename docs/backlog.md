@@ -73,7 +73,7 @@ Effort estimado:
 
 ### LUFY-1 - Agent `test-writer` parametrizado por `project.yaml`
 
-**Estado:** implementado y validado localmente mediante `add-stack-aware-test-writer`; pendiente de sync/archive y delivery autorizado.
+**Estado:** completado, archivado y delivered local/remoto mediante `add-stack-aware-test-writer`.
 
 **Problema:** el ciclo TDD debe ser consistente y verificable sin asumir lenguaje.
 
@@ -97,7 +97,7 @@ Effort estimado:
 
 ### LUFY-2 - Reviewer L1-L5 ponderado y HTML capability-aware
 
-**Estado:** implementado y validado localmente mediante `add-scored-stack-aware-reviewer`; pendiente de sync/archive y delivery autorizado. El slice actual cubre el reviewer ponderado stack-aware; la skill HTML opcional queda fuera de este slice.
+**Estado:** completado, archivado y delivered local/remoto mediante `add-scored-stack-aware-reviewer`. El slice actual cubre el reviewer ponderado stack-aware; la skill HTML opcional queda fuera de este slice.
 
 **Problema:** el reviewer debe producir evaluación consistente, exportable y adaptada al stack.
 
@@ -132,6 +132,10 @@ Effort estimado:
 
 ### LUFY-4 - `/lufy.onboard` con dry-run y demo stack-aware
 
+**Estado:** pendiente; trazado en #74.
+
+**Issue:** #74 - https://github.com/adrotech/lufy-ai/issues/74
+
 **Alcance:** crear skill `.opencode/skills/lufy.onboard/SKILL.md` con validación de instalación y modo `--demo` que genera un T3 dummy adaptado al stack detectado.
 
 **Acceptance:** usuario nuevo en repo TS/Go/Python puede ejecutar demo y entender el flujo en menos de 10 minutos. Si falta `project.yaml`, sugiere `lufy-ai init`.
@@ -139,6 +143,8 @@ Effort estimado:
 **Effort:** S.
 
 ### LUFY-5 - Stop Rules numéricas en `orchestrator`
+
+**Estado:** completado, archivado y delivered local/remoto mediante `add-numeric-stop-rules-workload-guard`.
 
 **Alcance:** agregar reglas explícitas a `.opencode/agents/orchestrator.md`: 4-file rule, 20-tool-calls rule, multi-file write rule y long-session rule.
 
@@ -148,6 +154,8 @@ Effort estimado:
 
 ### LUFY-6 - Workload Guard config-driven
 
+**Estado:** completado, archivado y delivered local/remoto mediante `add-numeric-stop-rules-workload-guard`.
+
 **Alcance:** extender `sdd-router.md` y `orchestrator.md` para leer `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, `workflow_limits.stop_rules` y `chain_strategy` desde `.opencode/project.yaml`.
 
 **Acceptance:** si `estimated_loc > workflow_limits.sizing.loc_budget`, el router emite `workload_decision_needed: true` y propone `review_slices` según `workflow_limits.proposal_slicing_strategy`; delivery agrupa con `workflow_limits.delivery_batch_strategy`; con `auto-chain`, propaga estrategia sin preguntar salvo riesgo alto.
@@ -155,6 +163,10 @@ Effort estimado:
 **Effort:** M.
 
 ### LUFY-7 - Hook PostToolUse de formato dinámico
+
+**Estado:** pendiente; trazado en #75.
+
+**Issue:** #75 - https://github.com/adrotech/lufy-ai/issues/75
 
 **Alcance:** crear `.opencode/hooks/format-dispatch.sh` que lea `.opencode/project.yaml`, matchee extensión editada y ejecute formatter/linter auto-fix del stack.
 
@@ -166,6 +178,8 @@ Effort estimado:
 
 **Estado:** ya existe `lufy-ai merge` y Drift Resolution con `.lufy-new`/ancestors.
 
+**Issue:** #76 - https://github.com/adrotech/lufy-ai/issues/76
+
 **Alcance restante:** consolidar motor text 3-way, UX no interactiva (`--accept-theirs`, `--accept-ours`) y decidir si se adopta TUI con dependencia explícita o se mantiene zero-deps.
 
 **Acceptance:** conflicto entre asset local y catalog crea sidecar seguro; `merge --accept-theirs` resuelve sin TUI y registra estado coherente.
@@ -176,6 +190,8 @@ Effort estimado:
 
 **Estado:** `status` ya existe.
 
+**Issue:** #77 - https://github.com/adrotech/lufy-ai/issues/77
+
 **Alcance restante:** agregar `pin`, `unpin`, `doctor` e `info`; extender `status` para stacks, drift, conflicts pending y frozen assets.
 
 **Acceptance:** asset pinned no es tocado por `sync`; `doctor` valida preflight, manifest y `project.yaml`; `info` muestra catalog version, assets y stacks.
@@ -183,6 +199,10 @@ Effort estimado:
 **Effort:** M.
 
 ### LUFY-10 - Planner 8-state
+
+**Estado:** pendiente; trazado en #78.
+
+**Issue:** #78 - https://github.com/adrotech/lufy-ai/issues/78
 
 **Alcance:** extender planner actual a `Skip | Create | UpdateManaged | Conflict | Frozen | Template | Merge | Remove`.
 
@@ -194,6 +214,10 @@ Effort estimado:
 
 ### LUFY-11 - Lessons learned versionado
 
+**Estado:** pendiente; trazado en #79.
+
+**Issue:** #79 - https://github.com/adrotech/lufy-ai/issues/79
+
 **Alcance:** crear `docs/lessons/lufy-ai.md` con bugs históricos, decisiones rechazadas y decisiones no-ADR.
 
 **Acceptance:** archivo existe con al menos 3 entradas seed y README lo enlaza.
@@ -201,6 +225,10 @@ Effort estimado:
 **Effort:** S.
 
 ### LUFY-12 - Namespace dual `/opsx-*` + `/lufy.*`
+
+**Estado:** pendiente; trazado en #80.
+
+**Issue:** #80 - https://github.com/adrotech/lufy-ai/issues/80
 
 **Alcance:** documentar que `/opsx-*` se preserva para OpenSpec y `/lufy.*` se usa para extras propios.
 
@@ -210,6 +238,10 @@ Effort estimado:
 
 ### LUFY-13 - README walkthrough end-to-end
 
+**Estado:** pendiente; trazado en #81.
+
+**Issue:** #81 - https://github.com/adrotech/lufy-ai/issues/81
+
 **Alcance:** agregar walkthrough desde instalación, `lufy-ai init`, `/lufy.onboard --demo`, primer T3 y `/lufy.timereport`.
 
 **Acceptance:** usuario nuevo llega a primera feature demo en menos de 10 minutos siguiendo solo README.
@@ -217,6 +249,10 @@ Effort estimado:
 **Effort:** S.
 
 ### LUFY-14 - Verificación activa post-spec
+
+**Estado:** pendiente; trazado en #82.
+
+**Issue:** #82 - https://github.com/adrotech/lufy-ai/issues/82
 
 **Alcance:** agregar al orchestrator una regla de lectura/verificación del archivo esperado después de invocar comandos de spec/sync; si Engram está habilitado, validar registro de delta cuando aplique.
 
@@ -234,6 +270,8 @@ Effort estimado:
 
 ### LUFY-16 - `init --rescan` y drift de stack
 
+**Estado:** cubierto/entregado por PR #65 y archive correspondiente.
+
 **Dependencia:** LUFY-0.
 
 **Alcance:** detectar stack drift, stacks nuevos, stacks removidos y edad de `detected_at`; `doctor --check-stack-drift` advierte si el scan está viejo o cambió la estructura del repo.
@@ -246,6 +284,10 @@ Effort estimado:
 
 ### LUFY-17 - Templates stack-specific por capability
 
+**Estado:** pendiente; trazado en #83.
+
+**Issue:** #83 - https://github.com/adrotech/lufy-ai/issues/83
+
 **Alcance:** paquetes opcionales activables por `.opencode/project.yaml` para Go, TS/Next, Python/FastAPI, Java/Spring y Rust.
 
 **Acceptance:** cada paquete incluye assets reales, categoría en manifest, validación y activación condicional por stack.
@@ -253,6 +295,10 @@ Effort estimado:
 **Effort:** XL por stack.
 
 ### LUFY-18 - Domain-specific subagents
+
+**Estado:** pendiente; trazado en #84.
+
+**Issue:** #84 - https://github.com/adrotech/lufy-ai/issues/84
 
 **Alcance:** subagentes especializados como `crud-designer`, `api-contract-reviewer`, `schema-migration-validator` y `dependency-upgrade-reviewer`.
 
@@ -307,9 +353,9 @@ Objetivo: hacer que el workflow use `project.yaml` en TDD, review y routing.
 | Slice | Items | Proposal sugerida | Riesgo | Validación mínima |
 | --- | --- | --- | --- | --- |
 | B1 | LUFY-15 | `standardize-result-contract-workflow-decisions` | Medio: coordinación entre agentes | Entregado; change validado y archivado el 2026-05-24 |
-| B2 | LUFY-1 | `add-stack-aware-test-writer` | Alto: cambio de flujo T1/T2 | Implementado y validado localmente; pendiente de sync/archive y delivery autorizado |
-| B3 | LUFY-2 | `add-scored-stack-aware-reviewer` | Medio | PR dry-run o fixture de review, HTML si se incluye skill |
-| B4 | LUFY-5 + LUFY-6 | `add-numeric-stop-rules-workload-guard` | Medio | Casos de router/orchestrator con estimated LOC y slices |
+| B2 | LUFY-1 | `add-stack-aware-test-writer` | Alto: cambio de flujo T1/T2 | Completado, archivado y delivered local/remoto |
+| B3 | LUFY-2 | `add-scored-stack-aware-reviewer` | Medio | Completado, archivado y delivered local/remoto |
+| B4 | LUFY-5 + LUFY-6 | `add-numeric-stop-rules-workload-guard` | Medio | Completado, archivado y delivered local/remoto |
 | B5 | LUFY-14 | `add-active-post-spec-verification` | Bajo-medio | Simulación de spec faltante y spec válido |
 
 ### Release C - UX y automatización (`v0.5.0` sugerido)
