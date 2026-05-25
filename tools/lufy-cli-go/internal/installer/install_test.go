@@ -599,6 +599,7 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join(".opencode", "package-lock.json"):                "{}\n",
 		filepath.Join(".opencode", "agents", "orchestrator.md"):        "orchestrator\n",
 		filepath.Join(".opencode", "commands", "opsx-apply.md"):        "apply\n",
+		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):      "hook\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):   "skill\n",
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):         "lite\n",
 		filepath.Join(".opencode", "templates", "result-contract.md"):  "result\n",

@@ -44,6 +44,10 @@ Templates locales:
 - `templates/sdd-lite.md`: artefacto compacto para T2.
 - `templates/result-contract.md`: contrato de salida para handoffs y recuperación de contexto.
 
+Hooks locales:
+
+- `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.opencode/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
+
 Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 
 Subagent isolation: cada subagente recibe solo el `context_slice`, rutas y constraints necesarios para su rol. La revisión se dimensiona como `none`, `focused` o `full` según tier, superficie modificada y riesgo.

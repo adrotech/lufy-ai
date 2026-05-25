@@ -164,7 +164,7 @@ Effort estimado:
 
 ### LUFY-7 - Hook PostToolUse de formato dinámico
 
-**Estado:** pendiente; trazado en #75.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #75.
 
 **Issue:** #75 - https://github.com/adrotech/lufy-ai/issues/75
 
