@@ -250,7 +250,7 @@ Effort estimado:
 
 ### LUFY-14 - Verificación activa post-spec
 
-**Estado:** pendiente; trazado en #82.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #82.
 
 **Issue:** #82 - https://github.com/adrotech/lufy-ai/issues/82
 
