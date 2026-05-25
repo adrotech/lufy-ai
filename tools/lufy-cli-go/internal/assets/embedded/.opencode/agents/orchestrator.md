@@ -67,6 +67,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use installed OpenSpec/SDD skills by their concrete names (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-verify-change`, `openspec-archive-change`) when routing lifecycle work.
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 - Treat tiers as classification of proposals, functionalities, and tasks: T1 Full SDD, T2 SDD Lite, T3 Express. Prefer the smallest tier that completes the request safely.
+- After invoking any OpenSpec generation or sync command, require active post-spec verification before routing forward:
+  - For `/opsx-propose` or `openspec-propose`, read the expected files under `openspec/changes/<change>/` after creation and verify `proposal.md`, `tasks.md`, and at least one `specs/**/spec.md` exist and are non-empty; if design is required by the active schema, verify `design.md` too.
+  - For generated change specs, verify delta markers and `#### Scenario:` blocks with `WHEN` and `THEN` by reading the files just written, not by trusting tool output.
+  - For `/opsx-sync` or `openspec-sync`, map every delta spec to `openspec/specs/<capability>/spec.md`, read each affected target after sync, and verify that added/modified/removed requirement titles reflect the planned delta.
+  - If Engram MCP is enabled in OpenCode config and an Engram tool is available, verify the expected change/delta record was written; if Engram is enabled but unavailable, report the limitation explicitly and do not claim Engram traceability.
+  - If any expected file, synced requirement, or required trace record is missing, STOP with `status: blocked`, cite the missing path/requirement, and recommend the exact recovery action instead of continuing to apply, verify, archive, or delivery.
 - When routing rationale, handoff constraints, review slices or result contracts depend on project workflow limits, reference `.opencode/project.yaml` top-level `workflow_limits` as the source of truth.
 - Keep proposal/review slicing (`workflow_limits.proposal_slicing_strategy`) separate from delivery grouping (`workflow_limits.delivery_batch_strategy`).
 - Do not report top-level `loc_budget` or top-level `delivery_strategy` as canonical workflow-limit fields.

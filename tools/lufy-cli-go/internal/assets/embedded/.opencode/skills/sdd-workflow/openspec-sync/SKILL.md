@@ -50,6 +50,7 @@ Sync an OpenSpec change into the main specs after implementation or before archi
    - `REMOVED`: remove the matching main requirement by title only when the delta explains why and the target exists.
 
    Show a concise summary of additions, replacements and removals before editing.
+   Keep this plan as the source of truth for post-sync verification.
 
 5. **Apply deltas without archiving**
 
@@ -59,6 +60,13 @@ Sync an OpenSpec change into the main specs after implementation or before archi
    - If a target requirement is missing, duplicated or ambiguous, stop before editing that file and report the blocker.
 
 6. **Verify sync result**
+
+   Actively read every affected `openspec/specs/<capability>/spec.md` after applying deltas.
+   - For `ADDED`, verify the target contains the added requirement title and scenario content.
+   - For `MODIFIED`, verify the target contains the updated requirement body and no stale duplicate of the old requirement remains.
+   - For `REMOVED`, verify the target no longer contains the removed requirement title.
+   - If any expected target file or requirement state is missing, STOP with `status: blocked`, cite the path/requirement, and do not recommend archive.
+   - If Engram MCP is enabled and an Engram tool is available, verify the sync/delta trace record for `<name>` exists. If Engram is enabled but unavailable, report that traceability limitation explicitly.
 
    ```bash
    openspec validate "<name>"
