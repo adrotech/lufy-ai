@@ -91,6 +91,21 @@ Top-level `loc_budget` and `delivery_strategy` in `.opencode/project.yaml` SHALL
 - **WHEN** known observability libraries are present in stack manifests
 - **THEN** the generated stack includes those libraries in `observability_libs`
 
+### Requirement: Stack-aware format dispatch hook
+The installed harness SHALL provide a local format-dispatch hook that uses `.opencode/project.yaml` formatter and linter autofix metadata for changed files without assuming a fixed language toolchain.
+
+#### Scenario: Hook formats supported stack files
+- **WHEN** `.opencode/hooks/format-dispatch.sh` receives a changed `.go`, `.ts`, `.tsx` or `.py` file whose extension matches a supported stack formatter in `.opencode/project.yaml`
+- **THEN** it runs the configured formatter command for that file and runs configured linter `auto_fix` when present
+
+#### Scenario: Hook ignores unknown or unsupported files quietly
+- **WHEN** the hook receives a file with an unmatched extension, a file from an unsupported stack, a missing `.opencode/project.yaml`, or an empty/TODO formatter command
+- **THEN** it exits with code 0 without noisy output
+
+#### Scenario: Hook stays confined to the project root
+- **WHEN** the hook receives an absolute or relative file path outside the configured project root
+- **THEN** it exits with code 0 without formatting that file
+
 ### Requirement: Rescan preserves user overrides
 `lufy-ai init --rescan` SHALL merge newly detected stack evidence into an existing `.opencode/project.yaml` without discarding user-managed preferences.
 
