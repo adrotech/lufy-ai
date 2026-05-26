@@ -75,11 +75,24 @@ Contexto operativo del repo:
 
 Los slash commands viven en `commands/`.
 
-- `opsx-explore`: explorar el codebase sin implementar.
-- `opsx-propose`: crear artefactos de propuesta OpenSpec.
-- `opsx-apply`: implementar tareas OpenSpec.
-- `opsx-verify`: verificar implementación contra la spec.
-- `opsx-archive`: archivar un cambio completado; tasks incompletas implican `blocked`, no archive.
+Regla de namespace:
+
+- `/opsx-*`: comandos canónicos del workflow OpenSpec. Se preservan y no se renombran desde el kit Lufy.
+- `/lufy.*`: extras propios del kit Lufy, como reportes o utilidades operativas que complementan OpenSpec.
+
+Comandos OpenSpec:
+
+- `/opsx-explore`: explorar el codebase sin implementar.
+- `/opsx-propose`: crear artefactos de propuesta OpenSpec.
+- `/opsx-apply`: implementar tareas OpenSpec.
+- `/opsx-verify`: verificar implementación contra la spec.
+- `/opsx-sync`: aplicar deltas validados a specs principales sin archivar.
+- `/opsx-archive`: archivar un cambio completado; tasks incompletas implican `blocked`, no archive.
+- `/opsx-version`: reportar la fuente OpenSpec efectiva y diagnósticos de fallback.
+
+Comandos Lufy:
+
+- `/lufy.timereport`: generar un reporte local de tiempo/ROI como extra del kit.
 
 ## Skills
 

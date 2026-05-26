@@ -226,7 +226,7 @@ Effort estimado:
 
 ### LUFY-12 - Namespace dual `/opsx-*` + `/lufy.*`
 
-**Estado:** pendiente; trazado en #80.
+**Estado:** validado localmente; pendiente de delivery para cerrar #80.
 
 **Issue:** #80 - https://github.com/adrotech/lufy-ai/issues/80
 

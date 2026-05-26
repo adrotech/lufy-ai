@@ -41,7 +41,8 @@ El objetivo es simple: cada pedido debe usar el flujo más pequeño que lo resue
 | Área | Asset / ruta | Propósito |
 | --- | --- | --- |
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer` y `delivery`. |
-| Comandos slash | `.opencode/commands/` | `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `opsx-version`. |
+| Comandos slash OpenSpec | `.opencode/commands/` | `/opsx-*` se preserva para el ciclo OpenSpec: `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `/opsx-version`. |
+| Comandos slash Lufy | `.opencode/commands/` | `/lufy.*` queda reservado para extras propios del kit, como `/lufy.timereport`; no reemplaza ni renombra `/opsx-*`. |
 | Skills OpenSpec | `.opencode/skills/sdd-workflow/` | Ciclo completo para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios. |
 | Templates operativos | `.opencode/templates/` | `sdd-lite.md` y `result-contract.md` para T2 y handoffs recuperables. |
 | Delivery policy | `.opencode/policies/delivery.md` | Reglas compartidas para branch safety, validación, PRs, releases y estados bloqueados. |
