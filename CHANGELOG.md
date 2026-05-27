@@ -10,3 +10,19 @@ El formato recomendado sigue categorías simples:
 - `Security` para cambios de seguridad o supply chain.
 
 Las releases públicas deben enlazar su tag y resumir validación relevante.
+
+## [v0.4.0] - 2026-05-27
+
+### Added
+
+- Fast path OpenSpec/docs-only para micro-slices de planificación de 1-2 artefactos, con `program_tier`, `slice_tier` y `fast_path_allowed` en Result Contract.
+- Documentación de instalación y quickstart actualizada para la versión estable `v0.4.0`.
+
+### Changed
+
+- `orchestrator` debe sintetizar Result Contracts de subagentes en respuestas humanas en español, reservando YAML crudo para handoffs o solicitudes explícitas.
+- Assets embebidos del CLI Go sincronizados con las reglas locales del harness OpenCode/OpenSpec.
+
+### Fixed
+
+- Dirty worktree pasa a tratarse como riesgo de delivery, no como bloqueo de validación para slices OpenSpec/docs-only sin runtime ni delivery.

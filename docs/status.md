@@ -20,11 +20,13 @@
 - Result Contract envelope v1 validado localmente: agentes locales y template usan envelope YAML canónico con `workflow_decision` para `workflow_limits`, estados de gate, evidencia, riesgos y siguiente acción; delivery/archive quedan pendientes de autorización.
 - Skill resolution local-first con AutoSkills documentado solo como bootstrap opcional mediante `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
 - `sdd-router` limitado a clasificación read-only/no-shell y delivery con gate explícito de checks remotos de PR antes de `delivered`/`closed`.
+- Fast path OpenSpec/docs-only: micro-slices documentales de 1-2 artefactos pueden ejecutarse como T2/T3 dentro de programas T1 cuando no hay runtime, delivery, seguridad ni contratos públicos.
+- Salidas finales del `orchestrator` normalizadas para usuarios: los Result Contract YAML quedan como formato interno/handoff salvo solicitud explícita.
 
 ## Pendiente o futuro
 
-- Promover `develop` a `main` y publicar `v0.3.6` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
-- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.3.6` objetivo.
+- Promover `develop` a `main` y publicar `v0.4.0` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
+- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.4.0` objetivo.
 - Backlog stack-aware: Release A (`lufy-ai init`, `.opencode/project.yaml` y rescan/drift) queda cubierta por PRs previos; `/lufy.timereport` (LUFY-3) fue entregado por PR #66 y archivado post-merge. Siguen pendientes consumidores como `test-writer`, reviewer ponderado, `/lufy.onboard`, hooks dinámicos y planner 8-state; ver `docs/backlog.md`.
 - Reconciliation hook opt-in para detectar cambios sin spec asociada.
 - Autocomplete/help avanzado mediante Cobra u otro framework.

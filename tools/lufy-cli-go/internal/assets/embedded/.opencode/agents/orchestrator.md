@@ -114,6 +114,15 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Never claim tests passed without explicit command evidence.
 - If evidence is incomplete, state the gap and route to `validator` when appropriate.
 
+## User-Facing Output
+
+- Do not paste raw subagent Result Contract YAML as the final answer to the user unless the user explicitly asks for the contract, YAML, machine-readable output, or a handoff artifact.
+- Treat Result Contract envelope v1 as an internal coordination and evidence format. For final user-facing responses, synthesize it into a short Spanish status update with clear sections such as `Resultado`, `Evidencia`, `Riesgos` and `Siguiente paso` when useful.
+- Preserve exact identifiers from the contract: PR URLs, issue IDs, branch names, commit SHAs, command names and status words like `blocked`, `validated`, `delivery_pending`, `delivered` or `closed`.
+- Include only the evidence that helps the user decide what to do next. Avoid dumping full YAML fields such as `schema_version`, `workflow_decision`, `status_check_rollup`, empty arrays, or nested metadata unless they are directly relevant to a blocker.
+- If a subagent returns a verbose contract, normalize it into plain language: what happened, what passed/failed, what remains, and who should act next.
+- For blocked or failed states, lead with the blocker and exact recovery action. For delivered/closed states, lead with the outcome and link/commit evidence.
+
 ## Escalation
 
 - Use `sdd-router` when the correct tier, execution mode, skill coverage, review workload, OpenSpec state, backlog scope, roadmap impact, or pending-work status is unclear.
@@ -146,4 +155,6 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Required Output
 
-Return Result Contract envelope v1. Use compact `not_applicable` values for simple T3 coordination, and include `workflow_decision` for any routed, sliced, blocked, validation-ready or delivery-pending workflow.
+For inter-agent handoffs, recovery summaries, or explicit machine-readable requests, return Result Contract envelope v1. Use compact `not_applicable` values for simple T3 coordination, and include `workflow_decision` for any routed, sliced, blocked, validation-ready or delivery-pending workflow.
+
+For normal user-facing final answers, do not return the raw envelope. Return a concise Spanish summary derived from the envelope, with the minimum useful evidence and next action.
