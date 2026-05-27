@@ -50,6 +50,25 @@ The installed workflow SHALL provide `/opsx-sync` and `openspec-sync` to apply v
 - **WHEN** a change spec lacks required delta markers or testable scenarios
 - **THEN** `/opsx-sync` fails with an actionable error and does not mutate main specs
 
+### Requirement: Active post-spec verification
+The installed workflow SHALL actively verify expected OpenSpec artifacts after proposal generation and sync operations before moving to implementation, verification, archive, or delivery.
+
+#### Scenario: Proposal generation verifies expected files
+- **WHEN** `/opsx-propose` or `openspec-propose` creates a change
+- **THEN** the workflow reads the expected files under `openspec/changes/<change>/`, verifies required artifacts are non-empty, verifies delta markers and testable scenarios, and stops with an actionable blocked result if any expected file is missing or invalid
+
+#### Scenario: Sync verifies target specs
+- **WHEN** `/opsx-sync` or `openspec-sync` applies deltas to main specs
+- **THEN** the workflow reads every affected `openspec/specs/<capability>/spec.md` and verifies the added, modified or removed requirement titles match the planned delta before recommending verify or archive
+
+#### Scenario: Engram traceability is explicit
+- **WHEN** Engram MCP is enabled during proposal generation or sync
+- **THEN** the workflow verifies the expected proposal or delta trace record when an Engram tool is available, or reports the traceability limitation explicitly when Engram is enabled but unavailable
+
+#### Scenario: Failed post-spec verification blocks continuation
+- **WHEN** active post-spec verification cannot find an expected artifact, synced requirement, or required trace record
+- **THEN** the workflow reports `status: blocked`, names the missing path or requirement, and does not continue to apply, verify, archive or delivery guidance until the issue is repaired
+
 ### Requirement: Baseline metadata is installed
 The installed OpenSpec workflow SHALL include `UPSTREAM.json` describing the effective baseline used by the local workflow assets.
 

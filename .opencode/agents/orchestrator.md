@@ -56,6 +56,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.
 - Use `sdd-router` before non-trivial, ambiguous, risky, or multi-agent implementation workflows to classify T1/T2/T3 and choose the minimum safe path.
 - Treat requests about specs, backlog, roadmap, active OpenSpec changes, pending work, or what remains to do as non-trivial routing questions; call `sdd-router` before `explorer` unless the user explicitly requested only read-only exploration.
+- For planning-only or OpenSpec/docs-only micro-slices where the expected scope is 1-2 artifacts, no runtime files, no delivery, no security/public-contract change, and prior context or the user request already identifies the target files/tasks, allow a fast path: route directly to `implementer` with a bounded context slice, or follow `sdd-router` when it reports `fast_path_allowed: true`; do not add `explorer` only to formalize an already clear handoff.
 - Use `implementer` for clear and bounded changes of code, tests, docs, or configuration.
 - Use `validator` for compile/test evidence and diagnosis without editing.
 - Use `reviewer` for quality review, missing coverage, release risk, and merge recommendation.
@@ -67,16 +68,25 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use installed OpenSpec/SDD skills by their concrete names (`openspec-explore`, `openspec-propose`, `openspec-apply-change`, `openspec-verify-change`, `openspec-archive-change`) when routing lifecycle work.
 - Treat `install-managed-assets-with-hash-idempotency` as the current active/focus spec unless the user says otherwise; it covers managed assets, SHA-256, manifest, idempotency, backup/restore, and structural verify.
 - Treat tiers as classification of proposals, functionalities, and tasks: T1 Full SDD, T2 SDD Lite, T3 Express. Prefer the smallest tier that completes the request safely.
+- Distinguish the tier of the broader program from the tier of the next micro-slice. A T1 program may contain a T2/T3 planning-only slice when the slice has bounded docs/OpenSpec scope and no runtime or delivery impact.
+- After invoking any OpenSpec generation or sync command, require active post-spec verification before routing forward:
+  - For `/opsx-propose` or `openspec-propose`, read the expected files under `openspec/changes/<change>/` after creation and verify `proposal.md`, `tasks.md`, and at least one `specs/**/spec.md` exist and are non-empty; if design is required by the active schema, verify `design.md` too.
+  - For generated change specs, verify delta markers and `#### Scenario:` blocks with `WHEN` and `THEN` by reading the files just written, not by trusting tool output.
+  - For `/opsx-sync` or `openspec-sync`, map every delta spec to `openspec/specs/<capability>/spec.md`, read each affected target after sync, and verify that added/modified/removed requirement titles reflect the planned delta.
+  - If Engram MCP is enabled in OpenCode config and an Engram tool is available, verify the expected change/delta record was written; if Engram is enabled but unavailable, report the limitation explicitly and do not claim Engram traceability.
+  - If any expected file, synced requirement, or required trace record is missing, STOP with `status: blocked`, cite the missing path/requirement, and recommend the exact recovery action instead of continuing to apply, verify, archive, or delivery.
 - When routing rationale, handoff constraints, review slices or result contracts depend on project workflow limits, reference `.opencode/project.yaml` top-level `workflow_limits` as the source of truth.
 - Keep proposal/review slicing (`workflow_limits.proposal_slicing_strategy`) separate from delivery grouping (`workflow_limits.delivery_batch_strategy`).
 - Do not report top-level `loc_budget` or top-level `delivery_strategy` as canonical workflow-limit fields.
 - Preserve the router's workflow-limit availability exactly: `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, and `workflow_limits.stop_rules`; if `.opencode/project.yaml` or a path is unavailable, propagate `not_available` instead of inventing defaults.
 - Propagate optional `chain_strategy` from `sdd-router` handoffs. When it is `auto-chain`, continue to the next appropriate role without re-asking the user only when risk is not high, no stop rule is triggered, and no explicit authorization gate (delivery, Git/GH, protected branch, missing context) applies.
 - Apply numeric stop rules at routing boundaries: 4+ significant files requires workload/tier/slice decision; more than 20 tool calls in a coherent block requires pause and resumable summary; multi-file non-trivial writes require an existing plan or review slice; long sessions with hard-to-resume evidence require handoff/summary before continuing.
+- Treat dirty worktree state as a delivery risk unless the current docs/OpenSpec-only scope is actually mixed with runtime changes; do not require Git/GH validation solely because delivery is not requested.
 - When a stop rule triggers, return or request a Result Contract with `status: blocked` or `status: escalated`, `workflow_decision.stop_rule_status: triggered`, the exact rule/evidence, and the next owner/action; when clear, report `stop_rule_status: clear` at implementation/validation boundaries.
 - For T1, route to OpenSpec proposal/design/spec/tasks before implementation when artifacts do not already exist.
 - For T2, route through SDD Lite or a structured handoff with observable WHEN/THEN acceptance criteria, grouped validation, and focused review when risk warrants it.
 - For T3, allow direct bounded implementation and proportional validation without mandatory OpenSpec or explorer.
+- For fast-path OpenSpec/docs-only slices, proportional validation is `openspec validate "<change>" --strict` when a change ID exists plus static checkbox/file review; Git read-only evidence is optional unless delivery is requested or there is concrete suspicion of mixed runtime changes.
 - Preserve subagent isolation: pass only the router's `context_slice`, relevant artifact paths, and required constraints to the next agent.
 - Ask routed agents to return Result Contract envelope v1 with status, evidence, risks/follow-ups, `workflow_decision` when applicable, and recommended next action.
 - Carry forward router `workflow_decision` fields instead of asking every downstream role to rediscover the same workflow limits from conversation history.
@@ -103,6 +113,15 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Report only evidence produced by specialists or commands explicitly provided in the conversation.
 - Never claim tests passed without explicit command evidence.
 - If evidence is incomplete, state the gap and route to `validator` when appropriate.
+
+## User-Facing Output
+
+- Do not paste raw subagent Result Contract YAML as the final answer to the user unless the user explicitly asks for the contract, YAML, machine-readable output, or a handoff artifact.
+- Treat Result Contract envelope v1 as an internal coordination and evidence format. For final user-facing responses, synthesize it into a short Spanish status update with clear sections such as `Resultado`, `Evidencia`, `Riesgos` and `Siguiente paso` when useful.
+- Preserve exact identifiers from the contract: PR URLs, issue IDs, branch names, commit SHAs, command names and status words like `blocked`, `validated`, `delivery_pending`, `delivered` or `closed`.
+- Include only the evidence that helps the user decide what to do next. Avoid dumping full YAML fields such as `schema_version`, `workflow_decision`, `status_check_rollup`, empty arrays, or nested metadata unless they are directly relevant to a blocker.
+- If a subagent returns a verbose contract, normalize it into plain language: what happened, what passed/failed, what remains, and who should act next.
+- For blocked or failed states, lead with the blocker and exact recovery action. For delivered/closed states, lead with the outcome and link/commit evidence.
 
 ## Escalation
 
@@ -136,4 +155,6 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Required Output
 
-Return Result Contract envelope v1. Use compact `not_applicable` values for simple T3 coordination, and include `workflow_decision` for any routed, sliced, blocked, validation-ready or delivery-pending workflow.
+For inter-agent handoffs, recovery summaries, or explicit machine-readable requests, return Result Contract envelope v1. Use compact `not_applicable` values for simple T3 coordination, and include `workflow_decision` for any routed, sliced, blocked, validation-ready or delivery-pending workflow.
+
+For normal user-facing final answers, do not return the raw envelope. Return a concise Spanish summary derived from the envelope, with the minimum useful evidence and next action.

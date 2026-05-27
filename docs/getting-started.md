@@ -24,14 +24,14 @@ Incluye:
 
 ## Instalación rápida
 
-Versión estable objetivo: `v0.3.6`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
+Versión estable objetivo: `v0.4.0`. El paso a paso completo por OS/shell, incluyendo `PATH` para bash, zsh y fish, está en [`docs/installation.md`](installation.md).
 
 ### 1. Instalar el binario sin clone desde una release estable
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.6/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.3.6 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
 Si `~/.local/bin` no está en `PATH`, configura tu shell antes de continuar. Ejemplos rápidos:
@@ -191,15 +191,18 @@ Los cambios OpenSpec nuevos deben escribir specs delta bajo `openspec/changes/<c
 
 ## Comandos slash disponibles
 
-| Comando | Descripción |
-| --- | --- |
-| `/opsx-explore` | Explora requisitos, impacto o código en modo read-only. |
-| `/opsx-propose` | Genera artefactos OpenSpec de un cambio. |
-| `/opsx-apply` | Implementa tareas de un cambio activo. |
-| `/opsx-verify` | Verifica completitud y coherencia contra artefactos. |
-| `/opsx-sync` | Aplica deltas validados a specs principales sin archivar. |
-| `/opsx-archive` | Archiva un cambio terminado cuando cumple gates. |
-| `opsx-version` | Reporta fuente OpenSpec efectiva y diagnósticos de fallback desde `openspec/UPSTREAM.json`. |
+Los comandos `/opsx-*` son el namespace estable del workflow OpenSpec y se mantienen con ese nombre para no romper guías, skills ni memoria operativa existente. Los comandos `/lufy.*` son extras propios del kit Lufy y pueden complementar el flujo sin reemplazar ni renombrar ningún `/opsx-*`.
+
+| Namespace | Comando | Descripción |
+| --- | --- | --- |
+| OpenSpec | `/opsx-explore` | Explora requisitos, impacto o código en modo read-only. |
+| OpenSpec | `/opsx-propose` | Genera artefactos OpenSpec de un cambio. |
+| OpenSpec | `/opsx-apply` | Implementa tareas de un cambio activo. |
+| OpenSpec | `/opsx-verify` | Verifica completitud y coherencia contra artefactos. |
+| OpenSpec | `/opsx-sync` | Aplica deltas validados a specs principales sin archivar. |
+| OpenSpec | `/opsx-archive` | Archiva un cambio terminado cuando cumple gates. |
+| OpenSpec | `/opsx-version` | Reporta fuente OpenSpec efectiva y diagnósticos de fallback desde `openspec/UPSTREAM.json`. |
+| Lufy | `/lufy.timereport` | Genera un reporte local de tiempo/ROI como extra del kit. |
 
 ## Validación local disponible
 

@@ -31,6 +31,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - **Systemic analysis gate** for `explorer`/`implementer`: analyze existing files, dependencies, interconnections, feedback paths, and structure/behavior impact at the beginning of a coherent block/proposal.
 - **Implementation gate** for `implementer`: do not reread old files repeatedly during normal implementation after the initial analysis. Reread old files only when they were modified/affected, conflicts appear, new evidence invalidates the initial analysis, scope changes, a blocker appears, or risk requires confirmation.
 - **Block/proposal gate** for `implementer` and `validator`: run grouped validation at the end of all tasks in a coherent block/proposal, including tests and coverage when real commands exist for the scope. Do not run tests constantly during normal implementation.
+- **Planning/OpenSpec-only fast path**: when the current micro-slice touches only 1-2 OpenSpec/docs artifacts, has no runtime/app changes, no delivery, and no security/public-contract impact, the workflow may use T2/T3 fast path even inside a broader T1 program. Expected validation is `openspec validate "<change>" --strict` when applicable plus static checkbox/file review.
 - **Exception gate**: run focused rereads or validation earlier only when a blocker, risky change, feedback loop, or failure diagnosis requires it.
 - **Final PR gate** for `delivery`: run the repository's real full validation suite when available (typecheck/compile, tests, coverage, linting as applicable).
 - **Remote PR checks gate** for `delivery`: after `gh pr create`, consult or wait for remote PR pipelines/checks and record command evidence, for example `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url`. If checks report `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, evidence is missing, or required tooling is unavailable, do not report `delivered` or `closed`; report `blocked` with PR URL/status and recovery command. Use `delivery_pending` only when remote checks exist and are still pending without a successful conclusion.
@@ -39,6 +40,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - If change affects behavior, include functional evidence when practical.
 - Never claim validation passed without command evidence.
 - Delivery remains explicitly authorized regardless of tier. A T1/T2/T3 classification can recommend delivery readiness but cannot authorize Git/GH operations.
+- Dirty or mixed worktrees must be reported before delivery/staging, but dirty state alone must not block scoped documentation/OpenSpec-only validation when no delivery is requested and there is no concrete evidence of mixed runtime changes.
 - For this repo, the CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto for that CLI and must not fall back to legacy install paths.
 
 ## Workflow Limits Config

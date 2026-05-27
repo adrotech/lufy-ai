@@ -86,6 +86,7 @@ Implement tasks from an OpenSpec change.
 
    Validation preference:
    - Use systemic workflow: analyze old files, dependencies, interconnections, feedback paths, and structure/behavior risks at the beginning of the coherent block/proposal.
+   - For planning-only or OpenSpec/docs-only micro-slices that touch 1-2 artifacts and have no runtime/app changes, use the fast path: read only the relevant OpenSpec/docs files, apply the bounded edit, and validate with `openspec validate "<change>" --strict` plus static checkbox/file review when applicable.
    - Do not reread old files repeatedly during normal implementation after the initial analysis.
    - Reread old files only if they were modified/affected, conflict with changes, new evidence appears, scope changes, a blocker appears, or risk requires confirmation.
    - Use validación agrupada at the end of all tasks in a coherent block/proposal, including tests/coverage only when real commands exist for the scope.
@@ -163,6 +164,7 @@ What would you like to do?
 - Keep going through tasks until done or blocked
 - Always read context files before starting (from the apply instructions output)
 - Perform the initial systemic analysis once before implementation, then avoid repeated old-file rereads unless justified by modification, conflict, blocker, new evidence, scope change, or explicit risk.
+- Use the planning/OpenSpec-only fast path when the assigned slice is documentation-only, bounded to 1-2 artifacts, and acceptance criteria are already clear; do not request `explorer` only to formalize an already sufficient handoff.
 - If task is ambiguous, pause and ask before implementing
 - If implementation reveals issues, pause and suggest artifact updates
 - Keep code changes minimal and scoped to each task

@@ -264,6 +264,28 @@ The router and orchestrator SHALL expose workflow-limit-driven decisions as stru
 - **WHEN** orchestrator delegates to another agent after routing
 - **THEN** the handoff includes the workflow decision fields needed by that role and does not require the receiving agent to rediscover the same limits from conversation history
 
+### Requirement: Planning-only fast path
+The routing harness SHALL distinguish a broad program tier from the tier of the next micro-slice and SHALL allow a lightweight path for bounded planning-only or OpenSpec/docs-only work.
+
+#### Scenario: T1 program has T2 or T3 planning slice
+- **GIVEN** the broader program is T1
+- **WHEN** the next micro-slice touches only 1-2 OpenSpec/docs artifacts, has no runtime/app file changes, no delivery request, no security impact and no public-contract impact
+- **THEN** `sdd-router` SHALL classify the slice as T2 or T3 and report `program_tier: T1`, `slice_tier: T2 | T3` and `fast_path_allowed: true`
+
+#### Scenario: Prior context is sufficient
+- **WHEN** the prompt or previous handoff identifies the affected artifacts, task and acceptance criteria for a planning-only slice
+- **THEN** `orchestrator` SHALL NOT launch an additional `explorer` only to formalize the same handoff
+- **AND** it MAY route directly to `implementer` with the bounded context slice
+
+#### Scenario: Lightweight OpenSpec-only validation
+- **WHEN** a fast-path slice modifies only OpenSpec/docs artifacts and no delivery is requested
+- **THEN** validation SHALL default to `openspec validate "<change>" --strict` when a change ID exists plus static checkbox/file review
+- **AND** dirty worktree state SHALL be treated as a delivery risk rather than a documentation-validation blocker unless there is concrete evidence of mixed runtime changes
+
+#### Scenario: Fast path is not allowed
+- **WHEN** the slice changes runtime/app files, affects security or public contracts, requires delivery, touches more than two artifacts, or has unclear acceptance criteria
+- **THEN** `fast_path_allowed` SHALL be false and the workflow SHALL use the proportional T1/T2/T3 routing path for the actual risk
+
 ### Requirement: Delivery batching remains authorization-gated
 The workflow SHALL report delivery batching guidance separately from delivery authorization.
 

@@ -26,6 +26,7 @@ Las reglas compartidas de delivery viven en `policies/delivery.md`.
 - **T1 Full SDD**: nuevas capabilities, impacto transversal, decisiones de arquitectura, contratos públicos, seguridad, política de delivery o alta incertidumbre. Usa OpenSpec completo.
 - **T2 SDD Lite**: cambio funcional acotado, bug relevante, ajuste de agente/skill o refactor controlado. Usa mini-spec o handoff estructurado con criterios WHEN/THEN.
 - **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante. Puede ir directo a implementación acotada y validación proporcional.
+- **Fast path OpenSpec/docs-only**: una subtarea de un programa T1 puede ejecutarse como T2/T3 si toca solo 1-2 artefactos OpenSpec/docs, no cambia runtime, no requiere delivery y tiene aceptación clara. Validación esperada: `openspec validate "<change>" --strict` cuando aplique más revisión estática de archivos/checklists.
 
 El `orchestrator` puede invocar `sdd-router` antes de activar agentes más pesados. El router devuelve `tier`, `confidence`, `execution_mode`, `recommended_flow`, `context_slice`, `skill_status`, `review_workload`, `stop_reason` y `next_agent`.
 
@@ -39,10 +40,16 @@ Execution modes soportados:
 - `verify_only`: evidencia o diagnóstico.
 - `delivery_pending`: Git/GH bloqueado hasta autorización explícita.
 
+El router puede reportar `program_tier`, `slice_tier` y `fast_path_allowed` para evitar confundir el tamaño del programa global con el tamaño real del siguiente micro-slice.
+
 Templates locales:
 
 - `templates/sdd-lite.md`: artefacto compacto para T2.
 - `templates/result-contract.md`: contrato de salida para handoffs y recuperación de contexto.
+
+Hooks locales:
+
+- `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.opencode/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
 
 Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 
@@ -71,11 +78,24 @@ Contexto operativo del repo:
 
 Los slash commands viven en `commands/`.
 
-- `opsx-explore`: explorar el codebase sin implementar.
-- `opsx-propose`: crear artefactos de propuesta OpenSpec.
-- `opsx-apply`: implementar tareas OpenSpec.
-- `opsx-verify`: verificar implementación contra la spec.
-- `opsx-archive`: archivar un cambio completado; tasks incompletas implican `blocked`, no archive.
+Regla de namespace:
+
+- `/opsx-*`: comandos canónicos del workflow OpenSpec. Se preservan y no se renombran desde el kit Lufy.
+- `/lufy.*`: extras propios del kit Lufy, como reportes o utilidades operativas que complementan OpenSpec.
+
+Comandos OpenSpec:
+
+- `/opsx-explore`: explorar el codebase sin implementar.
+- `/opsx-propose`: crear artefactos de propuesta OpenSpec.
+- `/opsx-apply`: implementar tareas OpenSpec.
+- `/opsx-verify`: verificar implementación contra la spec.
+- `/opsx-sync`: aplicar deltas validados a specs principales sin archivar.
+- `/opsx-archive`: archivar un cambio completado; tasks incompletas implican `blocked`, no archive.
+- `/opsx-version`: reportar la fuente OpenSpec efectiva y diagnósticos de fallback.
+
+Comandos Lufy:
+
+- `/lufy.timereport`: generar un reporte local de tiempo/ROI como extra del kit.
 
 ## Skills
 

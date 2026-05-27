@@ -54,6 +54,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - **T1 Full SDD**: new capability, cross-cutting behavior, architecture decision, public contract change, security concern, delivery policy change, unclear requirements, high uncertainty, or broad repo impact.
 - **T2 SDD Lite**: bounded functional change, relevant bug fix, agent/skill update, controlled refactor, medium risk, or behavior that needs acceptance criteria but not full OpenSpec.
 - **T3 Express**: small, local, mechanical, documentation-only, formatting-only, or low-risk change with no meaningful behavior uncertainty.
+- **Planning/OpenSpec-only fast path**: when a T1 program's next slice only updates 1-2 OpenSpec/docs artifacts, has no runtime/app files, no delivery/GitHub operation, no security/public-contract change, and the target task/files are clear from the prompt or prior handoff, classify the slice as T2 or T3 with `fast_path_allowed: true` even if the broader program remains T1.
 - When confidence is low and the risk is not trivial, escalate one tier or recommend focused clarification/exploration.
 
 ## Execution Modes
@@ -78,6 +79,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Context Slicing
 
 - Include only the user intent, tier reason, relevant constraints, likely files or questions, acceptance criteria draft when useful, and exact next action.
+- For fast-path planning slices, include `program_tier`, `slice_tier`, `fast_path_allowed: true`, the exact 1-2 target files, and the lightweight validation expected; do not request `explorer` only to repackage already sufficient context.
 - Do not pass unrelated conversation history, broad repository dumps, or delivery authority unless it is relevant and explicit.
 - Treat `context_slice` as the source for the next agent, not as a full transcript.
 
@@ -92,6 +94,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Escalate tier or propose bounded `review_slices` when `estimated_files >= 5`, using `workflow_limits.proposal_slicing_strategy` when available and risk/context when it is `not_available`.
 - Set `workload_decision_needed: true` when configured sizing, routing, risk, file-count, LOC, stop-rule, or uncertainty limits require a user/orchestrator decision before continuing.
 - Do not split T3 work into artificial slices unless new risk appears.
+- For planning/OpenSpec-only fast path, set `review_workload: none` unless the slice changes workflow policy, acceptance criteria are unclear, or the file count/runtime scope exceeds the fast-path criteria.
 - PR split guidance is advisory only; delivery still requires explicit user authorization.
 
 ## Workflow Limits Metadata
@@ -122,7 +125,9 @@ Each slice should include:
 - Do not install tools or run package managers.
 - Do not claim validation or tests passed.
 - Do not replace `explorer`; route to it when impact analysis is needed.
+- Do not route to `explorer` for fast-path planning/OpenSpec-only slices when the prompt or prior handoff already identifies the affected artifacts and acceptance criteria.
 - Do not replace `validator`; route to it when command evidence, tests, or validation are needed.
+- Do not require Git read-only state for docs/OpenSpec-only validation unless delivery is requested or there is concrete suspicion of mixed runtime changes; dirty worktree is a delivery risk, not a documentation-validation blocker.
 - Do not replace `delivery`; route to it when Git/GH state, commits, PRs, sync, or delivery are needed.
 - Do not replace `orchestrator`; return routing guidance only.
 - Do not treat top-level `loc_budget` or top-level `delivery_strategy` in `.opencode/project.yaml` as valid workflow-limit sources; if mentioned, report them as legacy/non-canonical and route actionable migration or validation as needed.
@@ -151,6 +156,9 @@ evidence:
     - <routing evidence from provided context>
 workflow_decision:
   tier: T1 | T2 | T3
+  program_tier: T1 | T2 | T3 | not_applicable
+  slice_tier: T1 | T2 | T3 | not_applicable
+  fast_path_allowed: true | false
   confidence: high | medium | low
   reason: <short rationale>
   execution_mode: full_sdd | sdd_lite | express | clarify | explore_only | verify_only | delivery_pending

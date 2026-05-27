@@ -10,4 +10,4 @@ if ! command -v shellcheck >/dev/null 2>&1; then
   exit 0
 fi
 
-shellcheck "$ROOT"/scripts/*.sh "$ROOT"/tools/lufy-cli-go/scripts/*.sh
+shellcheck "$ROOT"/scripts/*.sh "$ROOT"/tools/lufy-cli-go/scripts/*.sh "$ROOT"/.opencode/hooks/*.sh

@@ -73,6 +73,9 @@ When ready to implement, run /opsx-apply
 
    b. **Continue until all `applyRequires` artifacts are complete**
       - After creating each artifact, re-run `openspec status --change "<name>" --json`
+      - Read the artifact path returned by `openspec instructions <artifact-id> --change "<name>" --json` and verify the file exists and is non-empty.
+      - For `specs/**/*.md`, verify the file contains at least one required delta marker and, for added or modified requirements, at least one `#### Scenario:` containing `WHEN` and `THEN`.
+      - If any expected artifact is missing, empty or structurally invalid, STOP immediately with `status: blocked`; name the exact path and the missing condition instead of continuing.
       - Check if every artifact ID in `applyRequires` has `status: "done"` in the artifacts array
       - Stop when all `applyRequires` artifacts are done
 
@@ -84,6 +87,15 @@ When ready to implement, run /opsx-apply
    ```bash
    openspec status --change "<name>"
    ```
+
+6. **Active post-spec verification**
+
+   Before reporting the change as ready:
+   - Read `openspec/changes/<name>/proposal.md`, `openspec/changes/<name>/tasks.md` and every `openspec/changes/<name>/specs/**/spec.md`.
+   - Read `openspec/changes/<name>/design.md` when the active schema/status indicates it is required or it was created.
+   - Verify required files are non-empty, specs use delta markers and scenarios contain `WHEN` and `THEN`.
+   - If Engram MCP is enabled and an Engram tool is available, verify the proposal/delta trace record for `<name>` exists. If Engram is enabled but unavailable, report that traceability limitation explicitly.
+   - If verification fails, return `blocked` with the missing path or requirement and the recovery action. Do not say the proposal is ready.
 
 **Output**
 

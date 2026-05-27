@@ -56,9 +56,11 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Evaluate the coherent task/block/review-slice gate, not every micro-checkbox, and report whether the next state is `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state.
 - Build a matrix: static checks, compile/typecheck, targeted tests, full tests, lint/format, functional/manual evidence.
 - For final block/proposal gates, run the grouped validation available for the real scope, including tests and coverage when commands exist.
+- For OpenSpec/docs-only slices with no runtime/app changes, default to the lightweight gate: `openspec validate "<change>" --strict` when a change ID exists plus static review of the affected files/checklists. Do not require Git read-only evidence solely to prove absence of runtime work unless delivery is requested or the provided scope suggests mixed changes.
 - For T1/T2 changes where tests were required, verify that TDD evidence from `test-writer` or equivalent carried-forward evidence includes RED, GREEN, TRIANGULATE and REFACTOR statuses, or explicit `not_applicable` reasons.
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` as the grouped local validation command because it includes the PR-aware whitespace gate before Go tests/build.
 - For PR-bound validation, include the PR-range whitespace check against the target base: `git diff --check origin/develop...HEAD` after commits exist, or `git diff --check origin/develop` before committing pending worktree changes. Do not rely only on plain `git diff --check`.
+- Treat dirty worktree state as a delivery/PR risk, not a blocker for validating a scoped documentation-only or OpenSpec-only slice when no delivery is requested.
 - Start with the smallest useful validation only for blockers, risky changes, or diagnosis; otherwise validate after implementation tasks are complete.
 - Respect validación agrupada: avoid constant tests and group validation at the end of a block/proposal unless blocked, risky, or diagnosing.
 

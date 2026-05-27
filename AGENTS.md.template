@@ -74,6 +74,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full OpenSpec.
 - **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use `.opencode/templates/sdd-lite.md` or a structured handoff with observable WHEN/THEN criteria.
 - **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough.
+- **OpenSpec/docs-only fast path**: if the global program is T1 but the next micro-slice touches only 1-2 OpenSpec/docs artifacts, has no runtime changes, no delivery request, and clear acceptance criteria, classify the slice as T2/T3 with `fast_path_allowed: true`; expected validation is `openspec validate "<change>" --strict` when applicable plus static file/checklist review.
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
@@ -106,6 +107,9 @@ evidence:
     - <manual/static evidence or not_applicable>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
+  program_tier: T1 | T2 | T3 | not_applicable
+  slice_tier: T1 | T2 | T3 | not_applicable
+  fast_path_allowed: true | false | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available

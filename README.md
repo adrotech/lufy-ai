@@ -41,7 +41,8 @@ El objetivo es simple: cada pedido debe usar el flujo más pequeño que lo resue
 | Área | Asset / ruta | Propósito |
 | --- | --- | --- |
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `validator`, `reviewer` y `delivery`. |
-| Comandos slash | `.opencode/commands/` | `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `opsx-version`. |
+| Comandos slash OpenSpec | `.opencode/commands/` | `/opsx-*` se preserva para el ciclo OpenSpec: `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` y `/opsx-version`. |
+| Comandos slash Lufy | `.opencode/commands/` | `/lufy.*` queda reservado para extras propios del kit, como `/lufy.timereport`; no reemplaza ni renombra `/opsx-*`. |
 | Skills OpenSpec | `.opencode/skills/sdd-workflow/` | Ciclo completo para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios. |
 | Templates operativos | `.opencode/templates/` | `sdd-lite.md` y `result-contract.md` para T2 y handoffs recuperables. |
 | Delivery policy | `.opencode/policies/delivery.md` | Reglas compartidas para branch safety, validación, PRs, releases y estados bloqueados. |
@@ -62,21 +63,21 @@ AutoSkills puede sugerirse solo como bootstrap opcional con `npx autoskills --dr
 
 ## Quickstart
 
-Versión estable objetivo: `v0.3.6`.
+Versión estable objetivo: `v0.4.0`.
 
 Para la guía completa por sistema operativo y shell, usa [`docs/installation.md`](docs/installation.md). Este resumen instala primero el binario y después aplica assets sobre un repositorio destino.
 
 ### 1. Descargar y revisar el bootstrap
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.6/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
 ```
 
 ### 2. Instalar el binario
 
 ```bash
-bash /tmp/lufy-bootstrap.sh --version v0.3.6 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
 Si el bootstrap indica que `install-dir` no está en `PATH`, aplica la instrucción sugerida para tu shell y abre una terminal nueva.
@@ -98,8 +99,8 @@ lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.3.6/scripts/bootstrap.sh \
-  | bash -s -- --version v0.3.6 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh \
+  | bash -s -- --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
 `latest` existe como conveniencia explícita (`--version latest`), pero no es reproducible. Prefiere `vX.Y.Z` en documentación, CI y onboarding automatizado.

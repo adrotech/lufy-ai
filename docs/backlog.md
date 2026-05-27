@@ -164,7 +164,7 @@ Effort estimado:
 
 ### LUFY-7 - Hook PostToolUse de formato dinámico
 
-**Estado:** pendiente; trazado en #75.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #75.
 
 **Issue:** #75 - https://github.com/adrotech/lufy-ai/issues/75
 
@@ -226,7 +226,7 @@ Effort estimado:
 
 ### LUFY-12 - Namespace dual `/opsx-*` + `/lufy.*`
 
-**Estado:** pendiente; trazado en #80.
+**Estado:** validado localmente; pendiente de delivery para cerrar #80.
 
 **Issue:** #80 - https://github.com/adrotech/lufy-ai/issues/80
 
@@ -250,7 +250,7 @@ Effort estimado:
 
 ### LUFY-14 - Verificación activa post-spec
 
-**Estado:** pendiente; trazado en #82.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #82.
 
 **Issue:** #82 - https://github.com/adrotech/lufy-ai/issues/82
 
@@ -336,7 +336,7 @@ LUFY-11, LUFY-12 y LUFY-13 son documentales/operativos y paralelizables.
 
 ## Plan de implementación recomendado
 
-### Release A - Foundation genérica (`v0.4.0` sugerido)
+### Release A - Foundation genérica (`v0.4.0`)
 
 Objetivo: introducir configuración stack-aware sin cambiar aún todos los agentes.
 
@@ -344,7 +344,9 @@ Objetivo: introducir configuración stack-aware sin cambiar aún todos los agent
 | --- | --- | --- | --- | --- |
 | A1 | LUFY-0 núcleo | `add-stack-aware-project-init` | Alto: schema nuevo y persistencia config | Cubierto en repo |
 | A2 | LUFY-16 rescan/drift | `add-project-rescan-stack-drift` | Medio: merge de overrides | Cubierto por PR #65 y archive correspondiente |
-| A3 | LUFY-12 docs namespace | `document-lufy-command-namespace` | Bajo | Revisión documental y `git diff --check` |
+| A3 | LUFY-12 docs namespace | `document-lufy-command-namespace` | Bajo | Entregado en PR #90 |
+| A4 | Issue #91 fast path OpenSpec/docs-only | `not_applicable` | Bajo-medio: routing UX | Entregado en PR #93 |
+| A5 | UX de salida del `orchestrator` | `not_applicable` | Bajo: instrucciones de agente | Pendiente de release `v0.4.0` |
 
 ### Release B - Agentes y gates (`v0.4.1` sugerido)
 
