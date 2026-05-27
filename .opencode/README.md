@@ -26,6 +26,7 @@ Las reglas compartidas de delivery viven en `policies/delivery.md`.
 - **T1 Full SDD**: nuevas capabilities, impacto transversal, decisiones de arquitectura, contratos públicos, seguridad, política de delivery o alta incertidumbre. Usa OpenSpec completo.
 - **T2 SDD Lite**: cambio funcional acotado, bug relevante, ajuste de agente/skill o refactor controlado. Usa mini-spec o handoff estructurado con criterios WHEN/THEN.
 - **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante. Puede ir directo a implementación acotada y validación proporcional.
+- **Fast path OpenSpec/docs-only**: una subtarea de un programa T1 puede ejecutarse como T2/T3 si toca solo 1-2 artefactos OpenSpec/docs, no cambia runtime, no requiere delivery y tiene aceptación clara. Validación esperada: `openspec validate "<change>" --strict` cuando aplique más revisión estática de archivos/checklists.
 
 El `orchestrator` puede invocar `sdd-router` antes de activar agentes más pesados. El router devuelve `tier`, `confidence`, `execution_mode`, `recommended_flow`, `context_slice`, `skill_status`, `review_workload`, `stop_reason` y `next_agent`.
 
@@ -38,6 +39,8 @@ Execution modes soportados:
 - `explore_only`: investigación read-only.
 - `verify_only`: evidencia o diagnóstico.
 - `delivery_pending`: Git/GH bloqueado hasta autorización explícita.
+
+El router puede reportar `program_tier`, `slice_tier` y `fast_path_allowed` para evitar confundir el tamaño del programa global con el tamaño real del siguiente micro-slice.
 
 Templates locales:
 

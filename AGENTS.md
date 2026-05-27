@@ -69,6 +69,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - **T1 Full SDD**: nuevas capabilities, impacto transversal, arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre; usar OpenSpec completo.
 - **T2 SDD Lite**: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar mini-spec o handoff estructurado con criterios WHEN/THEN y validación agrupada.
 - **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante; permitir implementación directa acotada y validación proporcional.
+- **Fast path OpenSpec/docs-only**: si el programa global es T1 pero el siguiente micro-slice toca solo 1-2 artefactos OpenSpec/docs, no cambia runtime, no requiere delivery y tiene aceptación clara, clasificar el slice como T2/T3 con `fast_path_allowed: true`; validación esperada: `openspec validate "<change>" --strict` cuando aplique y revisión estática de archivos/checklists.
 - Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
@@ -99,6 +100,9 @@ evidence:
     - <manual/static evidence or not_applicable>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
+  program_tier: T1 | T2 | T3 | not_applicable
+  slice_tier: T1 | T2 | T3 | not_applicable
+  fast_path_allowed: true | false | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available

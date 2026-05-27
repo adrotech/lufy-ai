@@ -21,6 +21,9 @@ evidence:
     - <manual/static evidence or not_applicable>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
+  program_tier: T1 | T2 | T3 | not_applicable
+  slice_tier: T1 | T2 | T3 | not_applicable
+  fast_path_allowed: true | false | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available
