@@ -15,6 +15,7 @@ type ToolID string
 const (
 	ToolInitialDefault ToolID = "opencode"
 	ToolCodex          ToolID = "codex"
+	ToolClaudeCode     ToolID = "claude-code"
 )
 
 type MethodologyID string
@@ -157,7 +158,7 @@ func (t Tier) Valid() bool {
 
 func (t ToolID) Valid() bool {
 	switch t {
-	case ToolInitialDefault, ToolCodex:
+	case ToolInitialDefault, ToolCodex, ToolClaudeCode:
 		return true
 	default:
 		return false

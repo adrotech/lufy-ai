@@ -72,10 +72,11 @@ func TestMethodologyByTierRejectsUnsupportedValues(t *testing.T) {
 }
 
 func TestHarnessConfigAcceptsKnownDryRunTool(t *testing.T) {
-	cfg := HarnessConfig{Tool: ToolCodex}
-
-	if err := cfg.ValidateSupported(); err != nil {
-		t.Fatalf("expected known dry-run tool to validate: %v", err)
+	for _, tool := range []ToolID{ToolCodex, ToolClaudeCode} {
+		cfg := HarnessConfig{Tool: tool}
+		if err := cfg.ValidateSupported(); err != nil {
+			t.Fatalf("expected known dry-run tool %s to validate: %v", tool, err)
+		}
 	}
 }
 

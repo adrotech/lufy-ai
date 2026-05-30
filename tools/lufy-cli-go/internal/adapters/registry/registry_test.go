@@ -23,6 +23,13 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 	if codexTool.ID() != domain.ToolCodex || !codexTool.Capabilities().DryRunOnly {
 		t.Fatalf("codex tool = %s capabilities=%+v", codexTool.ID(), codexTool.Capabilities())
 	}
+	claudeTool, err := reg.Tool(domain.ToolClaudeCode)
+	if err != nil {
+		t.Fatalf("claude code tool lookup: %v", err)
+	}
+	if claudeTool.ID() != domain.ToolClaudeCode || !claudeTool.Capabilities().DryRunOnly {
+		t.Fatalf("claude code tool = %s capabilities=%+v", claudeTool.ID(), claudeTool.Capabilities())
+	}
 
 	spec, err := reg.Methodology(domain.MethodologySpecWorkflow)
 	if err != nil {
