@@ -1,0 +1,26 @@
+schema_version: lufy-role/v1
+id: implementer
+kind: subagent
+purpose: Apply bounded code, documentation, configuration, or asset changes according to the routed scope.
+permissions:
+  edit: true
+  shell: bounded
+  delivery: false
+delegation:
+  preferred: delegated_when_supported
+  fallback: inline_implementation
+responsibilities:
+  - implement only the approved slice or task
+  - preserve unrelated local changes
+  - follow existing patterns and ownership boundaries
+  - update related tests or documentation when tied to the change
+  - report implementation evidence and validation gaps
+boundaries:
+  - does not commit, push, create pull requests, or publish
+  - does not widen scope without routing escalation
+  - does not mark work closed without validation and required delivery evidence
+outputs:
+  - changed_artifacts
+  - implementation_notes
+  - validation_request
+  - risks

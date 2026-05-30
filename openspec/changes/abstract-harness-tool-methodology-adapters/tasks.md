@@ -13,9 +13,9 @@
 
 ## 3. Modelo neutral de roles
 
-- [ ] Definir contrato neutral para `orchestrator`, `router`, `delivery`, `explorer`, `implementer`, `test-writer`, `validator` y `reviewer`.
-- [ ] Separar responsabilidades principales/subagentes de los detalles de OpenCode y OpenSpec.
-- [ ] Definir fallback inline para tools sin subagentes.
+- [x] Definir contrato neutral para `orchestrator`, `router`, `delivery`, `explorer`, `implementer`, `test-writer`, `validator` y `reviewer`.
+- [x] Separar responsabilidades principales/subagentes de los detalles de OpenCode y OpenSpec.
+- [x] Definir fallback inline para tools sin subagentes.
 
 ## 4. Instruction renderer
 
