@@ -41,7 +41,7 @@
 
 - [ ] Agregar configuración `methodology_by_tier` con defaults compatibles.
 - [ ] Propagar tool/metodología/mode al Result Contract.
-- [ ] Bloquear o justificar overrides inseguros de `none` en T1/T2.
+- [x] Bloquear o justificar overrides inseguros de `none` en T1/T2.
 
 ## 7. Manifest, sync y verify
 
