@@ -261,6 +261,8 @@ Flags de harness:
 - `install --methodology-tier T3:none` permite overrides por tier. `T1:none` y `T2:none` quedan bloqueados por seguridad.
 - `verify --tool opencode` valida que el manifest instalado pertenezca al adapter esperado.
 - `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
+
+`codex` ya está modelado como adapter dry-run para perfilar capabilities y preview de `AGENTS.md`, pero no es instalable ni escribible todavía.
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija verificando checksum antes de reemplazarlo. |
 | `lufy-ai version` | Muestra versión semántica, commit, build date, GOOS y GOARCH. |

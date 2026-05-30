@@ -57,4 +57,3 @@ Cuando el renderer o los assets operativos cambien, los assets embebidos del bin
 #### Scenario: Installable asset changes
 - **WHEN** cambia un agente, subagente, command, skill, template o policy instalable
 - **THEN** `tools/lufy-cli-go/internal/assets/embedded` y el catálogo efectivo SHALL reflejar el cambio antes de reportar readiness
-

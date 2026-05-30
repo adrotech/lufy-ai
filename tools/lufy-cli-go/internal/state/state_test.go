@@ -80,7 +80,7 @@ func TestLoadMigratesLegacyStatePolicyAndScope(t *testing.T) {
 
 func TestLoadRejectsUnsupportedOwnership(t *testing.T) {
 	target := t.TempDir()
-	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"project","tool":"codex"}]}`
+	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"project","tool":"other"}]}`
 	writeStateFixture(t, target, body)
 
 	_, err := Load(target)

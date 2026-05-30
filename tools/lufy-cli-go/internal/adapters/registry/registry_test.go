@@ -16,6 +16,13 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 	if tool.ID() != domain.ToolInitialDefault {
 		t.Fatalf("tool id = %s", tool.ID())
 	}
+	codexTool, err := reg.Tool(domain.ToolCodex)
+	if err != nil {
+		t.Fatalf("codex tool lookup: %v", err)
+	}
+	if codexTool.ID() != domain.ToolCodex || !codexTool.Capabilities().DryRunOnly {
+		t.Fatalf("codex tool = %s capabilities=%+v", codexTool.ID(), codexTool.Capabilities())
+	}
 
 	spec, err := reg.Methodology(domain.MethodologySpecWorkflow)
 	if err != nil {
@@ -37,7 +44,7 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 func TestDefaultRegistryRejectsUnsupportedAdapters(t *testing.T) {
 	reg := Default()
 
-	if _, err := reg.Tool(domain.ToolID("codex")); err == nil {
+	if _, err := reg.Tool(domain.ToolID("other")); err == nil {
 		t.Fatalf("expected unsupported tool error")
 	}
 	if _, err := reg.Methodology(domain.MethodologyID("spec-kit")); err == nil {

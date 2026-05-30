@@ -14,6 +14,7 @@ type ToolID string
 
 const (
 	ToolInitialDefault ToolID = "opencode"
+	ToolCodex          ToolID = "codex"
 )
 
 type MethodologyID string
@@ -55,6 +56,7 @@ type ToolCapabilities struct {
 	GlobalConfig  bool
 	ProjectConfig bool
 	SystemPrompt  bool
+	DryRunOnly    bool
 }
 
 type MethodologySelection struct {
@@ -155,7 +157,7 @@ func (t Tier) Valid() bool {
 
 func (t ToolID) Valid() bool {
 	switch t {
-	case ToolInitialDefault:
+	case ToolInitialDefault, ToolCodex:
 		return true
 	default:
 		return false

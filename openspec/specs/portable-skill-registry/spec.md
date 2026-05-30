@@ -50,4 +50,3 @@ El refresh del registry SHALL ser no destructivo respecto de skills user-owned.
 #### Scenario: Refresh scans without mutating skills
 - **WHEN** se ejecuta refresh del registry
 - **THEN** el sistema SHALL leer metadata y escribir/actualizar solo el índice gestionado, sin modificar archivos `SKILL.md` existentes
-

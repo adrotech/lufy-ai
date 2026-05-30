@@ -6,6 +6,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/methodology/none"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/methodology/openspec"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/tool/codex"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/tool/opencode"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
@@ -20,6 +21,7 @@ func Default() Registry {
 	return Registry{
 		tools: map[domain.ToolID]ports.ToolAdapter{
 			domain.ToolInitialDefault: opencode.New(),
+			domain.ToolCodex:          codex.New(),
 		},
 		methodology: map[domain.MethodologyID]ports.MethodologyAdapter{
 			domain.MethodologySpecWorkflow: openspec.New(),

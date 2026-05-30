@@ -350,7 +350,7 @@ func TestLoadRejectsUnsupportedHarnessConfig(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, ProjectConfigPath, `schema_version: 1
 detected_at: 2026-05-20T14:00:00Z
-tool: codex
+tool: other
 stacks: []
 ci:
   detected: false

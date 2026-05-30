@@ -2,13 +2,14 @@
 
 `lufy-ai` distribuye una CLI Go en `tools/lufy-cli-go` y assets gestionados para el preset actual OpenCode/OpenSpec. La capa instalada es un harness SDD proporcional: clasifica trabajo en T1 Full SDD, T2 SDD Lite o T3 Express antes de elegir agentes, contexto, permisos y validación.
 
-El core está migrando a un modelo hexagonal: Lufy conserva tiers, roles, Result Contract, policies, validación y managed assets como dominio neutral; las superficies concretas viven en adapters de tool y metodología. Hoy el único tool adapter instalable es `opencode`; las metodologías soportadas por configuración son `openspec`, `lufy-sdd` como ID reservado y `none`.
+El core está migrando a un modelo hexagonal: Lufy conserva tiers, roles, Result Contract, policies, validación y managed assets como dominio neutral; las superficies concretas viven en adapters de tool y metodología. Hoy el único tool adapter instalable es `opencode`; `codex` existe solo como adapter dry-run para capabilities/render preview, sin escritura real. Las metodologías soportadas por configuración son `openspec`, `lufy-sdd` como ID reservado y `none`.
 
 ## Componentes
 
 - `internal/assets`: catálogo, hashes SHA-256 y assets embebidos.
 - `internal/core/domain`: modelos neutrales de harness, tiers, roles, metodología por tier y routing policy.
 - `internal/adapters/tool/opencode`: adapter inicial para paths, capabilities y render de agentes OpenCode.
+- `internal/adapters/tool/codex`: adapter dry-run para perfilar capabilities Codex y render preview basado en `AGENTS.md`, sin instalar assets.
 - `internal/adapters/methodology/openspec` y `internal/adapters/methodology/none`: adapters iniciales de metodología.
 - `internal/instructions/registry` y `internal/instructions/render`: contratos neutrales de roles/skills y superficie renderizable sin paths de tool hardcodeados.
 - `internal/opsx`: resolución stay-updated de OpenSpec en capas `PATH`, cache local y baseline embebida.

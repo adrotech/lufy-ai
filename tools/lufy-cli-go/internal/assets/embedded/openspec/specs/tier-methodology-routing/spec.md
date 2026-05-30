@@ -96,4 +96,3 @@ La CLI SHALL bloquear overrides que reduzcan gobernanza de T1 o T2 a `none` mien
 - **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T3:spec-kit`
 - **THEN** el sistema SHALL fallar con error de uso
 - **AND** SHALL listar `openspec` y `none` como valores operativos de este slice
-
