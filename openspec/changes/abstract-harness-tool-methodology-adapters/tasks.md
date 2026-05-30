@@ -7,9 +7,9 @@
 
 ## 2. Auditoría textual de assets operativos
 
-- [ ] Inventariar referencias a OpenCode, `.opencode`, `opencode.json`, OpenSpec, `openspec/` y `/opsx-*` en agentes, subagentes, skills, commands, templates, policies y docs.
-- [ ] Clasificar cada referencia como `core`, `tool-binding`, `methodology-binding` o `legacy`.
-- [ ] Definir checks automáticos de fugas para roles neutrales y adapters futuros.
+- [x] Inventariar referencias a OpenCode, `.opencode`, `opencode.json`, OpenSpec, `openspec/` y `/opsx-*` en agentes, subagentes, skills, commands, templates, policies y docs.
+- [x] Clasificar cada referencia como `core`, `tool-binding`, `methodology-binding` o `legacy`.
+- [x] Definir checks automáticos de fugas para roles neutrales y adapters futuros.
 
 ## 3. Modelo neutral de roles
 
