@@ -190,9 +190,10 @@ func runSync(args []string, deps Dependencies) int {
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
+	harnessFlags := addToolFlag(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode] [--dry-run] [--yes] [--no-engram]")
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -214,8 +215,13 @@ func runSync(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := syncer.NewService()
-	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope}, deps.Stdout)
+	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope, Harness: harness}, deps.Stdout)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -233,6 +239,7 @@ func runVerify(args []string, deps Dependencies) int {
 	quiet := fs.Bool("quiet", false, "Omitir salida humana si no hay errores")
 	verbose := fs.Bool("verbose", false, "Mostrar diagnóstico adicional")
 	deep := fs.Bool("deep", false, "Ejecutar validaciones profundas opt-in")
+	harnessFlags := addToolFlag(fs)
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
@@ -242,7 +249,12 @@ func runVerify(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
-	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope}, deps.Stdout); err != nil {
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -304,13 +316,17 @@ func runInstall(args []string, deps Dependencies) int {
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 	backup := fs.Bool("backup", false, "Forzar backup cuando aplique")
+	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram] [--backup]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--no-engram] [--backup]")
 	}
 
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
 		return ExitUsageErr
 	}
 
@@ -325,6 +341,11 @@ func runInstall(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := installer.NewService()
 	err = service.Run(installer.Options{
 		Target:   *target,
@@ -333,6 +354,7 @@ func runInstall(args []string, deps Dependencies) int {
 		NoEngram: *noEngram,
 		Backup:   *backup,
 		Scope:    scope,
+		Harness:  harness,
 	}, deps.Stdout)
 	if err != nil {
 		var actionable ActionableError

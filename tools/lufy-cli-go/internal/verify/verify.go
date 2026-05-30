@@ -11,6 +11,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -25,6 +26,7 @@ type Options struct {
 	AllowCatalogNewAssets bool
 	AllowMissingAgentsRef bool
 	Scope                 assets.Scope
+	ExpectedTool          domain.ToolID
 }
 
 type Report struct {
@@ -158,6 +160,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	report.Tool = string(st.Tool)
 	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
+	if opts.ExpectedTool != "" && st.Tool != opts.ExpectedTool {
+		emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
+	}
 	assetMap := st.AssetMap()
 	requiredDirs, requiredManagedFiles := catalogRequirements(assetMap)
 	if opts.Verbose {

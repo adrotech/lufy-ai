@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -25,6 +26,7 @@ type Options struct {
 	Yes      bool
 	NoEngram bool
 	Scope    assets.Scope
+	Harness  domain.HarnessConfig
 }
 
 type Action struct {
@@ -167,6 +169,13 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	}
 	if previous == nil {
 		return Plan{}, fmt.Errorf("sync requiere %s; ejecuta install/verify antes de sincronizar", state.Path(target))
+	}
+	harness := opts.Harness.WithDefaults()
+	if err := harness.ValidateSupported(); err != nil {
+		return Plan{}, err
+	}
+	if previous.Tool != harness.Tool {
+		return Plan{}, fmt.Errorf("sync bloqueado por tool mismatch: manifest=%s solicitado=%s", previous.Tool, harness.Tool)
 	}
 	previousAssets := previous.AssetMap()
 	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot}

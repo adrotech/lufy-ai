@@ -9,7 +9,7 @@ LOCAL_BIN="$REPO_ROOT/tools/lufy-cli-go/bin/lufy-ai"
 
 usage() {
     cat <<'EOF'
-Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--dry-run] [--yes] [--no-engram] [--backup]
+Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--no-engram] [--backup]
 
 Este script solo delega en la CLI Go:
   lufy-ai install
@@ -60,6 +60,14 @@ main() {
                 fi
                 has_target_flag="true"
                 args+=("--target" "$2")
+                shift 2
+                ;;
+            --scope|--tool|--methodology-tier)
+                if [ "$#" -lt 2 ] || [[ "$2" == --* ]]; then
+                    echo "Error: falta valor para $1" >&2
+                    exit 2
+                fi
+                args+=("$1" "$2")
                 shift 2
                 ;;
             --dry-run|--yes|--no-engram|--backup)

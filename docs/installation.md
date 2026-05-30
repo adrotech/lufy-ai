@@ -145,16 +145,18 @@ lufy-ai version
 Luego revisa el plan de instalación en el repositorio destino:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --dry-run --yes --no-engram
 ```
 
 Aplica la instalación:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --yes --no-engram
 ```
 
 `--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
+
+`--tool=opencode` selecciona explícitamente el único adapter instalable actual. Sin ese flag se usa el mismo default. Para metodología por tier, `install` acepta overrides repetibles como `--methodology-tier T3:none` o `--methodology-tier T2:openspec/lite`; `T1:none`, `T2:none`, `codex`, `claude-code` y `lufy-sdd` quedan bloqueados hasta specs posteriores.
 
 La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `lufy-ia.harness.md`, `tui.json` y `openspec` base. `AGENTS.md` queda como archivo propio del proyecto: `install` solo crea o agrega la referencia mínima `@lufy-ia.harness.md` con backup/`--yes` cuando hace falta, y no lo registra como asset completo por hash. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
 
@@ -165,13 +167,13 @@ Durante `sync`, la CLI actualiza `lufy-ia.harness.md` mediante manifest/SHA-256 
 Después de `install`, ejecuta el verificador canónico:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --scope project --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode --no-engram
 ```
 
 Para automatización o CI puedes usar salida JSON:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --json
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --json
 lufy-ai status --target /ruta/a/tu/proyecto --json --verbose
 ```
 

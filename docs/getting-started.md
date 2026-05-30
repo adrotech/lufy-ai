@@ -54,19 +54,19 @@ El bootstrap detecta OS/arch, verifica SHA-256 e instala solo el binario. No eje
 
 ```bash
 lufy-ai version
-lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
 ### 3. Aplicar la instalación
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 ```
 
 ### 4. Verificar el target instalado
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto
 ```
 
@@ -160,6 +160,9 @@ Flags útiles de verificación:
 | Flag | Uso |
 | --- | --- |
 | `verify --json` | Emite reporte estructurado para CI/automatización. |
+| `install --tool opencode` | Selecciona explícitamente el adapter actual; sin flag conserva el default. |
+| `install --methodology-tier T3:none` | Override repetible de metodología por tier; `T1:none` y `T2:none` se bloquean. |
+| `verify --tool opencode` | Valida que el manifest instalado use el adapter esperado. |
 | `verify --quiet` | Suprime salida humana por stdout. |
 | `verify --verbose` | Agrega diagnóstico adicional. |
 | `verify --deep` | Valida referencias de plugins en `tui.json` y `opencode.json`. |

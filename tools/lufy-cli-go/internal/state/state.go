@@ -139,13 +139,17 @@ func WriteAtomic(targetRoot string, st InstallState) error {
 }
 
 func New(targetRoot string, previous *InstallState, assets []AssetState, sourceRootFingerprint string) InstallState {
+	return NewWithHarness(targetRoot, previous, assets, sourceRootFingerprint, domain.DefaultHarnessConfig())
+}
+
+func NewWithHarness(targetRoot string, previous *InstallState, assets []AssetState, sourceRootFingerprint string, cfg domain.HarnessConfig) InstallState {
 	now := time.Now().UTC().Format(time.RFC3339)
 	installedAt := now
 	if previous != nil && previous.InstalledAt != "" {
 		installedAt = previous.InstalledAt
 	}
 	info := version.Current()
-	cfg := domain.DefaultHarnessConfig()
+	cfg = cfg.WithDefaults()
 	st := InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
 	_ = normalize(&st)
 	return st

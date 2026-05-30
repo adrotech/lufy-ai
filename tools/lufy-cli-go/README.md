@@ -76,14 +76,32 @@ La CLI expone estos comandos en el slice actual:
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
 | `lufy-ai init` | Genera `.opencode/project.yaml` con stacks, comandos y reglas editables detectadas del repo destino. | `--target`, `--force`, `--rescan` |
-| `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256, mergea `opencode.json` de forma conservadora y evita sobrescribir drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
-| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados, hashes SHA-256 registrados y estructura merge-managed de `opencode.json`. | `--target`, `--no-engram` |
+| `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256, mergea `opencode.json` de forma conservadora y evita sobrescribir drift local. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
+| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados, hashes SHA-256 registrados y estructura merge-managed de `opencode.json`. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
+| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, `--no-engram` |
 | `lufy-ai version` | Muestra versión semántica, commit, fecha de build, GOOS y GOARCH; los builds sin metadata se marcan como `development build`. | n/a |
 
 `lufy-ai init` detecta stacks y genera configuración local editable, pero no instala templates por stack ni cambia todavía el comportamiento de agentes consumidores. Los templates instalables actuales siguen siendo templates de proceso del harness: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
+
+### Selección de harness
+
+El adapter escribible actual es `opencode`. Estos comandos son equivalentes:
+
+```bash
+lufy-ai install --target <repo> --yes --no-engram
+lufy-ai install --target <repo> --tool opencode --yes --no-engram
+```
+
+`install` acepta overrides repetibles de metodología por tier:
+
+```bash
+lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:openspec/full --yes --no-engram
+```
+
+El parser bloquea `--tool codex`, `--tool claude-code`, `--methodology-tier T1:none`, `--methodology-tier T2:none` y `lufy-sdd` hasta que existan specs posteriores para adapters dry-run o metodología propia. `verify --tool opencode` valida que el manifest instalado use el adapter esperado; `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 
 ### `.opencode/project.yaml`
 
@@ -179,7 +197,7 @@ Si `go` no está instalado en el entorno, estos pasos quedan pendientes y deben 
 - Si no encuentra binario, falla con una instrucción explícita de build local:
   - `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
 - Contrato preservado: `scripts/install.sh [target-project-dir]`, mapeado a `lufy-ai install --target <target-project-dir>`.
-- Flags reenviados: `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup`.
+- Flags reenviados: `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup`.
 - No existe fallback legacy de copia, detección de stack, Engram o `copy_files` en Bash.
 - Tampoco existe fallback remoto: las descargas versionadas viven en `scripts/bootstrap.sh`, no en el wrapper local.
 

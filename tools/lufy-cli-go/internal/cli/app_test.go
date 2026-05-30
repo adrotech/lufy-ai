@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -67,6 +68,63 @@ func TestRunInstallUnknownFlag(t *testing.T) {
 	code := Run([]string{"install", "--unknown"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitUsageErr {
 		t.Fatalf("expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunInstallPersistsHarnessSelection(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram", "--tool", "opencode", "--methodology-tier", "T3:openspec/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("expected install state")
+	}
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("tool = %s", st.Tool)
+	}
+	got := st.MethodologyByTier[domain.TierT3]
+	if got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull || !got.Required {
+		t.Fatalf("T3 methodology = %#v", got)
+	}
+}
+
+func TestRunInstallRejectsUnsupportedHarnessFlags(t *testing.T) {
+	tests := [][]string{
+		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T1:none"},
+		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T3:spec-kit"},
+	}
+	for _, args := range tests {
+		t.Run(args[len(args)-1], func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitUsageErr {
+				t.Fatalf("expected ExitUsageErr, got %d stderr=%s", code, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunInstallHelpIncludesHarnessFlags(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"install", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install --help expected ExitOK, got %d", code)
+	}
+	for _, want := range []string{"--tool opencode", "--methodology-tier T3:none"} {
+		if !bytes.Contains(errOut.Bytes(), []byte(want)) {
+			t.Fatalf("install help missing %q: %s", want, errOut.String())
+		}
 	}
 }
 
@@ -278,6 +336,25 @@ func TestRunBackupAndScopeErrors(t *testing.T) {
 	}
 }
 
+func TestRunBackupCreatesBackupForManagedFile(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "lufy-ia.harness.md"), "managed\n")
+	hash := hashCLITestFile(t, filepath.Join(target, "lufy-ia.harness.md"))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "harness", SourceRel: "lufy-ia.harness.md", TargetRel: "lufy-ia.harness.md", SourceSHA256: hash, TargetSHA256: hash, Policy: "managed", Scope: "project", LastAction: "copy"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"backup", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("backup expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Backup creado")) {
+		t.Fatalf("backup output unexpected: %s", out.String())
+	}
+}
+
 func TestRunInitCreatesProjectConfig(t *testing.T) {
 	target := t.TempDir()
 	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
@@ -391,7 +468,7 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	if code := Run([]string{"sync", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("sync --help expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--tool")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
 		t.Fatalf("sync help missing flags: %s", errOut.String())
 	}
 
@@ -399,6 +476,26 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	errOut.Reset()
 	if code := Run([]string{"sync", "--unknown"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
 		t.Fatalf("sync unknown flag expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunSyncAndVerifyRejectUnsupportedTool(t *testing.T) {
+	tests := [][]string{
+		{"sync", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"verify", "--target", t.TempDir(), "--tool", "claude-code"},
+	}
+	for _, args := range tests {
+		t.Run(args[0], func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitUsageErr {
+				t.Fatalf("expected ExitUsageErr, got %d stderr=%s", code, errOut.String())
+			}
+			if !bytes.Contains(errOut.Bytes(), []byte("tool adapter no soportado")) {
+				t.Fatalf("stderr missing tool error: %s", errOut.String())
+			}
+		})
 	}
 }
 

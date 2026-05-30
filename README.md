@@ -86,14 +86,14 @@ Si el bootstrap indica que `install-dir` no está en `PATH`, aplica la instrucci
 
 ```bash
 lufy-ai version
-lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
 ### 4. Instalar y verificar
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
 ```
 
 Atajo directo, solo si aceptas ejecutar el script remoto tras revisar la versión fijada:
@@ -126,7 +126,7 @@ flowchart TD
 | Assets gestionados | Archivos instalados desde el catálogo de la CLI Go. |
 | Hashes SHA-256 | Distinguen `skip`, `create`, `update-managed` y `conflict`. |
 | Manifest local | `.lufy-ai/install-state.json` registra versión, assets y hashes. |
-| Ownership v2 | El manifest registra `tool`, `methodology`, `component` y `scope` por asset, manteniendo lectura de estados legacy. |
+| Ownership v2 | El manifest registra `tool`, `methodology`, `component`, `scope` y `methodologyByTier`, manteniendo lectura de estados legacy. |
 | JSON gestionado | `opencode.json` usa `merge-json` para preservar configuración local. |
 | Backups | `lufy-ai backup` crea snapshots multiasset restaurables. |
 | Drift local | `status`, `verify`, `sync` y `merge` ayudan a resolver cambios locales vs managed. |
@@ -254,6 +254,13 @@ La CLI actual vive en [`tools/lufy-cli-go/`](tools/lufy-cli-go/) y es la impleme
 | `lufy-ai restore` | Restaura desde backup validando `targetRoot`, paths seguros y hashes. |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
 | `lufy-ai status` | Resume estado instalado, drift local, faltantes y errores; soporta `--json` y `--verbose`. |
+
+Flags de harness:
+
+- `install --tool opencode` selecciona explícitamente el adapter actual; sin flag conserva el mismo default.
+- `install --methodology-tier T3:none` permite overrides por tier. `T1:none` y `T2:none` quedan bloqueados por seguridad.
+- `verify --tool opencode` valida que el manifest instalado pertenezca al adapter esperado.
+- `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija verificando checksum antes de reemplazarlo. |
 | `lufy-ai version` | Muestra versión semántica, commit, build date, GOOS y GOARCH. |
