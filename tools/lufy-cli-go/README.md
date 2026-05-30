@@ -14,6 +14,9 @@ tools/lufy-cli-go/
   cmd/lufy-ai/main.go        # entrypoint delgado
   internal/cli/              # parser/dispatch y códigos de salida
   internal/assets/           # catálogo de assets gestionados y hashing SHA-256
+  internal/core/domain/      # contratos neutrales de harness, tiers, roles y methodology_by_tier
+  internal/adapters/         # adapters iniciales de tool/metodología
+  internal/instructions/     # role contracts, bindings de skills y renderer neutral
   internal/installer/        # plan y ejecución idempotente de install
   internal/platform/         # resolución portable (source, target, engram)
   internal/projectconfig/    # scanner stack-aware y .opencode/project.yaml
@@ -97,7 +100,7 @@ Comportamiento:
 
 ## Assets gestionados, SHA-256 e idempotencia
 
-`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. El catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `.opencode/README.md`, `AGENTS.md`, `tui.json` y `openspec`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
+`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. El catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `.opencode/README.md`, `AGENTS.md`, `tui.json` y `openspec`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. El estado usa schema v2: registra `tool`, `methodologyByTier` y ownership por asset (`tool`, `methodology`, `component`, `scope`) además de hashes SHA-256 de source/target para distinguir estos casos:
 
 - `skip`: el target ya coincide con el estado gestionado.
 - `create`: el asset gestionado aún no existe y puede crearse.

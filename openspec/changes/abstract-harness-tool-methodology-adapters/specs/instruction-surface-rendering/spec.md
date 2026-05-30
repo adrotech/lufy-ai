@@ -44,6 +44,10 @@ El renderer SHALL contar con golden tests o evidencia equivalente para demostrar
 - **WHEN** se renderizan assets para el preset default
 - **THEN** la salida SHALL compararse contra fixtures esperados o hashes controlados para detectar cambios accidentales en agentes, subagentes, commands, skills, templates y policies
 
+#### Scenario: Role agent golden fixtures
+- **WHEN** el renderer genera agentes OpenCode desde roles neutrales
+- **THEN** la salida SHALL incluir path de destino, contexto de adapter, permisos, responsabilidades, boundaries, skills directos y contrato de salida, y SHALL compararse contra fixtures golden versionados
+
 ### Requirement: Embedded assets stay synchronized
 Cuando el renderer o los assets operativos cambien, los assets embebidos del binario SHALL actualizarse o generarse de forma verificable.
 

@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
 func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
@@ -36,6 +38,12 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 			want[asset.TargetRel] = true
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("file asset %s missing hash", asset.TargetRel)
+			}
+			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+				t.Fatalf("asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
+			}
+			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") && asset.Methodology != domain.MethodologySpecWorkflow {
+				t.Fatalf("openspec asset %s methodology = %s", asset.TargetRel, asset.Methodology)
 			}
 		}
 	}

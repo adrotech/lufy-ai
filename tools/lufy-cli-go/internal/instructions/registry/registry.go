@@ -11,12 +11,28 @@ import (
 )
 
 type RoleDefinition struct {
-	SchemaVersion string         `yaml:"schema_version"`
-	ID            domain.RoleID  `yaml:"id"`
-	Kind          string         `yaml:"kind"`
-	Purpose       string         `yaml:"purpose"`
-	SkillSlots    RoleSkillSlots `yaml:"skill_slots"`
-	Output        RoleOutput     `yaml:"output_contract"`
+	SchemaVersion    string          `yaml:"schema_version"`
+	ID               domain.RoleID   `yaml:"id"`
+	Kind             string          `yaml:"kind"`
+	Purpose          string          `yaml:"purpose"`
+	Permissions      RolePermissions `yaml:"permissions"`
+	Delegation       RoleDelegation  `yaml:"delegation"`
+	Responsibilities []string        `yaml:"responsibilities"`
+	Boundaries       []string        `yaml:"boundaries"`
+	Outputs          []string        `yaml:"outputs"`
+	SkillSlots       RoleSkillSlots  `yaml:"skill_slots"`
+	Output           RoleOutput      `yaml:"output_contract"`
+}
+
+type RolePermissions struct {
+	Edit     any `yaml:"edit"`
+	Shell    any `yaml:"shell"`
+	Delivery any `yaml:"delivery"`
+}
+
+type RoleDelegation struct {
+	Preferred string `yaml:"preferred"`
+	Fallback  string `yaml:"fallback"`
 }
 
 type RoleSkillSlots struct {

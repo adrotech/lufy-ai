@@ -2,7 +2,9 @@
 
 ## Qué es `lufy-ai`
 
-`lufy-ai` es un kit instalable para sumar un flujo AI-first a un repositorio existente. No crea una aplicación ni instala templates por stack; copia assets operativos para usar OpenCode, OpenSpec, harness SDD proporcional, subagentes especializados y reglas de delivery trazable.
+`lufy-ai` es un kit instalable para sumar un flujo AI-first a un repositorio existente. No crea una aplicación ni instala templates por stack; copia assets operativos para usar el preset actual OpenCode/OpenSpec, harness SDD proporcional, subagentes especializados y reglas de delivery trazable.
+
+El diseño del harness ya separa core, tool adapter y methodology adapter. Para usuarios finales no cambia el quickstart: `lufy-ai install` sigue instalando OpenCode/OpenSpec por defecto. La separación permite que futuros adapters como Codex o Claude Code no obliguen a reescribir tiers, roles, Result Contract ni policies.
 
 Incluye:
 
@@ -123,9 +125,10 @@ Verificar el target instalado:
 6. no trata `opencode.json` como asset completo por hash: queda fuera del manifest de assets completos y se valida por JSON/estructura mínima durante `verify`;
 7. trata `AGENTS.md` como user-owned: si falta lo crea mínimo con `@lufy-ia.harness.md`; si existe agrega solo esa referencia con backup/`--yes`; si ya está presente no lo reescribe ni duplica;
 8. registra `.lufy-ai/install-state.json` con hashes SHA-256 para assets completos gestionados, incluyendo `lufy-ia.harness.md` y excluyendo `AGENTS.md`;
-9. evita sobrescribir archivos con drift local;
-10. crea backups antes de actualizaciones gestionadas cuando corresponde;
-11. omite Engram con `--no-engram` o lo resuelve desde `PATH` cuando aplique.
+9. registra ownership por asset (`tool`, `methodology`, `component`, `scope`) y la metodología efectiva por tier;
+10. evita sobrescribir archivos con drift local;
+11. crea backups antes de actualizaciones gestionadas cuando corresponde;
+12. omite Engram con `--no-engram` o lo resuelve desde `PATH` cuando aplique.
 
 Si `opencode.json` existente no es JSON válido, o si `mcp` existe con un tipo incompatible cuando debe agregarse Engram, `install`/`sync` fallan sin sobrescribirlo y piden corregir o respaldar el archivo.
 

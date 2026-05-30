@@ -58,9 +58,9 @@ type ToolCapabilities struct {
 }
 
 type MethodologySelection struct {
-	ID       MethodologyID   `yaml:"id"`
-	Mode     MethodologyMode `yaml:"mode"`
-	Required bool            `yaml:"required"`
+	ID       MethodologyID   `yaml:"id" json:"id"`
+	Mode     MethodologyMode `yaml:"mode" json:"mode"`
+	Required bool            `yaml:"required" json:"required"`
 }
 
 type MethodologyByTier map[Tier]MethodologySelection

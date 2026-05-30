@@ -19,6 +19,16 @@ func TestLoadCurrentRoleContracts(t *testing.T) {
 			t.Fatalf("missing role %s", id)
 		}
 	}
+	implementer, ok := RoleByID(roles, domain.RoleImplementer)
+	if !ok {
+		t.Fatalf("implementer role not found")
+	}
+	if implementer.Permissions.Edit != true || implementer.Permissions.Shell != "bounded" || implementer.Delegation.Fallback != "inline_implementation" {
+		t.Fatalf("implementer metadata not decoded: %#v", implementer)
+	}
+	if len(implementer.Responsibilities) == 0 || len(implementer.Boundaries) == 0 || len(implementer.Outputs) == 0 {
+		t.Fatalf("implementer missing rendered metadata: %#v", implementer)
+	}
 }
 
 func TestResolveDeliveryDirectSkills(t *testing.T) {

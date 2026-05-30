@@ -1,6 +1,6 @@
 # Instalación de lufy-ai
 
-Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino. Los assets actuales incluyen OpenCode/OpenSpec, harness SDD proporcional, `sdd-router`, templates T2/result y políticas de delivery.
+Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino. Los assets actuales incluyen el preset OpenCode/OpenSpec, harness SDD proporcional, `sdd-router`, templates T2/result y políticas de delivery.
 
 Versión estable objetivo: `v0.4.0`.
 
@@ -157,6 +157,8 @@ lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
 `--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
 
 La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `lufy-ia.harness.md`, `tui.json` y `openspec` base. `AGENTS.md` queda como archivo propio del proyecto: `install` solo crea o agrega la referencia mínima `@lufy-ia.harness.md` con backup/`--yes` cuando hace falta, y no lo registra como asset completo por hash. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
+
+El manifest local `.lufy-ai/install-state.json` se escribe en schema v2. Además de hashes SHA-256 registra el adapter efectivo (`tool: opencode`), `methodologyByTier` y ownership por asset (`tool`, `methodology`, `component`, `scope`). Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults compatibles durante `verify`, `status` y `sync`.
 
 Durante `sync`, la CLI actualiza `lufy-ia.harness.md` mediante manifest/SHA-256 y preserva `AGENTS.md` byte-for-byte. Si falta `@lufy-ia.harness.md`, `sync` reporta una acción explícita; para reparar, ejecuta `lufy-ai install --target /ruta/a/tu/proyecto --yes` o edita `AGENTS.md` manualmente. No existe flag `--repair-agents-reference` en este cambio.
 

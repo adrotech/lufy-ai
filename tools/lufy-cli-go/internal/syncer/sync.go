@@ -465,7 +465,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if updated[asset.TargetRel] {
 			lastAction = "sync-update-managed"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: installedAt, LastAction: lastAction}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: installedAt, LastAction: lastAction}
 		if asset.Policy.SupportsAncestor() && updated[asset.TargetRel] {
 			ancestorRel, err := state.AncestorRel(asset.TargetRel)
 			if err != nil {
@@ -500,7 +500,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: prev.InstalledAt, LastAction: "retired"})
+		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Methodology: prev.Methodology, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: prev.InstalledAt, LastAction: "retired"})
 	}
 	return out, nil
 }

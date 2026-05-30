@@ -24,7 +24,7 @@
 
 `lufy-ai` es un harness operativo AI-first que se instala sobre un repositorio existente para ordenar cómo se exploran, proponen, implementan, verifican y entregan cambios asistidos por agentes.
 
-No reemplaza tu stack de aplicación. Agrega una capa de operación alrededor del repo con OpenCode, OpenSpec, routing SDD proporcional, contratos de resultado, políticas de delivery y una CLI Go que mantiene los assets instalados bajo control.
+No reemplaza tu stack de aplicación. Agrega una capa de operación alrededor del repo con routing SDD proporcional, contratos de resultado, políticas de delivery y una CLI Go que mantiene los assets instalados bajo control. El preset instalable actual sigue siendo OpenCode/OpenSpec, pero el core ya modela tool adapters y methodology adapters para evitar que el valor de Lufy quede atado a una tool concreta.
 
 El objetivo es simple: cada pedido debe usar el flujo más pequeño que lo resuelva con seguridad.
 
@@ -126,6 +126,7 @@ flowchart TD
 | Assets gestionados | Archivos instalados desde el catálogo de la CLI Go. |
 | Hashes SHA-256 | Distinguen `skip`, `create`, `update-managed` y `conflict`. |
 | Manifest local | `.lufy-ai/install-state.json` registra versión, assets y hashes. |
+| Ownership v2 | El manifest registra `tool`, `methodology`, `component` y `scope` por asset, manteniendo lectura de estados legacy. |
 | JSON gestionado | `opencode.json` usa `merge-json` para preservar configuración local. |
 | Backups | `lufy-ai backup` crea snapshots multiasset restaurables. |
 | Drift local | `status`, `verify`, `sync` y `merge` ayudan a resolver cambios locales vs managed. |

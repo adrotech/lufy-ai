@@ -1,10 +1,16 @@
 # Arquitectura
 
-`lufy-ai` distribuye una CLI Go en `tools/lufy-cli-go` y assets gestionados para OpenCode/OpenSpec. La capa instalada es un harness SDD proporcional: clasifica trabajo en T1 Full SDD, T2 SDD Lite o T3 Express antes de elegir agentes, contexto, permisos y validación.
+`lufy-ai` distribuye una CLI Go en `tools/lufy-cli-go` y assets gestionados para el preset actual OpenCode/OpenSpec. La capa instalada es un harness SDD proporcional: clasifica trabajo en T1 Full SDD, T2 SDD Lite o T3 Express antes de elegir agentes, contexto, permisos y validación.
+
+El core está migrando a un modelo hexagonal: Lufy conserva tiers, roles, Result Contract, policies, validación y managed assets como dominio neutral; las superficies concretas viven en adapters de tool y metodología. Hoy el único tool adapter instalable es `opencode`; las metodologías soportadas por configuración son `openspec`, `lufy-sdd` como ID reservado y `none`.
 
 ## Componentes
 
 - `internal/assets`: catálogo, hashes SHA-256 y assets embebidos.
+- `internal/core/domain`: modelos neutrales de harness, tiers, roles, metodología por tier y routing policy.
+- `internal/adapters/tool/opencode`: adapter inicial para paths, capabilities y render de agentes OpenCode.
+- `internal/adapters/methodology/openspec` y `internal/adapters/methodology/none`: adapters iniciales de metodología.
+- `internal/instructions/registry` y `internal/instructions/render`: contratos neutrales de roles/skills y superficie renderizable sin paths de tool hardcodeados.
 - `internal/opsx`: resolución stay-updated de OpenSpec en capas `PATH`, cache local y baseline embebida.
 - `internal/installer`: plan/apply de instalación inicial y actualización gestionada.
 - `internal/syncer`: sincronización conservadora de assets registrados.
@@ -27,6 +33,8 @@ El Review Workload Harness se integra al routing: T1 y T2 con varios ejes de rie
 ## Assets embebidos e installer
 
 El binario standalone usa `go:embed` para incluir `tools/lufy-cli-go/internal/assets/embedded`. Cuando cambian agentes, templates, policies, comandos o specs base, el cambio debe reflejarse en esos assets embebidos y en el catálogo de `internal/assets/catalog.go`; si no, una instalación nueva desde binario quedaría detrás de la documentación raíz.
+
+`.lufy-ai/install-state.json` usa schema v2 y registra ownership por asset: `tool`, `methodology`, `component`, `policy`, `scope` y hashes. La lectura de estados schema v1 se mantiene: al cargar se completan defaults compatibles para poder verificar o sincronizar instalaciones existentes.
 
 ## Decisiones relevantes
 

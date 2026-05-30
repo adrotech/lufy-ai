@@ -542,7 +542,7 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 		if action == "" {
 			action = "record"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), InstalledAt: now, LastAction: action}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, InstalledAt: now, LastAction: action}
 		if prev, ok := previous[asset.TargetRel]; ok {
 			assetState.InstalledAt = prev.InstalledAt
 			assetState.AncestorRel = prev.AncestorRel

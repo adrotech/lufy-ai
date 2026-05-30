@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
 func TestWriteAtomicAndLoad(t *testing.T) {
@@ -22,6 +24,12 @@ func TestWriteAtomicAndLoad(t *testing.T) {
 	}
 	if got.Assets[0].Policy != "managed" || got.Assets[0].Scope != "project" {
 		t.Fatalf("Load() did not default policy/scope: %#v", got.Assets[0])
+	}
+	if got.Tool != domain.ToolInitialDefault || got.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow {
+		t.Fatalf("Load() did not default harness metadata: %#v", got)
+	}
+	if got.Assets[0].Tool != string(domain.ToolInitialDefault) || got.Assets[0].Methodology != string(domain.MethodologyNone) || got.Assets[0].Component != "legacy" {
+		t.Fatalf("Load() did not default asset ownership: %#v", got.Assets[0])
 	}
 }
 
@@ -65,8 +73,19 @@ func TestLoadMigratesLegacyStatePolicyAndScope(t *testing.T) {
 		t.Fatalf("SchemaVersion = %d, want %d", got.SchemaVersion, SchemaVersion)
 	}
 	asset := got.Assets[0]
-	if asset.Policy != "managed" || asset.Scope != "project" || asset.TargetSHA256 != "abc" {
+	if asset.Policy != "managed" || asset.Scope != "project" || asset.TargetSHA256 != "abc" || asset.Tool != string(domain.ToolInitialDefault) || asset.Methodology != string(domain.MethodologyNone) || asset.Component != "legacy" {
 		t.Fatalf("legacy asset not migrated safely: %#v", asset)
+	}
+}
+
+func TestLoadRejectsUnsupportedOwnership(t *testing.T) {
+	target := t.TempDir()
+	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"project","tool":"codex"}]}`
+	writeStateFixture(t, target, body)
+
+	_, err := Load(target)
+	if err == nil || !strings.Contains(err.Error(), "tool") {
+		t.Fatalf("Load() error = %v, want tool error", err)
 	}
 }
 

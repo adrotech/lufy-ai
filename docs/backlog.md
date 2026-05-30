@@ -25,6 +25,7 @@ Capacidades ya existentes que afectan la planificación:
 | OpenSpec core v2 | Ya incluye config action-based, deltas, scenarios, `/opsx-sync`, `UPSTREAM.json` y resolver PATH/cache/embedded. | `LUFY-12` debe ser documental y de naming para comandos nuevos, no renombre de `/opsx-*`. |
 | Result contracts | Ya hay templates y reglas base. | `LUFY-15` es normalización/enforcement, no introducción desde cero. |
 | Templates por stack | No instalables hoy. | `LUFY-17` queda P3 y debe esperar `project.yaml`. |
+| Harness hexagonal | En curso en `abstract-harness-tool-methodology-adapters`: core neutral, registry de adapters, methodology por tier, renderer con golden tests y manifest v2 con ownership. | Los próximos adapters Codex/Claude Code deben implementarse como adapters, no como forks de agentes o skills OpenCode. |
 
 ## Prioridades
 

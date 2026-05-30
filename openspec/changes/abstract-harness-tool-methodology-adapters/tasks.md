@@ -24,9 +24,9 @@
 ## 4. Instruction renderer
 
 - [x] Diseñar estructura de templates/bindings para role core, tool binding y methodology binding.
-- [ ] Renderizar assets OpenCode/OpenSpec equivalentes a los actuales.
-- [ ] Agregar golden tests de salida renderizada.
-- [ ] Validar que el output inicial no cambie comportamiento de `lufy-ai install`.
+- [x] Renderizar assets OpenCode/OpenSpec equivalentes a los actuales.
+- [x] Agregar golden tests de salida renderizada.
+- [x] Validar que el output inicial no cambie comportamiento de `lufy-ai install`.
 
 ## 5. Adapter registry
 
@@ -45,15 +45,15 @@
 
 ## 7. Manifest, sync y verify
 
-- [ ] Diseñar manifest v2 compatible con v1.
-- [ ] Registrar `tool`, `methodology`, `component` y `scope` por asset.
-- [ ] Actualizar `verify`, `status` y `sync` para detectar assets por adapter.
-- [ ] Mantener lectura de instalaciones v1 sin romper.
+- [x] Diseñar manifest v2 compatible con v1.
+- [x] Registrar `tool`, `methodology`, `component` y `scope` por asset.
+- [x] Actualizar `verify`, `status` y `sync` para detectar assets por adapter.
+- [x] Mantener lectura de instalaciones v1 sin romper.
 
 ## 8. Validación y documentación
 
-- [ ] Actualizar README, architecture, installation, getting-started y backlog.
-- [ ] Actualizar assets embebidos si cambia cualquier asset instalable.
-- [ ] Ejecutar `scripts/validate.sh`.
-- [ ] Ejecutar validación OpenSpec estricta del cambio cuando el CLI esté disponible.
-- [ ] Reportar evidencia real, riesgos y estado del programa.
+- [x] Actualizar README, architecture, installation, getting-started y backlog.
+- [x] Actualizar assets embebidos si cambia cualquier asset instalable.
+- [x] Ejecutar `scripts/validate.sh`.
+- [x] Ejecutar validación OpenSpec estricta del cambio cuando el CLI esté disponible.
+- [x] Reportar evidencia real, riesgos y estado del programa.

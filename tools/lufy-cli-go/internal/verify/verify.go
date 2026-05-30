@@ -28,16 +28,18 @@ type Options struct {
 }
 
 type Report struct {
-	OK            bool    `json:"ok"`
-	TargetRoot    string  `json:"targetRoot"`
-	Scope         string  `json:"scope,omitempty"`
-	GlobalRoot    string  `json:"globalRoot,omitempty"`
-	SchemaVersion int     `json:"schemaVersion,omitempty"`
-	Assets        int     `json:"assets,omitempty"`
-	Failures      int     `json:"failures"`
-	Warnings      int     `json:"warnings"`
-	Infos         int     `json:"infos"`
-	Checks        []Check `json:"checks"`
+	OK                bool    `json:"ok"`
+	TargetRoot        string  `json:"targetRoot"`
+	Scope             string  `json:"scope,omitempty"`
+	GlobalRoot        string  `json:"globalRoot,omitempty"`
+	SchemaVersion     int     `json:"schemaVersion,omitempty"`
+	Tool              string  `json:"tool,omitempty"`
+	MethodologyByTier any     `json:"methodologyByTier,omitempty"`
+	Assets            int     `json:"assets,omitempty"`
+	Failures          int     `json:"failures"`
+	Warnings          int     `json:"warnings"`
+	Infos             int     `json:"infos"`
+	Checks            []Check `json:"checks"`
 }
 
 type Check struct {
@@ -153,6 +155,8 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	}
 	report.SchemaVersion = st.SchemaVersion
+	report.Tool = string(st.Tool)
+	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
 	assetMap := st.AssetMap()
 	requiredDirs, requiredManagedFiles := catalogRequirements(assetMap)

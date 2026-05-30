@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -78,13 +79,16 @@ func ParseScope(value string) (Scope, error) {
 }
 
 type Asset struct {
-	ID           string `json:"id"`
-	SourceRel    string `json:"sourceRel"`
-	TargetRel    string `json:"targetRel"`
-	Kind         Kind   `json:"kind"`
-	Policy       Policy `json:"policy"`
-	Scope        Scope  `json:"scope"`
-	SourceSHA256 string `json:"sourceSHA256,omitempty"`
+	ID           string               `json:"id"`
+	SourceRel    string               `json:"sourceRel"`
+	TargetRel    string               `json:"targetRel"`
+	Kind         Kind                 `json:"kind"`
+	Policy       Policy               `json:"policy"`
+	Scope        Scope                `json:"scope"`
+	Tool         domain.ToolID        `json:"tool,omitempty"`
+	Methodology  domain.MethodologyID `json:"methodology,omitempty"`
+	Component    string               `json:"component,omitempty"`
+	SourceSHA256 string               `json:"sourceSHA256,omitempty"`
 }
 
 type Catalog struct {
@@ -157,7 +161,7 @@ func BuildCatalog(sourceRoot string) (Catalog, error) {
 			return Catalog{}, fmt.Errorf("scope de asset no soportado: %s", ent.scope)
 		}
 		if ent.kind == KindDir {
-			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope})
+			out = append(out, withOwnership(Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope}))
 			files, err := expandDir(sourceRoot, sourceRel, targetRel, ent.policy, ent.scope)
 			if err != nil {
 				return Catalog{}, err
@@ -212,7 +216,7 @@ func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy, scope Sco
 			return err
 		}
 		if d.IsDir() {
-			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope})
+			out = append(out, withOwnership(Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope}))
 			return nil
 		}
 		asset, err := fileAsset(sourceRoot, src, dst, policy, scope)
@@ -230,7 +234,31 @@ func fileAsset(sourceRoot, sourceRel, targetRel string, policy Policy, scope Sco
 	if err != nil {
 		return Asset{}, err
 	}
-	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hash}, nil
+	return withOwnership(Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hash}), nil
+}
+
+func withOwnership(asset Asset) Asset {
+	asset.Tool = domain.ToolInitialDefault
+	asset.Methodology = domain.MethodologyNone
+	asset.Component = "harness-core"
+	switch {
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") || filepath.ToSlash(asset.TargetRel) == "openspec":
+		asset.Methodology = domain.MethodologySpecWorkflow
+		asset.Component = "methodology-surface"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/sdd-workflow/"):
+		asset.Methodology = domain.MethodologySpecWorkflow
+		asset.Component = "methodology-skill"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/opsx-"):
+		asset.Methodology = domain.MethodologySpecWorkflow
+		asset.Component = "methodology-command"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/"):
+		asset.Component = "instruction-surface"
+	case filepath.ToSlash(asset.TargetRel) == "tui.json":
+		asset.Component = "tool-ui"
+	case filepath.ToSlash(asset.TargetRel) == "lufy-ia.harness.md":
+		asset.Component = "harness-reference"
+	}
+	return asset
 }
 
 func FileSHA256(path string) (string, error) {
