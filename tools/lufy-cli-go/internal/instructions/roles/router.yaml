@@ -24,3 +24,26 @@ outputs:
   - context_slice
   - workflow_decision
   - skill_resolution
+skill_slots:
+  direct: []
+  referenced:
+    - skill_registry.lookup
+    - skill_registry.bootstrap_recommendation
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+    - delivery_pending
+  compact_payload:
+    - workflow_decision
+    - context_slice
+    - skill_resolution
+    - next_recommended
+  max_handoff_focus:
+    - tier
+    - methodology_selection
+    - review_workload
+    - required_permissions
+    - exact_skill_paths

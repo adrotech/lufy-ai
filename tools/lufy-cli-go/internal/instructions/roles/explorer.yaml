@@ -22,3 +22,25 @@ outputs:
   - impact_summary
   - implementation_handoff
   - risks
+skill_slots:
+  direct: []
+  referenced:
+    - methodology.explore
+    - skill_registry.lookup
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+  compact_payload:
+    - artifacts.referenced
+    - evidence.static
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - relevant_files
+    - current_behavior
+    - target_behavior
+    - implementation_boundary
+    - open_questions

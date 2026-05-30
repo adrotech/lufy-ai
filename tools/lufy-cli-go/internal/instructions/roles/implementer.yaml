@@ -24,3 +24,30 @@ outputs:
   - implementation_notes
   - validation_request
   - risks
+skill_slots:
+  direct: []
+  delegated:
+    - role.test_writer
+  referenced:
+    - methodology.apply
+    - validation.grouped
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - implemented
+    - validated
+    - blocked
+    - escalated
+    - delivery_pending
+  compact_payload:
+    - artifacts.changed
+    - evidence.commands
+    - evidence.static
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - changed_files
+    - behavior_changed
+    - commands_run
+    - validation_gap
+    - delivery_gap

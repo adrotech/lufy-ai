@@ -4,6 +4,7 @@
 - [x] Revisar estado actual de arquitectura, specs y acoplamientos principales.
 - [x] Crear proposal/design/tasks para el refactor.
 - [x] Crear specs delta para arquitectura de adapters, routing por tier, render de instrucciones y registry de skills.
+- [x] Consolidar plan end-to-end y backlog por etapas para el refactor hexagonal multi-tool.
 
 ## 2. Auditoría textual de assets operativos
 
@@ -16,10 +17,13 @@
 - [x] Definir contrato neutral para `orchestrator`, `router`, `delivery`, `explorer`, `implementer`, `test-writer`, `validator` y `reviewer`.
 - [x] Separar responsabilidades principales/subagentes de los detalles de OpenCode y OpenSpec.
 - [x] Definir fallback inline para tools sin subagentes.
+- [x] Definir skill slots neutrales por rol y binding actual a skills OpenCode/OpenSpec.
+- [x] Definir payload compacto de salida por rol para reducir contexto entre agentes.
+- [x] Implementar loader inicial de roles/bindings y resolucion de skills directos por rol.
 
 ## 4. Instruction renderer
 
-- [ ] Diseñar estructura de templates/bindings para role core, tool binding y methodology binding.
+- [x] Diseñar estructura de templates/bindings para role core, tool binding y methodology binding.
 - [ ] Renderizar assets OpenCode/OpenSpec equivalentes a los actuales.
 - [ ] Agregar golden tests de salida renderizada.
 - [ ] Validar que el output inicial no cambie comportamiento de `lufy-ai install`.

@@ -22,3 +22,27 @@ outputs:
   - validation_report
   - failure_diagnosis
   - next_state_recommendation
+skill_slots:
+  direct: []
+  referenced:
+    - methodology.verify
+    - validation.grouped
+    - validation.whitespace
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - validated
+    - blocked
+    - escalated
+    - delivery_pending
+  compact_payload:
+    - evidence.commands
+    - evidence.static.validation_matrix
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - commands_run
+    - pass_fail_summary
+    - missing_evidence
+    - likely_owner
+    - remote_or_delivery_gap

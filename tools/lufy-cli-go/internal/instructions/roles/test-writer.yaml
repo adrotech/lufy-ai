@@ -22,3 +22,27 @@ outputs:
   - test_changes
   - tdd_evidence
   - coverage_gaps
+skill_slots:
+  direct: []
+  referenced:
+    - stack_config.lookup
+    - validation.test_command
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - implemented
+    - validated
+    - blocked
+    - escalated
+  compact_payload:
+    - artifacts.changed
+    - evidence.commands
+    - evidence.static.tdd
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - test_files
+    - covered_behavior
+    - tdd_phases
+    - anti_pattern_check
+    - validation_gap

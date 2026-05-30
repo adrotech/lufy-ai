@@ -23,3 +23,29 @@ outputs:
   - delivery_evidence
   - remote_status
   - recovery_action_when_blocked
+skill_slots:
+  direct:
+    - delivery.pr_content
+    - delivery.git
+  referenced:
+    - methodology.change_context
+    - validation.evidence
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - delivery_pending
+    - sync_pending
+    - blocked
+    - delivered
+    - closed
+  compact_payload:
+    - artifacts.changed
+    - evidence.commands
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - authorization_state
+    - branch_state
+    - staged_scope
+    - pr_or_remote_status
+    - recovery_command

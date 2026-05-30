@@ -23,3 +23,34 @@ outputs:
   - user_summary
   - role_handoff
   - result_contract_when_needed
+skill_slots:
+  direct:
+    - methodology.explore
+    - methodology.propose
+    - methodology.apply
+    - methodology.verify
+    - methodology.sync
+    - methodology.archive
+  referenced:
+    - skill_registry.lookup
+    - delivery.pr_content
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+    - delivery_pending
+    - sync_pending
+    - closed
+  compact_payload:
+    - executive_summary
+    - workflow_decision
+    - context_slice
+    - next_recommended
+  max_handoff_focus:
+    - user_intent
+    - tier_and_methodology
+    - next_role
+    - exact_skill_paths
+    - evidence_gaps

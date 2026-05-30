@@ -22,3 +22,25 @@ outputs:
   - findings
   - residual_risks
   - merge_readiness
+skill_slots:
+  direct: []
+  referenced:
+    - stack_config.lookup
+    - validation.evidence
+    - delivery.readiness
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+  compact_payload:
+    - evidence.static.review
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - findings_by_severity
+    - score_summary
+    - missing_tests
+    - release_risk
+    - merge_readiness
