@@ -26,9 +26,9 @@
 
 ## 5. Adapter registry
 
-- [ ] Introducir `ToolAdapter` y `ToolCapabilities`.
+- [x] Introducir `ToolAdapter` y `ToolCapabilities`.
 - [ ] Mover OpenCode a adapter real inicial.
-- [ ] Introducir `MethodologyAdapter`.
+- [x] Introducir `MethodologyAdapter`.
 - [ ] Mover OpenSpec a methodology adapter real inicial.
 - [ ] Implementar methodology `none`.
 
