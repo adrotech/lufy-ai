@@ -7,8 +7,10 @@ import (
 	"os"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
 
 type Options struct {
@@ -119,7 +121,7 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	}
 	report := Report{TargetRoot: resolved, OK: true, Scope: string(scope)}
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		globalRoot, err := toolruntime.GlobalRoot(domain.ToolInitialDefault)
 		if err != nil {
 			return Report{}, err
 		}

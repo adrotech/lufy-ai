@@ -10,11 +10,11 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
 
 type Options struct {
@@ -77,7 +77,7 @@ var fallbackRequiredManagedFiles = []string{
 var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
 
 var jsonValidationFiles = []string{
-	config.OpenCodeFile,
+	toolruntime.OpenCodeProjectConfigFile,
 	"tui.json",
 	filepath.Join(".opencode", "package.json"),
 	filepath.Join(".opencode", "package-lock.json"),
@@ -95,7 +95,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	report := Report{TargetRoot: target, Scope: string(scope)}
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		tool := opts.ExpectedTool
+		if tool == "" {
+			tool = domain.ToolInitialDefault
+		}
+		globalRoot, err := toolruntime.GlobalRoot(tool)
 		if err != nil {
 			return err
 		}
@@ -192,12 +196,15 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 	}
 	if opts.Deep {
-		runDeepVerify(target, emit)
+		runDeepVerify(st.Tool, target, emit)
 	}
-	if status, err := config.NewService().ValidateManagedStructure(target); err != nil {
-		emit("fail", "", "estructura gestionada inválida en %s: %s", config.OpenCodeFile, err.Error())
-	} else if status.Exists {
-		emit("ok", config.OpenCodeFile, "estructura merge-managed")
+	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
+	if err != nil {
+		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+	} else if exists, err := toolruntime.ValidateProjectConfig(st.Tool, target); err != nil {
+		emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
+	} else if exists {
+		emit("ok", projectConfigFile, "estructura merge-managed")
 	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
@@ -410,9 +417,15 @@ func validateJSONFile(target, rel string) (string, error) {
 	return "ok", nil
 }
 
-func runDeepVerify(target string, emit func(level, path, format string, args ...any)) {
-	validatePluginConfig(target, "tui.json", emit)
-	validatePluginConfig(target, config.OpenCodeFile, emit)
+func runDeepVerify(tool domain.ToolID, target string, emit func(level, path, format string, args ...any)) {
+	files, err := toolruntime.PluginConfigFiles(tool)
+	if err != nil {
+		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+		return
+	}
+	for _, rel := range files {
+		validatePluginConfig(target, rel, emit)
+	}
 }
 
 func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {

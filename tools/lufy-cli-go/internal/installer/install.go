@@ -13,12 +13,12 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
 
@@ -156,7 +156,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	}
 	globalRoot := ""
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err = platform.ResolveOpenCodeConfigRoot()
+		globalRoot, err = toolruntime.GlobalRoot(harness.Tool)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -324,14 +324,14 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			}
 		}
 	}
-	configPlan, err := config.NewService().Plan(config.Options{TargetRoot: target, NoEngram: opts.NoEngram})
+	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target, opts.NoEngram)
 	if err != nil {
 		return Plan{}, err
 	}
-	if configPlan.Action == "merge-json" && fileExists(filepath.Join(target, config.OpenCodeFile)) {
-		plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: config.OpenCodeFile, Reason: "opencode.json existente será mergeado", Risk: "medium"})
+	if configPlan.Action == "merge-json" && fileExists(filepath.Join(target, configPlan.File)) {
+		plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: configPlan.File, Reason: "opencode.json existente será mergeado", Risk: "medium"})
 	}
-	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: config.OpenCodeFile, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
+	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: configPlan.File, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
 	plan.Actions = append(plan.Actions, Action{Kind: "verify", Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
 		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "adopt-merge-block": 5, "write-lufy-new": 6, "agents-reference-create": 7, "agents-reference-insert": 8, "merge-json": 9, "verify": 10, "agents-reference-skip": 11, "skip": 12}
@@ -407,7 +407,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
 		case "merge-json":
-			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
+			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot, plan.NoEngram); err != nil {
 				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
