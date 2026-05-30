@@ -177,6 +177,8 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if previous.Tool != harness.Tool {
 		return Plan{}, fmt.Errorf("sync bloqueado por tool mismatch: manifest=%s solicitado=%s", previous.Tool, harness.Tool)
 	}
+	installedHarness := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
+	catalog = catalog.ForHarness(installedHarness)
 	previousAssets := previous.AssetMap()
 	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot}
 	catalogTargets := map[string]bool{}

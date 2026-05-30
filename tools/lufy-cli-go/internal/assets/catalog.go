@@ -126,6 +126,7 @@ type entry struct {
 }
 
 var allowedEntries = []entry{
+	{sourceRel: ".lufy/sdd", targetRel: ".lufy/sdd", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/hooks", targetRel: ".opencode/hooks", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
@@ -177,6 +178,32 @@ func BuildCatalog(sourceRoot string) (Catalog, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].TargetRel < out[j].TargetRel })
 	return Catalog{SourceRoot: sourceRoot, Assets: out}, nil
+}
+
+func (c Catalog) ForHarness(harness domain.HarnessConfig) Catalog {
+	normalized := harness.WithDefaults()
+	selectedMethodologies := map[domain.MethodologyID]bool{
+		domain.MethodologyNone: true,
+	}
+	lufySDDFull := false
+	for _, selection := range normalized.MethodologyByTier {
+		selectedMethodologies[selection.ID] = true
+		if selection.ID == domain.MethodologyLufyWorkflow && selection.Mode == domain.MethodologyModeFull {
+			lufySDDFull = true
+		}
+	}
+
+	out := make([]Asset, 0, len(c.Assets))
+	for _, asset := range c.Assets {
+		if asset.Methodology != "" && asset.Methodology != domain.MethodologyNone && !selectedMethodologies[asset.Methodology] {
+			continue
+		}
+		if asset.Methodology == domain.MethodologyLufyWorkflow && isLufySDDSpecsAsset(asset.TargetRel) && !lufySDDFull {
+			continue
+		}
+		out = append(out, asset)
+	}
+	return Catalog{SourceRoot: c.SourceRoot, Assets: out}
 }
 
 func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy, scope Scope) ([]Asset, error) {
@@ -242,10 +269,13 @@ func withOwnership(asset Asset) Asset {
 	asset.Methodology = domain.MethodologyNone
 	asset.Component = "harness-core"
 	switch {
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/sdd/") || filepath.ToSlash(asset.TargetRel) == ".lufy/sdd":
+		asset.Methodology = domain.MethodologyLufyWorkflow
+		asset.Component = "methodology-surface"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") || filepath.ToSlash(asset.TargetRel) == "openspec":
 		asset.Methodology = domain.MethodologySpecWorkflow
 		asset.Component = "methodology-surface"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/sdd-workflow/"):
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/sdd-workflow/") || filepath.ToSlash(asset.TargetRel) == ".opencode/skills/sdd-workflow":
 		asset.Methodology = domain.MethodologySpecWorkflow
 		asset.Component = "methodology-skill"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/opsx-"):
@@ -259,6 +289,11 @@ func withOwnership(asset Asset) Asset {
 		asset.Component = "harness-reference"
 	}
 	return asset
+}
+
+func isLufySDDSpecsAsset(targetRel string) bool {
+	target := filepath.ToSlash(targetRel)
+	return target == ".lufy/sdd/specs" || strings.HasPrefix(target, ".lufy/sdd/specs/")
 }
 
 func FileSHA256(path string) (string, error) {

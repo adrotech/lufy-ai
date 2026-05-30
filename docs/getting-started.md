@@ -161,7 +161,7 @@ Flags útiles de verificación:
 | --- | --- |
 | `verify --json` | Emite reporte estructurado para CI/automatización. |
 | `install --tool opencode` | Selecciona explícitamente el adapter actual; sin flag conserva el default. |
-| `install --methodology-tier T3:none` | Override repetible de metodología por tier; `T1:none` y `T2:none` se bloquean. |
+| `install --methodology-tier T3:none` | Override repetible de metodología por tier; acepta `openspec`, `lufy-sdd` o `none` donde la policy lo permite. |
 | `verify --tool opencode` | Valida que el manifest instalado use el adapter esperado. |
 | `verify --quiet` | Suprime salida humana por stdout. |
 | `verify --verbose` | Agrega diagnóstico adicional. |

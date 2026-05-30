@@ -120,7 +120,17 @@ func inferMethodologySelection(tier domain.Tier, methodology domain.MethodologyI
 		}
 		return domain.MethodologySelection{ID: methodology, Mode: mode, Required: false}, nil
 	case domain.MethodologyLufyWorkflow:
-		return domain.MethodologySelection{}, fmt.Errorf("metodologia lufy-sdd existe como foundation, pero no está habilitada para install/sync en este slice")
+		if mode == "" {
+			if tier == domain.TierT1 {
+				mode = domain.MethodologyModeFull
+			} else {
+				mode = domain.MethodologyModeLite
+			}
+		}
+		if mode != domain.MethodologyModeFull && mode != domain.MethodologyModeLite {
+			return domain.MethodologySelection{}, fmt.Errorf("lufy-sdd requiere mode full o lite para %s", tier)
+		}
+		return domain.MethodologySelection{ID: methodology, Mode: mode, Required: true}, nil
 	default:
 		return domain.MethodologySelection{}, fmt.Errorf("metodologia no soportada en CLI: %s; disponibles operativas: openspec, none", methodology)
 	}

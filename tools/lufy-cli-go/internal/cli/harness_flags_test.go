@@ -77,15 +77,20 @@ func TestParseHarnessFlagsRejectsUnsafeNone(t *testing.T) {
 	}
 }
 
-func TestParseHarnessFlagsRejectsReservedLufySDD(t *testing.T) {
+func TestParseHarnessFlagsAcceptsLufySDD(t *testing.T) {
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	flags := addHarnessFlags(fs)
 	if err := fs.Parse([]string{"--methodology-tier", "T3:lufy-sdd/lite"}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := parseHarnessFlags(flags); err == nil {
-		t.Fatalf("expected reserved lufy-sdd error")
+	cfg, err := parseHarnessFlags(flags)
+	if err != nil {
+		t.Fatalf("parse lufy-sdd: %v", err)
+	}
+	got := cfg.MethodologyByTier[domain.TierT3]
+	if got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeLite || !got.Required {
+		t.Fatalf("lufy-sdd selection = %#v", got)
 	}
 }
 
@@ -105,11 +110,34 @@ func TestParseMethodologyTierValidationErrors(t *testing.T) {
 		"T3:openspec/",
 		"T3:openspec/none",
 		"T3:none/full",
+		"T3:lufy-sdd/none",
 	}
 	for _, raw := range tests {
 		t.Run(raw, func(t *testing.T) {
 			if _, _, err := parseMethodologyTier(raw); err == nil {
 				t.Fatalf("expected parse error for %q", raw)
+			}
+		})
+	}
+}
+
+func TestParseMethodologyTierInfersLufySDDModes(t *testing.T) {
+	tests := []struct {
+		raw  string
+		mode domain.MethodologyMode
+	}{
+		{raw: "T1:lufy-sdd", mode: domain.MethodologyModeFull},
+		{raw: "T2:lufy-sdd", mode: domain.MethodologyModeLite},
+		{raw: "T3:lufy-sdd", mode: domain.MethodologyModeLite},
+	}
+	for _, tt := range tests {
+		t.Run(tt.raw, func(t *testing.T) {
+			_, selection, err := parseMethodologyTier(tt.raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if selection.ID != domain.MethodologyLufyWorkflow || selection.Mode != tt.mode || !selection.Required {
+				t.Fatalf("selection = %#v", selection)
 			}
 		})
 	}

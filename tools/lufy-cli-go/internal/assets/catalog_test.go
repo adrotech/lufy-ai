@@ -29,6 +29,8 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
+		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -44,6 +46,9 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 			}
 			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") && asset.Methodology != domain.MethodologySpecWorkflow {
 				t.Fatalf("openspec asset %s methodology = %s", asset.TargetRel, asset.Methodology)
+			}
+			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/sdd/") && asset.Methodology != domain.MethodologyLufyWorkflow {
+				t.Fatalf("lufy-sdd asset %s methodology = %s", asset.TargetRel, asset.Methodology)
 			}
 		}
 	}
@@ -87,6 +92,8 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
+		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -97,6 +104,9 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("embedded file asset %s missing hash", asset.TargetRel)
 			}
+			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+				t.Fatalf("embedded asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
+			}
 		}
 	}
 	for path, found := range want {
@@ -104,6 +114,48 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 			t.Fatalf("embedded catalog missing %s", path)
 		}
 	}
+}
+
+func TestCatalogForHarnessFiltersMethodologyAssets(t *testing.T) {
+	catalog, err := BuildCatalog(minimalSource(t))
+	if err != nil {
+		t.Fatalf("BuildCatalog() error = %v", err)
+	}
+
+	lufyLiteOnly := domain.HarnessConfig{
+		Tool: domain.ToolInitialDefault,
+		MethodologyByTier: domain.MethodologyByTier{
+			domain.TierT1: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true},
+			domain.TierT2: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true},
+			domain.TierT3: {ID: domain.MethodologyNone, Mode: domain.MethodologyModeNone, Required: false},
+		},
+	}
+	filtered := catalog.ForHarness(lufyLiteOnly)
+	if hasCatalogTarget(filtered, filepath.Join("openspec", "config.yaml")) {
+		t.Fatalf("lufy-only catalog includes openspec config")
+	}
+	if !hasCatalogTarget(filtered, filepath.Join(".lufy", "sdd", "changes", ".gitkeep")) {
+		t.Fatalf("lufy-lite catalog missing changes placeholder")
+	}
+	if hasCatalogTarget(filtered, filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
+		t.Fatalf("lufy-lite catalog includes specs placeholder")
+	}
+
+	lufyFull := lufyLiteOnly
+	lufyFull.MethodologyByTier[domain.TierT1] = domain.MethodologySelection{ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeFull, Required: true}
+	if !hasCatalogTarget(catalog.ForHarness(lufyFull), filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
+		t.Fatalf("lufy-full catalog missing specs placeholder")
+	}
+}
+
+func hasCatalogTarget(catalog Catalog, target string) bool {
+	target = filepath.ToSlash(target)
+	for _, asset := range catalog.Assets {
+		if filepath.ToSlash(asset.TargetRel) == target {
+			return true
+		}
+	}
+	return false
 }
 
 func TestCatalogFingerprintIsStableForSameFileAssets(t *testing.T) {
@@ -214,6 +266,11 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                                        "{}\n",
 		filepath.Join("openspec", "README.md"):                                            "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
+		filepath.Join(".lufy", "sdd", "README.md"):                                        "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                            "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                                "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):                         "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                                   "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 		filepath.Join("openspec", "changes", "active", "proposal.md"):                     "must not copy\n",
 	}

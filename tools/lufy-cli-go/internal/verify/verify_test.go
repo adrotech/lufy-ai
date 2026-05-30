@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -437,9 +438,10 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 }
 
 func TestCatalogRequirementsIncludeRegisteredCatalogAssets(t *testing.T) {
-	dirs, files := catalogRequirements(map[string]state.AssetState{
-		filepath.Join(".opencode", "agents", "orchestrator.md"): {TargetRel: filepath.Join(".opencode", "agents", "orchestrator.md")},
-	})
+	st := state.NewWithHarness(t.TempDir(), nil, []state.AssetState{
+		{TargetRel: filepath.Join(".opencode", "agents", "orchestrator.md")},
+	}, "test", domain.DefaultHarnessConfig())
+	dirs, files := catalogRequirements(&st)
 	if !containsString(files, filepath.Join(".opencode", "agents", "orchestrator.md")) {
 		t.Fatalf("catalog registered file not required: %#v", files)
 	}

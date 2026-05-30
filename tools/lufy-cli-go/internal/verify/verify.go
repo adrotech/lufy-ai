@@ -71,8 +71,6 @@ var fallbackRequiredManagedFiles = []string{
 	agentsref.HarnessFile,
 	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
-	filepath.Join("openspec", "config.yaml"),
-	filepath.Join("openspec", "UPSTREAM.json"),
 }
 
 var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
@@ -164,7 +162,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
 	}
 	assetMap := st.AssetMap()
-	requiredDirs, requiredManagedFiles := catalogRequirements(assetMap)
+	requiredDirs, requiredManagedFiles := catalogRequirements(st)
 	if opts.Verbose {
 		emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
@@ -322,8 +320,9 @@ func verifyAgentsReference(target string, allowMissing bool, emitAsset func(leve
 	emitAsset("ok", agentsref.AgentsFile, "user-owned-reference", "", "referencia %s presente", agentsref.Reference)
 }
 
-func catalogRequirements(assetMap map[string]state.AssetState) ([]string, []string) {
-	catalog, err := currentCatalog()
+func catalogRequirements(st *state.InstallState) ([]string, []string) {
+	assetMap := st.AssetMap()
+	catalog, err := currentCatalogForHarness(domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier})
 	if err != nil {
 		return fallbackRequiredDirs, fallbackRequiredManagedFiles
 	}
@@ -362,6 +361,14 @@ func currentCatalog() (assets.Catalog, error) {
 		return assets.BuildCatalog(sourceRoot)
 	}
 	return assets.BuildEmbeddedCatalog()
+}
+
+func currentCatalogForHarness(harness domain.HarnessConfig) (assets.Catalog, error) {
+	catalog, err := currentCatalog()
+	if err != nil {
+		return assets.Catalog{}, err
+	}
+	return catalog.ForHarness(harness), nil
 }
 
 func sortedKeys(values map[string]bool) []string {

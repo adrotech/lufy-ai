@@ -173,6 +173,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	catalog = catalog.ForHarness(harness)
 	previous, err := state.Load(target)
 	if err != nil {
 		return Plan{}, err

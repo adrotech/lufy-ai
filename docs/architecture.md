@@ -2,7 +2,7 @@
 
 `lufy-ai` distribuye una CLI Go en `tools/lufy-cli-go` y assets gestionados para el preset actual OpenCode/OpenSpec. La capa instalada es un harness SDD proporcional: clasifica trabajo en T1 Full SDD, T2 SDD Lite o T3 Express antes de elegir agentes, contexto, permisos y validación.
 
-El core está migrando a un modelo hexagonal: Lufy conserva tiers, roles, Result Contract, policies, validación y managed assets como dominio neutral; las superficies concretas viven en adapters de tool y metodología. Hoy el único tool adapter instalable es `opencode`; `codex` y `claude-code` existen solo como adapters dry-run para capabilities/render preview, sin escritura real. Las metodologías soportadas por configuración son `openspec`, `lufy-sdd` como adapter foundation no instalable y `none`.
+El core está migrando a un modelo hexagonal: Lufy conserva tiers, roles, Result Contract, policies, validación y managed assets como dominio neutral; las superficies concretas viven en adapters de tool y metodología. Hoy el único tool adapter instalable es `opencode`; `codex` y `claude-code` existen solo como adapters dry-run para capabilities/render preview, sin escritura real. Las metodologías soportadas por configuración son `openspec`, `lufy-sdd` como metodología instalable inicial y `none`.
 
 ## Componentes
 

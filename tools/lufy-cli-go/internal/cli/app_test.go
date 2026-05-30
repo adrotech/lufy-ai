@@ -96,6 +96,45 @@ func TestRunInstallPersistsHarnessSelection(t *testing.T) {
 	}
 }
 
+func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{
+		"install",
+		"--target", target,
+		"--yes",
+		"--no-engram",
+		"--methodology-tier", "T1:lufy-sdd/full",
+		"--methodology-tier", "T2:lufy-sdd/lite",
+		"--methodology-tier", "T3:none",
+	}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("expected install state")
+	}
+	got := st.MethodologyByTier[domain.TierT2]
+	if got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeLite || !got.Required {
+		t.Fatalf("T2 methodology = %#v", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "changes", ".gitkeep")); err != nil {
+		t.Fatalf("expected lufy-sdd changes asset: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "specs", ".gitkeep")); err != nil {
+		t.Fatalf("expected lufy-sdd specs asset for full mode: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("openspec config should not be installed when no tier selects openspec, err=%v", err)
+	}
+}
+
 func TestRunInstallRejectsUnsupportedHarnessFlags(t *testing.T) {
 	tests := [][]string{
 		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},

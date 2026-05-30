@@ -648,6 +648,11 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+		filepath.Join(".lufy", "sdd", "README.md"):                     "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):           "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):         "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):             "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):      "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {

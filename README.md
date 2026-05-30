@@ -258,11 +258,11 @@ La CLI actual vive en [`tools/lufy-cli-go/`](tools/lufy-cli-go/) y es la impleme
 Flags de harness:
 
 - `install --tool opencode` selecciona explícitamente el adapter actual; sin flag conserva el mismo default.
-- `install --methodology-tier T3:none` permite overrides por tier. `T1:none` y `T2:none` quedan bloqueados por seguridad.
+- `install --methodology-tier T3:none` permite overrides por tier. También se puede elegir `lufy-sdd/full` o `lufy-sdd/lite`; `T1:none` y `T2:none` quedan bloqueados por seguridad.
 - `verify --tool opencode` valida que el manifest instalado pertenezca al adapter esperado.
 - `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 
-`codex` y `claude-code` ya están modelados como adapters dry-run para perfilar capabilities y previews de `AGENTS.md`/`CLAUDE.md`, pero no son instalables ni escribibles todavía.
+`codex` y `claude-code` ya están modelados como adapters dry-run para perfilar capabilities y previews de `AGENTS.md`/`CLAUDE.md`, pero no son instalables ni escribibles todavía. `lufy-sdd` ya puede instalar una superficie inicial `.lufy/sdd/` como metodología seleccionable.
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija verificando checksum antes de reemplazarlo. |
 | `lufy-ai version` | Muestra versión semántica, commit, build date, GOOS y GOARCH. |

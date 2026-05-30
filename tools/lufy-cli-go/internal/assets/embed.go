@@ -36,7 +36,7 @@ func BuildEmbeddedCatalog() (Catalog, error) {
 			return Catalog{}, fmt.Errorf("scope de asset no soportado: %s", ent.scope)
 		}
 		if ent.kind == KindDir {
-			out = append(out, Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope})
+			out = append(out, withOwnership(Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindDir, Policy: ent.policy, Scope: ent.scope}))
 			files, err := expandEmbeddedDir(sourceRel, targetRel, ent.policy, ent.scope)
 			if err != nil {
 				return Catalog{}, err
@@ -107,7 +107,7 @@ func expandEmbeddedDir(sourceRel, targetRel string, policy Policy, scope Scope) 
 			return err
 		}
 		if d.IsDir() {
-			out = append(out, Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope})
+			out = append(out, withOwnership(Asset{ID: dst, SourceRel: src, TargetRel: dst, Kind: KindDir, Policy: policy, Scope: scope}))
 			return nil
 		}
 		asset, err := embeddedFileAsset(src, dst, policy, scope)
@@ -126,5 +126,5 @@ func embeddedFileAsset(sourceRel, targetRel string, policy Policy, scope Scope) 
 		return Asset{}, err
 	}
 	h := sha256.Sum256(body)
-	return Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hex.EncodeToString(h[:])}, nil
+	return withOwnership(Asset{ID: targetRel, SourceRel: sourceRel, TargetRel: targetRel, Kind: KindFile, Policy: policy, Scope: scope, SourceSHA256: hex.EncodeToString(h[:])}), nil
 }

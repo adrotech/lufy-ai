@@ -99,9 +99,10 @@ lufy-ai install --target <repo> --tool opencode --yes --no-engram
 ```bash
 lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
 lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:openspec/full --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
 ```
 
-El parser bloquea `--tool codex`, `--tool claude-code`, `--methodology-tier T1:none`, `--methodology-tier T2:none` y `lufy-sdd` para comandos mutantes. `codex` y `claude-code` existen en el registry solo como adapters dry-run: exponen capabilities conservadoras y previews conceptuales para `AGENTS.md`/`CLAUDE.md`, pero no instalan assets. `lufy-sdd` existe como adapter foundation con previews conceptuales de `.lufy/sdd/`, pero todavía no escribe workflow propio. `verify --tool opencode` valida que el manifest instalado use el adapter esperado; `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
+El parser bloquea `--tool codex`, `--tool claude-code`, `--methodology-tier T1:none` y `--methodology-tier T2:none` para comandos mutantes. `codex` y `claude-code` existen en el registry solo como adapters dry-run: exponen capabilities conservadoras y previews conceptuales para `AGENTS.md`/`CLAUDE.md`, pero no instalan assets. `lufy-sdd` instala una superficie inicial bajo `.lufy/sdd/`; `lite` omite `specs` salvo que otro tier use `lufy-sdd/full`. `verify --tool opencode` valida que el manifest instalado use el adapter esperado; `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 
 ### `.opencode/project.yaml`
 
