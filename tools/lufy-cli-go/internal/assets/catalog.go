@@ -180,32 +180,6 @@ func BuildCatalog(sourceRoot string) (Catalog, error) {
 	return Catalog{SourceRoot: sourceRoot, Assets: out}, nil
 }
 
-func (c Catalog) ForHarness(harness domain.HarnessConfig) Catalog {
-	normalized := harness.WithDefaults()
-	selectedMethodologies := map[domain.MethodologyID]bool{
-		domain.MethodologyNone: true,
-	}
-	lufySDDFull := false
-	for _, selection := range normalized.MethodologyByTier {
-		selectedMethodologies[selection.ID] = true
-		if selection.ID == domain.MethodologyLufyWorkflow && selection.Mode == domain.MethodologyModeFull {
-			lufySDDFull = true
-		}
-	}
-
-	out := make([]Asset, 0, len(c.Assets))
-	for _, asset := range c.Assets {
-		if asset.Methodology != "" && asset.Methodology != domain.MethodologyNone && !selectedMethodologies[asset.Methodology] {
-			continue
-		}
-		if asset.Methodology == domain.MethodologyLufyWorkflow && isLufySDDSpecsAsset(asset.TargetRel) && !lufySDDFull {
-			continue
-		}
-		out = append(out, asset)
-	}
-	return Catalog{SourceRoot: c.SourceRoot, Assets: out}
-}
-
 func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy, scope Scope) ([]Asset, error) {
 	root := filepath.Join(sourceRoot, sourceRel)
 	if info, err := os.Lstat(root); err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
@@ -289,11 +263,6 @@ func withOwnership(asset Asset) Asset {
 		asset.Component = "harness-reference"
 	}
 	return asset
-}
-
-func isLufySDDSpecsAsset(targetRel string) bool {
-	target := filepath.ToSlash(targetRel)
-	return target == ".lufy/sdd/specs" || strings.HasPrefix(target, ".lufy/sdd/specs/")
 }
 
 func FileSHA256(path string) (string, error) {

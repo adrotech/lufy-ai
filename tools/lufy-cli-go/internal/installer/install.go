@@ -15,6 +15,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -173,7 +174,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	catalog = catalog.ForHarness(harness)
+	catalog, err = harnesscatalog.Effective(catalog, harness)
+	if err != nil {
+		return Plan{}, err
+	}
 	previous, err := state.Load(target)
 	if err != nil {
 		return Plan{}, err

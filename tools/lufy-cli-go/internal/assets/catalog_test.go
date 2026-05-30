@@ -116,48 +116,6 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 	}
 }
 
-func TestCatalogForHarnessFiltersMethodologyAssets(t *testing.T) {
-	catalog, err := BuildCatalog(minimalSource(t))
-	if err != nil {
-		t.Fatalf("BuildCatalog() error = %v", err)
-	}
-
-	lufyLiteOnly := domain.HarnessConfig{
-		Tool: domain.ToolInitialDefault,
-		MethodologyByTier: domain.MethodologyByTier{
-			domain.TierT1: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true},
-			domain.TierT2: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true},
-			domain.TierT3: {ID: domain.MethodologyNone, Mode: domain.MethodologyModeNone, Required: false},
-		},
-	}
-	filtered := catalog.ForHarness(lufyLiteOnly)
-	if hasCatalogTarget(filtered, filepath.Join("openspec", "config.yaml")) {
-		t.Fatalf("lufy-only catalog includes openspec config")
-	}
-	if !hasCatalogTarget(filtered, filepath.Join(".lufy", "sdd", "changes", ".gitkeep")) {
-		t.Fatalf("lufy-lite catalog missing changes placeholder")
-	}
-	if hasCatalogTarget(filtered, filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
-		t.Fatalf("lufy-lite catalog includes specs placeholder")
-	}
-
-	lufyFull := lufyLiteOnly
-	lufyFull.MethodologyByTier[domain.TierT1] = domain.MethodologySelection{ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeFull, Required: true}
-	if !hasCatalogTarget(catalog.ForHarness(lufyFull), filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
-		t.Fatalf("lufy-full catalog missing specs placeholder")
-	}
-}
-
-func hasCatalogTarget(catalog Catalog, target string) bool {
-	target = filepath.ToSlash(target)
-	for _, asset := range catalog.Assets {
-		if filepath.ToSlash(asset.TargetRel) == target {
-			return true
-		}
-	}
-	return false
-}
-
 func TestCatalogFingerprintIsStableForSameFileAssets(t *testing.T) {
 	catalog := Catalog{Assets: []Asset{
 		{TargetRel: "b.txt", Kind: KindFile, SourceSHA256: "bbb"},

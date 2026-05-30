@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -368,7 +369,7 @@ func currentCatalogForHarness(harness domain.HarnessConfig) (assets.Catalog, err
 	if err != nil {
 		return assets.Catalog{}, err
 	}
-	return catalog.ForHarness(harness), nil
+	return harnesscatalog.Effective(catalog, harness)
 }
 
 func sortedKeys(values map[string]bool) []string {

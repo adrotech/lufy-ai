@@ -31,8 +31,8 @@ func (Adapter) RenderWorkflow(model ports.WorkflowModel) ([]ports.AssetSpec, err
 		return append(baseAssets(), ports.AssetSpec{
 			ID:        "methodology.lufy-sdd.specs",
 			TargetRel: ".lufy/sdd/specs",
-			Policy:    "dry-run",
-			Scope:     "preview",
+			Policy:    "managed",
+			Scope:     "project",
 		}), nil
 	case domain.MethodologyModeLite:
 		return baseAssets(), nil
@@ -43,15 +43,15 @@ func (Adapter) RenderWorkflow(model ports.WorkflowModel) ([]ports.AssetSpec, err
 
 func (Adapter) VerifyWorkflow(ports.Target, domain.Tier) ([]ports.Check, error) {
 	return []ports.Check{
-		{Level: "info", Message: "lufy-sdd workflow exists as adapter foundation; persistence is not enabled yet"},
+		{Level: "info", Message: "lufy-sdd workflow verification is structural in the installer layer"},
 	}, nil
 }
 
 func baseAssets() []ports.AssetSpec {
 	return []ports.AssetSpec{
-		{ID: "methodology.lufy-sdd.root", TargetRel: ".lufy/sdd", Policy: "dry-run", Scope: "preview"},
-		{ID: "methodology.lufy-sdd.changes", TargetRel: ".lufy/sdd/changes", Policy: "dry-run", Scope: "preview"},
-		{ID: "methodology.lufy-sdd.decisions", TargetRel: ".lufy/sdd/decisions", Policy: "dry-run", Scope: "preview"},
-		{ID: "methodology.lufy-sdd.verification", TargetRel: ".lufy/sdd/verification", Policy: "dry-run", Scope: "preview"},
+		{ID: "methodology.lufy-sdd.readme", TargetRel: ".lufy/sdd/README.md", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.changes", TargetRel: ".lufy/sdd/changes", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.decisions", TargetRel: ".lufy/sdd/decisions", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.verification", TargetRel: ".lufy/sdd/verification", Policy: "managed", Scope: "project"},
 	}
 }

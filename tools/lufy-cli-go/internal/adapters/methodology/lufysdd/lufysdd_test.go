@@ -31,9 +31,14 @@ func TestRenderWorkflowFullIncludesSpecs(t *testing.T) {
 	if !hasTarget(assets, ".lufy/sdd/specs") {
 		t.Fatalf("full lufy-sdd assets missing specs: %#v", assets)
 	}
-	for _, target := range []string{".lufy/sdd", ".lufy/sdd/changes", ".lufy/sdd/decisions", ".lufy/sdd/verification"} {
+	for _, target := range []string{".lufy/sdd/README.md", ".lufy/sdd/changes", ".lufy/sdd/decisions", ".lufy/sdd/verification"} {
 		if !hasTarget(assets, target) {
 			t.Fatalf("full lufy-sdd assets missing %s: %#v", target, assets)
+		}
+	}
+	for _, asset := range assets {
+		if asset.Policy != "managed" || asset.Scope != "project" {
+			t.Fatalf("lufy-sdd asset should be installable: %+v", asset)
 		}
 	}
 }

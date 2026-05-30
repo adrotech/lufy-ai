@@ -44,6 +44,11 @@ func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {
 		{ID: "opencode.templates", TargetRel: ".opencode/templates", Policy: "managed", Scope: "project"},
 		{ID: "opencode.policies", TargetRel: ".opencode/policies", Policy: "managed", Scope: "project"},
 		{ID: "opencode.plugins", TargetRel: ".opencode/plugins", Policy: "managed", Scope: "project"},
+		{ID: "opencode.agent-observatory", TargetRel: ".opencode/agent-observatory", Policy: "managed", Scope: "project"},
+		{ID: "opencode.readme", TargetRel: ".opencode/README.md", Policy: "managed", Scope: "project"},
+		{ID: "opencode.package", TargetRel: ".opencode/package.json", Policy: "managed", Scope: "project"},
+		{ID: "opencode.package-lock", TargetRel: ".opencode/package-lock.json", Policy: "managed", Scope: "project"},
+		{ID: "opencode.gitignore", TargetRel: ".opencode/.gitignore", Policy: "managed", Scope: "project"},
 		{ID: "opencode.config", TargetRel: "opencode.json", Policy: "merge-json", Scope: "project"},
 		{ID: "opencode.tui", TargetRel: "tui.json", Policy: "no-replace", Scope: "project"},
 	}, nil

@@ -14,6 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -178,7 +179,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		return Plan{}, fmt.Errorf("sync bloqueado por tool mismatch: manifest=%s solicitado=%s", previous.Tool, harness.Tool)
 	}
 	installedHarness := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
-	catalog = catalog.ForHarness(installedHarness)
+	catalog, err = harnesscatalog.Effective(catalog, installedHarness)
+	if err != nil {
+		return Plan{}, err
+	}
 	previousAssets := previous.AssetMap()
 	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot}
 	catalogTargets := map[string]bool{}
