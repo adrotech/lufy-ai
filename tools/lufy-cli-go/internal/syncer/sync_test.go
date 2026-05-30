@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -85,6 +86,40 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	}
 	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
 		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunLufyNewCanBeResolvedByMergerAcceptTheirs(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(sync lufy-new) error = %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("sync lufy-new content mismatch: %q", got)
+	}
+
+	var out bytes.Buffer
+	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
+		t.Fatalf("merge accept-theirs error = %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("merge did not accept sync .lufy-new: %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("merge did not remove sync .lufy-new, stat err=%v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset := st.AssetMap()["tui.json"]
+	if asset.LastAction != "merge-accept-theirs" || asset.TargetSHA256 != asset.SourceSHA256 || asset.AncestorHash != asset.TargetSHA256 {
+		t.Fatalf("merge did not refresh synced asset state: %#v", asset)
 	}
 }
 

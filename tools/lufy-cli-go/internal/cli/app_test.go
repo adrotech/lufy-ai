@@ -2,10 +2,14 @@ package cli
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
 func TestRunInstallDryRun(t *testing.T) {
@@ -94,7 +98,7 @@ func TestRunMergeHelpAndRequiresPath(t *testing.T) {
 	if code := Run([]string{"merge", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("merge --help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) || !bytes.Contains(errOut.Bytes(), []byte("--accept-theirs")) || !bytes.Contains(errOut.Bytes(), []byte("--accept-ours")) {
 		t.Fatalf("merge help unexpected: %s", errOut.String())
 	}
 
@@ -105,6 +109,145 @@ func TestRunMergeHelpAndRequiresPath(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
 		t.Fatalf("merge missing path output unexpected: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"merge", "tui.json", "extra.json"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("merge with extra path expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
+		t.Fatalf("merge extra path output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeRejectsConflictingAcceptFlags(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"merge", "--accept-theirs", "--accept-ours", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("merge conflicting accept flags expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("no permite combinar")) {
+		t.Fatalf("merge conflicting flags error unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeDispatchesValidationErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		code int
+		want string
+	}{
+		{
+			name: "invalid relative path",
+			args: []string{"merge", "--target", t.TempDir(), "../tui.json"},
+			code: ExitRuntimeErr,
+			want: "escapa del root permitido",
+		},
+		{
+			name: "unknown flag",
+			args: []string{"merge", "--unknown", "tui.json"},
+			code: ExitUsageErr,
+			want: "flag provided but not defined",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(tt.args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != tt.code {
+				t.Fatalf("expected code %d, got %d stderr=%s", tt.code, code, errOut.String())
+			}
+			if !bytes.Contains(errOut.Bytes(), []byte(tt.want)) {
+				t.Fatalf("stderr missing %q: %s", tt.want, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunMergeWithoutToolReturnsRuntimeErrorAfterDispatch(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("merge without LUFY_MERGE_TOOL expected ExitRuntimeErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+		t.Fatalf("merge without tool stderr unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeAcceptTheirsResolvesWithoutMergeTool(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "--accept-theirs", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("merge --accept-theirs expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, "tui.json"))); got != "new\n" {
+		t.Fatalf("target = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("sidecar still exists or unexpected stat error: %v", err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("accept-theirs aplicado")) {
+		t.Fatalf("merge accept-theirs output unexpected: %s", out.String())
+	}
+}
+
+func TestRunMergeAcceptOursResolvesWithoutMergeTool(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "--accept-ours", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("merge --accept-ours expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, "tui.json"))); got != "user\n" {
+		t.Fatalf("target = %q", got)
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, ancestorRel))); got != "user\n" {
+		t.Fatalf("ancestor = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("sidecar still exists or unexpected stat error: %v", err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("accept-ours aplicado")) {
+		t.Fatalf("merge accept-ours output unexpected: %s", out.String())
 	}
 }
 
@@ -295,4 +438,29 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("restore dry-run expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
+}
+
+func writeCLITestFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readCLITestFile(t *testing.T, path string) []byte {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+func hashCLITestFile(t *testing.T, path string) string {
+	t.Helper()
+	h := sha256.Sum256(readCLITestFile(t, path))
+	return hex.EncodeToString(h[:])
 }

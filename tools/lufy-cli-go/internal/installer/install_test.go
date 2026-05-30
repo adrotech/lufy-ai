@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -94,6 +95,34 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
 		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunLufyNewCanBeConsumedByMergeAcceptTheirs(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+
+	var out bytes.Buffer
+	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
+		t.Fatalf("merge accept-theirs error = %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("merge did not accept upstream .lufy-new: %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("merge did not remove lufy-new, stat err=%v", err)
+	}
+	if got := stateMustLoadForTest(t, target).AssetMap()["tui.json"].LastAction; got != "merge-accept-theirs" {
+		t.Fatalf("merge did not update asset action, got %q", got)
 	}
 }
 
@@ -562,6 +591,18 @@ func readFileForTest(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return body
+}
+
+func stateMustLoadForTest(t *testing.T, target string) *state.InstallState {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("missing install-state")
+	}
+	return st
 }
 
 func hashBytesForTest(body []byte) string {

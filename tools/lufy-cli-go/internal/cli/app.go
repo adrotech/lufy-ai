@@ -93,9 +93,11 @@ func runMerge(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	acceptTheirs := fs.Bool("accept-theirs", false, "Resolver aceptando <path>.lufy-new sin LUFY_MERGE_TOOL")
+	acceptOurs := fs.Bool("accept-ours", false, "Resolver preservando el target local sin LUFY_MERGE_TOOL")
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai merge [--target <dir>] <path>")
-		fmt.Fprintln(deps.Stderr, "Reconcilia target, ancestor y .lufy-new usando LUFY_MERGE_TOOL.")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai merge [--target <dir>] [--accept-theirs|--accept-ours] <path>")
+		fmt.Fprintln(deps.Stderr, "Reconcilia target, ancestor y .lufy-new usando LUFY_MERGE_TOOL o una resolución no interactiva.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
@@ -108,7 +110,11 @@ func runMerge(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0]}, deps.Stdout); err != nil {
+	if *acceptTheirs && *acceptOurs {
+		fmt.Fprintln(deps.Stderr, "merge no permite combinar --accept-theirs y --accept-ours")
+		return ExitUsageErr
+	}
+	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0], AcceptTheirs: *acceptTheirs, AcceptOurs: *acceptOurs}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}

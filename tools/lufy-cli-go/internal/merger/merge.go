@@ -6,14 +6,18 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
 type Options struct {
-	Target string
-	Path   string
+	Target       string
+	Path         string
+	AcceptTheirs bool
+	AcceptOurs   bool
 }
 
 type Service struct{}
@@ -64,6 +68,12 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return fmt.Errorf("merge requiere %s existente y seguro: %s", label, path)
 		}
 	}
+	if opts.AcceptTheirs && opts.AcceptOurs {
+		return fmt.Errorf("merge no permite combinar --accept-theirs y --accept-ours")
+	}
+	if opts.AcceptTheirs || opts.AcceptOurs {
+		return acceptResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath, opts.AcceptTheirs, st, stdout)
+	}
 	tool := os.Getenv("LUFY_MERGE_TOOL")
 	if tool == "" {
 		return fmt.Errorf("merge requiere LUFY_MERGE_TOOL configurado")
@@ -80,6 +90,68 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	fmt.Fprintf(stdout, "Merge tool completado para %s\n", targetRel)
 	return nil
+}
+
+func acceptResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath string, acceptTheirs bool, st *state.InstallState, stdout io.Writer) error {
+	lufyNewHash, err := assets.FileSHA256(lufyNewPath)
+	if err != nil {
+		return err
+	}
+	resolvedPath := targetPath
+	action := "merge-accept-ours"
+	if acceptTheirs {
+		resolvedPath = lufyNewPath
+		action = "merge-accept-theirs"
+	}
+	body, err := os.ReadFile(resolvedPath)
+	if err != nil {
+		return err
+	}
+	perm := filePerm(targetPath, 0o644)
+	if acceptTheirs {
+		if err := platform.WriteFileAtomic(targetPath, body, perm); err != nil {
+			return err
+		}
+	}
+	if err := platform.WriteFileAtomic(ancestorPath, body, filePerm(ancestorPath, 0o644)); err != nil {
+		return err
+	}
+	resolvedHash, err := assets.FileSHA256(targetPath)
+	if err != nil {
+		return err
+	}
+	updated := false
+	for i := range st.Assets {
+		if st.Assets[i].TargetRel != targetRel {
+			continue
+		}
+		st.Assets[i].SourceSHA256 = lufyNewHash
+		st.Assets[i].TargetSHA256 = resolvedHash
+		st.Assets[i].AncestorHash = resolvedHash
+		st.Assets[i].LastAction = action
+		updated = true
+		break
+	}
+	if !updated {
+		return fmt.Errorf("merge requiere asset gestionado en install-state: %s", targetRel)
+	}
+	st.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	if err := state.WriteAtomic(targetRoot, *st); err != nil {
+		return err
+	}
+	if err := os.Remove(lufyNewPath); err != nil {
+		return err
+	}
+	fmt.Fprintf(stdout, "Merge %s aplicado para %s\n", strings.TrimPrefix(action, "merge-"), targetRel)
+	return nil
+}
+
+func filePerm(path string, fallback os.FileMode) os.FileMode {
+	info, err := os.Stat(path)
+	if err != nil {
+		return fallback
+	}
+	return info.Mode().Perm()
 }
 
 func regularFile(path string) bool {
