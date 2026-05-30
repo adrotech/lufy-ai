@@ -57,6 +57,19 @@ El preset inicial `tool=opencode` y `methodology=openspec` SHALL conservar el co
 - **THEN** SHALL resolver el catalogo efectivo desde `ToolAdapter.RenderSurface` y `MethodologyAdapter.RenderWorkflow`
 - **AND** SHALL fallar explicitamente si el adapter requerido no existe
 
+#### Scenario: Default install does not opt into Lufy SDD
+- **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes --no-engram` sin flags de metodología
+- **THEN** el target SHALL contener los assets OpenCode/OpenSpec actuales
+- **AND** SHALL NOT contener assets `.lufy/sdd`
+- **AND** el manifest SHALL registrar `methodologyByTier` default con `openspec`
+
+#### Scenario: Existing default install syncs after adapter routing
+- **GIVEN** un target instalado con el preset default OpenCode/OpenSpec
+- **WHEN** el usuario ejecuta `lufy-ai sync --target <repo> --yes --no-engram` sin flags nuevos
+- **THEN** sync SHALL actualizar assets gestionados cuyo source cambio sin introducir `.lufy/sdd`
+- **AND** SHALL preservar `tool: opencode` y `methodologyByTier` OpenSpec en el manifest
+- **AND** `lufy-ai verify --target <repo> --no-engram` SHALL reportar una instalación válida
+
 ### Requirement: Manifest identifies adapter ownership
 El manifest de instalación SHALL evolucionar para registrar tool, metodología, componente y scope de cada asset sin impedir leer manifests legacy.
 

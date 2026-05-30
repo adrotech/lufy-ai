@@ -11,9 +11,11 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
 
 func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
@@ -461,6 +463,47 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	}
 }
 
+func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, ".lufy", "sdd", "README.md"), "new lufy-sdd should stay unselected\n")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(default upgrade sync) error = %v, output=%s", err, out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("default sync should not create .lufy/sdd, stat err=%v", err)
+	}
+
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("synced tool = %s", st.Tool)
+	}
+	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
+		t.Fatalf("synced T1 methodology = %#v", got)
+	}
+	if st.AssetMap()["lufy-ia.harness.md"].LastAction != "sync-update-managed" {
+		t.Fatalf("existing harness asset was not updated: %#v", st.AssetMap()["lufy-ia.harness.md"])
+	}
+	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "sdd")) {
+		t.Fatalf("default sync should not register lufy-sdd assets: %#v", st.Assets)
+	}
+
+	var verifyOut bytes.Buffer
+	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true}, &verifyOut); err != nil {
+		t.Fatalf("verify after default sync error = %v, output=%s", err, verifyOut.String())
+	}
+	if !strings.Contains(verifyOut.String(), "ok: verify estructural completo") {
+		t.Fatalf("verify after default sync output unexpected: %s", verifyOut.String())
+	}
+}
+
 func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -601,6 +644,17 @@ func hasSyncActionKind(actions []Action, kind string) bool {
 func hasSyncConflict(conflicts []Conflict, path, reasonPart string) bool {
 	for _, conflict := range conflicts {
 		if conflict.Path == path && strings.Contains(conflict.Reason, reasonPart) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSyncedTargetPrefix(st *state.InstallState, prefix string) bool {
+	normalizedPrefix := filepath.ToSlash(prefix)
+	for _, asset := range st.Assets {
+		target := filepath.ToSlash(asset.TargetRel)
+		if target == normalizedPrefix || strings.HasPrefix(target, normalizedPrefix+"/") {
 			return true
 		}
 	}

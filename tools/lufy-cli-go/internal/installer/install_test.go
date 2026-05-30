@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -173,6 +174,37 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, harness.AncestorRel))); got != "harness template\n" {
 		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
+func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(default install) error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("default install should not create .lufy/sdd, stat err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); err != nil {
+		t.Fatalf("default install should keep openspec assets: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".opencode", "agents", "orchestrator.md")); err != nil {
+		t.Fatalf("default install should keep opencode assets: %v", err)
+	}
+
+	st := stateMustLoadForTest(t, target)
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("default install tool = %s", st.Tool)
+	}
+	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
+		t.Fatalf("default T1 methodology = %#v", got)
+	}
+	if hasInstalledTargetPrefix(st, filepath.Join(".lufy", "sdd")) {
+		t.Fatalf("default manifest should not register lufy-sdd assets: %#v", st.Assets)
 	}
 }
 
@@ -608,6 +640,17 @@ func stateMustLoadForTest(t *testing.T, target string) *state.InstallState {
 func hashBytesForTest(body []byte) string {
 	h := sha256.Sum256(body)
 	return hex.EncodeToString(h[:])
+}
+
+func hasInstalledTargetPrefix(st *state.InstallState, prefix string) bool {
+	normalizedPrefix := filepath.ToSlash(prefix)
+	for _, asset := range st.Assets {
+		target := filepath.ToSlash(asset.TargetRel)
+		if target == normalizedPrefix || strings.HasPrefix(target, normalizedPrefix+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func chdirForTest(t *testing.T, dir string) {
