@@ -35,6 +35,7 @@
 - [x] Introducir `MethodologyAdapter`.
 - [x] Mover OpenSpec a methodology adapter real inicial.
 - [x] Implementar methodology `none`.
+- [x] Registrar adapters default y fallar explicitamente ante tool/metodologia no soportada.
 
 ## 6. Routing por tier y configuración
 
