@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/methodology/lufysdd"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/methodology/none"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/methodology/openspec"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/tool/claudecode"
@@ -27,6 +28,7 @@ func Default() Registry {
 		},
 		methodology: map[domain.MethodologyID]ports.MethodologyAdapter{
 			domain.MethodologySpecWorkflow: openspec.New(),
+			domain.MethodologyLufyWorkflow: lufysdd.New(),
 			domain.MethodologyNone:         none.New(),
 		},
 	}

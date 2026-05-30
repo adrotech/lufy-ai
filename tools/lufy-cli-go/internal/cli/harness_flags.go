@@ -120,7 +120,7 @@ func inferMethodologySelection(tier domain.Tier, methodology domain.MethodologyI
 		}
 		return domain.MethodologySelection{ID: methodology, Mode: mode, Required: false}, nil
 	case domain.MethodologyLufyWorkflow:
-		return domain.MethodologySelection{}, fmt.Errorf("metodologia lufy-sdd reservada; no está operativa en este slice")
+		return domain.MethodologySelection{}, fmt.Errorf("metodologia lufy-sdd existe como foundation, pero no está habilitada para install/sync en este slice")
 	default:
 		return domain.MethodologySelection{}, fmt.Errorf("metodologia no soportada en CLI: %s; disponibles operativas: openspec, none", methodology)
 	}

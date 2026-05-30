@@ -39,6 +39,17 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 		t.Fatalf("methodology id = %s", spec.ID())
 	}
 
+	lufy, err := reg.Methodology(domain.MethodologyLufyWorkflow)
+	if err != nil {
+		t.Fatalf("lufy-sdd lookup: %v", err)
+	}
+	if lufy.ID() != domain.MethodologyLufyWorkflow {
+		t.Fatalf("lufy-sdd id = %s", lufy.ID())
+	}
+	if modes := lufy.SupportedModes(); len(modes) != 2 || modes[0] != domain.MethodologyModeFull || modes[1] != domain.MethodologyModeLite {
+		t.Fatalf("lufy-sdd modes = %#v", modes)
+	}
+
 	none, err := reg.Methodology(domain.MethodologyNone)
 	if err != nil {
 		t.Fatalf("none lookup: %v", err)
