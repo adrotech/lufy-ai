@@ -15,6 +15,10 @@ El sistema SHALL seleccionar metodología por tier, manteniendo T1/T2/T3 como la
 - **WHEN** una solicitud se clasifica como T3
 - **THEN** el workflow MAY seleccionar `none` como metodología y SHALL permitir implementación directa acotada con validación proporcional
 
+#### Scenario: Project config carries compatible methodology defaults
+- **WHEN** `lufy-ai init` genera o reescanea la configuración project-local
+- **THEN** la configuración SHALL incluir `tool: opencode` y `methodology_by_tier` con `T1=openspec/full/required`, `T2=openspec/lite/required` y `T3=none/none/not-required` salvo overrides compatibles preservados
+
 ### Requirement: Supported methodology set
 El sistema SHALL limitar metodologías soportadas por configuración a `openspec`, `lufy-sdd` y `none` hasta que una propuesta posterior agregue otra explícitamente.
 
@@ -42,7 +46,7 @@ El router y orchestrator SHALL reportar tool, metodología, mode y required stat
 
 #### Scenario: Result Contract carries adapter context
 - **WHEN** un agente local completa un paso sustantivo
-- **THEN** el Result Contract SHALL incluir el contexto efectivo de tool y metodología cuando aplique
+- **THEN** el Result Contract SHALL incluir `adapter_context` con `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required` y `execution_mode` cuando aplique
 
 ### Requirement: Unsafe none override is blocked or justified
 El sistema SHALL bloquear o exigir justificación explícita cuando se use `none` para T1 o T2.

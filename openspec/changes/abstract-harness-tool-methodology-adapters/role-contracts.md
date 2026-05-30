@@ -25,6 +25,18 @@ Para el preset actual, el binding vive en:
 tools/lufy-cli-go/internal/instructions/bindings/opencode-openspec-current/role-skills.yaml
 ```
 
+El Result Contract mantiene el contexto de adapter en una sección compacta para que los agentes no tengan que inferir tool, metodologia o modo desde texto libre:
+
+```yaml
+workflow_decision:
+  adapter_context:
+    tool_id: opencode | not_applicable
+    methodology_id: openspec | lufy-sdd | none | not_applicable
+    methodology_mode: full | lite | none | not_applicable
+    methodology_required: true | false | not_applicable
+    execution_mode: full-sdd | sdd-lite | express | not_applicable
+```
+
 ## Skill bindings actuales
 
 | Slot neutral | Skill actual | Uso |

@@ -39,8 +39,8 @@
 
 ## 6. Routing por tier y configuración
 
-- [ ] Agregar configuración `methodology_by_tier` con defaults compatibles.
-- [ ] Propagar tool/metodología/mode al Result Contract.
+- [x] Agregar configuración `methodology_by_tier` con defaults compatibles.
+- [x] Propagar tool/metodología/mode al Result Contract.
 - [x] Bloquear o justificar overrides inseguros de `none` en T1/T2.
 
 ## 7. Manifest, sync y verify

@@ -48,7 +48,43 @@ func TestBuildRoleSurfaceIncludesDirectSkillRefsAndOutputContract(t *testing.T) 
 	if surface.OutputSchema != "result-contract/v1" {
 		t.Fatalf("schema = %s", surface.OutputSchema)
 	}
+	if surface.ResultContractContext.Tool != domain.ToolInitialDefault {
+		t.Fatalf("tool context = %s", surface.ResultContractContext.Tool)
+	}
+	if surface.ResultContractContext.Methodology != domain.MethodologySpecWorkflow || surface.ResultContractContext.MethodologyMode != domain.MethodologyModeFull {
+		t.Fatalf("methodology context = %+v", surface.ResultContractContext)
+	}
 	if surface.MaxHandoffFocus[0] != "authorization_state" {
 		t.Fatalf("handoff focus = %v", surface.MaxHandoffFocus)
+	}
+}
+
+func TestBuildRoleSurfaceForTierUsesConfiguredMethodologySelection(t *testing.T) {
+	role := registry.RoleDefinition{
+		ID:      domain.RoleRouter,
+		Kind:    "primary",
+		Purpose: "route work",
+		Output: registry.RoleOutput{
+			Schema:          "result-contract/v1",
+			AllowedStatus:   []string{"ready"},
+			CompactPayload:  []string{"workflow_decision"},
+			MaxHandoffFocus: []string{"tier"},
+		},
+	}
+	binding := registry.SkillBinding{
+		Tool:        domain.ToolInitialDefault,
+		Methodology: domain.MethodologySpecWorkflow,
+		Skills:      map[domain.SkillSlot]registry.SkillSpec{},
+	}
+
+	surface, err := BuildRoleSurfaceForTier(role, binding, domain.HarnessConfig{}, domain.TierT3)
+	if err != nil {
+		t.Fatalf("build role surface for tier: %v", err)
+	}
+	if surface.ResultContractContext.Tier != domain.TierT3 {
+		t.Fatalf("tier context = %s", surface.ResultContractContext.Tier)
+	}
+	if surface.ResultContractContext.Methodology != domain.MethodologyNone || surface.ResultContractContext.MethodologyMode != domain.MethodologyModeNone || surface.ResultContractContext.MethodologyRequired {
+		t.Fatalf("unexpected T3 adapter context: %+v", surface.ResultContractContext)
 	}
 }

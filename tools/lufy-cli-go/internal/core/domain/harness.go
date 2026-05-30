@@ -58,12 +58,24 @@ type ToolCapabilities struct {
 }
 
 type MethodologySelection struct {
-	ID       MethodologyID
-	Mode     MethodologyMode
-	Required bool
+	ID       MethodologyID   `yaml:"id"`
+	Mode     MethodologyMode `yaml:"mode"`
+	Required bool            `yaml:"required"`
 }
 
 type MethodologyByTier map[Tier]MethodologySelection
+
+type HarnessConfig struct {
+	Tool              ToolID
+	MethodologyByTier MethodologyByTier
+}
+
+func DefaultHarnessConfig() HarnessConfig {
+	return HarnessConfig{
+		Tool:              ToolInitialDefault,
+		MethodologyByTier: DefaultMethodologyByTier(),
+	}
+}
 
 func DefaultMethodologyByTier() MethodologyByTier {
 	return MethodologyByTier{
@@ -71,6 +83,28 @@ func DefaultMethodologyByTier() MethodologyByTier {
 		TierT2: {ID: MethodologySpecWorkflow, Mode: MethodologyModeLite, Required: true},
 		TierT3: {ID: MethodologyNone, Mode: MethodologyModeNone, Required: false},
 	}
+}
+
+func (m MethodologyByTier) WithDefaults() MethodologyByTier {
+	defaults := DefaultMethodologyByTier()
+	for tier, selection := range m {
+		defaults[tier] = selection
+	}
+	return defaults
+}
+
+func (m MethodologyByTier) SelectionFor(tier Tier) (MethodologySelection, error) {
+	if !tier.Valid() {
+		return MethodologySelection{}, fmt.Errorf("tier no soportado: %s", tier)
+	}
+	selection, ok := m.WithDefaults()[tier]
+	if !ok {
+		return MethodologySelection{}, fmt.Errorf("tier sin metodologia configurada: %s", tier)
+	}
+	if err := (MethodologyByTier{tier: selection}).ValidateSupported(); err != nil {
+		return MethodologySelection{}, err
+	}
+	return selection, nil
 }
 
 func (m MethodologyByTier) ValidateSupported() error {
@@ -91,9 +125,37 @@ func (m MethodologyByTier) ValidateSupported() error {
 	return nil
 }
 
+func (c HarnessConfig) WithDefaults() HarnessConfig {
+	defaults := DefaultHarnessConfig()
+	if c.Tool != "" {
+		defaults.Tool = c.Tool
+	}
+	if len(c.MethodologyByTier) > 0 {
+		defaults.MethodologyByTier = c.MethodologyByTier.WithDefaults()
+	}
+	return defaults
+}
+
+func (c HarnessConfig) ValidateSupported() error {
+	normalized := c.WithDefaults()
+	if !normalized.Tool.Valid() {
+		return fmt.Errorf("tool no soportada: %s", normalized.Tool)
+	}
+	return normalized.MethodologyByTier.ValidateSupported()
+}
+
 func (t Tier) Valid() bool {
 	switch t {
 	case TierT1, TierT2, TierT3:
+		return true
+	default:
+		return false
+	}
+}
+
+func (t ToolID) Valid() bool {
+	switch t {
+	case ToolInitialDefault:
 		return true
 	default:
 		return false
