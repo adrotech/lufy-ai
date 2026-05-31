@@ -106,7 +106,11 @@ The system SHALL compute and disclose deterministic heuristics for wall-clock ti
 
 #### Scenario: Step timeline includes AI and human time
 - **WHEN** task activity has structural user, assistant, tool or event timestamps
-- **THEN** the report includes a sanitized step-by-step timeline with what type of work occurred, why it occurred, start/end, wall-clock duration, AI time and human time for each step
+- **THEN** the report includes a sanitized step-by-step timeline with what type of work occurred, why it occurred, first/last activity, active duration, AI time and human time for each step
+
+#### Scenario: Dates are readable by end users
+- **WHEN** the report renders task windows, Git windows or step timestamps
+- **THEN** it displays localized human-readable date/time labels instead of raw ISO timestamps
 
 #### Scenario: Step timeline preserves privacy
 - **WHEN** the report summarizes step-by-step activity

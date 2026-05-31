@@ -19,6 +19,7 @@ from typing import Any
 AI_GAP_CAP_SECONDS = 5 * 60
 HUMAN_GAP_CAP_SECONDS = 10 * 60
 DEFAULT_DB = Path.home() / ".local/share/opencode/opencode.db"
+MONTHS_ES = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
 SENSITIVE_WORDS = ("session_diff", "diff --git", "BEGIN SECRET", "FULL_TOOL_PAYLOAD", "ASSISTANT_OUTPUT_SECRET", "USER_PROMPT_SECRET")
 
@@ -409,7 +410,31 @@ def format_git_bound(timestamp: float) -> str:
 def format_bound(timestamp: float | None) -> str:
     if timestamp is None:
         return "No disponible"
-    return dt.datetime.fromtimestamp(timestamp, dt.timezone.utc).isoformat(timespec="seconds")
+    return format_datetime_human(dt.datetime.fromtimestamp(timestamp, dt.timezone.utc))
+
+
+def format_datetime_human(value: dt.datetime) -> str:
+    local = value.astimezone()
+    month = MONTHS_ES[local.month - 1]
+    timezone = local.tzname() or "local"
+    return f"{local.day:02d} {month} {local.year}, {local.hour:02d}:{local.minute:02d} {timezone}"
+
+
+def format_range_text(start: Any, end: Any) -> str:
+    return f"{format_maybe_datetime(start)} → {format_maybe_datetime(end)}"
+
+
+def format_maybe_datetime(value: Any) -> str:
+    if value is None:
+        return "sin límite"
+    if isinstance(value, (int, float)):
+        return format_bound(float(value))
+    if isinstance(value, str):
+        parsed = parse_bound(value)
+        if parsed is not None:
+            return format_bound(parsed)
+        return value
+    return str(value)
 
 
 def detect_methodology(target_dir: Path, change: str | None, skills: dict[str, int], limitations: list[str]) -> dict[str, str]:
@@ -680,6 +705,7 @@ def capped_event_bounds(bounds: tuple[float, float], role: str) -> tuple[float, 
 
 
 def new_step_bucket(event: dict[str, Any]) -> dict[str, Any]:
+    active_seconds = event_active_seconds(event)
     return {
         "start": event["start"],
         "end": event["end"],
@@ -692,6 +718,9 @@ def new_step_bucket(event: dict[str, Any]) -> dict[str, Any]:
         "skills": [event["skill"]] if event["skill"] else [],
         "ai_points": ai_points_for_event(event),
         "human_points": human_points_for_event(event),
+        "active_seconds": active_seconds,
+        "ai_seconds": active_seconds if event["role"] in {"assistant", "tool", "event", "step-finish", "activity"} else 0,
+        "human_seconds": active_seconds if event["role"] == "user" else 0,
         "event_count": 1,
     }
 
@@ -708,7 +737,17 @@ def merge_step_event(bucket: dict[str, Any], event: dict[str, Any]) -> None:
         bucket["skills"].append(event["skill"])
     bucket["ai_points"].extend(ai_points_for_event(event))
     bucket["human_points"].extend(human_points_for_event(event))
+    active_seconds = event_active_seconds(event)
+    bucket["active_seconds"] += active_seconds
+    if event["role"] in {"assistant", "tool", "event", "step-finish", "activity"}:
+        bucket["ai_seconds"] += active_seconds
+    if event["role"] == "user":
+        bucket["human_seconds"] += active_seconds
     bucket["event_count"] += 1
+
+
+def event_active_seconds(event: dict[str, Any]) -> float:
+    return max(0, event["end"] - event["start"])
 
 
 def ai_points_for_event(event: dict[str, Any]) -> list[float]:
@@ -729,9 +768,9 @@ def finalize_step(index: int, bucket: dict[str, Any]) -> dict[str, Any]:
         "why": step_reason(bucket),
         "start": format_bound(bucket["start"]),
         "end": format_bound(bucket["end"]),
-        "wall_clock": format_seconds(bucket["end"] - bucket["start"]),
-        "ai_time": format_duration_points(bucket["ai_points"], AI_GAP_CAP_SECONDS),
-        "human_time": format_duration_points(bucket["human_points"], HUMAN_GAP_CAP_SECONDS),
+        "wall_clock": format_active_seconds(bucket["active_seconds"], bucket["event_count"]),
+        "ai_time": format_role_active_seconds(bucket["ai_seconds"]),
+        "human_time": format_role_active_seconds(bucket["human_seconds"]),
         "actors": summarize_values(bucket["actors"]),
         "tools": summarize_values([*bucket["tools"], *bucket["skills"]]),
         "events": bucket["event_count"],
@@ -795,13 +834,25 @@ def format_duration_points(values: list[float], cap: int) -> str:
     return format_seconds(seconds)
 
 
+def format_active_seconds(seconds: float, event_count: int) -> str:
+    if seconds <= 0:
+        return "<1m" if event_count > 0 else "0m"
+    return format_seconds(seconds)
+
+
+def format_role_active_seconds(seconds: float) -> str:
+    if seconds <= 0:
+        return "0m"
+    return format_seconds(seconds)
+
+
 def render_report(report: dict[str, Any], target_dir: Path, db_path: Path) -> str:
     activity = report["activity"]
     git = report["git"]
     metrics = report["metrics"]
     limitations = report["limitations"]
     sections = [
-        f"<header><h1>LUFY Developer Impact Report</h1><p class='muted'>Target: {esc(str(target_dir))} · Generado: {esc(dt.datetime.now().isoformat(timespec='seconds'))}</p></header>",
+        f"<header><h1>LUFY Developer Impact Report</h1><p class='muted'>Target: {esc(str(target_dir))} · Generado: {esc(format_datetime_human(dt.datetime.now(dt.timezone.utc)))}</p></header>",
         render_scope(activity["scope"], report),
         render_executive_summary(report),
         "<section><h2>Impacto diario</h2><div class='grid'>" + card("Tiempo calendario", metrics["wall_clock"]) + card("Tiempo IA activo", metrics["ai_time"]) + card("Tiempo humano activo", metrics["human_time"]) + card("Tool calls", str(sum(activity["tool_counts"].values()))) + "</div></section>",
@@ -832,7 +883,7 @@ def render_scope(scope: dict[str, Any], report: dict[str, Any]) -> str:
         "Root session": str(scope.get("root_session_id", "No disponible")),
         "Anchor session": str(scope.get("anchor_session_id", "No disponible")),
         "Ventana": f"{scope.get('time_from', 'No disponible')} → {scope.get('time_to', 'No disponible')}",
-        "Git window": f"{report.get('git_since') or 'sin límite'} → {report.get('git_until') or 'sin límite'}",
+        "Git window": format_range_text(report.get("git_since"), report.get("git_until")),
         "Spec/change": str(methodology_info.get("change", scope.get("change", "No disponible"))),
         "Fuente metodología": str(methodology_info.get("source", "No disponible")),
         "Fuente tier": str(scope.get("tier_source", "No disponible")),
@@ -880,12 +931,12 @@ def render_steps(steps: list[dict[str, Any]]) -> str:
             "</tr>"
         )
     table = (
-        "<div class='table-wrap'><table><thead><tr><th>#</th><th>Paso</th><th>Qué se hizo</th><th>Por qué</th><th>Inicio / fin</th>"
-        "<th>Duración</th><th>IA</th><th>Humano</th><th>Eventos</th></tr></thead><tbody>"
+        "<div class='table-wrap'><table><thead><tr><th>#</th><th>Paso</th><th>Qué se hizo</th><th>Por qué</th><th>Primera / última actividad</th>"
+        "<th>Duración activa</th><th>IA</th><th>Humano</th><th>Eventos</th></tr></thead><tbody>"
         + "".join(rows)
         + "</tbody></table></div>"
     )
-    return "<section><h2>Paso a paso</h2><p class='muted'>Timeline estructural sanitizado de la tarea, agregado por fase y ordenado por primera aparición. No incluye prompts, outputs, argumentos completos ni diffs.</p>" + table + "</section>"
+    return "<section><h2>Paso a paso</h2><p class='muted'>Timeline estructural sanitizado de la tarea, agregado por fase y ordenado por primera aparición. La duración muestra actividad estimada del paso, no el tiempo calendario entre primera y última aparición. No incluye prompts, outputs, argumentos completos ni diffs.</p>" + table + "</section>"
 
 
 def render_learnings_and_pivots(report: dict[str, Any]) -> str:
