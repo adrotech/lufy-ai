@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/uninstaller"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
@@ -29,6 +30,8 @@ func Run(args []string, deps Dependencies) int {
 		return runInit(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
+	case "uninstall":
+		return runUninstall(args[1:], deps)
 	case "verify":
 		return runVerify(args[1:], deps)
 	case "backup":
@@ -53,6 +56,36 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runUninstall(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("uninstall", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
+	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
+	keepState := fs.Bool("keep-state", false, "Preservar .lufy-ai/install-state.json")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai uninstall [--target <dir>] [--dry-run] [--yes] [--keep-state]")
+		fmt.Fprintln(deps.Stderr, "Remueve assets gestionados por Lufy con backup previo y preserva archivos user-owned.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "uninstall no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := uninstaller.NewService().Run(uninstaller.Options{Target: *target, DryRun: *dryRun, Yes: *yes, KeepState: *keepState}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runInit(args []string, deps Dependencies) int {
@@ -377,6 +410,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Comandos:")
 	fmt.Fprintln(out, "  init      Genera .opencode/project.yaml stack-aware")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
+	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")

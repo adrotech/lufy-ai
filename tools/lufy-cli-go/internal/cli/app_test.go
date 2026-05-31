@@ -26,6 +26,27 @@ func TestRunInstallDryRun(t *testing.T) {
 	}
 }
 
+func TestRunUninstallRequiresConfirmation(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"uninstall", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("uninstall without yes expected ExitRuntimeErr, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("uninstall requiere --yes")) {
+		t.Fatalf("uninstall confirmation error unexpected: %s", errOut.String())
+	}
+}
+
 func TestRunUnknownCommand(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer

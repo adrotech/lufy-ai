@@ -77,6 +77,7 @@ La CLI expone estos comandos en el slice actual:
 | --- | --- | --- |
 | `lufy-ai init` | Genera `.opencode/project.yaml` con stacks, comandos y reglas editables detectadas del repo destino. | `--target`, `--force`, `--rescan` |
 | `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256, mergea `opencode.json` de forma conservadora y evita sobrescribir drift local. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
+| `lufy-ai uninstall` | Remueve assets gestionados por Lufy solo si no tienen drift local, crea backup previo, preserva `opencode.json` y quita solo la referencia Lufy en `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados, hashes SHA-256 registrados y estructura merge-managed de `opencode.json`. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
