@@ -3,6 +3,7 @@ package opencode
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
@@ -77,7 +78,13 @@ func assertGolden(t *testing.T, name, got string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != string(body) {
-		t.Fatalf("golden mismatch for %s\n--- got ---\n%s\n--- want ---\n%s", name, got, string(body))
+	want := normalizeGoldenLineEndings(string(body))
+	got = normalizeGoldenLineEndings(got)
+	if got != want {
+		t.Fatalf("golden mismatch for %s\n--- got ---\n%s\n--- want ---\n%s", name, got, want)
 	}
+}
+
+func normalizeGoldenLineEndings(value string) string {
+	return strings.ReplaceAll(value, "\r\n", "\n")
 }
