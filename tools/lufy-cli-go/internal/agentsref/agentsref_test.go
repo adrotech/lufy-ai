@@ -108,3 +108,40 @@ func TestInsertReferenceRejectsSymlink(t *testing.T) {
 		t.Fatalf("expected symlink target to be rejected")
 	}
 }
+
+func TestRemoveReferencePreservesUserContent(t *testing.T) {
+	target := t.TempDir()
+	original := "# Existing\n\nKeep this\n" + Reference + "\n\nKeep after\n"
+	if err := os.WriteFile(filepath.Join(target, AgentsFile), []byte(original), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	changed, err := RemoveReference(target)
+	if err != nil {
+		t.Fatalf("RemoveReference() error = %v", err)
+	}
+	if !changed {
+		t.Fatal("RemoveReference() changed = false")
+	}
+	body, err := os.ReadFile(filepath.Join(target, AgentsFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(body)
+	if strings.Contains(got, Reference) {
+		t.Fatalf("reference remained: %q", got)
+	}
+	for _, want := range []string{"# Existing", "Keep this", "Keep after"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("user content %q missing from %q", want, got)
+		}
+	}
+
+	changed, err = RemoveReference(target)
+	if err != nil {
+		t.Fatalf("idempotent RemoveReference() error = %v", err)
+	}
+	if changed {
+		t.Fatal("idempotent RemoveReference() changed = true")
+	}
+}

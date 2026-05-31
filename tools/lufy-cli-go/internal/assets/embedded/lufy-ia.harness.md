@@ -9,8 +9,9 @@ Operational guide for coding agents working in this repository.
 - **Stack**: Fill in your stack without assuming Node/TypeScript unless the repo actually uses it
 - **Routing/CLI/API**: Fill in the relevant entrypoints for this repo
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
-- **Spec workflow**: OpenSpec change artifacts in `openspec/`
-- **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
+- **Tool adapter**: Default installed adapter is `opencode`; future adapters such as Codex or Claude Code must not change the core workflow contract
+- **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/sdd/` when selected
+- **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks, with methodology chosen by tier
 
 ## Source Layout
 
@@ -63,18 +64,25 @@ Run from repository root.
 
 ## OpenSpec Workflow
 
-Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync` and `opsx-archive` for OpenSpec-driven development.
+
+Methodology is tier-aware:
+
+- `openspec/full` or future `lufy-sdd/full` for T1.
+- `openspec/lite` or `lufy-sdd/lite` for T2.
+- `none` is acceptable for T3 when the task is truly express.
 
 ## Proportional SDD Routing
 
-- **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full OpenSpec.
-- **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use `.opencode/templates/sdd-lite.md` or a structured handoff with observable WHEN/THEN criteria.
-- **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough.
+- **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full methodology.
+- **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use lite methodology, `.opencode/templates/sdd-lite.md`, or a structured handoff with observable WHEN/THEN criteria.
+- **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough; methodology may be `none`.
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
+- Include adapter context in substantive handoffs when useful: `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required`, and `execution_mode`.
 
 ## Skill Resolution
 

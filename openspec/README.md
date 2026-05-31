@@ -1,6 +1,6 @@
 # OpenSpec
 
-Workflow de especificación dirigida por specs (SDD) para este proyecto. El flujo ahora se enruta proporcionalmente: T1 Full SDD usa OpenSpec completo, T2 SDD Lite usa mini-spec o handoff estructurado, y T3 Express permite implementación acotada con validación proporcional. Para cambios grandes, el Review Workload Harness ayuda a dividir features en slices revisables por humanos.
+Workflow de especificación dirigida por specs (SDD) para este proyecto. OpenSpec es la metodología principal instalada por el adapter `opencode`, pero Lufy ya permite seleccionar metodología por tier. En la práctica: T1 usa metodología full, T2 usa metodología lite o handoff estructurado, y T3 puede usar `none` cuando la policy lo permite. Para cambios grandes, el Review Workload Harness ayuda a dividir features en slices revisables por humanos.
 
 ## Estructura
 
@@ -37,6 +37,8 @@ Usa los comandos instalados en `.opencode/commands/` y skills de `.opencode/skil
 6. **Verify**: Correr validación final agrupada, incluyendo tests y coverage cuando existan para el alcance real.
 7. **Sync**: Aplicar deltas validados a `openspec/specs/` sin mover el cambio cuando exista delta OpenSpec.
 8. **Archive**: Mover a `openspec/changes/archive/`.
+
+Si el tier usa `lufy-sdd` o `none`, no inventar artefactos OpenSpec. Reportar `methodology_id`, `methodology_mode` y `execution_mode` en el handoff cuando sea relevante.
 
 ## Specs delta core v2
 

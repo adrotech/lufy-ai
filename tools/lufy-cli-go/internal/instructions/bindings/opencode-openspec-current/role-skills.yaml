@@ -1,0 +1,128 @@
+schema_version: lufy-role-skill-binding/v1
+id: opencode-openspec-current
+tool: opencode
+methodology: openspec
+purpose: Map neutral role skill slots to the currently installed OpenCode/OpenSpec skills and paths.
+skill_registry:
+  strategy: index_first_exact_path
+  local_first: true
+skills:
+  methodology.explore:
+    name: openspec-explore
+    path: .opencode/skills/sdd-workflow/openspec-explore/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+    loaded_by:
+      - orchestrator
+      - explorer
+  methodology.propose:
+    name: openspec-propose
+    path: .opencode/skills/sdd-workflow/openspec-propose/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+    loaded_by:
+      - orchestrator
+  methodology.apply:
+    name: openspec-apply-change
+    path: .opencode/skills/sdd-workflow/openspec-apply-change/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+      - T2
+    loaded_by:
+      - orchestrator
+      - implementer
+  methodology.verify:
+    name: openspec-verify-change
+    path: .opencode/skills/sdd-workflow/openspec-verify-change/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+      - T2
+    loaded_by:
+      - orchestrator
+      - validator
+  methodology.sync:
+    name: openspec-sync
+    path: .opencode/skills/sdd-workflow/openspec-sync/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+    loaded_by:
+      - orchestrator
+      - delivery
+  methodology.archive:
+    name: openspec-archive-change
+    path: .opencode/skills/sdd-workflow/openspec-archive-change/SKILL.md
+    category: methodology
+    required_for:
+      - T1
+    loaded_by:
+      - orchestrator
+  delivery.pr_content:
+    name: pr.creator
+    path: .opencode/skills/pr.creator/SKILL.md
+    category: core
+    required_for:
+      - delivery_pr
+    loaded_by:
+      - delivery
+  delivery.git:
+    name: git-delivery
+    path: .opencode/skills/git-delivery/SKILL.md
+    category: optional_project
+    required_for: []
+    loaded_by:
+      - delivery
+    missing_behavior: fallback_to_delivery_policy
+  lufy.onboard:
+    name: lufy.onboard
+    path: .opencode/skills/lufy.onboard/SKILL.md
+    category: tool_command
+    required_for: []
+    loaded_by:
+      - command.lufy.onboard
+  lufy.timereport:
+    name: lufy.timereport
+    path: .opencode/skills/lufy.timereport/SKILL.md
+    category: tool_command
+    required_for: []
+    loaded_by:
+      - command.lufy.timereport
+role_contracts:
+  orchestrator:
+    direct_slots:
+      - methodology.explore
+      - methodology.propose
+      - methodology.apply
+      - methodology.verify
+      - methodology.sync
+      - methodology.archive
+    handoff_rule: pass only exact skill paths required for the selected tier and methodology phase
+  router:
+    direct_slots: []
+    handoff_rule: report skill slots and registry lookup needs without loading methodology skills
+  explorer:
+    direct_slots: []
+    handoff_rule: reference methodology.explore only when the selected methodology requires an exploration artifact
+  implementer:
+    direct_slots: []
+    delegated_slots:
+      - role.test_writer
+    handoff_rule: load methodology.apply context only when working from a methodology-managed task
+  test-writer:
+    direct_slots: []
+    handoff_rule: require stack and validation command metadata before producing TDD evidence
+  validator:
+    direct_slots: []
+    handoff_rule: use methodology.verify only when verification depends on methodology artifacts
+  reviewer:
+    direct_slots: []
+    handoff_rule: consume validation evidence and stack metadata, not methodology skills directly
+  delivery:
+    direct_slots:
+      - delivery.pr_content
+      - delivery.git
+    handoff_rule: delivery.git is optional; delivery.pr_content is used only when creating PR content

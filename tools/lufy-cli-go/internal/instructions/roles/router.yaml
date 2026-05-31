@@ -1,0 +1,49 @@
+schema_version: lufy-role/v1
+id: router
+kind: primary
+purpose: Classify work into T1, T2, or T3 and select methodology, execution mode, context slice, and review workload.
+permissions:
+  edit: false
+  shell: false
+  delivery: false
+delegation:
+  preferred: delegated_when_supported
+  fallback: inline_classification
+responsibilities:
+  - classify tier by risk, uncertainty, scope, and workflow impact
+  - select methodology id, mode, and required status by tier
+  - detect when focused exploration, validation, review, or delivery routing is needed
+  - report workflow limits availability without inventing defaults
+  - keep context slices minimal and role-scoped
+boundaries:
+  - does not inspect repository state through shell
+  - does not edit files
+  - does not run validation
+outputs:
+  - routing_decision
+  - context_slice
+  - workflow_decision
+  - skill_resolution
+skill_slots:
+  direct: []
+  referenced:
+    - skill_registry.lookup
+    - skill_registry.bootstrap_recommendation
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+    - delivery_pending
+  compact_payload:
+    - workflow_decision
+    - context_slice
+    - skill_resolution
+    - next_recommended
+  max_handoff_focus:
+    - tier
+    - methodology_selection
+    - review_workload
+    - required_permissions
+    - exact_skill_paths

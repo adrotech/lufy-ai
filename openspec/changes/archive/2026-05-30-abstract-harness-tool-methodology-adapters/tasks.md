@@ -1,0 +1,59 @@
+## 1. Análisis y propuesta
+
+- [x] Crear rama de trabajo para la propuesta.
+- [x] Revisar estado actual de arquitectura, specs y acoplamientos principales.
+- [x] Crear proposal/design/tasks para el refactor.
+- [x] Crear specs delta para arquitectura de adapters, routing por tier, render de instrucciones y registry de skills.
+- [x] Consolidar plan end-to-end y backlog por etapas para el refactor hexagonal multi-tool.
+
+## 2. Auditoría textual de assets operativos
+
+- [x] Inventariar referencias a OpenCode, `.opencode`, `opencode.json`, OpenSpec, `openspec/` y `/opsx-*` en agentes, subagentes, skills, commands, templates, policies y docs.
+- [x] Clasificar cada referencia como `core`, `tool-binding`, `methodology-binding` o `legacy`.
+- [x] Definir checks automáticos de fugas para roles neutrales y adapters futuros.
+
+## 3. Modelo neutral de roles
+
+- [x] Definir contrato neutral para `orchestrator`, `router`, `delivery`, `explorer`, `implementer`, `test-writer`, `validator` y `reviewer`.
+- [x] Separar responsabilidades principales/subagentes de los detalles de OpenCode y OpenSpec.
+- [x] Definir fallback inline para tools sin subagentes.
+- [x] Definir skill slots neutrales por rol y binding actual a skills OpenCode/OpenSpec.
+- [x] Definir payload compacto de salida por rol para reducir contexto entre agentes.
+- [x] Implementar loader inicial de roles/bindings y resolucion de skills directos por rol.
+
+## 4. Instruction renderer
+
+- [x] Diseñar estructura de templates/bindings para role core, tool binding y methodology binding.
+- [x] Renderizar assets OpenCode/OpenSpec equivalentes a los actuales.
+- [x] Agregar golden tests de salida renderizada.
+- [x] Validar que el output inicial no cambie comportamiento de `lufy-ai install`.
+
+## 5. Adapter registry
+
+- [x] Introducir `ToolAdapter` y `ToolCapabilities`.
+- [x] Mover OpenCode a adapter real inicial.
+- [x] Introducir `MethodologyAdapter`.
+- [x] Mover OpenSpec a methodology adapter real inicial.
+- [x] Implementar methodology `none`.
+- [x] Registrar adapters default y fallar explicitamente ante tool/metodologia no soportada.
+
+## 6. Routing por tier y configuración
+
+- [x] Agregar configuración `methodology_by_tier` con defaults compatibles.
+- [x] Propagar tool/metodología/mode al Result Contract.
+- [x] Bloquear o justificar overrides inseguros de `none` en T1/T2.
+
+## 7. Manifest, sync y verify
+
+- [x] Diseñar manifest v2 compatible con v1.
+- [x] Registrar `tool`, `methodology`, `component` y `scope` por asset.
+- [x] Actualizar `verify`, `status` y `sync` para detectar assets por adapter.
+- [x] Mantener lectura de instalaciones v1 sin romper.
+
+## 8. Validación y documentación
+
+- [x] Actualizar README, architecture, installation, getting-started y backlog.
+- [x] Actualizar assets embebidos si cambia cualquier asset instalable.
+- [x] Ejecutar `scripts/validate.sh`.
+- [x] Ejecutar validación OpenSpec estricta del cambio cuando el CLI esté disponible.
+- [x] Reportar evidencia real, riesgos y estado del programa.

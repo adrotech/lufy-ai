@@ -12,7 +12,7 @@ cd "$CLI_ROOT"
 coverage_file="$(mktemp)"
 trap 'rm -f "$coverage_file"' EXIT
 
-go test ./... -coverpkg=./... -coverprofile="$coverage_file"
+go test ./... -coverprofile="$coverage_file"
 coverage_pct="$(go tool cover -func="$coverage_file" | python3 -c 'import re, sys
 for line in sys.stdin:
     if line.startswith("total:"):

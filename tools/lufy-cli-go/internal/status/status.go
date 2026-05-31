@@ -7,8 +7,10 @@ import (
 	"os"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
 
 type Options struct {
@@ -28,6 +30,8 @@ type Report struct {
 	ToolVersion           string        `json:"toolVersion,omitempty"`
 	ToolCommit            string        `json:"toolCommit,omitempty"`
 	ToolBuildDate         string        `json:"toolBuildDate,omitempty"`
+	Tool                  string        `json:"tool,omitempty"`
+	MethodologyByTier     any           `json:"methodologyByTier,omitempty"`
 	SourceRootFingerprint string        `json:"sourceRootFingerprint,omitempty"`
 	InstalledAt           string        `json:"installedAt,omitempty"`
 	UpdatedAt             string        `json:"updatedAt,omitempty"`
@@ -43,6 +47,9 @@ type AssetDetail struct {
 	Status            string `json:"status"`
 	Policy            string `json:"policy,omitempty"`
 	Scope             string `json:"scope,omitempty"`
+	Tool              string `json:"tool,omitempty"`
+	Methodology       string `json:"methodology,omitempty"`
+	Component         string `json:"component,omitempty"`
 	Expected          string `json:"expected,omitempty"`
 	Actual            string `json:"actual,omitempty"`
 	LufyNew           string `json:"lufyNew,omitempty"`
@@ -114,7 +121,7 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	}
 	report := Report{TargetRoot: resolved, OK: true, Scope: string(scope)}
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		globalRoot, err := toolruntime.GlobalRoot(domain.ToolInitialDefault)
 		if err != nil {
 			return Report{}, err
 		}
@@ -133,12 +140,14 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	report.ToolVersion = st.ToolVersion
 	report.ToolCommit = st.ToolCommit
 	report.ToolBuildDate = st.ToolBuildDate
+	report.Tool = string(st.Tool)
+	report.MethodologyByTier = st.MethodologyByTier
 	report.SourceRootFingerprint = st.SourceRootFingerprint
 	report.InstalledAt = st.InstalledAt
 	report.UpdatedAt = st.UpdatedAt
 	report.Assets = len(st.Assets)
 	for _, asset := range st.Assets {
-		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Expected: asset.TargetSHA256}
+		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Tool: asset.Tool, Methodology: asset.Methodology, Component: asset.Component, Expected: asset.TargetSHA256}
 		path, err := platform.SafeJoin(resolved, asset.TargetRel)
 		if err != nil {
 			report.Errors++

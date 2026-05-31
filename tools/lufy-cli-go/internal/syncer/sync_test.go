@@ -11,8 +11,11 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
 
 func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
@@ -85,6 +88,40 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	}
 	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
 		t.Fatalf("lufy-new content mismatch: %q", got)
+	}
+}
+
+func TestRunLufyNewCanBeResolvedByMergerAcceptTheirs(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(sync lufy-new) error = %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("sync lufy-new content mismatch: %q", got)
+	}
+
+	var out bytes.Buffer
+	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
+		t.Fatalf("merge accept-theirs error = %v", err)
+	}
+	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("merge did not accept sync .lufy-new: %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("merge did not remove sync .lufy-new, stat err=%v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset := st.AssetMap()["tui.json"]
+	if asset.LastAction != "merge-accept-theirs" || asset.TargetSHA256 != asset.SourceSHA256 || asset.AncestorHash != asset.TargetSHA256 {
+		t.Fatalf("merge did not refresh synced asset state: %#v", asset)
 	}
 }
 
@@ -426,6 +463,47 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	}
 }
 
+func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
+	writeFile(t, filepath.Join(source, ".lufy", "sdd", "README.md"), "new lufy-sdd should stay unselected\n")
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(default upgrade sync) error = %v, output=%s", err, out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("default sync should not create .lufy/sdd, stat err=%v", err)
+	}
+
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("synced tool = %s", st.Tool)
+	}
+	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
+		t.Fatalf("synced T1 methodology = %#v", got)
+	}
+	if st.AssetMap()["lufy-ia.harness.md"].LastAction != "sync-update-managed" {
+		t.Fatalf("existing harness asset was not updated: %#v", st.AssetMap()["lufy-ia.harness.md"])
+	}
+	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "sdd")) {
+		t.Fatalf("default sync should not register lufy-sdd assets: %#v", st.Assets)
+	}
+
+	var verifyOut bytes.Buffer
+	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true}, &verifyOut); err != nil {
+		t.Fatalf("verify after default sync error = %v, output=%s", err, verifyOut.String())
+	}
+	if !strings.Contains(verifyOut.String(), "ok: verify estructural completo") {
+		t.Fatalf("verify after default sync output unexpected: %s", verifyOut.String())
+	}
+}
+
 func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -572,6 +650,17 @@ func hasSyncConflict(conflicts []Conflict, path, reasonPart string) bool {
 	return false
 }
 
+func hasSyncedTargetPrefix(st *state.InstallState, prefix string) bool {
+	normalizedPrefix := filepath.ToSlash(prefix)
+	for _, asset := range st.Assets {
+		target := filepath.ToSlash(asset.TargetRel)
+		if target == normalizedPrefix || strings.HasPrefix(target, normalizedPrefix+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 func chdirForTest(t *testing.T, dir string) {
 	t.Helper()
 	previous, err := os.Getwd()
@@ -613,6 +702,11 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+		filepath.Join(".lufy", "sdd", "README.md"):                     "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):           "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):         "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):             "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):      "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {

@@ -10,9 +10,11 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
 
 type Options struct {
@@ -25,19 +27,22 @@ type Options struct {
 	AllowCatalogNewAssets bool
 	AllowMissingAgentsRef bool
 	Scope                 assets.Scope
+	ExpectedTool          domain.ToolID
 }
 
 type Report struct {
-	OK            bool    `json:"ok"`
-	TargetRoot    string  `json:"targetRoot"`
-	Scope         string  `json:"scope,omitempty"`
-	GlobalRoot    string  `json:"globalRoot,omitempty"`
-	SchemaVersion int     `json:"schemaVersion,omitempty"`
-	Assets        int     `json:"assets,omitempty"`
-	Failures      int     `json:"failures"`
-	Warnings      int     `json:"warnings"`
-	Infos         int     `json:"infos"`
-	Checks        []Check `json:"checks"`
+	OK                bool    `json:"ok"`
+	TargetRoot        string  `json:"targetRoot"`
+	Scope             string  `json:"scope,omitempty"`
+	GlobalRoot        string  `json:"globalRoot,omitempty"`
+	SchemaVersion     int     `json:"schemaVersion,omitempty"`
+	Tool              string  `json:"tool,omitempty"`
+	MethodologyByTier any     `json:"methodologyByTier,omitempty"`
+	Assets            int     `json:"assets,omitempty"`
+	Failures          int     `json:"failures"`
+	Warnings          int     `json:"warnings"`
+	Infos             int     `json:"infos"`
+	Checks            []Check `json:"checks"`
 }
 
 type Check struct {
@@ -67,14 +72,12 @@ var fallbackRequiredManagedFiles = []string{
 	agentsref.HarnessFile,
 	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
 	"tui.json",
-	filepath.Join("openspec", "config.yaml"),
-	filepath.Join("openspec", "UPSTREAM.json"),
 }
 
 var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
 
 var jsonValidationFiles = []string{
-	config.OpenCodeFile,
+	toolruntime.OpenCodeProjectConfigFile,
 	"tui.json",
 	filepath.Join(".opencode", "package.json"),
 	filepath.Join(".opencode", "package-lock.json"),
@@ -92,7 +95,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	report := Report{TargetRoot: target, Scope: string(scope)}
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err := platform.ResolveOpenCodeConfigRoot()
+		tool := opts.ExpectedTool
+		if tool == "" {
+			tool = domain.ToolInitialDefault
+		}
+		globalRoot, err := toolruntime.GlobalRoot(tool)
 		if err != nil {
 			return err
 		}
@@ -153,9 +160,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	}
 	report.SchemaVersion = st.SchemaVersion
+	report.Tool = string(st.Tool)
+	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
+	if opts.ExpectedTool != "" && st.Tool != opts.ExpectedTool {
+		emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
+	}
 	assetMap := st.AssetMap()
-	requiredDirs, requiredManagedFiles := catalogRequirements(assetMap)
+	requiredDirs, requiredManagedFiles := catalogRequirements(st)
 	if opts.Verbose {
 		emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
@@ -184,12 +196,15 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 	}
 	if opts.Deep {
-		runDeepVerify(target, emit)
+		runDeepVerify(st.Tool, target, emit)
 	}
-	if status, err := config.NewService().ValidateManagedStructure(target); err != nil {
-		emit("fail", "", "estructura gestionada inválida en %s: %s", config.OpenCodeFile, err.Error())
-	} else if status.Exists {
-		emit("ok", config.OpenCodeFile, "estructura merge-managed")
+	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
+	if err != nil {
+		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+	} else if exists, err := toolruntime.ValidateProjectConfig(st.Tool, target); err != nil {
+		emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
+	} else if exists {
+		emit("ok", projectConfigFile, "estructura merge-managed")
 	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
@@ -313,8 +328,9 @@ func verifyAgentsReference(target string, allowMissing bool, emitAsset func(leve
 	emitAsset("ok", agentsref.AgentsFile, "user-owned-reference", "", "referencia %s presente", agentsref.Reference)
 }
 
-func catalogRequirements(assetMap map[string]state.AssetState) ([]string, []string) {
-	catalog, err := currentCatalog()
+func catalogRequirements(st *state.InstallState) ([]string, []string) {
+	assetMap := st.AssetMap()
+	catalog, err := currentCatalogForHarness(domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier})
 	if err != nil {
 		return fallbackRequiredDirs, fallbackRequiredManagedFiles
 	}
@@ -355,6 +371,14 @@ func currentCatalog() (assets.Catalog, error) {
 	return assets.BuildEmbeddedCatalog()
 }
 
+func currentCatalogForHarness(harness domain.HarnessConfig) (assets.Catalog, error) {
+	catalog, err := currentCatalog()
+	if err != nil {
+		return assets.Catalog{}, err
+	}
+	return harnesscatalog.Effective(catalog, harness)
+}
+
 func sortedKeys(values map[string]bool) []string {
 	out := make([]string, 0, len(values))
 	for value := range values {
@@ -393,9 +417,15 @@ func validateJSONFile(target, rel string) (string, error) {
 	return "ok", nil
 }
 
-func runDeepVerify(target string, emit func(level, path, format string, args ...any)) {
-	validatePluginConfig(target, "tui.json", emit)
-	validatePluginConfig(target, config.OpenCodeFile, emit)
+func runDeepVerify(tool domain.ToolID, target string, emit func(level, path, format string, args ...any)) {
+	files, err := toolruntime.PluginConfigFiles(tool)
+	if err != nil {
+		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+		return
+	}
+	for _, rel := range files {
+		validatePluginConfig(target, rel, emit)
+	}
 }
 
 func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {

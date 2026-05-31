@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -12,10 +13,12 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
 
@@ -26,6 +29,7 @@ type Options struct {
 	NoEngram bool
 	Backup   bool
 	Scope    assets.Scope
+	Harness  domain.HarnessConfig
 }
 
 type Action struct {
@@ -58,6 +62,7 @@ type Plan struct {
 	Previous   *state.InstallState
 	Scope      assets.Scope
 	GlobalRoot string
+	Harness    domain.HarnessConfig
 	Actions    []Action
 	Conflicts  []Conflict
 }
@@ -142,9 +147,16 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	harness := opts.Harness.WithDefaults()
+	if err := harness.ValidateSupported(); err != nil {
+		return Plan{}, err
+	}
+	if err := harness.MethodologyByTier.ValidateRoutingPolicy(domain.RoutingPolicyOptions{}); err != nil {
+		return Plan{}, err
+	}
 	globalRoot := ""
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err = platform.ResolveOpenCodeConfigRoot()
+		globalRoot, err = toolruntime.GlobalRoot(harness.Tool)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -162,6 +174,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	catalog, err = harnesscatalog.Effective(catalog, harness)
+	if err != nil {
+		return Plan{}, err
+	}
 	previous, err := state.Load(target)
 	if err != nil {
 		return Plan{}, err
@@ -171,7 +187,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		previousAssets = previous.AssetMap()
 	}
 
-	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot}
+	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot, Harness: harness}
 	seenDirs := map[string]bool{}
 	for _, asset := range catalog.Assets {
 		if asset.Kind == assets.KindDir {
@@ -308,14 +324,14 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			}
 		}
 	}
-	configPlan, err := config.NewService().Plan(config.Options{TargetRoot: target, NoEngram: opts.NoEngram})
+	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target, opts.NoEngram)
 	if err != nil {
 		return Plan{}, err
 	}
-	if configPlan.Action == "merge-json" && fileExists(filepath.Join(target, config.OpenCodeFile)) {
-		plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: config.OpenCodeFile, Reason: "opencode.json existente será mergeado", Risk: "medium"})
+	if configPlan.Action == "merge-json" && fileExists(filepath.Join(target, configPlan.File)) {
+		plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: configPlan.File, Reason: "opencode.json existente será mergeado", Risk: "medium"})
 	}
-	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: config.OpenCodeFile, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
+	plan.Actions = append(plan.Actions, Action{Kind: configPlan.Action, Target: configPlan.File, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
 	plan.Actions = append(plan.Actions, Action{Kind: "verify", Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
 		order := map[string]int{"mkdir": 0, "backup": 1, "copy": 2, "update-managed": 3, "merge-block": 4, "adopt-merge-block": 5, "write-lufy-new": 6, "agents-reference-create": 7, "agents-reference-insert": 8, "merge-json": 9, "verify": 10, "agents-reference-skip": 11, "skip": 12}
@@ -391,7 +407,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
 		case "merge-json":
-			if _, err := config.NewService().Ensure(config.Options{TargetRoot: plan.TargetRoot, NoEngram: plan.NoEngram}); err != nil {
+			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot, plan.NoEngram); err != nil {
 				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
@@ -406,7 +422,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 		case "skip", "backup", "agents-reference-skip":
 		}
 	}
-	if plan.Previous != nil && !hasContentMutation(plan.Actions) {
+	if plan.Previous != nil && !hasContentMutation(plan.Actions) && !harnessConfigChanged(plan.Previous, plan.Harness) {
 		if err := runPostInstallVerify(plan, stdout); err != nil {
 			return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 		}
@@ -421,7 +437,7 @@ func (s Service) applyInstall(plan Plan, stdout io.Writer) error {
 	if err != nil {
 		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
-	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
+	st := state.NewWithHarness(plan.TargetRoot, plan.Previous, assetStates, fingerprint, plan.Harness)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
@@ -484,6 +500,15 @@ func hasContentMutation(actions []Action) bool {
 	return false
 }
 
+func harnessConfigChanged(previous *state.InstallState, current domain.HarnessConfig) bool {
+	if previous == nil {
+		return true
+	}
+	prev := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
+	next := current.WithDefaults()
+	return !reflect.DeepEqual(prev, next)
+}
+
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
@@ -542,7 +567,7 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 		if action == "" {
 			action = "record"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), InstalledAt: now, LastAction: action}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, InstalledAt: now, LastAction: action}
 		if prev, ok := previous[asset.TargetRel]; ok {
 			assetState.InstalledAt = prev.InstalledAt
 			assetState.AncestorRel = prev.AncestorRel

@@ -1,0 +1,46 @@
+schema_version: lufy-role/v1
+id: reviewer
+kind: subagent
+purpose: Review implementation quality, risk, coverage, maintainability, and release readiness.
+permissions:
+  edit: false
+  shell: read_only
+  delivery: false
+delegation:
+  preferred: delegated_when_supported
+  fallback: inline_review
+responsibilities:
+  - prioritize correctness, regressions, security, missing tests, and maintainability risks
+  - ground findings in files, behavior, and evidence
+  - distinguish blocking findings from follow-ups
+  - keep review scope aligned with the routed slice
+boundaries:
+  - does not edit files
+  - does not perform delivery
+  - does not approve closure when validation or delivery evidence is missing
+outputs:
+  - findings
+  - residual_risks
+  - merge_readiness
+skill_slots:
+  direct: []
+  referenced:
+    - stack_config.lookup
+    - validation.evidence
+    - delivery.readiness
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - ready
+    - blocked
+    - escalated
+  compact_payload:
+    - evidence.static.review
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - findings_by_severity
+    - score_summary
+    - missing_tests
+    - release_risk
+    - merge_readiness

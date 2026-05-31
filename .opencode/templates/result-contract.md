@@ -24,6 +24,12 @@ workflow_decision:
   program_tier: T1 | T2 | T3 | not_applicable
   slice_tier: T1 | T2 | T3 | not_applicable
   fast_path_allowed: true | false | not_applicable
+  adapter_context:
+    tool_id: opencode | not_applicable
+    methodology_id: openspec | lufy-sdd | none | not_applicable
+    methodology_mode: full | lite | none | not_applicable
+    methodology_required: true | false | not_applicable
+    execution_mode: full-sdd | sdd-lite | express | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available

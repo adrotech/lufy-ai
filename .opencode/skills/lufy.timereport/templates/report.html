@@ -3,22 +3,79 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LUFY Time Report</title>
+  <title>LUFY Developer Impact Report</title>
   <style>
-    :root { color-scheme: dark; --bg: #0f1220; --panel: #171b2e; --text: #eef2ff; --muted: #a8b0d0; --accent: #8bd5ff; --ok: #b6f09c; --warn: #ffd580; }
-    body { margin: 0; font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
-    main { max-width: 1120px; margin: 0 auto; padding: 32px 20px; }
-    header, section { background: var(--panel); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
-    h1, h2 { margin: 0 0 12px; }
+    :root {
+      color-scheme: light;
+      --bg: #fbfbfa;
+      --page: #ffffff;
+      --text: #37352f;
+      --muted: #787774;
+      --faint: #9b9a97;
+      --line: #e9e9e7;
+      --hover: #f1f1ef;
+      --tint: #f6f5f4;
+      --blue: #2383e2;
+      --blue-bg: #f2f9ff;
+      --green-bg: #edf7f2;
+      --orange-bg: #fdf3e7;
+      --red-bg: #fdebec;
+      --purple-bg: #f6f0fb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main { max-width: 1080px; margin: 0 auto; padding: 44px 28px 64px; }
+    header { margin-bottom: 30px; }
+    section { border-top: 1px solid var(--line); padding: 24px 0; }
+    h1 { margin: 0 0 10px; font-size: 40px; line-height: 1.12; letter-spacing: 0; font-weight: 750; }
+    h2 { margin: 0 0 14px; font-size: 22px; line-height: 1.25; letter-spacing: 0; font-weight: 700; }
+    h3 { margin: 18px 0 8px; font-size: 15px; letter-spacing: 0; }
+    p { margin: 8px 0; }
     .muted { color: var(--muted); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .card { background: rgba(255,255,255,.045); border-radius: 12px; padding: 14px; }
-    .metric { font-size: 24px; font-weight: 700; color: var(--accent); }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
-    th { color: var(--muted); font-weight: 600; }
-    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: rgba(139,213,255,.14); color: var(--accent); margin: 2px 4px 2px 0; }
-    .warn { color: var(--warn); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .card {
+      background: var(--page);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      min-height: 74px;
+    }
+    .metric { margin-top: 4px; font-size: 20px; font-weight: 700; color: var(--text); }
+    .property-table td:first-child { width: 180px; color: var(--muted); }
+    .table-wrap { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--page); }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { text-align: left; vertical-align: top; padding: 9px 11px; border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    th { color: var(--muted); font-size: 12px; font-weight: 600; background: var(--tint); }
+    .pill {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--tint);
+      color: var(--text);
+      margin: 2px 4px 2px 0;
+      border: 1px solid var(--line);
+    }
+    .callout {
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      background: var(--tint);
+      border: 1px solid var(--line);
+    }
+    .callout.blue { background: var(--blue-bg); }
+    .callout.green { background: var(--green-bg); }
+    .callout.orange { background: var(--orange-bg); }
+    .callout.purple { background: var(--purple-bg); }
+    .callout-title { font-weight: 650; margin-bottom: 4px; }
+    .warn { color: #a35f00; }
+    ul { margin: 8px 0 0; padding-left: 22px; }
+    code { background: var(--tint); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; }
   </style>
 </head>
 <body>

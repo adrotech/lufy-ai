@@ -1,212 +1,280 @@
 # lufy-cli-go
 
-CLI Go del instalador de `lufy-ai`, ubicada en carpeta dedicada para separar runtime/infra del resto de assets del kit. El binario instala el harness OpenCode/OpenSpec vigente, incluyendo `sdd-router`, templates T2/result, Review Workload Harness, policies y comandos gestionados.
+CLI Go canónica de `lufy-ai`. Vive en `tools/lufy-cli-go` y reemplaza la lógica histórica del instalador Bash. `scripts/install.sh` solo delega en `lufy-ai install`; no debe reintroducir fallback legacy.
 
 ## Propósito
 
-- Reemplazar la lógica de `scripts/install.sh` con una implementación tipada y testeable.
-- Mantener compatibilidad de entrada durante la transición: Bash queda como wrapper estricto de `lufy-ai install`, sin fallback legacy.
+- Instalar y mantener el harness en repositorios existentes.
+- Gestionar assets con manifest, hashes SHA-256, backups y restore.
+- Separar core de harness, tool adapters y methodology adapters.
+- Permitir upgrades, sync y uninstall sin pisar trabajo local.
+- Exponer validación estructural reproducible para usuarios y CI.
 
 ## Estructura
 
 ```text
 tools/lufy-cli-go/
   cmd/lufy-ai/main.go        # entrypoint delgado
-  internal/cli/              # parser/dispatch y códigos de salida
-  internal/assets/           # catálogo de assets gestionados y hashing SHA-256
-  internal/installer/        # plan y ejecución idempotente de install
-  internal/platform/         # resolución portable (source, target, engram)
-  internal/projectconfig/    # scanner stack-aware y .opencode/project.yaml
-  internal/state/            # .lufy-ai/install-state.json versionado
-  internal/backup/           # backup/restore multiasset con manifest.json
-  internal/syncer/           # sync seguro de assets gestionados con hash/backup
-  internal/verify/           # verify estructural de manifest, hashes y configs merge-managed
-  internal/config/           # planificación/merge/validación de opencode.json
-  internal/version/          # metadata de release y comando lufy-ai version
+  internal/cli/              # parser, dispatch y exit codes
+  internal/core/domain/      # modelos neutrales: tiers, roles, methodology_by_tier
+  internal/adapters/         # adapters de tool y metodología
+  internal/instructions/     # role contracts, skills y render neutral
+  internal/assets/           # catálogo, go:embed, policies y SHA-256
+  internal/state/            # .lufy-ai/install-state.json schema v1/v2
+  internal/installer/        # install planner/apply idempotente
+  internal/uninstaller/      # uninstall planner/apply con backup y drift guard
+  internal/syncer/           # sync conservador por manifest/hash
+  internal/status/           # estado humano/JSON y drift
+  internal/verify/           # verify estructural y deep checks
+  internal/backup/           # backup/restore multiasset
+  internal/config/           # merge conservador de opencode.json
+  internal/projectconfig/    # init/rescan de .opencode/project.yaml
+  internal/opsx/             # resolución OpenSpec PATH/cache/embedded
+  internal/platform/         # path safety, locks y resolución portable
+  internal/version/          # metadata de release
 ```
 
-## Comandos locales
+## Build y test local
 
-Ejecutar desde `tools/lufy-cli-go/`:
+Desde `tools/lufy-cli-go/`:
 
-- Build:
-  - Recomendado para generar el binario consumido por el wrapper: `mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
-  - Validación rápida tolerada: `go build ./cmd/lufy-ai` (genera `./lufy-ai`, ignorado como artefacto local)
-- Test:
-  - `go test ./...`
-- Run (ejemplo dry-run seguro):
-  - `go run ./cmd/lufy-ai install --target . --dry-run --yes --no-engram`
-- Version local:
-  - `go run ./cmd/lufy-ai version` (sin metadata de linker reporta `development build`)
-- Init stack-aware:
-  - `go run ./cmd/lufy-ai init --target <proyecto>`
-- Sync (revisar plan sin escribir):
-  - `go run ./cmd/lufy-ai sync --target <proyecto-instalado> --dry-run --yes --no-engram`
+```bash
+mkdir -p bin
+go build -o bin/lufy-ai ./cmd/lufy-ai
+go test ./...
+go run ./cmd/lufy-ai version
+```
 
-## Releases binarios y bootstrap
+Desde la raíz del repo:
 
-La CLI puede compilarse como artifact standalone con assets gestionados embebidos vía `go:embed`; esto permite que `lufy-ai install --target <dir>` funcione desde un binario distribuido sin leer el checkout fuente. Si el binario se ejecuta dentro de un checkout válido, puede usar assets locales para desarrollo; fuera de ese contexto usa el catálogo embebido.
+```bash
+scripts/validate.sh
+```
 
-El flujo de publicación está preparado en `.github/workflows/release.yml` y requiere un contexto autorizado:
-
-- `develop` es la rama normal de integración para cambios de la CLI;
-- `main` es la rama estable/productiva y recibe promociones desde `develop`;
-- tags `v*` creados sobre commits alcanzables desde `origin/main` construyen artifacts versionados y pueden publicar GitHub Release;
-- tags `v*` sobre commits no promovidos a `main` fallan antes de publicar assets;
-- mientras no exista un tag/release `v*`, no hay release pública consumible por usuarios.
-
-Scripts relacionados:
-
-| Script | Uso |
-| --- | --- |
-| `scripts/build-release-artifacts.sh <version>` | Construye artifacts determinísticos para darwin/linux/windows soportados e inyecta `Version`, `Commit` y `BuildDate` con linker flags. |
-| `scripts/smoke-release-artifacts.sh` | Genera fixtures locales, recalcula checksums, ejecuta `lufy-ai version`, `install --dry-run`, instalación temporal y `verify` con el artifact del runner. |
-| `../../scripts/bootstrap.sh` | Bootstrap remoto seguro: detecta OS/arch, descarga artifact/checksums de una release, verifica SHA-256 e instala solo el binario en el directorio elegido. |
-| `scripts/smoke-bootstrap.sh` | Valida bootstrap con fixtures `file://`, incluyendo dry-run, checksum correcto y bloqueo por checksum incorrecto. |
-
-El bootstrap soporta `--version vX.Y.Z` o `LUFY_AI_VERSION`; `--version latest` existe como conveniencia no reproducible. Para automatización se recomienda siempre una versión fija. También soporta `--install-dir`/`LUFY_AI_INSTALL_DIR` y falla con mensaje accionable si el destino no es escribible. Si el directorio instalado no está en `PATH`, muestra instrucciones para bash/zsh y fish sin modificar archivos de shell automáticamente. No ejecuta comandos destructivos como `lufy-ai install` contra un target de proyecto. Ver la guía de usuario en [`../../docs/installation.md`](../../docs/installation.md).
+`scripts/validate.sh` es el gate agrupado preferido. No hay toolchain Node/TS global en la raíz.
 
 ## Comandos de usuario
 
-La CLI expone estos comandos en el slice actual:
-
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai init` | Genera `.opencode/project.yaml` con stacks, comandos y reglas editables detectadas del repo destino. | `--target`, `--force`, `--rescan` |
-| `lufy-ai install` | Instala assets gestionados, escribe estado con SHA-256, mergea `opencode.json` de forma conservadora y evita sobrescribir drift local. | `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
-| `lufy-ai verify` | Verificador canónico de instalación: valida categorías críticas, `.lufy-ai/install-state.json`, manifest, existencia de assets gestionados, hashes SHA-256 registrados y estructura merge-managed de `opencode.json`. | `--target`, `--no-engram` |
+| `lufy-ai init` | Genera `.opencode/project.yaml` stack-aware y editable. | `--target`, `--force`, `--rescan` |
+| `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
+| `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
+| `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
+| `lufy-ai status` | Resume instalación, drift, faltantes y errores. | `--target`, `--scope`, `--json`, `--verbose` |
+| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, `--no-engram` |
+| `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
-| `lufy-ai restore` | Restaura desde un backup validando `targetRoot`, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes` |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local; aplica `merge-json` para `opencode.json` cuando corresponde. | `--target`, `--dry-run`, `--yes`, `--no-engram` |
-| `lufy-ai version` | Muestra versión semántica, commit, fecha de build, GOOS y GOARCH; los builds sin metadata se marcan como `development build`. | n/a |
+| `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
+| `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. | `--to`, `--dry-run` |
+| `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH. | n/a |
 
-`lufy-ai init` detecta stacks y genera configuración local editable, pero no instala templates por stack ni cambia todavía el comportamiento de agentes consumidores. Los templates instalables actuales siguen siendo templates de proceso del harness: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
+## Selección de harness
 
-### `.opencode/project.yaml`
+El adapter escribible actual es `opencode`.
 
-El archivo generado por `lufy-ai init` es configuración user-managed del repositorio destino. No se registra como asset completo en `.lufy-ai/install-state.json` ni se sincroniza por hash como parte de `install`/`sync`.
+```bash
+lufy-ai install --target <repo> --yes --no-engram
+lufy-ai install --target <repo> --tool opencode --yes --no-engram
+```
+
+Adapters no escribibles todavía:
+
+- `codex`;
+- `claude-code`.
+
+Ambos existen como dry-run/preview para modelar capabilities y superficies futuras, pero los comandos mutantes los bloquean.
+
+## Methodology por tier
+
+`install` acepta overrides repetibles:
+
+```bash
+lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
+```
+
+Reglas actuales:
+
+- `openspec` puede instalar superficie full/lite;
+- `lufy-sdd` instala `.lufy/sdd/` como superficie inicial;
+- `none` se permite donde la policy lo habilita;
+- `T1:none` y `T2:none` están bloqueados en comandos mutantes.
+
+`verify --tool opencode`, `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
+
+## Managed assets
+
+El catálogo gestiona assets completos y assets merge-managed.
+
+Assets completos típicos:
+
+- `.opencode/agents`;
+- `.opencode/commands`;
+- `.opencode/skills`;
+- `.opencode/templates`;
+- `.opencode/policies`;
+- `.opencode/plugins`;
+- `.opencode/agent-observatory`;
+- `lufy-ia.harness.md`;
+- `tui.json`;
+- `openspec/`;
+- `.lufy/sdd/` cuando aplica.
+
+Assets user-owned o merge-managed:
+
+- `AGENTS.md`: solo referencia `@lufy-ia.harness.md`;
+- `opencode.json`: merge conservador;
+- `.opencode/project.yaml`: creado por `init`, no sincronizado por hash.
+
+`.lufy-ai/install-state.json` schema v2 registra:
+
+- `tool`;
+- `methodologyByTier`;
+- ownership por asset;
+- policy;
+- scope;
+- source/target SHA-256;
+- ancestors cuando aplica.
+
+## Install
+
+`install`:
+
+1. resuelve target y source;
+2. construye plan;
+3. respeta `--dry-run`;
+4. crea backups cuando corresponde;
+5. copia o actualiza assets gestionados sin drift;
+6. mergea `opencode.json`;
+7. inserta referencia en `AGENTS.md`;
+8. escribe `.lufy-ai/install-state.json`;
+9. ejecuta verify estructural posterior.
+
+Si hay drift bloqueante, no sobrescribe aunque `--yes` esté presente.
+
+## Uninstall
+
+`uninstall`:
+
+1. lee `.lufy-ai/install-state.json`;
+2. planifica remoción de assets gestionados;
+3. bloquea si algún asset tiene drift local;
+4. crea backup previo;
+5. elimina archivos managed y ancestors sin drift;
+6. remueve solo `@lufy-ia.harness.md` de `AGENTS.md`;
+7. preserva `opencode.json`;
+8. elimina `install-state.json` salvo `--keep-state`;
+9. limpia directorios vacíos sin borrar directorios con contenido user-owned.
+
+Ejemplo:
+
+```bash
+lufy-ai uninstall --target <repo> --dry-run
+lufy-ai uninstall --target <repo> --yes
+lufy-ai install --target <repo> --yes --no-engram
+lufy-ai verify --target <repo> --no-engram --quiet
+```
+
+## Sync
+
+`sync` reaplica assets gestionados ya registrados.
+
+- Requiere manifest existente.
+- Requiere `--yes` para mutaciones reales.
+- Crea backup antes de updates.
+- Bloquea estado ausente/corrupto, drift local y paths inseguros.
+- Trata `opencode.json` como `merge-json`.
+
+## Verify y status
+
+`verify` valida:
+
+- manifest parseable y schema compatible;
+- target root;
+- paths críticos;
+- assets registrados;
+- hashes SHA-256;
+- JSON de `opencode.json`, `tui.json`, `.opencode/package*.json` y `openspec/UPSTREAM.json`;
+- referencia `@lufy-ia.harness.md`;
+- tool esperada cuando se pasa `--tool`;
+- referencias de plugins con `--deep`.
+
+`status` resume lo mismo con foco operativo y puede emitir JSON.
+
+## `.opencode/project.yaml`
+
+`lufy-ai init` crea configuración stack-aware user-managed.
 
 Comportamiento:
 
-- `lufy-ai init --target <repo>` crea `.opencode/project.yaml` si no existe.
-- Si el archivo existe, el comando falla sin sobrescribir.
-- `--force` reemplaza el archivo con una detección nueva.
-- `--rescan` compara la configuración existente con la evidencia actual, reporta drift por stack/tooling/CI/stale, fusiona solo campos detectados seguros y preserva overrides como `coverage_threshold`, `anti_patterns`, `workflow_limits` y campos desconocidos; si detecta `loc_budget` o `delivery_strategy` top-level los reporta como legacy no canónico; si no hay drift, no reescribe el archivo.
-- Stacks soportados v1: Go, JavaScript/TypeScript con frameworks React/Next/Remix/Vue/Svelte, Python y Java/Kotlin.
-- Stacks conocidos no soportados, como Rust, se emiten con `supported: false` y placeholders editables.
+- si no existe, crea `.opencode/project.yaml`;
+- si existe, falla sin `--force`;
+- `--force` reemplaza;
+- `--rescan` preserva overrides y agrega evidencia nueva;
+- `workflow_limits` es la fuente canónica de límites.
 
-## Assets gestionados, SHA-256 e idempotencia
+Stacks v1: Go, JavaScript/TypeScript, React, Next, Remix, Vue, Svelte, Python, Java/Kotlin. Stacks no soportados se reportan como `supported: false`.
 
-`install`, `verify` y `sync` consumen el catálogo de assets gestionados y el estado `.lufy-ai/install-state.json`. El catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `.opencode/README.md`, `AGENTS.md`, `tui.json` y `openspec`. `lufy-ai verify` es el verificador canónico; no existe ni se planea un `scripts/verify-install.sh` paralelo. Cada asset registrado conserva hashes SHA-256 de source/target para distinguir estos casos:
+## Release y bootstrap
 
-- `skip`: el target ya coincide con el estado gestionado.
-- `create`: el asset gestionado aún no existe y puede crearse.
-- `update-managed`: el source cambió, el target sigue sin drift local y se puede actualizar con backup previo.
-- `conflict`: existe contenido sin estado previo o el target no coincide con el último hash gestionado; la CLI no sobrescribe aunque `--yes` esté presente.
+La CLI se distribuye como binario standalone con assets embebidos por `go:embed`.
 
-Las escrituras bloquean paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
+Release:
 
-### `opencode.json` como `merge-json`
+- artifacts por OS/arch;
+- checksums SHA-256;
+- SBOM/provenance/firma cuando el workflow corre;
+- tags `v*` solo sobre commits alcanzables desde `origin/main`.
 
-`opencode.json` no se trata como asset completo gestionado por hash porque puede contener proveedores, modelos, MCPs o claves locales del proyecto destino. En `install` y `sync`, la CLI usa una estrategia especial `merge-json`:
-
-- crea el archivo cuando falta con estructura OpenCode mínima;
-- preserva claves desconocidas existentes del usuario;
-- agrega/actualiza solo claves gestionadas por `lufy-ai` (`$schema`, `plugin` e integración Engram cuando aplica);
-- falla sin sobrescribir si el JSON existente es inválido, para que el usuario lo corrija o respalde explícitamente;
-- no registra `opencode.json` en `.lufy-ai/install-state.json` como asset completo con `targetSHA256`.
-
-`lufy-ai verify` valida que `opencode.json` sea JSON parseable y contenga la estructura merge-managed mínima, pero no exige una entrada de hash para ese archivo en el manifest de instalación.
-
-## Sync de assets gestionados
-
-`lufy-ai sync` reaplica assets del catálogo gestionado sobre un target ya instalado usando `.lufy-ai/install-state.json` y hashes SHA-256. Está diseñado para actualizar solo archivos previamente gestionados y sin drift local.
-
-- `--target <dir>` apunta al proyecto instalado; por defecto usa `.`.
-- `--dry-run` usa el planner real y no crea backups, no copia archivos ni escribe estado.
-- `--yes` es obligatorio para aplicar mutaciones reales (`backup` + `update-managed`).
-- `--no-engram` mantiene el flujo portable sin requerir Engram instalado.
-- Archivos no gestionados, drift local, estado ausente/corrupto y symlinks/escapes de path bloquean la mutación.
-- `opencode.json` se planifica como `merge-json`: puede requerir backup si existe y será mergeado, pero no aparece como `copy`/`update-managed` ni se registra por hash completo.
-- Antes de actualizar assets gestionados, sync crea backup bajo `.lufy-ai/backups/<timestamp>/manifest.json` con causa `sync`; si falla después del backup, el error incluye guía de `restore`.
-
-## Cómo validar localmente
-
-El gate mínimo de CI para esta CLI no usa comandos Node/TS de raíz (`npm test`, `tsc`, etc.) ni requiere Engram instalado. Los smokes pasan `--no-engram` para mantener la validación portable en GitHub Actions y en entornos locales.
-
-Ejecutar desde `tools/lufy-cli-go/`:
-
-1. Tests unitarios:
-   - `go test ./...`
-2. Compilación del binario principal:
-   - Recomendado: `mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
-   - Validación rápida tolerada: `go build ./cmd/lufy-ai` (genera `./lufy-ai`, ignorado como artefacto local)
-3. Smoke end-to-end de la CLI Go contra directorios temporales:
-    - `scripts/smoke-install.sh`
-4. Smokes de release/bootstrap con fixtures locales, sin descargar internet:
-   - `scripts/smoke-release-artifacts.sh`
-   - `scripts/smoke-bootstrap.sh`
-
-Desde la raíz del repo, ejecutar además el smoke del wrapper estricto:
+Bootstrap:
 
 ```bash
-tools/lufy-cli-go/scripts/smoke-wrapper.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
-El smoke de CLI cubre:
+El bootstrap instala solo el binario. No toca repositorios destino.
 
-- `install --dry-run --yes --no-engram` sin mutaciones.
-- `install --yes --no-engram` real y `verify --no-engram`.
-- Idempotencia básica con segunda instalación y comparación de hashes de `.lufy-ai/install-state.json` y `AGENTS.md`.
-- Merge conservador de `opencode.json`, preservando configuración local y excluyéndolo del estado por hash completo.
-- `backup`, `restore --dry-run --yes`, restore real con `--yes` y errores accionables cuando `install`/`restore` se ejecutan sin `--yes` ante mutaciones reales.
+## Wrapper Bash
 
-El workflow `.github/workflows/go-cli-install.yml` existe en esta rama y ejecuta el set mínimo en PRs/pushes a `develop` y `main`: tests Go, build Go, binario local `tools/lufy-cli-go/bin/lufy-ai`, smoke de CLI, smoke de `scripts/install.sh`, sanity OpenSpec con `openspec list --json` cuando la CLI `openspec` esté disponible, y `git diff --check`.
+`scripts/install.sh`:
 
-El workflow `.github/workflows/release.yml` agrega el gate de artifacts versionados: tests Go, build, artifacts/checksums, smoke release, smoke bootstrap, verificación de checksums y publicación de assets solo desde tag `v*` autorizado y alcanzable desde `origin/main`.
+- delega en `lufy-ai install`;
+- resuelve primero `tools/lufy-cli-go/bin/lufy-ai`;
+- luego busca `lufy-ai` en `PATH`;
+- reenvía flags de install;
+- falla con instrucción de build si no encuentra binario;
+- no descarga releases;
+- no tiene fallback legacy.
 
-`shellcheck scripts/install.sh` es una validación útil cuando `shellcheck` existe localmente, pero no forma parte de este gate mínimo inicial para no añadir una dependencia extra al runner; el wrapper queda cubierto funcionalmente por `tools/lufy-cli-go/scripts/smoke-wrapper.sh`.
-
-Si `go` no está instalado en el entorno, estos pasos quedan pendientes y deben correrse en una máquina con toolchain Go disponible.
-
-## Integración con `scripts/install.sh`
-
-- Estado actual: el wrapper Bash solo ejecuta `lufy-ai install`.
-- Orden de resolución: primero `tools/lufy-cli-go/bin/lufy-ai`, luego `lufy-ai` en `PATH`.
-- Si no encuentra binario, falla con una instrucción explícita de build local:
-  - `cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai`
-- Contrato preservado: `scripts/install.sh [target-project-dir]`, mapeado a `lufy-ai install --target <target-project-dir>`.
-- Flags reenviados: `--target`, `--dry-run`, `--yes`, `--no-engram`, `--backup`.
-- No existe fallback legacy de copia, detección de stack, Engram o `copy_files` en Bash.
-- Tampoco existe fallback remoto: las descargas versionadas viven en `scripts/bootstrap.sh`, no en el wrapper local.
-
-Para probar el wrapper desde la raíz del repo:
+Prueba:
 
 ```bash
-cd tools/lufy-cli-go && mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai
+cd tools/lufy-cli-go
+mkdir -p bin
+go build -o bin/lufy-ai ./cmd/lufy-ai
 cd ../..
 ./scripts/install.sh --target "$(mktemp -d)" --dry-run --yes --no-engram
 ```
 
-## Estado actual del slice
+## Validación esperada
 
-- Implementado parser base con comandos `install`, `verify`, `backup`, `restore`, `sync` y `version`.
-- `install --dry-run` construye plan e imprime resultado sin mutaciones.
-- `install` real copia assets gestionados del catálogo (`.opencode`, `AGENTS.md`, `tui.json`, `openspec` base), escribe `.lufy-ai/install-state.json` con hashes SHA-256 y en segunda ejecución reporta `skip` sin reescribir archivos ni estado.
-- `opencode.json` se crea o mergea con estrategia `merge-json`, preserva claves desconocidas, falla ante JSON inválido y queda fuera del manifest de assets completos por hash.
-- Si un archivo gestionado cambió upstream y el target no tiene drift local, `install` crea backup bajo `.lufy-ai/backups/<timestamp>/` antes de `update-managed`.
-- Si un archivo existe sin estado previo o su hash actual no coincide con el último hash gestionado, `install` reporta `conflict` y no sobrescribe aunque `--yes` esté presente.
-- Resolución de Engram portable por `PATH` (`exec.LookPath("engram")`), sin hardcode de `/opt/homebrew/bin/engram`.
-- `verify` valida `install-state.json`, categorías críticas (`.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies`), archivos críticos (`.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml`), manifest y hashes de assets listados; reporta Engram como warning no bloqueante u omitido con `--no-engram`.
-- `sync` puede aplicar `merge-json` a `opencode.json` sin copiarlo como asset completo ni registrarlo con SHA-256, manteniendo backup previo si el archivo existente será modificado.
-- `backup`/`restore` respaldan múltiples assets gestionados con `manifest.json`, hashes, tamaño, timestamp y validación de `targetRoot`.
-- Antes de un `restore` real que sobrescribe archivos existentes, la CLI crea un backup de recovery `pre-restore-recovery`; si la restauración falla parcialmente, el error incluye la ruta de ese backup.
-- `restore` rechaza manifests de otro target o con paths que escapan del target; `verify` falla si el manifest está corrupto o si `targetRoot` indica que la instalación fue movida.
-- Las escrituras rechazan paths relativos inseguros y symlinks en rutas gestionadas para evitar escapes fuera del target.
-- Los artifacts standalone pueden instalar assets embebidos cuando no se encuentra un checkout fuente válido; el checkout fuente ahora requiere el marcador adicional `tools/lufy-cli-go/go.mod` para evitar falsos positivos en repositorios destino ya instalados.
-- Cuando cambian assets del harness, genera un nuevo installer local con `mkdir -p bin && go build -o bin/lufy-ai ./cmd/lufy-ai` desde `tools/lufy-cli-go/` y valida con `scripts/validate.sh` desde la raíz.
-- La publicación pública requiere promover a `main` y crear un tag `v*` sobre un commit alcanzable desde `origin/main`; esta rama no implica que exista ya una release publicada.
+Desde la raíz:
 
-## Próximos pasos
+```bash
+scripts/validate.sh
+git diff --check origin/develop...HEAD
+git diff --check
+```
 
-1. Ampliar la cobertura de docs/smokes cuando se agreguen nuevas claves gestionadas al contrato `merge-json` de `opencode.json`.
+Desde `tools/lufy-cli-go/` para diagnóstico puntual:
+
+```bash
+go test ./...
+go build ./cmd/lufy-ai
+scripts/smoke-install.sh
+```
+
+`scripts/validate.sh` es preferido para cierre de bloques porque agrupa whitespace, Actions pinning, YAML, shell lint si existe, Go tests con coverage, `go vet` y build.
