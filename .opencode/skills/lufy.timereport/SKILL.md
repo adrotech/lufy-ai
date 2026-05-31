@@ -10,7 +10,7 @@ metadata:
 
 # Skill: lufy.timereport
 
-Genera un reporte local de tiempo/ROI para el repositorio actual. El reporte es un único HTML autocontenido, sin recursos remotos, diseñado para revisión offline y para compartir solo métricas estructurales sanitizadas.
+Genera un Developer Impact Report local para la tarea actual del usuario dentro del repositorio. El reporte es un único HTML autocontenido, sin recursos remotos, diseñado para revisión offline y para explicar cómo la IA ayudó en el trabajo diario con métricas estructurales sanitizadas.
 
 ## Uso recomendado
 
@@ -26,6 +26,10 @@ Opciones soportadas:
 - `--target-dir <ruta>`: repositorio/directorio objetivo. Default: directorio actual.
 - `--db <ruta>`: SQLite OpenCode. Default: `~/.local/share/opencode/opencode.db`.
 - `--from <fecha>` / `--to <fecha>`: rango temporal opcional para Git y actividad con timestamps.
+- `--scope task|repo`: alcance. Default `task`, que toma la sesión raíz de la tarea solicitada y sus subagentes. `repo` genera el reporte global del repositorio.
+- `--session-id <id>`: ancla explícita. Si el id pertenece a un subagente, el reporte sube a la sesión raíz e incluye todo el árbol.
+- `--tier T1|T2|T3`: tier original de la tarea cuando el agente lo conoce.
+- `--change <id>`: spec/change OpenSpec o LUFY SDD asociado cuando existe.
 
 El comando slash `.opencode/commands/lufy.timereport.md` es solo una fachada discoverable y debe delegar en este skill.
 
@@ -38,6 +42,15 @@ El comando slash `.opencode/commands/lufy.timereport.md` es solo una fachada dis
 - Tablas esperadas e introspeccionadas defensivamente: `project`, `workspace`, `session`, `message`, `part` y `event`.
 - Filtrado por repositorio: incluir sesiones cuyo `directory`, `path`, `cwd`, `root`, `project_path`, `workspace_path` o relación con `project`/`workspace` coincida con `--target-dir` cuando esas columnas existan. Si el schema no expone directorio, degradar con limitación visible en vez de mezclar datos silenciosamente.
 - Schema mismatch: si falta una tabla/columna requerida para una métrica, marcar solo esa sección como `No disponible` o `Estimación parcial` e incluir la fuente faltante en Limitaciones.
+
+### Alcance de tarea
+
+- El default es `--scope task`, no el histórico completo.
+- La tarea se define como sesión raíz OpenCode más reciente para `--target-dir` y todos sus descendientes por `parent_id`.
+- Si se pasa `--session-id`, usar esa sesión como ancla: subir por `parent_id` hasta la raíz disponible y luego incluir descendientes.
+- El reporte debe mostrar el contrato de alcance: scope, tier, sesión raíz, sesión ancla, cantidad de sesiones incluidas, ventana temporal, metodología y spec/change cuando exista.
+- Si se requiere el comportamiento anterior de todo el repositorio, usar `--scope repo` explícitamente.
+- Cuando `--scope task` no recibe `--from/--to`, Git se limita a la ventana temporal inferida de la tarea para no mezclar commits ajenos.
 
 ### Git secundario
 
@@ -65,6 +78,16 @@ El comando slash `.opencode/commands/lufy.timereport.md` es solo una fachada dis
 - **Tool calls / top tools**: conteos por nombre de tool únicamente.
 - **Subagents / skills**: conteos por campos estructurales (`agent`, `command`, nombres de skill detectados) sin inputs ni outputs.
 - **Fases**: timeline inferido por actividad estructural: exploración (lecturas/búsquedas), implementación (ediciones/parches), validación (tests/checks/OpenSpec), delivery-readiness (Git/GH/status sin ejecutar delivery).
+- **Paso a paso**: timeline estructural de la tarea con tramos sanitizados, qué tipo de trabajo ocurrió, por qué ocurrió, actores/tools/skills involucrados, duración total, tiempo IA y tiempo humano por tramo.
+- **Impacto diario**: resumen ejecutivo del valor para el desarrollador: pedido original, aporte de la IA, resultado revisable y evidencia local.
+- **Aprendizajes y pivots**: aprendizajes inferidos desde stack, metodología, skills y limitaciones. Los pivots explícitos se reportan solo cuando existan señales estructuradas; no se inventan motivos conversacionales.
+- **Tier / spec**: `--tier` y `--change` ganan si se pasan. Sin flags, inferir solo de forma conservadora: OpenSpec/LUFY SDD por skills/señales locales o `none`; no inventar un change id.
+
+## Estilo visual
+
+- El HTML sigue una estética tipo Notion: fondo cálido claro, tipografía de sistema/Inter, propiedades de página, callouts suaves y tablas tipo database.
+- Mantener el diseño content-first: métricas como propiedades y evidencia revisable, no dashboard pesado.
+- No usar recursos remotos, CDNs, imágenes ni fonts externas.
 
 Toda métrica de tiempo con timestamps insuficientes debe mostrarse como `No disponible` o `Estimación parcial`; no se debe inventar precisión.
 
@@ -72,9 +95,14 @@ Toda métrica de tiempo con timestamps insuficientes debe mostrarse como `No dis
 
 El HTML debe incluir secciones visibles para:
 
+- propiedades de la tarea
+- resumen ejecutivo
+- impacto diario
 - wall-clock
 - AI working time
 - tiempo humano activo
+- paso a paso con qué se hizo, por qué, duración, tiempo IA y tiempo humano
+- aprendizajes y pivots
 - LOC neto
 - commits
 - tool calls
