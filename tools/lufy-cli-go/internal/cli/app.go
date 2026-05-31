@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/uninstaller"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
@@ -29,6 +30,8 @@ func Run(args []string, deps Dependencies) int {
 		return runInit(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
+	case "uninstall":
+		return runUninstall(args[1:], deps)
 	case "verify":
 		return runVerify(args[1:], deps)
 	case "backup":
@@ -53,6 +56,36 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runUninstall(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("uninstall", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
+	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
+	keepState := fs.Bool("keep-state", false, "Preservar .lufy-ai/install-state.json")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai uninstall [--target <dir>] [--dry-run] [--yes] [--keep-state]")
+		fmt.Fprintln(deps.Stderr, "Remueve assets gestionados por Lufy con backup previo y preserva archivos user-owned.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "uninstall no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := uninstaller.NewService().Run(uninstaller.Options{Target: *target, DryRun: *dryRun, Yes: *yes, KeepState: *keepState}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runInit(args []string, deps Dependencies) int {
@@ -93,9 +126,11 @@ func runMerge(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("merge", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	acceptTheirs := fs.Bool("accept-theirs", false, "Resolver aceptando <path>.lufy-new sin LUFY_MERGE_TOOL")
+	acceptOurs := fs.Bool("accept-ours", false, "Resolver preservando el target local sin LUFY_MERGE_TOOL")
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai merge [--target <dir>] <path>")
-		fmt.Fprintln(deps.Stderr, "Reconcilia target, ancestor y .lufy-new usando LUFY_MERGE_TOOL.")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai merge [--target <dir>] [--accept-theirs|--accept-ours] <path>")
+		fmt.Fprintln(deps.Stderr, "Reconcilia target, ancestor y .lufy-new usando LUFY_MERGE_TOOL o una resolución no interactiva.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
@@ -108,7 +143,11 @@ func runMerge(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0]}, deps.Stdout); err != nil {
+	if *acceptTheirs && *acceptOurs {
+		fmt.Fprintln(deps.Stderr, "merge no permite combinar --accept-theirs y --accept-ours")
+		return ExitUsageErr
+	}
+	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0], AcceptTheirs: *acceptTheirs, AcceptOurs: *acceptOurs}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -184,9 +223,10 @@ func runSync(args []string, deps Dependencies) int {
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
+	harnessFlags := addToolFlag(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode] [--dry-run] [--yes] [--no-engram]")
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -208,8 +248,13 @@ func runSync(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := syncer.NewService()
-	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope}, deps.Stdout)
+	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope, Harness: harness}, deps.Stdout)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -227,6 +272,7 @@ func runVerify(args []string, deps Dependencies) int {
 	quiet := fs.Bool("quiet", false, "Omitir salida humana si no hay errores")
 	verbose := fs.Bool("verbose", false, "Mostrar diagnóstico adicional")
 	deep := fs.Bool("deep", false, "Ejecutar validaciones profundas opt-in")
+	harnessFlags := addToolFlag(fs)
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
@@ -236,7 +282,12 @@ func runVerify(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
-	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope}, deps.Stdout); err != nil {
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -298,13 +349,17 @@ func runInstall(args []string, deps Dependencies) int {
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
 	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 	backup := fs.Bool("backup", false, "Forzar backup cuando aplique")
+	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--dry-run] [--yes] [--no-engram] [--backup]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--no-engram] [--backup]")
 	}
 
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
 		return ExitUsageErr
 	}
 
@@ -319,6 +374,11 @@ func runInstall(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
 	service := installer.NewService()
 	err = service.Run(installer.Options{
 		Target:   *target,
@@ -327,6 +387,7 @@ func runInstall(args []string, deps Dependencies) int {
 		NoEngram: *noEngram,
 		Backup:   *backup,
 		Scope:    scope,
+		Harness:  harness,
 	}, deps.Stdout)
 	if err != nil {
 		var actionable ActionableError
@@ -349,6 +410,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Comandos:")
 	fmt.Fprintln(out, "  init      Genera .opencode/project.yaml stack-aware")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
+	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")

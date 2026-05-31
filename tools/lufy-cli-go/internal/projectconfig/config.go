@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"gopkg.in/yaml.v3"
 )
@@ -36,13 +37,15 @@ func NewService() Service {
 }
 
 type ProjectConfig struct {
-	SchemaVersion  int            `yaml:"schema_version"`
-	DetectedAt     time.Time      `yaml:"detected_at"`
-	Stacks         []Stack        `yaml:"stacks"`
-	CI             CIConfig       `yaml:"ci"`
-	TDD            TDDConfig      `yaml:"tdd"`
-	WorkflowLimits WorkflowLimits `yaml:"workflow_limits"`
-	Extra          map[string]any `yaml:",inline,omitempty"`
+	SchemaVersion     int                      `yaml:"schema_version"`
+	DetectedAt        time.Time                `yaml:"detected_at"`
+	Tool              domain.ToolID            `yaml:"tool"`
+	MethodologyByTier domain.MethodologyByTier `yaml:"methodology_by_tier"`
+	Stacks            []Stack                  `yaml:"stacks"`
+	CI                CIConfig                 `yaml:"ci"`
+	TDD               TDDConfig                `yaml:"tdd"`
+	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
+	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
 
 type Stack struct {
@@ -186,6 +189,9 @@ func Load(path string) (ProjectConfig, error) {
 	if err := node.Content[0].Decode(&cfg); err != nil {
 		return ProjectConfig{}, err
 	}
+	if err := validateHarnessConfig(cfg); err != nil {
+		return ProjectConfig{}, err
+	}
 	return cfg, nil
 }
 
@@ -220,12 +226,14 @@ func Scan(root string, now time.Time) (ProjectConfig, error) {
 	}
 	sort.SliceStable(stacks, func(i, j int) bool { return stacks[i].ID < stacks[j].ID })
 	return ProjectConfig{
-		SchemaVersion:  SchemaVersion,
-		DetectedAt:     now.UTC(),
-		Stacks:         stacks,
-		CI:             scanCI(root),
-		TDD:            defaultTDD(),
-		WorkflowLimits: defaultWorkflowLimits(),
+		SchemaVersion:     SchemaVersion,
+		DetectedAt:        now.UTC(),
+		Tool:              domain.ToolInitialDefault,
+		MethodologyByTier: domain.DefaultMethodologyByTier(),
+		Stacks:            stacks,
+		CI:                scanCI(root),
+		TDD:               defaultTDD(),
+		WorkflowLimits:    defaultWorkflowLimits(),
 	}, nil
 }
 
@@ -237,6 +245,9 @@ func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 	merged := detected
 	merged.Extra = sanitizedTopLevelExtra(current.Extra)
 	items := legacyWorkflowFieldItems(current.Extra)
+	if item, changed := mergeHarnessConfig(&merged, current); changed {
+		items = append(items, item)
+	}
 	if !isZeroWorkflowLimits(current.WorkflowLimits) {
 		merged.WorkflowLimits = mergeWorkflowLimits(current.WorkflowLimits, detected.WorkflowLimits)
 		if !reflect.DeepEqual(current.WorkflowLimits, merged.WorkflowLimits) {
@@ -282,6 +293,46 @@ func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 		merged.DetectedAt = current.DetectedAt
 	}
 	return RescanPlan{Merged: merged, Items: items, HasChanges: hasChanges}
+}
+
+func validateHarnessConfig(cfg ProjectConfig) error {
+	return domain.HarnessConfig{
+		Tool:              cfg.Tool,
+		MethodologyByTier: cfg.MethodologyByTier,
+	}.ValidateSupported()
+}
+
+func mergeHarnessConfig(merged *ProjectConfig, current ProjectConfig) (DriftItem, bool) {
+	if merged.Tool == "" {
+		merged.Tool = domain.ToolInitialDefault
+	}
+	if len(merged.MethodologyByTier) == 0 {
+		merged.MethodologyByTier = domain.DefaultMethodologyByTier()
+	}
+	before := domain.HarnessConfig{
+		Tool:              current.Tool,
+		MethodologyByTier: current.MethodologyByTier,
+	}.WithDefaults()
+	if current.Tool != "" {
+		merged.Tool = current.Tool
+	}
+	if len(current.MethodologyByTier) > 0 {
+		merged.MethodologyByTier = current.MethodologyByTier.WithDefaults()
+	}
+	after := domain.HarnessConfig{
+		Tool:              merged.Tool,
+		MethodologyByTier: merged.MethodologyByTier,
+	}.WithDefaults()
+	if current.Tool != "" && len(current.MethodologyByTier) >= len(domain.DefaultMethodologyByTier()) && reflect.DeepEqual(before, after) {
+		return DriftItem{}, false
+	}
+	return DriftItem{
+		Category:        "harness",
+		Severity:        "info",
+		Path:            "tool,methodology_by_tier",
+		Status:          "applied",
+		SuggestedAction: "Se completaron defaults de tool y methodology_by_tier preservando overrides compatibles.",
+	}, true
 }
 
 func sanitizedTopLevelExtra(extra map[string]any) map[string]any {

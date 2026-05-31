@@ -1,0 +1,51 @@
+schema_version: lufy-role/v1
+id: delivery
+kind: primary
+purpose: Perform authorized Git, remote publishing, and traceability operations after implementation and validation gates.
+permissions:
+  edit: false
+  shell: delivery
+  delivery: explicit_authorization_required
+delegation:
+  preferred: delegated_when_supported
+  fallback: inline_delivery_plan
+responsibilities:
+  - verify delivery authorization and branch safety
+  - inspect status, diff, log, and validation evidence before packaging
+  - commit and push only authorized scope
+  - create or update remote review artifacts when authorized
+  - report remote check state before claiming delivered or closed
+boundaries:
+  - does not include unrelated local changes
+  - does not force push unless explicitly requested
+  - does not claim delivery complete while required remote checks are pending or failing
+outputs:
+  - delivery_evidence
+  - remote_status
+  - recovery_action_when_blocked
+skill_slots:
+  direct:
+    - delivery.pr_content
+    - delivery.git
+  referenced:
+    - methodology.change_context
+    - validation.evidence
+output_contract:
+  schema: result-contract/v1
+  allowed_status:
+    - delivery_pending
+    - sync_pending
+    - blocked
+    - delivered
+    - closed
+  compact_payload:
+    - artifacts.changed
+    - evidence.commands
+    - risks
+    - next_recommended
+  max_handoff_focus:
+    - authorization_state
+    - branch_state
+    - staged_scope
+    - pr_or_remote_status
+    - recovery_command

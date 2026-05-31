@@ -49,6 +49,9 @@ main() {
   log "Workflow YAML"
   "$REPO_ROOT/scripts/check-workflows-yaml.rb"
 
+  log "Harness coupling"
+  "$REPO_ROOT/scripts/check-harness-coupling.sh"
+
   log "Shell lint"
   "$REPO_ROOT/scripts/check-shell.sh"
 

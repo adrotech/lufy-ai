@@ -2,10 +2,15 @@ package cli
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
 func TestRunInstallDryRun(t *testing.T) {
@@ -18,6 +23,27 @@ func TestRunInstallDryRun(t *testing.T) {
 	}
 	if !bytes.Contains(out.Bytes(), []byte("Modo dry-run")) {
 		t.Fatalf("expected dry-run message, got: %s", out.String())
+	}
+}
+
+func TestRunUninstallRequiresConfirmation(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"uninstall", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("uninstall without yes expected ExitRuntimeErr, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("uninstall requiere --yes")) {
+		t.Fatalf("uninstall confirmation error unexpected: %s", errOut.String())
 	}
 }
 
@@ -66,6 +92,102 @@ func TestRunInstallUnknownFlag(t *testing.T) {
 	}
 }
 
+func TestRunInstallPersistsHarnessSelection(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram", "--tool", "opencode", "--methodology-tier", "T3:openspec/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("expected install state")
+	}
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("tool = %s", st.Tool)
+	}
+	got := st.MethodologyByTier[domain.TierT3]
+	if got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull || !got.Required {
+		t.Fatalf("T3 methodology = %#v", got)
+	}
+}
+
+func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{
+		"install",
+		"--target", target,
+		"--yes",
+		"--no-engram",
+		"--methodology-tier", "T1:lufy-sdd/full",
+		"--methodology-tier", "T2:lufy-sdd/lite",
+		"--methodology-tier", "T3:none",
+	}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("expected install state")
+	}
+	got := st.MethodologyByTier[domain.TierT2]
+	if got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeLite || !got.Required {
+		t.Fatalf("T2 methodology = %#v", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "changes", ".gitkeep")); err != nil {
+		t.Fatalf("expected lufy-sdd changes asset: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "specs", ".gitkeep")); err != nil {
+		t.Fatalf("expected lufy-sdd specs asset for full mode: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("openspec config should not be installed when no tier selects openspec, err=%v", err)
+	}
+}
+
+func TestRunInstallRejectsUnsupportedHarnessFlags(t *testing.T) {
+	tests := [][]string{
+		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T1:none"},
+		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T3:spec-kit"},
+	}
+	for _, args := range tests {
+		t.Run(args[len(args)-1], func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitUsageErr {
+				t.Fatalf("expected ExitUsageErr, got %d stderr=%s", code, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunInstallHelpIncludesHarnessFlags(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"install", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install --help expected ExitOK, got %d", code)
+	}
+	for _, want := range []string{"--tool opencode", "--methodology-tier T3:none"} {
+		if !bytes.Contains(errOut.Bytes(), []byte(want)) {
+			t.Fatalf("install help missing %q: %s", want, errOut.String())
+		}
+	}
+}
+
 func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
@@ -94,7 +216,7 @@ func TestRunMergeHelpAndRequiresPath(t *testing.T) {
 	if code := Run([]string{"merge", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("merge --help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) || !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) || !bytes.Contains(errOut.Bytes(), []byte("--accept-theirs")) || !bytes.Contains(errOut.Bytes(), []byte("--accept-ours")) {
 		t.Fatalf("merge help unexpected: %s", errOut.String())
 	}
 
@@ -105,6 +227,145 @@ func TestRunMergeHelpAndRequiresPath(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
 		t.Fatalf("merge missing path output unexpected: %s", errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"merge", "tui.json", "extra.json"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("merge with extra path expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai merge")) {
+		t.Fatalf("merge extra path output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeRejectsConflictingAcceptFlags(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"merge", "--accept-theirs", "--accept-ours", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("merge conflicting accept flags expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("no permite combinar")) {
+		t.Fatalf("merge conflicting flags error unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeDispatchesValidationErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		code int
+		want string
+	}{
+		{
+			name: "invalid relative path",
+			args: []string{"merge", "--target", t.TempDir(), "../tui.json"},
+			code: ExitRuntimeErr,
+			want: "escapa del root permitido",
+		},
+		{
+			name: "unknown flag",
+			args: []string{"merge", "--unknown", "tui.json"},
+			code: ExitUsageErr,
+			want: "flag provided but not defined",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(tt.args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != tt.code {
+				t.Fatalf("expected code %d, got %d stderr=%s", tt.code, code, errOut.String())
+			}
+			if !bytes.Contains(errOut.Bytes(), []byte(tt.want)) {
+				t.Fatalf("stderr missing %q: %s", tt.want, errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunMergeWithoutToolReturnsRuntimeErrorAfterDispatch(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("merge without LUFY_MERGE_TOOL expected ExitRuntimeErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("LUFY_MERGE_TOOL")) {
+		t.Fatalf("merge without tool stderr unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunMergeAcceptTheirsResolvesWithoutMergeTool(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "--accept-theirs", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("merge --accept-theirs expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, "tui.json"))); got != "new\n" {
+		t.Fatalf("target = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("sidecar still exists or unexpected stat error: %v", err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("accept-theirs aplicado")) {
+		t.Fatalf("merge accept-theirs output unexpected: %s", out.String())
+	}
+}
+
+func TestRunMergeAcceptOursResolvesWithoutMergeTool(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
+	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
+	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
+	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"merge", "--target", target, "--accept-ours", "tui.json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("merge --accept-ours expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, "tui.json"))); got != "user\n" {
+		t.Fatalf("target = %q", got)
+	}
+	if got := string(readCLITestFile(t, filepath.Join(target, ancestorRel))); got != "user\n" {
+		t.Fatalf("ancestor = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("sidecar still exists or unexpected stat error: %v", err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("accept-ours aplicado")) {
+		t.Fatalf("merge accept-ours output unexpected: %s", out.String())
 	}
 }
 
@@ -132,6 +393,25 @@ func TestRunBackupAndScopeErrors(t *testing.T) {
 	errOut.Reset()
 	if code := Run([]string{"install", "--scope", "invalid"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
 		t.Fatalf("install invalid scope expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunBackupCreatesBackupForManagedFile(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, "lufy-ia.harness.md"), "managed\n")
+	hash := hashCLITestFile(t, filepath.Join(target, "lufy-ia.harness.md"))
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "harness", SourceRel: "lufy-ia.harness.md", TargetRel: "lufy-ia.harness.md", SourceSHA256: hash, TargetSHA256: hash, Policy: "managed", Scope: "project", LastAction: "copy"}}, "test")); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"backup", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("backup expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Backup creado")) {
+		t.Fatalf("backup output unexpected: %s", out.String())
 	}
 }
 
@@ -248,7 +528,7 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	if code := Run([]string{"sync", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("sync --help expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--tool")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
 		t.Fatalf("sync help missing flags: %s", errOut.String())
 	}
 
@@ -256,6 +536,26 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	errOut.Reset()
 	if code := Run([]string{"sync", "--unknown"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
 		t.Fatalf("sync unknown flag expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunSyncAndVerifyRejectUnsupportedTool(t *testing.T) {
+	tests := [][]string{
+		{"sync", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"verify", "--target", t.TempDir(), "--tool", "claude-code"},
+	}
+	for _, args := range tests {
+		t.Run(args[0], func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitUsageErr {
+				t.Fatalf("expected ExitUsageErr, got %d stderr=%s", code, errOut.String())
+			}
+			if !bytes.Contains(errOut.Bytes(), []byte("tool adapter no soportado")) {
+				t.Fatalf("stderr missing tool error: %s", errOut.String())
+			}
+		})
 	}
 }
 
@@ -295,4 +595,29 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("restore dry-run expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
+}
+
+func writeCLITestFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readCLITestFile(t *testing.T, path string) []byte {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
+}
+
+func hashCLITestFile(t *testing.T, path string) string {
+	t.Helper()
+	h := sha256.Sum256(readCLITestFile(t, path))
+	return hex.EncodeToString(h[:])
 }

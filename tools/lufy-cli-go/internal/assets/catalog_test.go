@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
 func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
@@ -27,6 +29,8 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
+		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -36,6 +40,15 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 			want[asset.TargetRel] = true
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("file asset %s missing hash", asset.TargetRel)
+			}
+			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+				t.Fatalf("asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
+			}
+			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") && asset.Methodology != domain.MethodologySpecWorkflow {
+				t.Fatalf("openspec asset %s methodology = %s", asset.TargetRel, asset.Methodology)
+			}
+			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/sdd/") && asset.Methodology != domain.MethodologyLufyWorkflow {
+				t.Fatalf("lufy-sdd asset %s methodology = %s", asset.TargetRel, asset.Methodology)
 			}
 		}
 	}
@@ -79,6 +92,8 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
+		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -88,6 +103,9 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 			want[asset.TargetRel] = true
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("embedded file asset %s missing hash", asset.TargetRel)
+			}
+			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+				t.Fatalf("embedded asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
 			}
 		}
 	}
@@ -206,6 +224,11 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                                        "{}\n",
 		filepath.Join("openspec", "README.md"):                                            "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
+		filepath.Join(".lufy", "sdd", "README.md"):                                        "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                            "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                                "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):                         "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                                   "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 		filepath.Join("openspec", "changes", "active", "proposal.md"):                     "must not copy\n",
 	}

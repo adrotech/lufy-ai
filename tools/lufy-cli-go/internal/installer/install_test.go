@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -97,6 +99,34 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	}
 }
 
+func TestRunLufyNewCanBeConsumedByMergeAcceptTheirs(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
+	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(lufy-new) error = %v", err)
+	}
+
+	var out bytes.Buffer
+	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
+		t.Fatalf("merge accept-theirs error = %v", err)
+	}
+	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
+		t.Fatalf("merge did not accept upstream .lufy-new: %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("merge did not remove lufy-new, stat err=%v", err)
+	}
+	if got := stateMustLoadForTest(t, target).AssetMap()["tui.json"].LastAction; got != "merge-accept-theirs" {
+		t.Fatalf("merge did not update asset action, got %q", got)
+	}
+}
+
 func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
@@ -144,6 +174,37 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, harness.AncestorRel))); got != "harness template\n" {
 		t.Fatalf("ancestor content mismatch: %q", got)
+	}
+}
+
+func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(default install) error = %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("default install should not create .lufy/sdd, stat err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); err != nil {
+		t.Fatalf("default install should keep openspec assets: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".opencode", "agents", "orchestrator.md")); err != nil {
+		t.Fatalf("default install should keep opencode assets: %v", err)
+	}
+
+	st := stateMustLoadForTest(t, target)
+	if st.Tool != domain.ToolInitialDefault {
+		t.Fatalf("default install tool = %s", st.Tool)
+	}
+	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
+		t.Fatalf("default T1 methodology = %#v", got)
+	}
+	if hasInstalledTargetPrefix(st, filepath.Join(".lufy", "sdd")) {
+		t.Fatalf("default manifest should not register lufy-sdd assets: %#v", st.Assets)
 	}
 }
 
@@ -564,9 +625,32 @@ func readFileForTest(t *testing.T, path string) []byte {
 	return body
 }
 
+func stateMustLoadForTest(t *testing.T, target string) *state.InstallState {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("missing install-state")
+	}
+	return st
+}
+
 func hashBytesForTest(body []byte) string {
 	h := sha256.Sum256(body)
 	return hex.EncodeToString(h[:])
+}
+
+func hasInstalledTargetPrefix(st *state.InstallState, prefix string) bool {
+	normalizedPrefix := filepath.ToSlash(prefix)
+	for _, asset := range st.Assets {
+		target := filepath.ToSlash(asset.TargetRel)
+		if target == normalizedPrefix || strings.HasPrefix(target, normalizedPrefix+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func chdirForTest(t *testing.T, dir string) {
@@ -610,6 +694,11 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
 		filepath.Join("openspec", "README.md"):                         "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
+		filepath.Join(".lufy", "sdd", "README.md"):                     "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):           "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):         "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):             "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):      "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {

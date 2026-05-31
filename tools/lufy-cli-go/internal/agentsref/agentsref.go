@@ -69,6 +69,28 @@ func InsertReference(targetRoot string) error {
 	return writeAgentsFile(path, updated)
 }
 
+func RemoveReference(targetRoot string) (bool, error) {
+	path, err := platform.SafeJoin(targetRoot, AgentsFile)
+	if err != nil {
+		return false, err
+	}
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if !ContainsReference(body) {
+		return false, nil
+	}
+	updated := removeReferenceLines(body)
+	if bytes.Equal(body, updated) {
+		return false, nil
+	}
+	return true, writeAgentsFile(path, updated)
+}
+
 func appendReference(body []byte) []byte {
 	text := string(body)
 	if text == "" {
@@ -85,6 +107,26 @@ func appendReference(body []byte) []byte {
 	b.WriteString(Reference)
 	b.WriteString("\n")
 	return []byte(b.String())
+}
+
+func removeReferenceLines(body []byte) []byte {
+	lines := strings.Split(string(body), "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.TrimSpace(line) == Reference {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	text := strings.Join(filtered, "\n")
+	for strings.Contains(text, "\n\n\n") {
+		text = strings.ReplaceAll(text, "\n\n\n", "\n\n")
+	}
+	text = strings.TrimRight(text, "\n")
+	if text == "" {
+		return nil
+	}
+	return []byte(text + "\n")
 }
 
 func writeAgentsFile(path string, body []byte) error {

@@ -1,5 +1,5 @@
 ## Purpose
-Definir `/lufy.timereport` como comando y skill local para generar reportes HTML offline de tiempo, actividad y ROI a partir de métricas estructurales locales, preservando privacidad por defecto.
+Definir `/lufy.timereport` como comando y skill local para generar Developer Impact Reports HTML offline sobre tiempo, actividad, decisiones, aprendizajes y ROI a partir de métricas estructurales locales, preservando privacidad por defecto.
 
 ## Requirements
 ### Requirement: Slash command and skill entrypoint
@@ -13,8 +13,8 @@ The system SHALL provide a `/lufy.timereport` OpenCode command that delegates to
 - **WHEN** a user or agent inspects `.opencode/skills/lufy.timereport/`
 - **THEN** a `SKILL.md` exists and describes purpose, usage, inputs, privacy boundaries, data sources, validation and outputs for the `lufy.timereport` skill
 
-### Requirement: Offline self-contained HTML report
-The system SHALL generate a single offline self-contained HTML report containing embedded styles and any required client-side behavior without requiring network access or remote assets.
+### Requirement: Offline self-contained Notion-style HTML report
+The system SHALL generate a single offline self-contained HTML report with a Notion-inspired content-first style, embedded styles and no network access or remote assets.
 
 #### Scenario: Default output path is temporary
 - **WHEN** the user runs `/lufy.timereport` without specifying an output path
@@ -26,7 +26,11 @@ The system SHALL generate a single offline self-contained HTML report containing
 
 #### Scenario: HTML contains required summary sections
 - **WHEN** the report is generated successfully
-- **THEN** it contains sections for wall-clock time, AI working time, human active time, net LOC, commits, tool calls, top tools, subagents, skills, phases, stack and data-source limitations
+- **THEN** it contains sections for task properties, executive summary, daily impact, wall-clock time, AI working time, human active time, step-by-step task context, learnings and pivots, net LOC, commits, tool calls, top tools, subagents, skills, phases, stack and data-source limitations
+
+#### Scenario: Report uses Notion-inspired visual language
+- **WHEN** the HTML report is generated
+- **THEN** it uses a light warm background, subtle borders, page-property style metadata, callouts and database-like tables without external fonts, images, CDNs or remote resources
 
 ### Requirement: OpenCode SQLite primary source
 The system SHALL use the local OpenCode SQLite database as the primary source for session and activity metrics when the database is available.
@@ -42,6 +46,29 @@ The system SHALL use the local OpenCode SQLite database as the primary source fo
 #### Scenario: Schema mismatch degrades explicitly
 - **WHEN** required SQLite tables or columns for a metric are unavailable
 - **THEN** only that metric or section is marked `No disponible` and the report includes which source was unavailable without exposing raw DB content
+
+### Requirement: Task-scoped report by default
+The system SHALL report the original user task by default, including its subagents, and SHALL require an explicit repo scope for all-repository aggregation.
+
+#### Scenario: Default scope selects latest task root
+- **WHEN** the user runs `/lufy.timereport` without `--scope`
+- **THEN** the report uses `task` scope and includes the latest root OpenCode session for the target repository plus its descendant sessions by `parent_id`
+
+#### Scenario: Child session anchor resolves to task root
+- **WHEN** the user provides `--session-id` for a subagent or child session
+- **THEN** the report climbs to the available root session and includes that root plus all descendant sessions for the task
+
+#### Scenario: Repository-wide report is explicit
+- **WHEN** the user provides `--scope repo`
+- **THEN** the report may aggregate all sessions for the target repository and clearly labels the scope as `repo`
+
+#### Scenario: Task scope reports workflow contract
+- **WHEN** the report is generated in task scope
+- **THEN** it includes scope mode, root session, anchor session, included session count, inferred time window, tier when provided or conservatively inferred, and methodology/spec when provided or detectable
+
+#### Scenario: Git range follows task scope by default
+- **WHEN** task scope is used without explicit `--from` or `--to`
+- **THEN** Git commit and LOC metrics are limited to the inferred task time window instead of the full repository history
 
 ### Requirement: Privacy by default
 The system SHALL include only sanitized structural metrics by default and MUST NOT include prompts, assistant outputs, full tool payloads, file contents, diffs or `session_diff` data in the generated HTML.
@@ -76,6 +103,22 @@ The system SHALL compute and disclose deterministic heuristics for wall-clock ti
 #### Scenario: Missing timestamps prevent false precision
 - **WHEN** timestamps required for a time metric are missing or ambiguous
 - **THEN** the metric is marked `No disponible` or `Estimación parcial` with a limitation note instead of inventing exact time
+
+#### Scenario: Step timeline includes AI and human time
+- **WHEN** task activity has structural user, assistant, tool or event timestamps
+- **THEN** the report includes a sanitized step-by-step timeline with what type of work occurred, why it occurred, first/last activity, active duration, AI time and human time for each step
+
+#### Scenario: Dates are readable by end users
+- **WHEN** the report renders task windows, Git windows or step timestamps
+- **THEN** it displays localized human-readable date/time labels instead of raw ISO timestamps
+
+#### Scenario: Step timeline preserves privacy
+- **WHEN** the report summarizes step-by-step activity
+- **THEN** it uses structural labels such as exploration, implementation, validation, workflow/spec and delivery-readiness without including prompts, responses, tool arguments, tool outputs, file contents or diffs
+
+#### Scenario: Learnings and pivots avoid fabricated intent
+- **WHEN** the report includes learnings or pivots
+- **THEN** it derives learnings from structural local signals and marks pivots as unavailable or partial unless an explicit structured signal exists
 
 ### Requirement: Git secondary metrics
 The system SHALL use read-only Git metadata as a secondary source for commits and net LOC when Git is available for the target repository.

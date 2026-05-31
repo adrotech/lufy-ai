@@ -1,21 +1,28 @@
 # Instalación de lufy-ai
 
-Esta guía cubre la instalación del binario `lufy-ai`, la configuración de `PATH` por sistema/shell y la instalación de assets en un repositorio destino. Los assets actuales incluyen OpenCode/OpenSpec, harness SDD proporcional, `sdd-router`, templates T2/result y políticas de delivery.
+Esta guía cubre:
+
+- instalación del binario `lufy-ai`;
+- configuración de `PATH`;
+- instalación de assets en un repositorio destino;
+- verificación, sync, uninstall y reinstall;
+- troubleshooting básico.
 
 Versión estable objetivo: `v0.4.0`.
 
 ## Requisitos
 
-- Un directorio escribible para el binario, por ejemplo `~/.local/bin` en macOS/Linux/WSL.
-- Acceso a una release publicada de GitHub con artifacts y checksums.
-- Un repositorio destino donde instalar los assets de OpenCode/OpenSpec.
-- OpenCode para consumir agentes, comandos, templates y plugin instalados.
+- Un directorio escribible para el binario, por ejemplo `~/.local/bin`.
+- Acceso a una GitHub Release publicada con artifacts y checksums.
+- Un repositorio destino donde instalar el harness.
+- OpenCode si vas a usar el adapter escribible actual.
+- Engram opcional; usa `--no-engram` si no quieres integrarlo.
 
-El bootstrap Bash aplica a entornos Unix-like: macOS, Linux y WSL. En Windows nativo usa el binario manual si la release incluye `lufy-ai_<version>_windows_amd64.zip` o `lufy-ai_<version>_windows_arm64.zip`.
+El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario publicado para Windows si la release lo incluye.
 
-## Instalación rápida con bootstrap
+## Instalar el binario
 
-Usa una versión explícita; `latest` existe, pero no es reproducible.
+Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
@@ -23,80 +30,30 @@ less /tmp/lufy-bootstrap.sh
 bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
-Atajo directo solo si ya revisaste el script y aceptas ejecutarlo desde la URL fijada:
+El bootstrap:
+
+1. detecta OS/arch;
+2. descarga el artifact `lufy-ai_<version>_<os>_<arch>`;
+3. verifica SHA-256 contra checksums de la release;
+4. instala solo el binario;
+5. no ejecuta `lufy-ai install` contra ningún proyecto.
+
+Atajo directo, solo si ya revisaste el script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.4.0/scripts/bootstrap.sh \
   | bash -s -- --version v0.4.0 --install-dir "$HOME/.local/bin"
 ```
 
-El bootstrap detecta OS/arch, descarga el artifact `lufy-ai_<version>_<os>_<arch>`, verifica SHA-256 contra los checksums de la misma release e instala solo el binario. No ejecuta `lufy-ai install` contra tu proyecto.
+## PATH por shell
 
-## macOS
-
-macOS usa `zsh` por defecto. Apple Silicon normalmente usa `darwin_arm64`; Intel usa `darwin_amd64`. El bootstrap lo detecta automáticamente.
-
-Instala en `~/.local/bin`:
-
-```bash
-bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
-```
-
-Si `~/.local/bin` no está en tu `PATH`, agrega una de estas configuraciones y abre una terminal nueva:
-
-### zsh
-
-```zsh
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Guárdalo en `~/.zshrc` si quieres hacerlo persistente.
-
-### bash
+### bash/zsh
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-Guárdalo en `~/.bashrc` o `~/.bash_profile` según tu entorno.
-
-### fish
-
-```fish
-fish_add_path $HOME/.local/bin
-```
-
-Alternativa compatible si no quieres usar `fish_add_path`:
-
-```fish
-set -gx PATH $HOME/.local/bin $PATH
-```
-
-## Linux
-
-En Linux se recomienda `~/.local/bin` para instalaciones de usuario:
-
-```bash
-bash /tmp/lufy-bootstrap.sh --version v0.4.0 --install-dir "$HOME/.local/bin"
-```
-
-Configura el `PATH` según tu shell:
-
-### bash
-
-```bash
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Normalmente se guarda en `~/.bashrc`.
-
-### zsh
-
-```zsh
-export PATH="$HOME/.local/bin:$PATH"
-```
-
-Normalmente se guarda en `~/.zshrc`.
+Guárdalo en `~/.bashrc`, `~/.bash_profile` o `~/.zshrc` según tu shell.
 
 ### fish
 
@@ -110,109 +67,212 @@ Alternativa:
 set -gx PATH $HOME/.local/bin $PATH
 ```
 
-## Windows
+### Windows nativo
 
-### Windows nativo: PowerShell/cmd
+1. Descarga `lufy-ai_v0.4.0_windows_amd64.zip` o `lufy-ai_v0.4.0_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.4.0_checksums.txt`.
+3. Verifica el hash:
 
-El bootstrap Bash no está pensado para PowerShell/cmd nativos. Si la release incluye `lufy-ai_v0.4.0_windows_amd64.zip`:
+   ```powershell
+   Get-FileHash .\lufy-ai_v0.4.0_windows_amd64.zip -Algorithm SHA256
+   ```
 
-1. Descarga el zip y el archivo `lufy-ai_v0.4.0_checksums.txt` desde la release.
-2. Verifica el checksum antes de usar el binario.
-3. Extrae `lufy-ai.exe` en un directorio de usuario, por ejemplo `%USERPROFILE%\\bin`.
-4. Agrega ese directorio al `Path` de usuario desde la configuración de Windows.
-5. Abre una nueva terminal PowerShell o cmd.
+4. Extrae `lufy-ai.exe` en un directorio de usuario.
+5. Agrega ese directorio al `Path` de usuario.
+6. Abre una terminal nueva.
 
-Verificación de hash en PowerShell:
+## Instalar en un repositorio
 
-```powershell
-Get-FileHash .\lufy-ai_v0.4.0_windows_amd64.zip -Algorithm SHA256
-```
-
-Compara el resultado con la entrada del archivo de checksums publicado en la release.
-
-### WSL
-
-En WSL usa el flujo Linux con bootstrap Bash y `~/.local/bin` dentro de la distribución WSL.
-
-## Verificación post-install
-
-Primero confirma que el binario está disponible:
+Primero revisa la versión:
 
 ```bash
 lufy-ai version
 ```
 
-Luego revisa el plan de instalación en el repositorio destino:
+Luego revisa el plan sin mutar:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --dry-run --yes --no-engram
 ```
 
-Aplica la instalación:
+Aplica:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --yes --no-engram
 ```
 
-`--scope=project` preserva el comportamiento actual. `--scope=global` y `--scope=both` resuelven además la raíz global de OpenCode desde `XDG_CONFIG_HOME` o `HOME`, pero siguen siendo opt-in hasta completar validación de release.
-
-La instalación project-scope gestiona `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins`, `lufy-ia.harness.md`, `tui.json` y `openspec` base. `AGENTS.md` queda como archivo propio del proyecto: `install` solo crea o agrega la referencia mínima `@lufy-ia.harness.md` con backup/`--yes` cuando hace falta, y no lo registra como asset completo por hash. `opencode.json` se maneja con merge conservador, no como asset completo por hash.
-
-Durante `sync`, la CLI actualiza `lufy-ia.harness.md` mediante manifest/SHA-256 y preserva `AGENTS.md` byte-for-byte. Si falta `@lufy-ia.harness.md`, `sync` reporta una acción explícita; para reparar, ejecuta `lufy-ai install --target /ruta/a/tu/proyecto --yes` o edita `AGENTS.md` manualmente. No existe flag `--repair-agents-reference` en este cambio.
-
-Después de `install`, ejecuta el verificador canónico:
+Verifica:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --scope project --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode --no-engram
+lufy-ai status --target /ruta/a/tu/proyecto --verbose
 ```
 
-Para automatización o CI puedes usar salida JSON:
+## Selección de tool y metodología
+
+El único tool adapter escribible actual es `opencode`.
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --json
-lufy-ai status --target /ruta/a/tu/proyecto --json --verbose
+lufy-ai install --target <repo> --tool opencode --yes --no-engram
 ```
 
-Si un asset `no-replace` tiene drift local, install/sync preservan el archivo original y escriben `<archivo>.lufy-new`. Revisa el estado y resuelve manualmente o con un merge tool:
+Sin `--tool`, el default efectivo sigue siendo `opencode`.
+
+Las metodologías soportadas por configuración son:
+
+- `openspec`;
+- `lufy-sdd`;
+- `none`.
+
+Se seleccionan por tier:
+
+```bash
+lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
+```
+
+Restricciones actuales:
+
+- `T1:none` está bloqueado para comandos mutantes;
+- `T2:none` está bloqueado para comandos mutantes;
+- `--tool codex` y `--tool claude-code` están bloqueados para escritura;
+- `codex` y `claude-code` existen solo como dry-run/preview.
+
+## Qué queda instalado
+
+En scope `project`, la CLI gestiona:
+
+- `.opencode/agents`;
+- `.opencode/commands`;
+- `.opencode/skills`;
+- `.opencode/templates`;
+- `.opencode/policies`;
+- `.opencode/plugins`;
+- `.opencode/agent-observatory`;
+- `lufy-ia.harness.md`;
+- `tui.json`;
+- `openspec/` cuando la metodología lo requiere;
+- `.lufy/sdd/` cuando se selecciona `lufy-sdd`;
+- `.lufy-ai/install-state.json`.
+
+`AGENTS.md` es user-owned. `install` solo agrega la referencia:
+
+```text
+@lufy-ia.harness.md
+```
+
+`opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
+
+## Manifest y backups
+
+`.lufy-ai/install-state.json` usa schema v2 y registra:
+
+- `tool`;
+- `methodologyByTier`;
+- ownership por asset;
+- policy;
+- scope;
+- hashes SHA-256;
+- ancestors cuando corresponde.
+
+Backups se escriben en:
+
+```text
+.lufy-ai/backups/<timestamp>/
+```
+
+Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean backups cuando corresponde.
+
+## Sync
+
+`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local.
+
+```bash
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai sync --target /ruta/a/tu/proyecto --yes --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+```
+
+Si un asset no reemplazable tiene drift local, la CLI preserva el archivo y puede generar `<archivo>.lufy-new`.
+
+Para resolver:
 
 ```bash
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
-LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto tui.json
+LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto <path>
 ```
 
-Para descubrir y restaurar backups:
+## Uninstall y reinstall
+
+`uninstall` remueve solo assets gestionados por Lufy cuando el hash actual coincide con el manifest. Si detecta drift, bloquea y no muta.
+
+Dry-run:
+
+```bash
+lufy-ai uninstall --target /ruta/a/tu/proyecto --dry-run
+```
+
+Aplicar:
+
+```bash
+lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
+```
+
+Comportamiento:
+
+- crea backup previo;
+- borra assets gestionados sin drift;
+- borra ancestors gestionados sin drift;
+- remueve `.lufy-ai/install-state.json`;
+- preserva `.lufy-ai/backups`;
+- preserva `opencode.json`;
+- preserva `AGENTS.md` y remueve solo la línea `@lufy-ia.harness.md`;
+- limpia directorios gestionados que queden vacíos.
+
+Reinstalar:
+
+```bash
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --quiet
+```
+
+`--keep-state` existe para diagnóstico: conserva `.lufy-ai/install-state.json` aunque remueva assets. No es el flujo normal.
+
+## Restore
+
+Listar backups:
 
 ```bash
 lufy-ai restore --target /ruta/a/tu/proyecto --list
+```
+
+Revisar:
+
+```bash
 lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --dry-run
+```
+
+Aplicar:
+
+```bash
 lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 ```
 
-Para validaciones opt-in de referencias de plugins en `tui.json`/`opencode.json`:
+`restore` valida `targetRoot`, paths seguros y hashes antes de escribir.
 
-```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram --deep
-```
+## Upgrade del binario
 
-## Actualizar el binario
-
-Usa una versión fija; `upgrade` rechaza `latest` para mantener reproducibilidad:
-
-```bash
-lufy-ai upgrade --to v0.4.0
-```
-
-Para revisar sin reemplazar el binario:
+`upgrade` requiere versión fija.
 
 ```bash
 lufy-ai upgrade --to v0.4.0 --dry-run
+lufy-ai upgrade --to v0.4.0
 ```
 
-`upgrade` descarga el artifact de la plataforma actual, verifica SHA-256 contra `checksums.txt`, extrae el binario y reemplaza el ejecutable actual de forma atómica.
+Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.
 
-## Flujo con clone local para desarrollo
-
-Usa este camino para contribuir o probar cambios locales antes de publicar una release:
+## Desarrollo con clone local
 
 ```bash
 git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
@@ -221,48 +281,72 @@ mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 ```
 
-El wrapper local `scripts/install.sh` busca primero `tools/lufy-cli-go/bin/lufy-ai` dentro del checkout y luego `lufy-ai` en `PATH`. No descarga releases ni reintroduce fallback legacy.
+Usar el binario local:
 
 ```bash
-/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
-/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
 /tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 ```
+
+El wrapper:
+
+```bash
+/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
+```
+
+resuelve primero `tools/lufy-cli-go/bin/lufy-ai` y luego `lufy-ai` en `PATH`. No descarga releases ni usa fallback legacy.
 
 ## Troubleshooting
 
 ### `command not found: lufy-ai`
 
-1. Verifica que el binario exista:
+```bash
+ls -l "$HOME/.local/bin/lufy-ai"
+printf '%s\n' "$PATH"
+"$HOME/.local/bin/lufy-ai" version
+```
 
-   ```bash
-   ls -l "$HOME/.local/bin/lufy-ai"
-   ```
+Agrega `~/.local/bin` a tu `PATH`.
 
-2. Revisa tu `PATH` actual:
+### `verify` falla después de instalar
 
-   ```bash
-   printf '%s\n' "$PATH"
-   ```
+Revisa el error exacto. `verify` valida:
 
-   En fish:
+- `.lufy-ai/install-state.json`;
+- estructura crítica;
+- hashes SHA-256;
+- JSON gestionado;
+- referencia `@lufy-ia.harness.md` en `AGENTS.md`;
+- adapter esperado si usas `--tool`.
 
-   ```fish
-   printf '%s\n' $PATH
-   ```
+Si falta la referencia en `AGENTS.md`, ejecuta:
 
-3. Ejecuta por ruta absoluta para confirmar que el binario funciona:
+```bash
+lufy-ai install --target <dir> --yes --no-engram
+```
 
-   ```bash
-   "$HOME/.local/bin/lufy-ai" version
-   ```
+o agrégala manualmente.
 
-4. Agrega `~/.local/bin` a tu shell. Para bash/zsh usa `export PATH="$HOME/.local/bin:$PATH"`; para fish usa `fish_add_path $HOME/.local/bin` o `set -gx PATH $HOME/.local/bin $PATH`.
+### `uninstall` bloquea por drift
 
-### `lufy-ai verify` falla después de instalar
+Eso es intencional. Significa que un asset gestionado fue modificado localmente. Revisa:
 
-Revisa el error exacto. `verify` valida estructura, estado `.lufy-ai/install-state.json`, hashes SHA-256, configuración gestionada y la integración user-owned de `AGENTS.md`. La ausencia de `@lufy-ia.harness.md` en `AGENTS.md` es un `fail` accionable: agrega la referencia con `lufy-ai install --target <dir> --yes` o por edición manual. Si editaste assets gestionados localmente, puede reportar drift o conflictos que requieren revisión manual.
+```bash
+lufy-ai status --target <dir> --verbose
+```
+
+Luego decide si conservar el cambio, restaurar desde backup o reinstalar sobre un estado limpio.
 
 ### No existe artifact para mi plataforma
 
-Los artifacts actuales cubren `darwin/amd64`, `darwin/arm64`, `linux/amd64`, `linux/arm64`, `windows/amd64` y `windows/arm64`. Si tu plataforma no está publicada, usa un entorno soportado o compila desde el clone local con Go.
+Los artifacts objetivo son:
+
+- `darwin/amd64`;
+- `darwin/arm64`;
+- `linux/amd64`;
+- `linux/arm64`;
+- `windows/amd64`;
+- `windows/arm64`.
+
+Si tu plataforma no está publicada, usa un entorno soportado o compila desde clone local con Go.

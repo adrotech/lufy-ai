@@ -60,8 +60,8 @@ jobs:
         with:
           go-version-file: tools/lufy-cli-go/go.mod
 
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Install validation tools
+        run: sudo apt-get update && sudo apt-get install -y shellcheck ripgrep
 
       - name: Validate
         env:

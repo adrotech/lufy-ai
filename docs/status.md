@@ -1,36 +1,78 @@
 # Estado del proyecto
 
+Este documento separa capacidades reales de roadmap. El README debe enlazar solo capacidades instalables o explícitamente marcadas como dry-run/preview.
+
 ## Implementado
 
-- CLI Go en `tools/lufy-cli-go`.
-- Instalación y sync con catálogo, hashes SHA-256 y manifest de estado.
-- Backups con manifest, retención local y restore validado.
-- Rollback automático acotado cuando existe backup de recovery.
-- `verify` estructural con salida humana, `--json` y `--quiet`.
-- `status` con salida humana y `--json`.
-- `upgrade` autoreemplazante con versión fija y verificación SHA-256.
-- `verify --deep` para referencias de plugins en `tui.json` y `opencode.json`.
+### Harness y arquitectura
+
+- Harness SDD proporcional con T1 Full SDD, T2 SDD Lite y T3 Express.
+- Result Contract envelope v1 para handoffs, evidencia, riesgos y siguiente acción.
+- Review Workload Harness con `review_slices` para T1/T2 con varios riesgos.
+- Skill resolution local-first con AutoSkills solo como bootstrap opcional y autorizado.
+- Core neutral con separación inicial de tool adapters y methodology adapters.
+- Registry de adapters con `opencode` como adapter escribible actual.
+- Adapters dry-run para `codex` y `claude-code`, sin escritura real.
+- Methodology adapters para `openspec`, `lufy-sdd` y `none`.
+- Methodology por tier registrada en manifest y expuesta por `verify/status --json`.
+
+### CLI Go
+
+- CLI Go canónica en `tools/lufy-cli-go`.
+- `scripts/install.sh` como wrapper estricto de `lufy-ai install`, sin fallback legacy.
+- `install` idempotente con catálogo, SHA-256, manifest schema v2 y backups.
+- `uninstall` gestionado con dry-run, backup, drift guard, preservación de `opencode.json` y remoción mínima de referencia en `AGENTS.md`.
+- `verify` estructural con salida humana, `--json`, `--quiet`, `--verbose` y `--deep`.
+- `status` humano/JSON con drift y detalles por asset.
+- `sync` conservador para assets gestionados sin drift.
+- `merge` para reconciliar `.lufy-new` con ancestor seguro.
+- `backup` y `restore` con manifest, targetRoot y validación de paths/hashes.
+- `upgrade` autoreemplazante con versión fija y SHA-256.
+- `version` con metadata de build.
+- `init` y `--rescan` para `.opencode/project.yaml` stack-aware.
+
+### Assets instalables
+
+- Agentes OpenCode: `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`.
+- Skills OpenSpec `sdd-workflow`.
+- Templates `sdd-lite.md` y `result-contract.md`.
+- Policy de delivery.
+- Comandos `/opsx-*`.
+- Comandos `/lufy.*` instalables según catálogo.
+- Agent Observatory TUI.
+- OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
+- Lufy SDD inicial bajo `.lufy/sdd/` cuando se selecciona.
+
+### Release, calidad y seguridad
+
 - Bootstrap remoto con checksum, validación de tar entries, retry y timeouts.
-- Release con actions pinneadas, SBOM, provenance y firma cosign.
-- Drift Resolution publicado en `v0.2.0`: policies por asset, ancestors, `.lufy-new`, `merge-block` para `AGENTS.md`, `--scope`, `merge` y restore por ID/listado.
-- OpenSpec core v2/stay-updated listo para `v0.3.0`: config action-based, specs delta, scenarios testables, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
-- Harness SDD proporcional: `sdd-router`, T1 Full SDD, T2 SDD Lite, T3 Express, execution modes, result contracts, context slicing y review workload.
-- Review Workload Harness: `review_slices` proporcionales para T1 y T2 con varios riesgos, orientados al reviewer humano y a entregables pequeños cuando conviene.
-- Templates instalables de proceso: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
-- Result Contract envelope v1 validado localmente: agentes locales y template usan envelope YAML canónico con `workflow_decision` para `workflow_limits`, estados de gate, evidencia, riesgos y siguiente acción; delivery/archive quedan pendientes de autorización.
-- Skill resolution local-first con AutoSkills documentado solo como bootstrap opcional mediante `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
-- `sdd-router` limitado a clasificación read-only/no-shell y delivery con gate explícito de checks remotos de PR antes de `delivered`/`closed`.
-- Fast path OpenSpec/docs-only: micro-slices documentales de 1-2 artefactos pueden ejecutarse como T2/T3 dentro de programas T1 cuando no hay runtime, delivery, seguridad ni contratos públicos.
-- Salidas finales del `orchestrator` normalizadas para usuarios: los Result Contract YAML quedan como formato interno/handoff salvo solicitud explícita.
+- Release workflow con artifacts por OS/arch, checksums, SBOM, provenance y firma cosign.
+- `scripts/validate.sh` como gate local agrupado.
+- Coverage objetivo `80.0%`.
+- Action pinning y YAML checks.
+- Release estable solo desde tags `v*` alcanzables desde `main`.
 
 ## Pendiente o futuro
 
-- Promover `develop` a `main` y publicar `v0.4.0` como release estable desde un tag `v*` alcanzable desde `origin/main`, con evidencia de CI, checks remotos de PR y workflow de release.
-- OpenSpec expanded profile queda pendiente para un sprint posterior; no forma parte del release `v0.4.0` objetivo.
-- Backlog stack-aware: Release A (`lufy-ai init`, `.opencode/project.yaml` y rescan/drift) queda cubierta por PRs previos; `/lufy.timereport` (LUFY-3) fue entregado por PR #66 y archivado post-merge. Siguen pendientes consumidores como `test-writer`, reviewer ponderado, `/lufy.onboard`, hooks dinámicos y planner 8-state; ver `docs/backlog.md`.
-- Reconciliation hook opt-in para detectar cambios sin spec asociada.
+- Promover `develop` a `main` y publicar la próxima release estable desde tag `v*`.
+- Adapter escribible real para Codex.
+- Adapter escribible real para Claude Code.
+- Lufy SDD full como alternativa completa a OpenSpec.
+- Templates por stack como paquetes instalables.
+- Subagentes de dominio adicionales.
+- CLI governance adicional: `pin`, `unpin`, `doctor`, `info`.
+- Planner 8-state completo.
+- Reconciliation hook opt-in.
 - Autocomplete/help avanzado mediante Cobra u otro framework.
 - Verificación cosign integrada en `upgrade`.
-- Deep verify de plugins y schemas externos.
 - Two-phase apply completo si el rollback acotado resulta insuficiente.
 - Migración a GoReleaser si reduce mantenimiento frente al script actual.
+
+## Límites actuales
+
+- El único adapter escribible es `opencode`.
+- `codex` y `claude-code` no deben documentarse como instalables.
+- `none` no es metodología universal: T1/T2 siguen protegidos por policy.
+- `AGENTS.md`, `opencode.json` y `.opencode/project.yaml` son user-owned o user-managed.
+- No existe suite Node/TS global en la raíz.
+- No hacer delivery sin autorización explícita.

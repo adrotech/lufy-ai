@@ -2,7 +2,9 @@
 
 Este plan consolida los RFCs `LUFY-AI-DRIFT-RESOLUTION-RFC.md`, `LUFY-AI-OPENSPEC-V2-RFC.md` y `LUFY-AI-ROADMAP-RFC.md` como guia operativa para las proximas iteraciones de `lufy-ai`.
 
-No describe capacidades ya publicadas. Cada bloque debe convertirse en proposal OpenSpec antes de implementar, salvo tareas puramente administrativas autorizadas.
+Documento historico de planificacion. Varias piezas ya fueron implementadas en ciclos posteriores: CLI Go canónica, drift resolution, OpenSpec core v2, harness SDD proporcional, foundation hexagonal de adapters, methodology por tier y `lufy-ai uninstall`. Para estado actual, usar [`docs/status.md`](status.md); para arquitectura vigente, usar [`docs/architecture.md`](architecture.md).
+
+No debe leerse como contrato actual de producto ni como lista exhaustiva de pendientes. Cada bloque nuevo debe convertirse en proposal OpenSpec antes de implementar, salvo tareas puramente administrativas autorizadas.
 
 ## Objetivo
 

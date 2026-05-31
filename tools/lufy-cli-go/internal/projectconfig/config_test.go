@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
 func TestScanDetectsGoStack(t *testing.T) {
@@ -188,6 +190,35 @@ func TestScanGeneratesCanonicalWorkflowLimits(t *testing.T) {
 	assertWorkflowLimitsOnly(t, string(data))
 }
 
+func TestScanGeneratesHarnessDefaults(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+
+	cfg, err := Scan(root, fixedTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != domain.ToolInitialDefault {
+		t.Fatalf("unexpected tool default: %s", cfg.Tool)
+	}
+	if cfg.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow || cfg.MethodologyByTier[domain.TierT1].Mode != domain.MethodologyModeFull {
+		t.Fatalf("unexpected T1 methodology default: %#v", cfg.MethodologyByTier[domain.TierT1])
+	}
+	if cfg.MethodologyByTier[domain.TierT3].ID != domain.MethodologyNone || cfg.MethodologyByTier[domain.TierT3].Mode != domain.MethodologyModeNone {
+		t.Fatalf("unexpected T3 methodology default: %#v", cfg.MethodologyByTier[domain.TierT3])
+	}
+	data, err := Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, want := range []string{"tool: opencode", "methodology_by_tier:", "T1:", "id: openspec", "mode: full", "T3:", "id: none"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("generated config missing harness default %q:\n%s", want, text)
+		}
+	}
+}
+
 func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
@@ -236,6 +267,49 @@ func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
 	_ = requireStack(t, merged, "typescript")
 }
 
+func TestRescanMergesPartialMethodologyByTierWithDefaults(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+tool: opencode
+methodology_by_tier:
+  T3:
+    id: openspec
+    mode: lite
+    required: false
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+workflow_limits:
+  sizing:
+    loc_budget: 250
+`)
+
+	var out strings.Builder
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "category=harness") || !strings.Contains(out.String(), "status=applied") {
+		t.Fatalf("rescan did not report harness default completion: %s", out.String())
+	}
+	merged, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow || merged.MethodologyByTier[domain.TierT2].Mode != domain.MethodologyModeLite {
+		t.Fatalf("rescan did not fill missing methodology defaults: %#v", merged.MethodologyByTier)
+	}
+	if merged.MethodologyByTier[domain.TierT3].ID != domain.MethodologySpecWorkflow || merged.MethodologyByTier[domain.TierT3].Mode != domain.MethodologyModeLite {
+		t.Fatalf("rescan did not preserve T3 override: %#v", merged.MethodologyByTier)
+	}
+}
+
 func TestRescanMergesPartialWorkflowLimitsWithDefaults(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
@@ -269,6 +343,27 @@ workflow_limits:
 	}
 	if len(merged.WorkflowLimits.StopRules) == 0 || len(merged.WorkflowLimits.Preflight) == 0 {
 		t.Fatalf("rescan did not fill missing workflow gates: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestLoadRejectsUnsupportedHarnessConfig(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+tool: other
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+workflow_limits: {}
+`)
+
+	if _, err := Load(filepath.Join(root, ProjectConfigPath)); err == nil {
+		t.Fatalf("expected unsupported harness config to fail")
 	}
 }
 

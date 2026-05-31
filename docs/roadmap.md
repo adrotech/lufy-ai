@@ -1,10 +1,10 @@
 # Roadmap de hardening y evolución de lufy-ai
 
-Este roadmap captura trabajo futuro taggeable derivado del análisis comparativo con `Gentleman-Programming/gentle-ai`. El alcance real de `lufy-ai` sigue siendo un kit OpenCode/OpenSpec instalable en repositorios destino. La CLI Go actual existe para instalar, verificar y sincronizar assets gestionados del kit; no convierte el repo en un framework de aplicación ni en un producto multiagente separado.
+Este roadmap captura trabajo futuro taggeable derivado del análisis comparativo con `Gentleman-Programming/gentle-ai` y de la migración de Lufy hacia un harness neutral. El alcance real actual sigue siendo OpenCode/OpenSpec como preset escribible, con foundation hexagonal para futuros adapters.
 
 ## Visión
 
-Convertir `lufy-ai` en una capa operativa instalable, segura e idempotente para proyectos existentes, con validación básica automatizada y capacidad de reaplicar assets gestionados sin destruir configuración local.
+Convertir `lufy-ai` en una capa operativa instalable, segura e idempotente para proyectos existentes, capaz de instalar, sincronizar, desinstalar y reinstalar assets gestionados sin destruir configuración local, y preparada para soportar varias tools mediante adapters.
 
 La evolución debe priorizar primero la seguridad del instalador y la confianza del usuario antes de expandir templates, automatizaciones o empaquetado como producto.
 
@@ -20,6 +20,7 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 - **Evolución incremental**: productizar como CLI queda para una fase futura, no como prioridad inmediata.
 - **Migración compatible de Bash a Go**: Bash queda como wrapper estricto de compatibilidad que delega en `lufy-ai install`, sin fallback legacy.
 - **Release estable desde producción**: integrar trabajo en `develop`, promover a `main` y publicar releases estables solo desde tags `v*` sobre commits alcanzables desde `main`.
+- **Harness antes que tool**: mantener tiers, roles, policies, Result Contract y metodología por tier en el core; cada tool concreta debe vivir detrás de un adapter.
 
 ## Estado instalable vs roadmap
 
@@ -33,12 +34,14 @@ Para gates de coverage, lint, shellcheck, matriz multi-OS y E2E post-release, ve
 
 Estado actual documentable:
 
-- CLI Go en `tools/lufy-cli-go/` con `install`, `verify`, `backup`, `restore` y `sync`.
+- CLI Go en `tools/lufy-cli-go/` con `init`, `install`, `uninstall`, `verify`, `status`, `sync`, `merge`, `backup`, `restore`, `upgrade` y `version`.
+- `uninstall` gestionado con dry-run, backup, drift guard, preservación de `opencode.json` y remoción mínima de la referencia Lufy en `AGENTS.md`.
 - Assets gestionados con estado `.lufy-ai/install-state.json`, hashes SHA-256, idempotencia y backups antes de actualizaciones gestionadas.
 - Drift Resolution en rama: policies declarativas, `AGENTS.md` como `merge-block`, `tui.json` como `no-replace`, `.lufy-new`, ancestors, `--scope=project|global|both`, `lufy-ai merge <path>` y restore con `--list`/ID.
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Harness SDD proporcional instalable: `sdd-router`, T1/T2/T3, SDD Lite, result contracts, context slicing, review workload y skill resolution local-first.
+- Foundation hexagonal implementada: core neutral, `opencode` escribible, `codex`/`claude-code` dry-run, metodología por tier con `openspec`, `lufy-sdd` y `none`.
 - Review Workload Harness instalable: slices revisables para features/propuestas grandes, sin forzar micro-entregables en T3.
 - Templates de proceso instalables: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
@@ -55,9 +58,11 @@ Flujo operativo de ramas/release:
 No son capacidades instalables actuales:
 
 - templates por stack como `frontend-react`, `frontend-nextjs`, `frontend-astro`, `mobile-expo` o `backend-spring`;
-- detección automática de stack integrada en la CLI;
+- consumidores completos de `.opencode/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
+- instalación real/escribible sobre Codex o Claude Code.
+- Lufy SDD full como reemplazo completo de OpenSpec.
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.
 
