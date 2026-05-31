@@ -14,7 +14,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = ROOT / "skills/lufy.timereport/scripts/generate_timereport.py"
 SENSITIVE = ["USER_PROMPT_SECRET", "ASSISTANT_OUTPUT_SECRET", "FULL_TOOL_PAYLOAD", "diff --git", "session_diff"]
-REQUIRED = ["LUFY Developer Impact Report", "Propiedades de la tarea", "Resumen ejecutivo", "Impacto diario", "Tiempo IA activo", "Tiempo humano activo", "Paso a paso", "Qué se hizo", "Por qué", "Primera / última actividad", "Duración activa", "IA", "Humano", "Aprendizajes y pivots", "LOC neto", "Commits", "Tool calls", "Top tools", "Subagents", "Skills", "Fases / timeline", "Stack detectado", "Metodología y limitaciones"]
+REQUIRED = ["LUFY Developer Impact Report", "Propiedades de la tarea", "Resumen ejecutivo", "Impacto diario", "Tiempo IA activo", "Tiempo humano activo", "Diagnóstico de tiempo", "Confianza scope", "Dónde se fue el tiempo", "Cómo reducir la próxima iteración", "Paso a paso", "Qué se hizo", "Por qué", "Primera / última actividad", "Duración activa", "IA", "Humano", "Aprendizajes y pivots", "LOC neto", "Commits", "Tool calls", "Top tools", "Subagents", "Skills", "Fases / timeline", "Stack detectado", "Metodología y limitaciones"]
 
 
 def main() -> int:

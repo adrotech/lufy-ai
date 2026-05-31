@@ -67,7 +67,8 @@ def build_report(target_dir: Path, db_path: Path, since: str | None, until: str 
     metrics = calculate_time_metrics(activity, limitations)
     phases = infer_phases(activity)
     steps = build_step_timeline(activity)
-    return {"activity": activity, "git": git, "stack": stack, "metrics": metrics, "phases": phases, "steps": steps, "limitations": limitations, "since": since, "until": until, "git_since": git_since, "git_until": git_until}
+    diagnostics = build_time_diagnostics(activity, git, metrics, steps, session_id)
+    return {"activity": activity, "git": git, "stack": stack, "metrics": metrics, "phases": phases, "steps": steps, "diagnostics": diagnostics, "limitations": limitations, "since": since, "until": until, "git_since": git_since, "git_until": git_until}
 
 
 def collect_opencode_activity(db_path: Path, target_dir: Path, since: str | None, until: str | None, scope: str, session_id: str | None, tier: str | None, change: str | None, limitations: list[str]) -> dict[str, Any]:
@@ -506,18 +507,24 @@ def string_value(row: dict[str, Any], keys: tuple[str, ...]) -> str | None:
     return None
 
 
-def calculate_time_metrics(activity: dict[str, Any], limitations: list[str]) -> dict[str, str]:
+def calculate_time_metrics(activity: dict[str, Any], limitations: list[str]) -> dict[str, Any]:
     timestamps = activity["timestamps"]
     if len(timestamps) < 2:
         limitations.append("Timestamps insuficientes para calcular tiempos con precisión.")
-        return {"wall_clock": "No disponible", "ai_time": "No disponible", "human_time": "No disponible"}
+        return {"wall_clock": "No disponible", "ai_time": "No disponible", "human_time": "No disponible", "wall_clock_seconds": 0, "ai_seconds": 0, "human_seconds": 0}
     all_ts = [ts for ts, _ in timestamps]
     ai_ts = [ts for ts, role in timestamps if role in {"assistant", "tool", "event", "step-finish", "activity"}]
     human_ts = [ts for ts, role in timestamps if role == "user"]
+    wall_clock_seconds = max(all_ts) - min(all_ts)
+    ai_seconds = capped_intervals(ai_ts, AI_GAP_CAP_SECONDS) if len(ai_ts) > 1 else 0
+    human_seconds = capped_intervals(human_ts, HUMAN_GAP_CAP_SECONDS) if len(human_ts) > 1 else 0
     return {
-        "wall_clock": format_seconds(max(all_ts) - min(all_ts)),
-        "ai_time": format_seconds(capped_intervals(ai_ts, AI_GAP_CAP_SECONDS)) if len(ai_ts) > 1 else "Estimación parcial",
-        "human_time": format_seconds(capped_intervals(human_ts, HUMAN_GAP_CAP_SECONDS)) if len(human_ts) > 1 else "Estimación parcial",
+        "wall_clock": format_seconds(wall_clock_seconds),
+        "ai_time": format_seconds(ai_seconds) if len(ai_ts) > 1 else "Estimación parcial",
+        "human_time": format_seconds(human_seconds) if len(human_ts) > 1 else "Estimación parcial",
+        "wall_clock_seconds": wall_clock_seconds,
+        "ai_seconds": ai_seconds,
+        "human_seconds": human_seconds,
     }
 
 
@@ -704,7 +711,10 @@ def capped_event_bounds(bounds: tuple[float, float], role: str) -> tuple[float, 
 
 
 def new_step_bucket(event: dict[str, Any]) -> dict[str, Any]:
-    active_seconds = event_active_seconds(event)
+    active_interval = (event["start"], event["end"])
+    active_seconds = interval_union_seconds([active_interval])
+    ai_intervals = [active_interval] if event["role"] in {"assistant", "tool", "event", "step-finish", "activity"} else []
+    human_intervals = [active_interval] if event["role"] == "user" else []
     return {
         "start": event["start"],
         "end": event["end"],
@@ -717,9 +727,12 @@ def new_step_bucket(event: dict[str, Any]) -> dict[str, Any]:
         "skills": [event["skill"]] if event["skill"] else [],
         "ai_points": ai_points_for_event(event),
         "human_points": human_points_for_event(event),
+        "active_intervals": [active_interval],
+        "ai_intervals": ai_intervals,
+        "human_intervals": human_intervals,
         "active_seconds": active_seconds,
-        "ai_seconds": active_seconds if event["role"] in {"assistant", "tool", "event", "step-finish", "activity"} else 0,
-        "human_seconds": active_seconds if event["role"] == "user" else 0,
+        "ai_seconds": interval_union_seconds(ai_intervals),
+        "human_seconds": interval_union_seconds(human_intervals),
         "event_count": 1,
     }
 
@@ -736,17 +749,36 @@ def merge_step_event(bucket: dict[str, Any], event: dict[str, Any]) -> None:
         bucket["skills"].append(event["skill"])
     bucket["ai_points"].extend(ai_points_for_event(event))
     bucket["human_points"].extend(human_points_for_event(event))
-    active_seconds = event_active_seconds(event)
-    bucket["active_seconds"] += active_seconds
+    active_interval = (event["start"], event["end"])
+    bucket["active_intervals"].append(active_interval)
     if event["role"] in {"assistant", "tool", "event", "step-finish", "activity"}:
-        bucket["ai_seconds"] += active_seconds
+        bucket["ai_intervals"].append(active_interval)
     if event["role"] == "user":
-        bucket["human_seconds"] += active_seconds
+        bucket["human_intervals"].append(active_interval)
+    bucket["active_seconds"] = interval_union_seconds(bucket["active_intervals"])
+    bucket["ai_seconds"] = interval_union_seconds(bucket["ai_intervals"])
+    bucket["human_seconds"] = interval_union_seconds(bucket["human_intervals"])
     bucket["event_count"] += 1
 
 
 def event_active_seconds(event: dict[str, Any]) -> float:
     return max(0, event["end"] - event["start"])
+
+
+def interval_union_seconds(intervals: list[tuple[float, float]]) -> float:
+    valid = sorted((start, end) for start, end in intervals if end >= start)
+    if not valid:
+        return 0.0
+    total = 0.0
+    current_start, current_end = valid[0]
+    for start, end in valid[1:]:
+        if start <= current_end:
+            current_end = max(current_end, end)
+            continue
+        total += current_end - current_start
+        current_start, current_end = start, end
+    total += current_end - current_start
+    return total
 
 
 def ai_points_for_event(event: dict[str, Any]) -> list[float]:
@@ -770,6 +802,9 @@ def finalize_step(index: int, bucket: dict[str, Any]) -> dict[str, Any]:
         "wall_clock": format_active_seconds(bucket["active_seconds"], bucket["event_count"]),
         "ai_time": format_role_active_seconds(bucket["ai_seconds"]),
         "human_time": format_role_active_seconds(bucket["human_seconds"]),
+        "active_seconds": bucket["active_seconds"],
+        "ai_seconds": bucket["ai_seconds"],
+        "human_seconds": bucket["human_seconds"],
         "actors": summarize_values(bucket["actors"]),
         "tools": summarize_values([*bucket["tools"], *bucket["skills"]]),
         "events": bucket["event_count"],
@@ -845,6 +880,129 @@ def format_role_active_seconds(seconds: float) -> str:
     return format_seconds(seconds)
 
 
+def build_time_diagnostics(activity: dict[str, Any], git: dict[str, Any], metrics: dict[str, Any], steps: list[dict[str, Any]], session_id: str | None) -> dict[str, Any]:
+    scope = activity.get("scope", {})
+    tier = normalize_tier(str(scope.get("tier", "")))
+    expected = expected_budget(tier)
+    tool_total = sum(activity.get("tool_counts", {}).values())
+    phase_rows = phase_cost_rows(steps)
+    top_phase = max(phase_rows, key=lambda row: row["active_seconds"], default=None)
+    top_ai_phase = max(phase_rows, key=lambda row: row["ai_seconds"], default=None)
+    top_human_phase = max(phase_rows, key=lambda row: row["human_seconds"], default=None)
+    warnings = diagnostic_warnings(activity, git, metrics, tool_total, expected, session_id)
+    confidence = scope_confidence(activity, git, metrics, session_id, warnings)
+    suggestions = diagnostic_suggestions(metrics, tool_total, expected, top_phase, confidence)
+    return {
+        "tier": tier,
+        "expected": expected,
+        "tool_total": tool_total,
+        "phase_rows": phase_rows,
+        "top_phase": top_phase,
+        "top_ai_phase": top_ai_phase,
+        "top_human_phase": top_human_phase,
+        "scope_confidence": confidence,
+        "warnings": warnings,
+        "suggestions": suggestions,
+        "estimated_saving": estimate_saving(metrics, tool_total, expected),
+    }
+
+
+def normalize_tier(value: str) -> str:
+    upper = value.upper()
+    for tier in ("T1", "T2", "T3"):
+        if tier in upper:
+            return tier
+    return "T3"
+
+
+def expected_budget(tier: str) -> dict[str, int]:
+    budgets = {
+        "T1": {"ai_seconds": 120 * 60, "human_seconds": 45 * 60, "wall_seconds": 6 * 60 * 60, "tool_calls": 80, "sessions": 8},
+        "T2": {"ai_seconds": 45 * 60, "human_seconds": 15 * 60, "wall_seconds": 2 * 60 * 60, "tool_calls": 25, "sessions": 4},
+        "T3": {"ai_seconds": 15 * 60, "human_seconds": 5 * 60, "wall_seconds": 30 * 60, "tool_calls": 8, "sessions": 1},
+    }
+    return budgets.get(tier, budgets["T3"])
+
+
+def phase_cost_rows(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_phase: dict[str, dict[str, Any]] = {}
+    for step in steps:
+        phase = str(step.get("phase", "No disponible"))
+        row = by_phase.setdefault(phase, {"phase": phase, "active_seconds": 0.0, "ai_seconds": 0.0, "human_seconds": 0.0, "events": 0, "steps": 0})
+        row["active_seconds"] += float(step.get("active_seconds", 0) or 0)
+        row["ai_seconds"] += float(step.get("ai_seconds", 0) or 0)
+        row["human_seconds"] += float(step.get("human_seconds", 0) or 0)
+        row["events"] += int(step.get("events", 0) or 0)
+        row["steps"] += 1
+    return sorted(by_phase.values(), key=lambda row: row["active_seconds"], reverse=True)
+
+
+def diagnostic_warnings(activity: dict[str, Any], git: dict[str, Any], metrics: dict[str, Any], tool_total: int, expected: dict[str, int], session_id: str | None) -> list[str]:
+    scope = activity.get("scope", {})
+    warnings: list[str] = []
+    if scope.get("mode") == "task" and not session_id:
+        warnings.append("Scope inferido automáticamente; para auditorías finas conviene pasar --session-id.")
+    if int(scope.get("session_count", 0) or 0) > expected["sessions"]:
+        warnings.append("La tarea incluye más sesiones de las esperadas para el tier; puede estar mezclando trabajo no relacionado.")
+    if float(metrics.get("wall_clock_seconds", 0) or 0) > expected["wall_seconds"]:
+        warnings.append("El tiempo calendario supera lo esperable para el tier; revisar si el scope quedó demasiado amplio.")
+    if float(metrics.get("ai_seconds", 0) or 0) > expected["ai_seconds"]:
+        warnings.append("El tiempo IA activo supera el presupuesto de referencia del tier.")
+    if float(metrics.get("human_seconds", 0) or 0) > expected["human_seconds"]:
+        warnings.append("El tiempo humano es estimado por gaps y puede estar sobredimensionado.")
+    if tool_total > expected["tool_calls"]:
+        warnings.append("La cantidad de tool calls supera lo esperable para el tier; pudo haber validación o exploración excesiva.")
+    if scope.get("mode") == "task" and git.get("available") and git.get("commits") == 0 and git.get("net_loc") == 0 and tool_total > expected["tool_calls"]:
+        warnings.append("Hay mucha actividad sin cambios Git en la ventana; posible análisis, retrabajo o scope incorrecto.")
+    return warnings
+
+
+def scope_confidence(activity: dict[str, Any], git: dict[str, Any], metrics: dict[str, Any], session_id: str | None, warnings: list[str]) -> dict[str, str]:
+    scope = activity.get("scope", {})
+    if scope.get("mode") == "repo":
+        return {"level": "media", "reason": "El scope repo es intencionalmente amplio; sirve para impacto global, no para una tarea puntual."}
+    if session_id:
+        return {"level": "alta", "reason": "El reporte fue anclado con --session-id explícito."}
+    if any("scope" in warning or "sesiones" in warning for warning in warnings):
+        return {"level": "baja", "reason": "El scope fue inferido y muestra señales de amplitud para el tier."}
+    if git.get("available") and git.get("commits") == 0 and git.get("net_loc") == 0 and float(metrics.get("wall_clock_seconds", 0) or 0) > 60 * 60:
+        return {"level": "media", "reason": "No hay cambios Git en una ventana larga; puede ser análisis válido o una tarea mal delimitada."}
+    return {"level": "media", "reason": "El scope fue inferido desde la última sesión raíz disponible."}
+
+
+def diagnostic_suggestions(metrics: dict[str, Any], tool_total: int, expected: dict[str, int], top_phase: dict[str, Any] | None, confidence: dict[str, str]) -> list[str]:
+    suggestions: list[str] = []
+    if confidence.get("level") != "alta":
+        suggestions.append("Anclar el reporte con --session-id o generar el reporte inmediatamente al cerrar la tarea.")
+    if top_phase and top_phase["phase"] in {"validación", "delivery-readiness"}:
+        suggestions.append("Separar iteración local de release-ready: en T3 usar smoke/diff primero y dejar validación completa para el cierre.")
+    if top_phase and top_phase["phase"] == "exploración":
+        suggestions.append("Para T3, limitar exploración inicial a los archivos tocados y escalar solo si aparece incertidumbre.")
+    if float(metrics.get("human_seconds", 0) or 0) > expected["human_seconds"]:
+        suggestions.append("No interpretar todo gap humano como trabajo activo; tratarlo como estimación de baja confianza.")
+    if tool_total > expected["tool_calls"]:
+        suggestions.append("Reducir rondas de herramientas agrupando lecturas y validaciones por bloque.")
+    if not suggestions:
+        suggestions.append("El costo observado está dentro de lo esperable para el tier y el scope detectado.")
+    return suggestions
+
+
+def estimate_saving(metrics: dict[str, Any], tool_total: int, expected: dict[str, int]) -> str:
+    extra_ai = max(0, float(metrics.get("ai_seconds", 0) or 0) - expected["ai_seconds"])
+    extra_human = max(0, float(metrics.get("human_seconds", 0) or 0) - expected["human_seconds"])
+    extra_tools = max(0, tool_total - expected["tool_calls"])
+    if extra_ai <= 0 and extra_human <= 0 and extra_tools <= 0:
+        return "Sin ahorro claro"
+    parts = []
+    if extra_ai > 0:
+        parts.append(f"hasta {format_seconds(extra_ai)} IA")
+    if extra_human > 0:
+        parts.append(f"hasta {format_seconds(extra_human)} humano estimado")
+    if extra_tools > 0:
+        parts.append(f"{extra_tools} tool calls")
+    return ", ".join(parts)
+
+
 def render_report(report: dict[str, Any], target_dir: Path, db_path: Path) -> str:
     activity = report["activity"]
     git = report["git"]
@@ -855,6 +1013,7 @@ def render_report(report: dict[str, Any], target_dir: Path, db_path: Path) -> st
         render_scope(activity["scope"], report),
         render_executive_summary(report),
         "<section><h2>Impacto diario</h2><div class='grid'>" + card("Tiempo calendario", metrics["wall_clock"]) + card("Tiempo IA activo", metrics["ai_time"]) + card("Tiempo humano activo", metrics["human_time"]) + card("Tool calls", str(sum(activity["tool_counts"].values()))) + "</div></section>",
+        render_time_diagnostics(report),
         render_steps(report["steps"]),
         render_learnings_and_pivots(report),
         "<section><h2>Git</h2><div class='grid'>" + card("Commits", str(git["commits"])) + card("LOC neto", str(git["net_loc"])) + "</div></section>",
@@ -870,11 +1029,13 @@ def render_report(report: dict[str, Any], target_dir: Path, db_path: Path) -> st
 
 def render_scope(scope: dict[str, Any], report: dict[str, Any]) -> str:
     methodology_info = scope.get("methodology", {})
+    confidence = report.get("diagnostics", {}).get("scope_confidence", {})
     cards = [
         card("Scope", str(scope.get("mode", "No disponible"))),
         card("Tier", str(scope.get("tier", "No disponible"))),
         card("Sesiones incluidas", str(scope.get("session_count", "0"))),
         card("Metodología", str(methodology_info.get("id", "No detectada"))),
+        card("Confianza scope", str(confidence.get("level", "No disponible"))),
     ]
     rows = {
         "Tarea raíz": str(scope.get("root_title", "No disponible")),
@@ -886,6 +1047,7 @@ def render_scope(scope: dict[str, Any], report: dict[str, Any]) -> str:
         "Spec/change": str(methodology_info.get("change", scope.get("change", "No disponible"))),
         "Fuente metodología": str(methodology_info.get("source", "No disponible")),
         "Fuente tier": str(scope.get("tier_source", "No disponible")),
+        "Lectura del scope": str(confidence.get("reason", "No disponible")),
     }
     details = "".join(f"<tr><td>{esc(key)}</td><td>{esc(value)}</td></tr>" for key, value in rows.items())
     return "<section><h2>Propiedades de la tarea</h2><div class='grid'>" + "".join(cards) + "</div><div class='table-wrap'><table class='property-table'><tbody>" + details + "</tbody></table></div></section>"
@@ -909,6 +1071,78 @@ def render_executive_summary(report: dict[str, Any]) -> str:
         f"{esc(str(git['net_loc']))} LOC neto dentro del rango seleccionado.</p></div>"
     )
     return "<section><h2>Resumen ejecutivo</h2>" + summary + "</section>"
+
+
+def render_time_diagnostics(report: dict[str, Any]) -> str:
+    diagnostics = report["diagnostics"]
+    top_phase = diagnostics.get("top_phase")
+    top_ai_phase = diagnostics.get("top_ai_phase")
+    top_human_phase = diagnostics.get("top_human_phase")
+    cards = [
+        card("Confianza scope", str(diagnostics["scope_confidence"]["level"])),
+        card("Mayor costo total", phase_card_value(top_phase)),
+        card("Mayor costo IA", phase_card_value(top_ai_phase, "ai_seconds")),
+        card("Mayor costo humano", phase_card_value(top_human_phase, "human_seconds")),
+        card("Ahorro potencial", str(diagnostics["estimated_saving"])),
+    ]
+    return (
+        "<section><h2>Diagnóstico de tiempo</h2>"
+        "<p class='muted'>Lectura operativa para entender si los tiempos son proporcionales al tier y dónde conviene ajustar el workflow.</p>"
+        "<div class='grid'>" + "".join(cards) + "</div>"
+        + render_phase_cost_table(diagnostics["phase_rows"])
+        + "<div class='callout orange'><div class='callout-title'>Señales a revisar</div>" + render_list(diagnostics["warnings"] or ["Sin señales de sobrecosto para el tier detectado."]) + "</div>"
+        + "<div class='callout blue'><div class='callout-title'>Cómo reducir la próxima iteración</div>" + render_list(diagnostics["suggestions"]) + "</div>"
+        + "</section>"
+    )
+
+
+def phase_card_value(row: dict[str, Any] | None, key: str = "active_seconds") -> str:
+    if not row:
+        return "No disponible"
+    return f"{row['phase']} · {format_seconds(float(row.get(key, 0) or 0))}"
+
+
+def render_phase_cost_table(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return "<p class='warn'>Sin fases suficientes para desglose de tiempo.</p>"
+    html_rows = []
+    for row in rows:
+        html_rows.append(
+            "<tr>"
+            f"<td>{esc(str(row['phase']))}</td>"
+            f"<td>{esc(format_seconds(float(row['active_seconds'])))}</td>"
+            f"<td>{esc(format_seconds(float(row['ai_seconds'])))}</td>"
+            f"<td>{esc(format_seconds(float(row['human_seconds'])))}</td>"
+            f"<td>{row['events']}</td>"
+            f"<td>{esc(phase_interpretation(row))}</td>"
+            "</tr>"
+        )
+    return (
+        "<h3>Dónde se fue el tiempo</h3><div class='table-wrap'><table><thead><tr>"
+        "<th>Fase</th><th>Total activo</th><th>IA</th><th>Humano</th><th>Eventos</th><th>Lectura</th>"
+        "</tr></thead><tbody>" + "".join(html_rows) + "</tbody></table></div>"
+    )
+
+
+def phase_interpretation(row: dict[str, Any]) -> str:
+    phase = row["phase"]
+    if phase == "input humano":
+        return "Decisiones, aclaraciones o cambios de alcance; estimación sensible a gaps."
+    if phase == "razonamiento IA":
+        return "Interpretación y planificación; alto costo puede indicar scope ambiguo o demasiadas decisiones abiertas."
+    if phase == "ejecución":
+        return "Uso técnico general; conviene clasificar mejor herramientas si queda demasiado genérico."
+    if phase == "exploración":
+        return "Contexto leído antes de modificar; para T3 debería ser acotado."
+    if phase == "implementación":
+        return "Cambios aplicados o sync de assets."
+    if phase == "validación":
+        return "Evidencia de funcionamiento; puede separarse en smoke vs release-ready."
+    if phase == "workflow/spec":
+        return "Metodología o skills; bajo costo esperado en T3."
+    if phase == "delivery-readiness":
+        return "Git/GitHub/build/release; no siempre pertenece a la iteración funcional."
+    return "Actividad estructural sin intención fina disponible."
 
 
 def render_steps(steps: list[dict[str, Any]]) -> str:
