@@ -416,8 +416,7 @@ def format_bound(timestamp: float | None) -> str:
 def format_datetime_human(value: dt.datetime) -> str:
     local = value.astimezone()
     month = MONTHS_ES[local.month - 1]
-    timezone = local.tzname() or "local"
-    return f"{local.day:02d} {month} {local.year}, {local.hour:02d}:{local.minute:02d} {timezone}"
+    return f"{local.day:02d} {month} {local.year}, {local.hour:02d}:{local.minute:02d}"
 
 
 def format_range_text(start: Any, end: Any) -> str:
