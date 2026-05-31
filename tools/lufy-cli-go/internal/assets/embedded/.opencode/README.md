@@ -23,9 +23,9 @@ Las reglas compartidas de delivery viven en `policies/delivery.md`.
 
 `lufy-ai` usa routing proporcional para elegir el flujo más pequeño que resuelva el pedido con seguridad.
 
-- **T1 Full SDD**: nuevas capabilities, impacto transversal, decisiones de arquitectura, contratos públicos, seguridad, política de delivery o alta incertidumbre. Usa OpenSpec completo.
-- **T2 SDD Lite**: cambio funcional acotado, bug relevante, ajuste de agente/skill o refactor controlado. Usa mini-spec o handoff estructurado con criterios WHEN/THEN.
-- **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante. Puede ir directo a implementación acotada y validación proporcional.
+- **T1 Full SDD**: nuevas capabilities, impacto transversal, decisiones de arquitectura, contratos públicos, seguridad, política de delivery o alta incertidumbre. Usa metodología full (`openspec/full` hoy; `lufy-sdd/full` futuro).
+- **T2 SDD Lite**: cambio funcional acotado, bug relevante, ajuste de agente/skill o refactor controlado. Usa metodología lite (`openspec/lite`, `lufy-sdd/lite`) o handoff estructurado con criterios WHEN/THEN.
+- **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante. Puede usar `none` y pasar directo a implementación acotada con validación proporcional.
 - **Fast path OpenSpec/docs-only**: una subtarea de un programa T1 puede ejecutarse como T2/T3 si toca solo 1-2 artefactos OpenSpec/docs, no cambia runtime, no requiere delivery y tiene aceptación clara. Validación esperada: `openspec validate "<change>" --strict` cuando aplique más revisión estática de archivos/checklists.
 
 El `orchestrator` puede invocar `sdd-router` antes de activar agentes más pesados. El router devuelve `tier`, `confidence`, `execution_mode`, `recommended_flow`, `context_slice`, `skill_status`, `review_workload`, `stop_reason` y `next_agent`.
@@ -41,6 +41,13 @@ Execution modes soportados:
 - `delivery_pending`: Git/GH bloqueado hasta autorización explícita.
 
 El router puede reportar `program_tier`, `slice_tier` y `fast_path_allowed` para evitar confundir el tamaño del programa global con el tamaño real del siguiente micro-slice.
+
+El contexto de adapter se reporta en Result Contract como:
+
+- `tool_id`: hoy `opencode` escribible; `codex` y `claude-code` quedan como dry-run/preview fuera del preset instalado.
+- `methodology_id`: `openspec`, `lufy-sdd` o `none`.
+- `methodology_mode`: `full`, `lite` o `none`.
+- `execution_mode`: `full-sdd`, `sdd-lite` o `express`.
 
 Templates locales:
 
@@ -62,8 +69,8 @@ Contexto operativo del repo:
 - La CLI Go del producto vive en `../tools/lufy-cli-go`.
 - `../scripts/install.sh` es un wrapper estricto del CLI Go, sin fallback legacy.
 - Preferir validación agrupada al final de un bloque/proposal; no correr tests constantemente salvo bloqueo, cambio riesgoso o diagnóstico.
-- Foco OpenSpec actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore, verify estructural).
-- `migrate-installer-to-go-cli` no debe archivarse mientras tenga tasks incompletas.
+- El lifecycle gestionado actual incluye `install`, `sync`, `uninstall`, `verify`, `status`, `backup`, `restore`, `merge`, `upgrade` y `version`.
+- La arquitectura de harness debe mantenerse adapter-first: no hardcodear nuevos textos a OpenCode/OpenSpec si el contrato puede vivir en roles, skills o metodología neutral.
 
 ### Checklist para nuevos agentes
 
@@ -96,6 +103,7 @@ Comandos OpenSpec:
 Comandos Lufy:
 
 - `/lufy.timereport`: generar un reporte local de tiempo/ROI como extra del kit.
+- `/lufy.onboard`: onboarding/demo stack-aware cuando el asset esté disponible en el target.
 
 ## Skills
 
@@ -104,8 +112,11 @@ Comandos Lufy:
 - `skills/sdd-workflow/openspec-apply-change`: implementar tasks.
 - `skills/sdd-workflow/openspec-verify-change`: verificar implementación contra artefactos.
 - `skills/sdd-workflow/openspec-archive-change`: archivar solo cambios completos.
+- `skills/lufy.timereport`: generar reportes locales de tiempo/ROI.
+- `skills/lufy.onboard`: onboarding operativo del harness cuando corresponda.
+- `skills/pr.creator`: asistencia para cuerpo de PR cuando delivery está autorizado.
 
-Skills opcionales de delivery, project sync, memoria y release pueden agregarse en proyectos downstream. El kit base solo incluye el lifecycle OpenSpec.
+Skills opcionales de memoria, release o dominios específicos pueden agregarse en proyectos downstream. El kit base incluye lifecycle OpenSpec y extras Lufy catalogados.
 
 ## Agent Observatory TUI Plugin
 

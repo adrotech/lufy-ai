@@ -25,7 +25,8 @@ Capacidades ya existentes que afectan la planificación:
 | OpenSpec core v2 | Ya incluye config action-based, deltas, scenarios, `/opsx-sync`, `UPSTREAM.json` y resolver PATH/cache/embedded. | `LUFY-12` debe ser documental y de naming para comandos nuevos, no renombre de `/opsx-*`. |
 | Result contracts | Ya hay templates y reglas base. | `LUFY-15` es normalización/enforcement, no introducción desde cero. |
 | Templates por stack | No instalables hoy. | `LUFY-17` queda P3 y debe esperar `project.yaml`. |
-| Harness hexagonal | En curso en `abstract-harness-tool-methodology-adapters`: core neutral, registry de adapters, methodology por tier, renderer con golden tests y manifest v2 con ownership. | Los próximos adapters Codex/Claude Code deben implementarse como adapters, no como forks de agentes o skills OpenCode. |
+| Harness hexagonal | Foundation implementada en `abstract-harness-tool-methodology-adapters`: core neutral, registry de adapters, methodology por tier, renderer neutral y manifest v2 con ownership. | Los próximos adapters Codex/Claude Code deben implementarse como adapters escribibles validados, no como forks de agentes o skills OpenCode. |
+| Uninstall gestionado | Implementado como `lufy-ai uninstall` con dry-run, backup, drift guard y preservación de archivos user-owned. | El lifecycle install/sync/uninstall/reinstall ya es parte del contrato operativo y debe cubrirse en docs/smokes futuros. |
 
 ## Prioridades
 
@@ -189,7 +190,7 @@ Effort estimado:
 
 ### LUFY-9 - CLI governance: `pin`, `unpin`, `doctor`, `info`, `status`
 
-**Estado:** `status` ya existe.
+**Estado:** `status` ya existe; `uninstall` también cubre la remoción segura de assets gestionados.
 
 **Issue:** #77 - https://github.com/adrotech/lufy-ai/issues/77
 
