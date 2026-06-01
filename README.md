@@ -211,6 +211,7 @@ git diff --check
 - `develop` es la rama normal de integración.
 - `main` es estable/productiva.
 - Las releases públicas se publican desde tags `v*` alcanzables desde `origin/main`.
+- Al mergear un PR hacia `main`, el pipeline crea el tag de release, construye y publica artifacts, checksums, SBOM, provenance, firmas y valida el artifact publicado con instalación/verificación real.
 - Delivery, commit, push, PR y promoción requieren autorización explícita.
 
 Ver [`docs/github-branch-settings.md`](docs/github-branch-settings.md) y [`docs/release-security.md`](docs/release-security.md).

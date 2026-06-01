@@ -44,7 +44,9 @@ Los smokes de instalación y wrapper permanecen en Ubuntu porque dependen de scr
 
 ## E2E post-release
 
-El workflow `post-release-e2e.yml` valida artifacts ya publicados para un tag `v*`. No corre en PRs normales porque depende de GitHub Releases y red externa.
+El workflow `release.yml` valida el artifact publicado como parte del pipeline automático de release. Después de publicar los assets en GitHub Releases, descarga el artifact correspondiente al runner, verifica checksums y ejecuta `version`, `install --dry-run`, `install` y `verify` contra un target temporal.
+
+El workflow `post-release-e2e.yml` queda disponible como validación manual o backstop para artifacts ya publicados de un tag `v*`. No corre en PRs normales porque depende de GitHub Releases y red externa.
 
 Ejecución manual local, si existe el release publicado y `gh` está autenticado:
 
