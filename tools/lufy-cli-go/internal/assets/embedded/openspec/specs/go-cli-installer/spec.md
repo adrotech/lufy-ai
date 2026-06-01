@@ -415,7 +415,7 @@ The CLI Go SHALL expose `lufy-ai init` as the command for generating stack-aware
 
 #### Scenario: Help includes init
 - **WHEN** the user requests CLI help
-- **THEN** the output lists `init` as the command for generating `.opencode/project.yaml`
+- **THEN** the output lists `init` as the command for generating `.lufy/project.yaml`
 
 #### Scenario: Init delegates outside main
 - **WHEN** `cmd/lufy-ai/main.go` receives the `init` command
@@ -423,18 +423,18 @@ The CLI Go SHALL expose `lufy-ai init` as the command for generating stack-aware
 
 #### Scenario: Init supports target flag
 - **WHEN** the user runs `lufy-ai init --target <dir>`
-- **THEN** the CLI resolves `<dir>` with the same safe target handling used by managed commands before reading or writing `.opencode/project.yaml`
+- **THEN** the CLI resolves `<dir>` with the same safe target handling used by managed commands before reading or writing `.lufy/project.yaml`
 
 ### Requirement: CLI init write safety
 The `init` command SHALL use safe write semantics consistent with the existing CLI safety model.
 
 #### Scenario: Init creates parent directory safely
-- **WHEN** `.opencode/` does not exist and the user runs `lufy-ai init --target <dir>`
-- **THEN** the CLI creates only the required `.opencode/` directory and `.opencode/project.yaml` inside the resolved target
+- **WHEN** `.lufy/` does not exist and the user runs `lufy-ai init --target <dir>`
+- **THEN** the CLI creates only the required `.lufy/` directory and `.lufy/project.yaml` inside the resolved target
 
 #### Scenario: Init dry-run is not required
 - **WHEN** the user runs `lufy-ai init --target <dir>`
-- **THEN** the command may write `.opencode/project.yaml` because initialization is its explicit purpose, but it MUST NOT modify managed assets, install state, backups or unrelated files
+- **THEN** the command may write `.lufy/project.yaml` because initialization is its explicit purpose, but it MUST NOT modify managed assets, install state, backups or unrelated files
 
 #### Scenario: Init reports generated path
 - **WHEN** `lufy-ai init` completes successfully
@@ -456,7 +456,7 @@ The implementation of `lufy-ai init` SHALL be validated with Go tests and fixtur
 - **THEN** the Go validation includes tests for `lufy-ai init` and still validates existing install/sync/verify behavior
 
 ### Requirement: CLI rescan drift reporting
-The CLI Go SHALL expose `lufy-ai init --rescan` as the stack-aware project rescan mode that reports drift between `.opencode/project.yaml` and current repository evidence.
+The CLI Go SHALL expose `lufy-ai init --rescan` as the stack-aware project rescan mode that reports drift between `.lufy/project.yaml` and current repository evidence.
 
 #### Scenario: Help describes rescan drift behavior
 - **WHEN** the user requests help for `lufy-ai init`

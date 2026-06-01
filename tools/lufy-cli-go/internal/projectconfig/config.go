@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	ProjectConfigPath = ".opencode/project.yaml"
+	ProjectConfigPath = ".lufy/project.yaml"
 	SchemaVersion     = 1
 )
 
@@ -44,6 +44,7 @@ type ProjectConfig struct {
 	Stacks            []Stack                  `yaml:"stacks"`
 	CI                CIConfig                 `yaml:"ci"`
 	TDD               TDDConfig                `yaml:"tdd"`
+	Validation        ValidationConfig         `yaml:"validation"`
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
@@ -102,6 +103,14 @@ type TDDConfig struct {
 	Strict              bool     `yaml:"strict"`
 	TriangulateRequired bool     `yaml:"triangulate_required"`
 	EdgeCaseCategories  []string `yaml:"edge_case_categories"`
+}
+
+type ValidationConfig struct {
+	AllowedCommands ValidationAllowedCommands `yaml:"allowed_commands"`
+}
+
+type ValidationAllowedCommands struct {
+	Implementer []string `yaml:"implementer"`
 }
 
 type WorkflowLimits struct {
@@ -173,6 +182,31 @@ func (s Service) Run(opts Options, out io.Writer) error {
 	return nil
 }
 
+func (s Service) Ensure(target string) (bool, error) {
+	target, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		return false, fmt.Errorf("resolver target: %w", err)
+	}
+	configPath := filepath.Join(target, ProjectConfigPath)
+	if _, err := os.Stat(configPath); err == nil {
+		return false, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	detected, err := Scan(target, s.Now())
+	if err != nil {
+		return false, err
+	}
+	content, err := Marshal(detected)
+	if err != nil {
+		return false, err
+	}
+	if err := platform.WriteFileAtomic(configPath, content, 0o644); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func Load(path string) (ProjectConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -233,6 +267,7 @@ func Scan(root string, now time.Time) (ProjectConfig, error) {
 		Stacks:            stacks,
 		CI:                scanCI(root),
 		TDD:               defaultTDD(),
+		Validation:        scanValidation(root, stacks),
 		WorkflowLimits:    defaultWorkflowLimits(),
 	}, nil
 }
@@ -258,6 +293,14 @@ func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 	}
 	if len(current.TDD.EdgeCaseCategories) > 0 || current.TDD.Strict || current.TDD.TriangulateRequired {
 		merged.TDD = current.TDD
+	}
+	if !isZeroValidationConfig(current.Validation) {
+		merged.Validation = mergeValidationConfig(current.Validation, detected.Validation)
+		if !reflect.DeepEqual(current.Validation, merged.Validation) {
+			items = append(items, DriftItem{Category: "validation", Severity: "info", Path: "validation.allowed_commands", Status: "applied", SuggestedAction: "Se preservaron comandos permitidos manuales y se agregaron comandos detectados faltantes."})
+		}
+	} else if !isZeroValidationConfig(detected.Validation) {
+		items = append(items, DriftItem{Category: "validation", Severity: "info", Path: "validation.allowed_commands", Status: "applied", SuggestedAction: "Se agregó allowlist de validación para roles a partir del toolchain detectado."})
 	}
 	if !reflect.DeepEqual(current.CI, detected.CI) {
 		items = append(items, DriftItem{Category: "ci", Severity: "info", Path: "ci", Status: "applied", SuggestedAction: "Revisa workflows detectados y ajusta manualmente si necesitas una política distinta."})
@@ -392,6 +435,16 @@ func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
 	return merged
 }
 
+func isZeroValidationConfig(config ValidationConfig) bool {
+	return len(config.AllowedCommands.Implementer) == 0
+}
+
+func mergeValidationConfig(current, detected ValidationConfig) ValidationConfig {
+	merged := current
+	merged.AllowedCommands.Implementer = unique(append(append([]string{}, current.AllowedCommands.Implementer...), detected.AllowedCommands.Implementer...))
+	return merged
+}
+
 func mergeWorkflowSizing(current, defaults WorkflowSizing) WorkflowSizing {
 	merged := defaults
 	if current.LOCBudget != 0 {
@@ -459,7 +512,7 @@ func stackGeneratedDrift(old, fresh Stack) bool {
 
 func printRescanReport(out io.Writer, plan RescanPlan) {
 	if len(plan.Items) == 0 {
-		fmt.Fprintln(out, "Rescan completado: sin drift detectable; .opencode/project.yaml no fue reescrito.")
+		fmt.Fprintf(out, "Rescan completado: sin drift detectable; %s no fue reescrito.\n", ProjectConfigPath)
 		return
 	}
 	fmt.Fprintln(out, "Rescan drift report:")
@@ -622,6 +675,22 @@ func defaultTDD() TDDConfig {
 	return TDDConfig{Strict: true, TriangulateRequired: true, EdgeCaseCategories: []string{"boundary", "error_path", "concurrency", "data_shape", "time_sensitive"}}
 }
 
+func scanValidation(root string, stacks []Stack) ValidationConfig {
+	allowed := []string{}
+	for _, stack := range stacks {
+		if stack.PackageManager != "pnpm" || (stack.ID != "typescript" && stack.ID != "javascript") {
+			continue
+		}
+		scripts := readPackageScripts(root)
+		for _, script := range []string{"typecheck", "lint", "test", "build"} {
+			if _, ok := scripts[script]; ok {
+				allowed = append(allowed, "pnpm "+script+"*")
+			}
+		}
+	}
+	return ValidationConfig{AllowedCommands: ValidationAllowedCommands{Implementer: unique(allowed)}}
+}
+
 func defaultWorkflowLimits() WorkflowLimits {
 	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
@@ -712,6 +781,27 @@ func readPackageJSON(root string) map[string]string {
 		}
 	}
 	return deps
+}
+
+func readPackageScripts(root string) map[string]string {
+	data, err := os.ReadFile(filepath.Join(root, "package.json"))
+	if err != nil {
+		return map[string]string{}
+	}
+	var raw map[string]any
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return map[string]string{}
+	}
+	scripts := map[string]string{}
+	if section, ok := raw["scripts"].(map[string]any); ok {
+		for name, value := range section {
+			command, ok := value.(string)
+			if ok {
+				scripts[name] = command
+			}
+		}
+	}
+	return scripts
 }
 
 func exists(root, rel string) bool {

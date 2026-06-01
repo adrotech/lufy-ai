@@ -28,7 +28,7 @@ tools/lufy-cli-go/
   internal/verify/           # verify estructural y deep checks
   internal/backup/           # backup/restore multiasset
   internal/config/           # merge conservador de opencode.json
-  internal/projectconfig/    # init/rescan de .opencode/project.yaml
+  internal/projectconfig/    # init/rescan de .lufy/project.yaml
   internal/opsx/             # resolución OpenSpec PATH/cache/embedded
   internal/platform/         # path safety, locks y resolución portable
   internal/version/          # metadata de release
@@ -57,7 +57,7 @@ scripts/validate.sh
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai init` | Genera `.opencode/project.yaml` stack-aware y editable. | `--target`, `--force`, `--rescan` |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. | `--target`, `--force`, `--rescan` |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
@@ -126,7 +126,7 @@ Assets user-owned o merge-managed:
 
 - `AGENTS.md`: solo referencia `@lufy-ia.harness.md`;
 - `opencode.json`: merge conservador;
-- `.opencode/project.yaml`: creado por `init`, no sincronizado por hash.
+- `.lufy/project.yaml`: creado por `init`, no sincronizado por hash.
 
 `.lufy-ai/install-state.json` schema v2 registra:
 
@@ -203,13 +203,13 @@ lufy-ai verify --target <repo> --no-engram --quiet
 
 `status` resume lo mismo con foco operativo y puede emitir JSON.
 
-## `.opencode/project.yaml`
+## `.lufy/project.yaml`
 
 `lufy-ai init` crea configuración stack-aware user-managed.
 
 Comportamiento:
 
-- si no existe, crea `.opencode/project.yaml`;
+- si no existe, crea `.lufy/project.yaml`;
 - si existe, falla sin `--force`;
 - `--force` reemplaza;
 - `--rescan` preserva overrides y agrega evidencia nueva;

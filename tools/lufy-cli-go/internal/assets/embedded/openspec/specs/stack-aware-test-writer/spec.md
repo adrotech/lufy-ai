@@ -4,15 +4,15 @@
 TBD - created by archiving change add-stack-aware-test-writer. Update Purpose after archive.
 ## Requirements
 ### Requirement: Stack-aware test writer agent
-The harness SHALL provide a `test-writer` OpenCode subagent that writes and revises tests using the target repository's `.opencode/project.yaml` stack configuration when available.
+The harness SHALL provide a `test-writer` OpenCode subagent that writes and revises tests using the target repository's `.lufy/project.yaml` stack configuration when available.
 
 #### Scenario: Agent reads stack-specific test configuration
-- **GIVEN** a target repository contains `.opencode/project.yaml` with a supported stack entry and test command metadata
+- **GIVEN** a target repository contains `.lufy/project.yaml` with a supported stack entry and test command metadata
 - **WHEN** `test-writer` is assigned a T1 or T2 change requiring substantive tests
 - **THEN** it uses the configured stack test command, coverage threshold and anti-pattern guidance for that stack instead of assuming a fixed language toolchain
 
 #### Scenario: Agent reports missing stack config
-- **GIVEN** a target repository does not contain `.opencode/project.yaml` or the relevant stack lacks test command metadata
+- **GIVEN** a target repository does not contain `.lufy/project.yaml` or the relevant stack lacks test command metadata
 - **WHEN** `test-writer` is assigned a change requiring tests
 - **THEN** it reports the missing configuration as `not_available` or `blocked` evidence and recommends `lufy-ai init` or a manual project config update without inventing test commands
 
@@ -28,15 +28,15 @@ The harness SHALL provide a `test-writer` OpenCode subagent that writes and revi
 - **THEN** `test-writer` marks that phase as `not_applicable` with a concise reason instead of omitting the phase silently
 
 ### Requirement: Stack anti-pattern enforcement
-`test-writer` SHALL use stack-specific anti-pattern guidance from `.opencode/project.yaml` when proposing or modifying tests.
+`test-writer` SHALL use stack-specific anti-pattern guidance from `.lufy/project.yaml` when proposing or modifying tests.
 
 #### Scenario: Anti-pattern guidance exists
-- **GIVEN** `.opencode/project.yaml` defines anti-patterns for the relevant stack
+- **GIVEN** `.lufy/project.yaml` defines anti-patterns for the relevant stack
 - **WHEN** `test-writer` creates or edits tests
 - **THEN** it checks the proposed test approach against those anti-patterns and reports any avoided or unresolved anti-patterns in its result contract
 
 #### Scenario: Anti-pattern guidance is absent
-- **GIVEN** `.opencode/project.yaml` does not define anti-patterns for the relevant stack
+- **GIVEN** `.lufy/project.yaml` does not define anti-patterns for the relevant stack
 - **WHEN** `test-writer` creates or edits tests
 - **THEN** it reports anti-pattern guidance as `not_available` and does not invent project-specific rules
 

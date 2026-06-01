@@ -38,7 +38,7 @@ Después de instalar:
 
 ## 2. Inicializar configuración stack-aware
 
-`init` crea `.opencode/project.yaml`, que es configuración del proyecto destino. No es asset gestionado por hash.
+`init` crea `.lufy/project.yaml`, que es configuración del proyecto destino. No es asset gestionado por hash.
 
 ```bash
 lufy-ai init --target /ruta/a/tu/proyecto
@@ -51,6 +51,18 @@ lufy-ai init --target /ruta/a/tu/proyecto --rescan
 ```
 
 `--rescan` preserva overrides manuales como thresholds, anti-patterns y `workflow_limits`.
+
+Ejemplo frontend con `pnpm`: el proyecto puede declarar comandos de validación que `implementer` hereda sin hardcodearlos en el agente.
+
+```yaml
+validation:
+  allowed_commands:
+    implementer:
+      - pnpm typecheck*
+      - pnpm lint*
+      - pnpm test*
+      - pnpm build*
+```
 
 ## 3. Elegir metodología por tier
 

@@ -150,7 +150,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.opencode/project.yaml` stack-aware y editable. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |

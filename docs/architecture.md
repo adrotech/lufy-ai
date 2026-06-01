@@ -73,7 +73,7 @@ flowchart TD
 | `internal/status` | Estado humano/JSON de instalación y drift. |
 | `internal/backup` | Backup/restore multiasset con manifest. |
 | `internal/config` | Merge conservador de `opencode.json`. |
-| `internal/projectconfig` | Scanner stack-aware para `.opencode/project.yaml`. |
+| `internal/projectconfig` | Scanner stack-aware para `.lufy/project.yaml`. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
 | `internal/platform` | Path safety, locks y resolución portable de targets. |
 
@@ -115,7 +115,7 @@ Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults com
 | `tui.json` | Managed/no-replace según policy | Se preserva ante drift y puede generar `.lufy-new`. |
 | `AGENTS.md` | User-owned con referencia gestionada | `install` agrega `@lufy-ia.harness.md`; `uninstall` remueve solo esa línea. |
 | `opencode.json` | User-owned/merge-managed | Se mergea conservadoramente; no se registra como asset completo por hash. |
-| `.opencode/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
+| `.lufy/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
 
 ## Contrato de adapters
 

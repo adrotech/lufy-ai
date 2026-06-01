@@ -14,6 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -67,6 +68,52 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	}
 	if !hasAction(updatePlan.Actions, "backup", "lufy-ia.harness.md") || !hasAction(updatePlan.Actions, "update-managed", "lufy-ia.harness.md") {
 		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	}
+}
+
+func TestInstallRendersImplementerValidationPermissionsFromProjectConfig(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	writeInstallerFile(t, filepath.Join(source, ".opencode", "agents", "implementer.md"), `---
+permission:
+  edit:
+    "go test*": allow
+  task:
+    "*": deny
+---
+
+body
+`)
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, projectconfig.ProjectConfigPath), `schema_version: 1
+validation:
+  allowed_commands:
+    implementer:
+      - pnpm typecheck*
+      - pnpm lint*
+      - pnpm test*
+      - pnpm build*
+`)
+
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	body, err := os.ReadFile(filepath.Join(target, ".opencode", "agents", "implementer.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"pnpm typecheck*": allow`, `"pnpm lint*": allow`, `"pnpm test*": allow`, `"pnpm build*": allow`} {
+		if !strings.Contains(string(body), want) {
+			t.Fatalf("missing rendered permission %q in:\n%s", want, body)
+		}
+	}
+	skipPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(skip) error = %v", err)
+	}
+	if hasAction(skipPlan.Actions, "update-managed", filepath.Join(".opencode", "agents", "implementer.md")) {
+		t.Fatalf("rendered implementer should be idempotent, actions=%#v", skipPlan.Actions)
 	}
 }
 

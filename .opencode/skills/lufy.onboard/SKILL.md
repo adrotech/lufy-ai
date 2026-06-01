@@ -1,8 +1,8 @@
 ---
 name: lufy.onboard
-description: Guía onboarding de LUFY para usuarios nuevos; valida instalación, lee .opencode/project.yaml y demuestra un cambio T3 dummy stack-aware con --demo y --dry-run.
+description: Guía onboarding de LUFY para usuarios nuevos; valida instalación, lee .lufy/project.yaml y demuestra un cambio T3 dummy stack-aware con --demo y --dry-run.
 license: MIT
-compatibility: OpenCode skill autocontenido; usa solo lectura local de .opencode/project.yaml y no ejecuta delivery.
+compatibility: OpenCode skill autocontenido; usa solo lectura local de .lufy/project.yaml y no ejecuta delivery.
 metadata:
   author: lufy-ai
   version: "1.0"
@@ -10,7 +10,7 @@ metadata:
 
 # Skill: lufy.onboard
 
-Onboarding guiado para usuarios nuevos de LUFY. Explica el flujo SDD proporcional, valida que la instalación tenga los artefactos mínimos y genera una demo T3 dummy adaptada al stack declarado en `.opencode/project.yaml` en menos de 10 minutos.
+Onboarding guiado para usuarios nuevos de LUFY. Explica el flujo SDD proporcional, valida que la instalación tenga los artefactos mínimos y genera una demo T3 dummy adaptada al stack declarado en `.lufy/project.yaml` en menos de 10 minutos.
 
 El comando slash `.opencode/commands/lufy.onboard.md` es una fachada discoverable y debe delegar en este skill.
 
@@ -25,8 +25,8 @@ El comando slash `.opencode/commands/lufy.onboard.md` es una fachada discoverabl
 1. No hacer commit, push, PR, delivery ni sincronización de Projects.
 2. No modificar archivos durante `--dry-run`.
 3. En modo `--demo` sin `--dry-run`, si el usuario quiere crear artefactos reales, pedir confirmación explícita y derivar a `implementer` con alcance T3; no ejecutar delivery.
-4. No inventar toolchain. Nombrar comandos únicamente si existen en `.opencode/project.yaml` y no son `TODO`.
-5. Si falta `.opencode/project.yaml`, detener la demo stack-aware y recomendar:
+4. No inventar toolchain. Nombrar comandos únicamente si existen en `.lufy/project.yaml` y no son `TODO`.
+5. Si falta `.lufy/project.yaml`, detener la demo stack-aware y recomendar:
 
    ```bash
    lufy-ai init [--target <path>]
@@ -37,13 +37,13 @@ El comando slash `.opencode/commands/lufy.onboard.md` es una fachada discoverabl
 Antes de la demo, revisar de forma estática/read-only:
 
 - Existe `AGENTS.md`.
-- Existe `.opencode/project.yaml` para demo stack-aware.
+- Existe `.lufy/project.yaml` para demo stack-aware.
 - Existen `.opencode/agents/`, `.opencode/commands/` y `.opencode/skills/` cuando el usuario quiere validar instalación local.
 - Recordar que el usuario debe reiniciar OpenCode si el skill/comando fue instalado durante la sesión actual.
 
-Si alguno falta, reportar estado, impacto y acción recomendada. La ausencia de `.opencode/project.yaml` bloquea solo la demo stack-aware confiable.
+Si alguno falta, reportar estado, impacto y acción recomendada. La ausencia de `.lufy/project.yaml` bloquea solo la demo stack-aware confiable.
 
-## Lectura de `.opencode/project.yaml`
+## Lectura de `.lufy/project.yaml`
 
 Usar `stacks[]` como fuente canónica. Para cada stack considerar:
 
@@ -57,7 +57,7 @@ Usar `stacks[]` como fuente canónica. Para cada stack considerar:
 - `static_analysis.command`
 - `notes`
 
-Comandos válidos: valores no vacíos y que no empiecen con `TODO`. Si `supported: false`, si el stack no está en la lista soportada o si todos los comandos relevantes son `TODO`/vacíos, degradar a explicación estática y pedir completar `.opencode/project.yaml`.
+Comandos válidos: valores no vacíos y que no empiecen con `TODO`. Si `supported: false`, si el stack no está en la lista soportada o si todos los comandos relevantes son `TODO`/vacíos, degradar a explicación estática y pedir completar `.lufy/project.yaml`.
 
 Stacks soportados para demo guiada:
 
@@ -96,7 +96,7 @@ Si no hay un archivo objetivo obvio, mantener la demo en modo explicación y pro
 Responder sin mutaciones con esta estructura:
 
 1. Estado de instalación.
-2. Stack detectado y fuente: `.opencode/project.yaml`.
+2. Stack detectado y fuente: `.lufy/project.yaml`.
 3. Demo T3 dummy propuesta.
 4. Comandos de validación detectados, agrupados y marcados como `no ejecutados`.
 5. Qué haría `implementer` si el usuario confirma.
@@ -110,7 +110,7 @@ Responder con guía accionable. Si el usuario pide aplicar el dummy:
 - Derivar a `implementer` con tier T3 y validación agrupada.
 - Mantener delivery como paso separado y no autorizado.
 
-### Sin `.opencode/project.yaml`
+### Sin `.lufy/project.yaml`
 
 Responder:
 
@@ -124,7 +124,7 @@ Responder con degradación estática:
 
 - Identificar `id`, `supported` y campos `TODO`/vacíos.
 - Explicar conceptos LUFY sin sugerir comandos inventados.
-- Pedir completar `.opencode/project.yaml` o ejecutar `lufy-ai init --rescan [--target <path>]` cuando aplique.
+- Pedir completar `.lufy/project.yaml` o ejecutar `lufy-ai init --rescan [--target <path>]` cuando aplique.
 
 ## Ejemplo de salida esperada
 
@@ -134,7 +134,7 @@ instalacion:
   project_yaml: presente
 stack:
   id: go
-  fuente: .opencode/project.yaml
+  fuente: .lufy/project.yaml
 demo_t3:
   objetivo: "Agregar una prueba mínima para una función pura existente"
   mutaciones: "ninguna en --dry-run"

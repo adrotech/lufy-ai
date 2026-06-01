@@ -60,7 +60,7 @@ El comando slash `.opencode/commands/lufy.timereport.md` es solo una fachada dis
 
 ### Stack opcional
 
-- Preferir `.opencode/project.yaml` si existe y contiene metadata simple de stack/tooling.
+- Preferir `.lufy/project.yaml` si existe y contiene metadata simple de stack/tooling.
 - Si falta o no puede interpretarse, usar heurística por archivos conocidos (`go.mod`, `package.json`, `pyproject.toml`, `Cargo.toml`, etc.).
 - Si tampoco hay señales, reportar `No configurado`.
 

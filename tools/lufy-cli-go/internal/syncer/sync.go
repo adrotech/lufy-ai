@@ -14,8 +14,10 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -84,6 +86,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		defer lock.Release()
 		opts.Target = target
+		if created, err := projectconfig.NewService().Ensure(target); err != nil {
+			return err
+		} else if created {
+			fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
+		}
 	}
 	plan, err := s.BuildPlan(opts)
 	if err != nil {
@@ -182,6 +189,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	}
 	installedHarness := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
 	catalog, err = harnesscatalog.Effective(catalog, installedHarness)
+	if err != nil {
+		return Plan{}, err
+	}
+	catalog, err = managedcontent.CatalogWithRenderedHashes(catalog, target)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -527,7 +538,7 @@ func trimLufyNewSuffix(path string) string {
 }
 
 func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	body, err := readSourceContent(sourceRoot, sourceRel)
+	body, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
 	if err != nil {
 		return err
 	}
@@ -535,7 +546,7 @@ func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
 }
 
 func writeAncestor(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	body, err := readSourceContent(sourceRoot, sourceRel)
+	body, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
 	if err != nil {
 		return err
 	}
