@@ -20,7 +20,6 @@ permission:
     "go build*": allow
     "go vet*": allow
     "openspec *": allow
-    "ruby -e *": allow
     "rg *": allow
     "git status*": allow
     "git diff*": allow

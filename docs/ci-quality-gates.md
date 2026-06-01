@@ -14,7 +14,7 @@ El comando ejecuta:
 
 - whitespace check con rango/base de PR;
 - pinning de GitHub Actions en workflows;
-- sintaxis YAML de workflows;
+- sintaxis YAML de workflows mediante helper Go local;
 - ShellCheck para scripts versionados cuando `shellcheck` está instalado;
 - tests Go con coverage de módulo completo (`-coverpkg=./...`) y threshold objetivo;
 - `go vet ./...`;

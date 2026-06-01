@@ -47,7 +47,7 @@ main() {
   "$REPO_ROOT/scripts/check-actions-pinned.sh"
 
   log "Workflow YAML"
-  "$REPO_ROOT/scripts/check-workflows-yaml.rb"
+  (cd "$CLI_ROOT" && go run ./cmd/check-workflows-yaml --root "$REPO_ROOT")
 
   log "Harness coupling"
   "$REPO_ROOT/scripts/check-harness-coupling.sh"
