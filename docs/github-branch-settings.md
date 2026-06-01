@@ -4,8 +4,10 @@ Esta guía documenta el estado esperado del remoto. No aplica cambios automátic
 
 ## Ramas
 
-- `develop`: default branch y base normal de PRs de trabajo (`feature/*`, `fix/*`, `chore/*` o equivalentes).
+- `develop`: default branch y base normal de PRs de trabajo (`feature/*` o `fix/*`). `feature/*` es el catch-all para trabajo técnico, chores, docs, CI, refactors y dependency bumps.
 - `main`: rama productiva/estable para promociones `develop` → `main`, releases y hotfixes explícitamente autorizados.
+
+Prefijos Fury válidos para ramas generadas por el harness: `feature/`, `fix/`, `hotfix/`, `release/`. `chore/` no es un prefijo válido; cualquier trabajo tipo chore debe generarse como `feature/<slug>`.
 
 ## Default branch
 

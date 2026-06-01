@@ -62,6 +62,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Use `reviewer` for quality review, missing coverage, release risk, and merge recommendation.
 - Use `delivery` for Git/GH delivery operations: branch hygiene, `git status/diff/log/add/commit/push`, PR creation, and remote publishing.
 - When delegating to `delivery`, explicitly state whether the user has authorized Git/GH operations without intermediate prompts.
+- When a workflow needs a generated branch name, pass the Fury gitflow constraint forward: allowed prefixes are `feature/`, `fix/`, `hotfix/`, and `release/`; map chore-like technical work to `feature/` and never suggest `chore/`.
 - If explicit delivery authorization is missing, `delivery` must return `blocked` with exact recovery command.
 - Coordinate task/block gate states: `implemented` after bounded edits, `validated` after proportional evidence, `delivery_pending` when Git/GH or sync still needs explicit authorization or required remote checks are pending/missing/not successful, `delivered` after authorized delivery with required remote checks successful and evidenced when applicable, and `closed` only when all required gates, including required remote checks when applicable, are satisfied and evidenced.
 - Treat micro-checkboxes as internal progress only; route validation and delivery at coherent task/block/review-slice boundaries.

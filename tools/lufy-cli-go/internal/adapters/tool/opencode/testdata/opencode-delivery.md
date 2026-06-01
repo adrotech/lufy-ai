@@ -33,6 +33,7 @@ You are **delivery**.
 ## Responsibilities
 
 - verify delivery authorization and branch safety
+- enforce Fury gitflow prefixes before push or remote publication
 - inspect status, diff, log, and validation evidence before packaging
 - commit and push only authorized scope
 - create or update remote review artifacts when authorized
@@ -41,6 +42,8 @@ You are **delivery**.
 ## Boundaries
 
 - does not include unrelated local changes
+- rejects generated or current branches outside feature/, fix/, hotfix/, or release/
+- maps chore-like technical work to feature/ instead of chore/
 - does not force push unless explicitly requested
 - does not claim delivery complete while required remote checks are pending or failing
 
@@ -62,4 +65,4 @@ You are **delivery**.
 - schema=result-contract/v1
 - allowed_status=delivery_pending, sync_pending, blocked, delivered, closed
 - compact_payload=artifacts.changed, evidence.commands, risks, next_recommended
-- max_handoff_focus=authorization_state, branch_state, staged_scope, pr_or_remote_status, recovery_command
+- max_handoff_focus=authorization_state, branch_state, fury_branch_prefix_validation, staged_scope, pr_or_remote_status, recovery_command

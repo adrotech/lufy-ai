@@ -96,6 +96,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Do not split T3 work into artificial slices unless new risk appears.
 - For planning/OpenSpec-only fast path, set `review_workload: none` unless the slice changes workflow policy, acceptance criteria are unclear, or the file count/runtime scope exceeds the fast-path criteria.
 - PR split guidance is advisory only; delivery still requires explicit user authorization.
+- When suggesting a PR or generated branch boundary, enforce Fury gitflow prefixes in the context slice: only `feature/`, `fix/`, `hotfix/`, and `release/` are valid. Chore-like technical work maps to `feature/`; never suggest `chore/`.
 
 ## Workflow Limits Metadata
 

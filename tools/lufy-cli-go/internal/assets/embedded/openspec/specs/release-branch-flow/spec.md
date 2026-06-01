@@ -8,8 +8,14 @@ Define the canonical branch and release flow where normal integration targets `d
 El repositorio SHALL usar `develop` como rama normal de integración y `main` como rama productiva/estable.
 
 #### Scenario: PR normal hacia develop
-- **WHEN** una rama de trabajo como `feature/*`, `fix/*`, `chore/*` o equivalente está lista para integración normal
+- **WHEN** una rama de trabajo como `feature/*` o `fix/*` está lista para integración normal
 - **THEN** el PR se abre contra `develop` como base por defecto
+
+#### Scenario: Prefijos Fury válidos para ramas generadas
+- **WHEN** el harness necesita generar, sugerir o pushear una rama
+- **THEN** la rama usa uno de estos prefijos: `feature/`, `fix/`, `hotfix/`, `release/`
+- **AND** cualquier cambio tipo chore, docs, CI, refactor, mantenimiento o dependency bump usa `feature/`
+- **AND** `chore/` se rechaza como prefijo inválido antes de `git push`
 
 #### Scenario: Main reservada para producción
 - **WHEN** un cambio necesita llegar a `main`

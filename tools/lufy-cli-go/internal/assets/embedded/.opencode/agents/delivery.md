@@ -83,6 +83,8 @@ You handle safe delivery operations only. This file is the operational runbook f
 - Read project workflow delivery controls only from `.lufy/project.yaml` top-level `workflow_limits`: use `workflow_limits.delivery_batch_strategy` for delivery grouping, `workflow_limits.preflight` for delivery preflight checks, and `workflow_limits.stop_rules` for pause/escalation conditions.
 - Keep `workflow_limits.proposal_slicing_strategy` limited to proposal/review slicing before delivery readiness; do not treat it as delivery batching or authorization.
 - Treat delivery batching guidance as advisory until the user explicitly authorizes Git/GH operations; report missing authorization as `delivery_pending` or `blocked` even when batching guidance is clear.
+- Enforce Fury gitflow branch prefixes before any `git push`, PR creation, or PR-ready report. Valid generated/current work branch prefixes are only `feature/`, `fix/`, `hotfix/`, and `release/`.
+- Map chore-like, dependency, CI, docs, refactor, and other technical work to `feature/`; `chore/` is invalid and must be rejected with a rename recommendation before push.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.
 - After `gh pr create`, consult or wait for remote PR checks and record the exact command and outcome. Prefer `gh pr checks <PR> --watch` when waiting is appropriate; otherwise use `gh pr checks <PR>` or `gh pr view <PR> --json statusCheckRollup,mergeStateStatus,url` and report unresolved/pending checks explicitly.
 - If remote checks show `FAILURE`, `CANCELLED`, `TIMED_OUT`, `ACTION_REQUIRED`, remain pending without a successful conclusion, or no remote-check evidence exists, do not report `delivered` or `closed`; report `blocked` for terminal failures/action required, or `delivery_pending` for still-pending checks, with PR URL/status and a recovery command such as `gh pr checks <PR> --watch`.
@@ -97,7 +99,9 @@ You handle safe delivery operations only. This file is the operational runbook f
 - If validation exists but delivery authorization is missing, return `delivery_pending` or `blocked`; do not treat validation or task completion as authorization.
 - Never force push unless explicitly requested.
 - Default PR base is `develop` unless explicitly requested.
-- Normal work opens PRs from feature/fix/chore branches to `develop`.
+- Normal work opens PRs from `feature/*` or `fix/*` branches to `develop`; `feature/*` is the catch-all for technical/chore work.
+- Hotfix and release flows use `hotfix/*` or `release/*` only with explicit production/hotfix/release authorization.
+- Before pushing, block any branch outside `feature/`, `fix/`, `hotfix/`, or `release/` and recommend `git branch -m <valid-prefix>/<slug>`.
 - Promotion to production may create a PR from `develop` to `main` only when explicitly authorized as a promotion/release operation.
 - Never create PR from `main`; do not create PRs from protected branches (`develop`, `main`, `master`, `development`) except the explicit `develop` → `main` promotion case.
 - Report dirty or mixed worktrees before staging.

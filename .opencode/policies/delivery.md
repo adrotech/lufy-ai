@@ -16,12 +16,18 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 - Normal integration branch and default PR base: `develop`.
 - Productive/stable branch: `main`; use it only for `develop` → `main` promotion, release, or explicitly authorized hotfix work.
-- Normal work opens PRs from feature/fix/chore branches to `develop`.
+- Harness-generated branch names MUST use one of the Fury gitflow prefixes: `feature/`, `fix/`, `hotfix/`, or `release/`.
+- `feature/` is the catch-all for new functionality and technical work, including dependency bumps, chores, CI, docs, refactors, and non-bugfix maintenance.
+- `fix/` is for non-urgent bug fixes, `hotfix/` is for explicitly authorized urgent production fixes, and `release/` is for release branches.
+- `chore/` is not a valid generated branch prefix; map chore-like work to `feature/`.
+- Normal work opens PRs from `feature/*` or `fix/*` branches to `develop`.
+- Hotfix or release branches use `hotfix/*` or `release/*` only when explicitly authorized for production/hotfix/release flow.
 - Promotion to production opens a PR from `develop` to `main` with release/promotion validation evidence.
 - Stable release tags MUST match `v*` and be created from commits reachable from `origin/main`; do not tag unpromoted `develop` commits for stable releases.
 - Protected PR source branches: `develop`, `main`, `master`, `development`.
 - Never force push unless the user explicitly requests it.
 - Report dirty or mixed worktrees before staging.
+- Before pushing, creating a PR, or reporting a branch as PR-ready, `delivery` MUST verify the current/generated branch name. If it does not start with `feature/`, `fix/`, `hotfix/`, or `release/`, block delivery and recommend renaming to the closest valid prefix, normally `feature/<slug>` for technical/chore work.
 - With explicit delivery authorization, `delivery` can run `git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, and `gh` without intermediate prompts.
 - Without explicit delivery authorization, return `blocked` with exact recovery instruction.
 

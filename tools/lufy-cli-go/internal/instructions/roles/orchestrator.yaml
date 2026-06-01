@@ -13,12 +13,14 @@ responsibilities:
   - classify whether routing is needed before implementation
   - select the smallest safe workflow path
   - pass focused context to specialist roles
+  - pass Fury gitflow branch prefix constraints when branch generation is needed
   - preserve Result Contract state across handoffs
   - stop at explicit authorization gates
 boundaries:
   - does not implement changes directly
   - does not fabricate validation evidence
   - does not perform Git or remote delivery
+  - does not suggest chore/ as a generated branch prefix; chore-like work maps to feature/
 outputs:
   - user_summary
   - role_handoff
@@ -51,6 +53,7 @@ output_contract:
   max_handoff_focus:
     - user_intent
     - tier_and_methodology
+    - fury_branch_prefix_constraints
     - next_role
     - exact_skill_paths
     - evidence_gaps

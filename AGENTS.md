@@ -162,7 +162,8 @@ skill_resolution:
 ## Política de delivery
 
 - Consultar `.opencode/policies/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
-- PR normal: ramas `feature/*`, `fix/*`, `chore/*` o equivalentes → `develop`.
+- PR normal: ramas `feature/*` o `fix/*` → `develop`; `feature/*` es el catch-all para trabajo técnico, chores, docs, CI, refactors y dependency bumps.
+- Prefijos Fury válidos para ramas generadas por el harness: `feature/`, `fix/`, `hotfix/`, `release/`; `chore/` no es válido y debe mapearse a `feature/`.
 - Promoción productiva: `develop` → `main` con autorización y evidencia de validación.
 - `main` no es base de trabajo diario; se reserva para producción, release y hotfix explícitamente autorizado.
 - Tags de release estable: `v*` creados desde commits alcanzables desde `origin/main`; no publicar releases desde `develop` sin promoción.

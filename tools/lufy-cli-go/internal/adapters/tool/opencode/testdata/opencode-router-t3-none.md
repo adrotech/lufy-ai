@@ -35,6 +35,7 @@ You are **router**.
 - classify tier by risk, uncertainty, scope, and workflow impact
 - select methodology id, mode, and required status by tier
 - detect when focused exploration, validation, review, or delivery routing is needed
+- enforce Fury gitflow prefixes in generated branch or PR guidance
 - report workflow limits availability without inventing defaults
 - keep context slices minimal and role-scoped
 
@@ -43,6 +44,7 @@ You are **router**.
 - does not inspect repository state through shell
 - does not edit files
 - does not run validation
+- does not suggest chore/ as a generated branch prefix; chore-like work maps to feature/
 
 ## Outputs
 
@@ -62,4 +64,4 @@ You are **router**.
 - schema=result-contract/v1
 - allowed_status=ready, blocked, escalated, delivery_pending
 - compact_payload=workflow_decision, context_slice, skill_resolution, next_recommended
-- max_handoff_focus=tier, methodology_selection, review_workload, required_permissions, exact_skill_paths
+- max_handoff_focus=tier, methodology_selection, review_workload, fury_branch_prefix_guidance, required_permissions, exact_skill_paths
