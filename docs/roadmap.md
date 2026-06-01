@@ -58,7 +58,7 @@ Flujo operativo de ramas/release:
 No son capacidades instalables actuales:
 
 - templates por stack como `frontend-react`, `frontend-nextjs`, `frontend-astro`, `mobile-expo` o `backend-spring`;
-- consumidores completos de `.opencode/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
+- consumidores completos de `.lufy/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
 - instalación real/escribible sobre Codex o Claude Code.

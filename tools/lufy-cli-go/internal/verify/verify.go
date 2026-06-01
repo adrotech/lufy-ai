@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
@@ -149,6 +150,15 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			fmt.Fprintf(stdout, "%s\n", body)
 		}
 		return err
+	}
+
+	if created, err := projectconfig.NewService().Ensure(target); err != nil {
+		emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
+		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
+	} else if created {
+		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
+	} else {
+		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
 	}
 
 	st, err := state.Load(target)

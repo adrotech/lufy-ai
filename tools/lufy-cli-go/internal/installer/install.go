@@ -15,8 +15,10 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -130,6 +132,18 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if !opts.Yes && requiresConfirmation(plan.Actions) {
 		return fmt.Errorf("install requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
+	if created, err := projectconfig.NewService().Ensure(plan.TargetRoot); err != nil {
+		return err
+	} else if created {
+		fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
+		plan, err = s.BuildPlan(opts)
+		if err != nil {
+			return err
+		}
+		if len(plan.Conflicts) > 0 {
+			return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
+		}
+	}
 
 	if err := s.applyInstall(plan, stdout); err != nil {
 		return err
@@ -175,6 +189,10 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		return Plan{}, err
 	}
 	catalog, err = harnesscatalog.Effective(catalog, harness)
+	if err != nil {
+		return Plan{}, err
+	}
+	catalog, err = managedcontent.CatalogWithRenderedHashes(catalog, target)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -591,7 +609,7 @@ func trimLufyNewSuffix(path string) string {
 }
 
 func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	content, err := readSourceContent(sourceRoot, sourceRel)
+	content, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
 	if err != nil {
 		return err
 	}
@@ -599,7 +617,7 @@ func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
 }
 
 func writeAncestor(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	content, err := readSourceContent(sourceRoot, sourceRel)
+	content, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
 	if err != nil {
 		return err
 	}

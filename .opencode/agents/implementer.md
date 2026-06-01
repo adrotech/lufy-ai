@@ -73,6 +73,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Run grouped validation only at the end of all assigned tasks when available; use static/manual review when no toolchain exists.
 - Treat assigned work as a coherent task/block gate: implementation can reach `implemented`; validation and delivery are separate states unless explicitly completed by the proper role.
 - Prefer validación agrupada at the end of the current block/proposal, including tests/coverage only when real commands exist; do not run tests constantly unless blocked, risky, or diagnosing a failure.
+- Inherit project-local validation permissions from `.lufy/project.yaml` when `validation.allowed_commands.implementer` is present; those commands are scoped to grouped validation and must still match the detected toolchain.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
 ## Boundaries

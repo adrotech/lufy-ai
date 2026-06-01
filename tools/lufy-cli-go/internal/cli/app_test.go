@@ -429,7 +429,7 @@ func TestRunInitCreatesProjectConfig(t *testing.T) {
 	if !bytes.Contains(out.Bytes(), []byte("project.yaml")) || !bytes.Contains(out.Bytes(), []byte("go (supported)")) {
 		t.Fatalf("init output unexpected: %s", out.String())
 	}
-	if _, err := os.Stat(filepath.Join(target, ".opencode", "project.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "project.yaml")); err != nil {
 		t.Fatalf("project config not written: %v", err)
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -186,6 +187,10 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
+	projectConfigPath := filepath.Join(target, projectconfig.ProjectConfigPath)
+	if err := os.Remove(projectConfigPath); err != nil {
+		t.Fatal(err)
+	}
 	writeFile(t, filepath.Join(source, "outside-source.txt"), "must not sync\n")
 	writeFile(t, filepath.Join(target, "user-note.txt"), "preserve me\n")
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
@@ -207,6 +212,50 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(target, ".lufy-ai", "backups")); !os.IsNotExist(err) {
 		t.Fatalf("dry-run created backups dir, stat err=%v", err)
+	}
+	if _, err := os.Stat(projectConfigPath); !os.IsNotExist(err) {
+		t.Fatalf("dry-run recreated project config, stat err=%v", err)
+	}
+}
+
+func TestRunRequiresYesBeforeCreatingMissingProjectConfig(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	projectConfigPath := filepath.Join(target, projectconfig.ProjectConfigPath)
+	if err := os.Remove(projectConfigPath); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
+
+	err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
+		t.Fatalf("expected --yes error, got %v", err)
+	}
+	if _, err := os.Stat(projectConfigPath); !os.IsNotExist(err) {
+		t.Fatalf("sync without --yes recreated project config, stat err=%v", err)
+	}
+}
+
+func TestRunCreatesMissingProjectConfigAfterConfirmation(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	projectConfigPath := filepath.Join(target, projectconfig.ProjectConfigPath)
+	if err := os.Remove(projectConfigPath); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
+	}
+
+	if _, err := os.Stat(projectConfigPath); err != nil {
+		t.Fatalf("confirmed sync did not recreate project config: %v", err)
+	}
+	if !strings.Contains(out.String(), "- [project-config] "+projectconfig.ProjectConfigPath) {
+		t.Fatalf("sync output missing project config action: %s", out.String())
 	}
 }
 

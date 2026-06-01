@@ -92,11 +92,11 @@ func runInit(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
-	force := fs.Bool("force", false, "Reemplazar .opencode/project.yaml existente")
+	force := fs.Bool("force", false, "Reemplazar .lufy/project.yaml existente")
 	rescan := fs.Bool("rescan", false, "Refrescar evidencia de stacks, preservar overrides y reportar drift sin cleanup destructivo")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan]")
-		fmt.Fprintln(deps.Stderr, "Genera .opencode/project.yaml con reglas stack-aware editables.")
+		fmt.Fprintln(deps.Stderr, "Genera .lufy/project.yaml con reglas stack-aware editables.")
 		fmt.Fprintln(deps.Stderr, "--rescan compara evidencia actual, preserva overrides de usuario y reporta drift sin borrar stacks ni archivos.")
 	}
 	if err := fs.Parse(args); err != nil {
@@ -408,7 +408,7 @@ func runInstall(args []string, deps Dependencies) int {
 func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai <comando> [flags]")
 	fmt.Fprintln(out, "Comandos:")
-	fmt.Fprintln(out, "  init      Genera .opencode/project.yaml stack-aware")
+	fmt.Fprintln(out, "  init      Genera .lufy/project.yaml stack-aware")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
