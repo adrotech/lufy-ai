@@ -569,16 +569,16 @@ def run_git(cwd: Path, args: list[str]) -> tuple[bool, str]:
 
 
 def collect_stack(target_dir: Path, limitations: list[str]) -> dict[str, Any]:
-    project_yaml = target_dir / ".opencode/project.yaml"
+    project_yaml = target_dir / ".lufy/project.yaml"
     if project_yaml.exists():
         try:
             parsed = parse_simple_project_yaml(project_yaml.read_text(encoding="utf-8"))
         except OSError as exc:
-            limitations.append(f"No se pudo leer .opencode/project.yaml: {exc}.")
+            limitations.append(f"No se pudo leer .lufy/project.yaml: {exc}.")
             parsed = []
         if parsed:
-            return {"source": ".opencode/project.yaml", "items": parsed}
-        limitations.append(".opencode/project.yaml ausente de metadata stack simple o inválido; se usa heurística.")
+            return {"source": ".lufy/project.yaml", "items": parsed}
+        limitations.append(".lufy/project.yaml ausente de metadata stack simple o inválido; se usa heurística.")
     heuristics = []
     signals = {"Go": "go.mod", "Node/TypeScript": "package.json", "Python": "pyproject.toml", "Rust": "Cargo.toml", "OpenSpec": "openspec", "OpenCode": ".opencode"}
     for label, rel in signals.items():
@@ -1212,7 +1212,7 @@ def render_pairs(values: list[tuple[str, int]]) -> str:
 
 def methodology(db_path: Path) -> str:
     return (
-        f"<p>Fuentes locales read-only: SQLite OpenCode ({esc(str(db_path))}), Git y .opencode/project.yaml opcional.</p>"
+        f"<p>Fuentes locales read-only: SQLite OpenCode ({esc(str(db_path))}), Git y .lufy/project.yaml opcional.</p>"
         f"<p>Heurísticas: AI gap cap {AI_GAP_CAP_SECONDS // 60} min; humano gap cap {HUMAN_GAP_CAP_SECONDS // 60} min. "
         "El reporte usa allowlist estructural y excluye prompts, outputs, payloads completos, contenidos de archivos, diffs y snapshots de cambios de sesión.</p>"
     )

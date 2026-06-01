@@ -85,10 +85,10 @@ The workflow SHALL run validation/testing proportionally at the end of a task, c
 - **THEN** the workflow applies those configured limits before reporting the block as `validated` or delivery-ready
 
 ### Requirement: Workflow limits canonical consumption
-Agents, workflow documentation, delivery policy and result contracts SHALL consume and report project workflow limits from `.opencode/project.yaml` top-level `workflow_limits` only.
+Agents, workflow documentation, delivery policy and result contracts SHALL consume and report project workflow limits from `.lufy/project.yaml` top-level `workflow_limits` only.
 
 #### Scenario: Router reads canonical workflow limits
-- **WHEN** `sdd-router` evaluates sizing, routing, slicing or escalation inputs for a project with `.opencode/project.yaml`
+- **WHEN** `sdd-router` evaluates sizing, routing, slicing or escalation inputs for a project with `.lufy/project.yaml`
 - **THEN** it reads those inputs from `workflow_limits` and MUST NOT read top-level `loc_budget` or top-level `delivery_strategy` as valid sources
 
 #### Scenario: Orchestrator reports canonical workflow limits
@@ -218,6 +218,6 @@ The workflow SHALL report triggered or evaluated numeric stop rules in Result Co
 - **THEN** the result SHALL report `stop_rule_status: clear` or a proportional equivalent in the workflow decision fields
 
 #### Scenario: Stop rules unavailable are explicit
-- **GIVEN** `.opencode/project.yaml` or `workflow_limits.stop_rules` is not available
+- **GIVEN** `.lufy/project.yaml` or `workflow_limits.stop_rules` is not available
 - **WHEN** a result reports workflow-limit fields
 - **THEN** it SHALL report stop-rule configuration as `not_available` while still applying repository-level default guardrails from agent instructions

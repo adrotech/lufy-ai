@@ -14,6 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -67,6 +68,52 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	}
 	if !hasAction(updatePlan.Actions, "backup", "lufy-ia.harness.md") || !hasAction(updatePlan.Actions, "update-managed", "lufy-ia.harness.md") {
 		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	}
+}
+
+func TestInstallRendersImplementerValidationPermissionsFromProjectConfig(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	writeInstallerFile(t, filepath.Join(source, ".opencode", "agents", "implementer.md"), `---
+permission:
+  edit:
+    "go test*": allow
+  task:
+    "*": deny
+---
+
+body
+`)
+	target := t.TempDir()
+	writeInstallerFile(t, filepath.Join(target, projectconfig.ProjectConfigPath), `schema_version: 1
+validation:
+  allowed_commands:
+    implementer:
+      - pnpm typecheck*
+      - pnpm lint*
+      - pnpm test*
+      - pnpm build*
+`)
+
+	svc := NewService()
+	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(initial) error = %v", err)
+	}
+	body, err := os.ReadFile(filepath.Join(target, ".opencode", "agents", "implementer.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"pnpm typecheck*": allow`, `"pnpm lint*": allow`, `"pnpm test*": allow`, `"pnpm build*": allow`} {
+		if !strings.Contains(string(body), want) {
+			t.Fatalf("missing rendered permission %q in:\n%s", want, body)
+		}
+	}
+	skipPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan(skip) error = %v", err)
+	}
+	if hasAction(skipPlan.Actions, "update-managed", filepath.Join(".opencode", "agents", "implementer.md")) {
+		t.Fatalf("rendered implementer should be idempotent, actions=%#v", skipPlan.Actions)
 	}
 }
 
@@ -324,6 +371,27 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, "AGENTS.md")); !os.IsNotExist(err) {
 		t.Fatalf("install without --yes mutated target, stat err=%v", err)
 	}
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); !os.IsNotExist(err) {
+		t.Fatalf("install without --yes created project config, stat err=%v", err)
+	}
+}
+
+func TestRunCreatesProjectConfigAfterConfirmation(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	var out bytes.Buffer
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(confirmed install) error = %v, output=%s", err, out.String())
+	}
+
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); err != nil {
+		t.Fatalf("confirmed install did not create project config: %v", err)
+	}
+	if !strings.Contains(out.String(), "- [project-config] "+projectconfig.ProjectConfigPath) {
+		t.Fatalf("install output missing project config action: %s", out.String())
+	}
 }
 
 func TestInstallDryRunPlanOutputRegression(t *testing.T) {
@@ -338,6 +406,9 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 
 	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); !os.IsNotExist(err) {
+		t.Fatalf("dry-run created project config, stat err=%v", err)
 	}
 
 	for _, want := range []string{

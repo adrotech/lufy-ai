@@ -31,7 +31,7 @@ El resultado es un reporte estilo Notion para entender cómo la IA ayudó en el 
 
 - No incluir prompts, respuestas completas, argumentos completos de tools, outputs de tools, contenidos de archivos, diffs ni `session_diff`.
 - No leer JSONL ni `session_diff` salvo que un cambio futuro agregue opt-in explícito.
-- Todas las fuentes son locales y read-only: OpenCode SQLite, Git y `.opencode/project.yaml`.
+- Todas las fuentes son locales y read-only: OpenCode SQLite, Git y `.lufy/project.yaml`.
 
 ## Ejemplos
 

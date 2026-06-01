@@ -29,7 +29,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `backup` y `restore` con manifest, targetRoot y validación de paths/hashes.
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
-- `init` y `--rescan` para `.opencode/project.yaml` stack-aware.
+- `init` y `--rescan` para `.lufy/project.yaml` stack-aware.
 
 ### Assets instalables
 
@@ -73,6 +73,6 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - El único adapter escribible es `opencode`.
 - `codex` y `claude-code` no deben documentarse como instalables.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
-- `AGENTS.md`, `opencode.json` y `.opencode/project.yaml` son user-owned o user-managed.
+- `AGENTS.md`, `opencode.json` y `.lufy/project.yaml` son user-owned o user-managed.
 - No existe suite Node/TS global en la raíz.
 - No hacer delivery sin autorización explícita.

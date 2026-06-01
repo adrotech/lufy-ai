@@ -179,3 +179,18 @@ jobs:
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_sbom.spdx.json
             tools/lufy-cli-go/dist/lufy-ai_${{ steps.meta.outputs.version }}_provenance.intoto.jsonl
             tools/lufy-cli-go/dist/*.bundle
+
+      - name: E2E published release artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if tools/lufy-cli-go/scripts/e2e-release-artifact.sh "$RELEASE_VERSION"; then
+              exit 0
+            fi
+            echo "E2E release artifact no disponible todavía; reintento ${attempt}/6."
+            sleep 10
+          done
+
+          tools/lufy-cli-go/scripts/e2e-release-artifact.sh "$RELEASE_VERSION"

@@ -36,7 +36,7 @@ func TestScanDetectsGoStack(t *testing.T) {
 
 func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, "package.json", `{"devDependencies":{"typescript":"5.4.0","vitest":"1.0.0","eslint":"8.0.0","prettier":"3.0.0"},"dependencies":{"react":"18.0.0","next":"14.0.0","pino":"8.0.0"}}`)
+	writeFile(t, root, "package.json", `{"scripts":{"typecheck":"tsc --noEmit","lint":"eslint .","test":"vitest run","build":"tsc --noEmit && next build"},"devDependencies":{"typescript":"5.4.0","vitest":"1.0.0","eslint":"8.0.0","prettier":"3.0.0"},"dependencies":{"react":"18.0.0","next":"14.0.0","pino":"8.0.0"}}`)
 	writeFile(t, root, "tsconfig.json", "{}")
 	writeFile(t, root, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n")
 
@@ -55,6 +55,11 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 	}
 	if !contains(stack.ObservabilityLibs, "pino") {
 		t.Fatalf("missing pino observability: %#v", stack.ObservabilityLibs)
+	}
+	for _, command := range []string{"pnpm typecheck*", "pnpm lint*", "pnpm test*", "pnpm build*"} {
+		if !contains(cfg.Validation.AllowedCommands.Implementer, command) {
+			t.Fatalf("missing implementer validation command %q: %#v", command, cfg.Validation.AllowedCommands.Implementer)
+		}
 	}
 }
 
@@ -164,6 +169,58 @@ func TestServiceRunBlocksForceAndRescan(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertWorkflowLimitsOnly(t, string(data))
+}
+
+func TestServiceEnsureCreatesProjectConfigWhenMissing(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+
+	created, err := (Service{Now: fixedTime}).Ensure(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !created {
+		t.Fatal("expected Ensure to create missing project config")
+	}
+	data, err := os.ReadFile(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, want := range []string{"schema_version: 1", "detected_at: 2026-05-20T14:00:00Z", "id: go", "workflow_limits:"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("generated config missing %q:\n%s", want, text)
+		}
+	}
+
+	created, err = (Service{Now: fixedTime}).Ensure(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created {
+		t.Fatal("expected Ensure to preserve existing project config")
+	}
+}
+
+func TestServiceEnsurePreservesExistingInvalidProjectConfig(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, ProjectConfigPath, "schema_version: [\n")
+
+	created, err := (Service{Now: fixedTime}).Ensure(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created {
+		t.Fatal("expected Ensure to leave existing project config untouched")
+	}
+	data, err := os.ReadFile(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "schema_version: [\n" {
+		t.Fatalf("existing project config was overwritten: %q", data)
+	}
 }
 
 func TestScanGeneratesCanonicalWorkflowLimits(t *testing.T) {

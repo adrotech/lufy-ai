@@ -11,7 +11,7 @@ Operational guide for coding agents working in this repository.
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
-- **Workflow limits**: Use `.opencode/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
+- **Workflow limits**: Use `.lufy/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
 
@@ -46,6 +46,7 @@ Run from repository root.
 ```bash
 # Replace with real validation commands.
 # Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
+# In frontend projects that use pnpm, declare project-local implementer validation permissions in .lufy/project.yaml under validation.allowed_commands.implementer instead of hardcoding package-manager commands in agents.
 # Evaluate validation at task/block/review-slice boundaries, not after every internal micro-checkbox.
 # For PR-bound changes, reproduce the PR whitespace range, for example: git diff --check origin/develop...HEAD after commits, or git diff --check origin/develop with pending worktree changes.
 ```

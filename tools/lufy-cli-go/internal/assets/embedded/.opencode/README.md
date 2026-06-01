@@ -56,7 +56,7 @@ Templates locales:
 
 Hooks locales:
 
-- `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.opencode/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
+- `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.lufy/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
 
 Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 

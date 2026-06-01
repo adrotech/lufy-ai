@@ -47,14 +47,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable objetivo: `v0.5.0`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable objetivo: `v0.6.0`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.5.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.5.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.0 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
@@ -150,7 +150,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.opencode/project.yaml` stack-aware y editable. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
@@ -211,6 +211,7 @@ git diff --check
 - `develop` es la rama normal de integración.
 - `main` es estable/productiva.
 - Las releases públicas se publican desde tags `v*` alcanzables desde `origin/main`.
+- Al mergear un PR hacia `main`, el pipeline crea el tag de release, construye y publica artifacts, checksums, SBOM, provenance, firmas y valida el artifact publicado con instalación/verificación real.
 - Delivery, commit, push, PR y promoción requieren autorización explícita.
 
 Ver [`docs/github-branch-settings.md`](docs/github-branch-settings.md) y [`docs/release-security.md`](docs/release-security.md).

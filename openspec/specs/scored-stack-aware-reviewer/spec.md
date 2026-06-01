@@ -26,15 +26,15 @@ The harness SHALL define `reviewer` output with weighted scoring across Architec
 - **THEN** it may report approval-ready with residual risks and follow-up recommendations
 
 ### Requirement: Stack-aware review inputs
-`reviewer` SHALL use `.opencode/project.yaml` when available to adapt anti-pattern, coverage and observability expectations to the affected stack.
+`reviewer` SHALL use `.lufy/project.yaml` when available to adapt anti-pattern, coverage and observability expectations to the affected stack.
 
 #### Scenario: Project config exists
-- **GIVEN** `.opencode/project.yaml` declares stack-specific anti-patterns, coverage thresholds or observability libraries
+- **GIVEN** `.lufy/project.yaml` declares stack-specific anti-patterns, coverage thresholds or observability libraries
 - **WHEN** reviewer evaluates a change affecting that stack
 - **THEN** it uses those declarations instead of assuming Go, TypeScript, Python or any other fixed stack
 
 #### Scenario: Project config missing
-- **WHEN** `.opencode/project.yaml` is missing or lacks relevant stack fields
+- **WHEN** `.lufy/project.yaml` is missing or lacks relevant stack fields
 - **THEN** reviewer marks stack-specific guidance as `not_available` and does not invent project-specific requirements
 
 ### Requirement: Desk-check scenarios for substantive review
