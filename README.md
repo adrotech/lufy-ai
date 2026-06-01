@@ -204,7 +204,7 @@ git diff --check origin/develop...HEAD
 git diff --check
 ```
 
-`scripts/validate.sh` ejecuta gates reales del producto: whitespace PR-aware, pinning de Actions, YAML, shell lint cuando está disponible, tests Go con coverage, `go vet` y build del CLI. No hay suite Node/TypeScript global en la raíz.
+`scripts/validate.sh` ejecuta gates reales del producto: whitespace PR-aware, pinning de Actions, YAML con helper Go, shell lint cuando está disponible, tests Go con coverage, `go vet` y build del CLI. No hay suite Node/TypeScript global en la raíz.
 
 ## Delivery y release
 

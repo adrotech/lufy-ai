@@ -397,7 +397,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 ## Riesgos/dependencias
 
 - `shellcheck` puede no estar disponible localmente; CI debe instalarlo o usar una acción mantenida.
-- Merge JSON sin tooling dedicado puede volverse frágil en shell; si crece, conviene evaluar helper en Python o CLI futura.
+- Merge JSON sin tooling dedicado puede volverse frágil en shell; si crece, conviene moverlo a la CLI Go o a helpers Go locales.
 - Rollback parcial puede ser complejo si se mezclan copias recursivas y merges; la primera versión debe limitar acciones y registrar manifest.
 - `--yes` puede ser peligroso si se interpreta como permiso destructivo; debe combinarse con backup y políticas conservadoras.
 - Sync requiere una fuente de verdad de assets gestionados; sin manifest puede pisar personalizaciones.

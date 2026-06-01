@@ -13,25 +13,18 @@ coverage_file="$(mktemp)"
 trap 'rm -f "$coverage_file"' EXIT
 
 go test ./... -coverprofile="$coverage_file"
-coverage_pct="$(go tool cover -func="$coverage_file" | python3 -c 'import re, sys
-for line in sys.stdin:
-    if line.startswith("total:"):
-        match = re.search(r"([0-9]+(?:\.[0-9]+)?)%", line)
-        if match:
-            print(match.group(1))
-            break
-else:
-    sys.exit("coverage total not found")')"
+coverage_pct="$(go tool cover -func="$coverage_file" | awk '/^total:/ { gsub(/%/, "", $3); print $3 }')"
+if [ -z "$coverage_pct" ]; then
+  echo "coverage total not found" >&2
+  exit 1
+fi
 
-python3 - "$coverage_pct" "$COVERAGE_MIN" <<'PY'
-import sys
-
-actual = float(sys.argv[1])
-minimum = float(sys.argv[2])
-if actual < minimum:
-    print(f"coverage {actual:.1f}% below threshold {minimum:.1f}%", file=sys.stderr)
-    sys.exit(1)
-print(f"coverage {actual:.1f}% >= threshold {minimum:.1f}%")
-PY
+awk -v actual="$coverage_pct" -v minimum="$COVERAGE_MIN" 'BEGIN {
+  if ((actual + 0) < (minimum + 0)) {
+    printf "coverage %.1f%% below threshold %.1f%%\n", actual, minimum > "/dev/stderr"
+    exit 1
+  }
+  printf "coverage %.1f%% >= threshold %.1f%%\n", actual, minimum
+}'
 
 go vet ./...
