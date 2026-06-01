@@ -87,11 +87,6 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		defer lock.Release()
 		opts.Target = target
-		if created, err := projectconfig.NewService().Ensure(target); err != nil {
-			return err
-		} else if created {
-			fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
-		}
 	}
 	plan, err := s.BuildPlan(opts)
 	if err != nil {
@@ -136,6 +131,18 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	if !opts.Yes && requiresConfirmation(plan.Actions) {
 		return fmt.Errorf("install requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
+	}
+	if created, err := projectconfig.NewService().Ensure(plan.TargetRoot); err != nil {
+		return err
+	} else if created {
+		fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
+		plan, err = s.BuildPlan(opts)
+		if err != nil {
+			return err
+		}
+		if len(plan.Conflicts) > 0 {
+			return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
+		}
 	}
 
 	if err := s.applyInstall(plan, stdout); err != nil {

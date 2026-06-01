@@ -371,6 +371,27 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, "AGENTS.md")); !os.IsNotExist(err) {
 		t.Fatalf("install without --yes mutated target, stat err=%v", err)
 	}
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); !os.IsNotExist(err) {
+		t.Fatalf("install without --yes created project config, stat err=%v", err)
+	}
+}
+
+func TestRunCreatesProjectConfigAfterConfirmation(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	var out bytes.Buffer
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(confirmed install) error = %v, output=%s", err, out.String())
+	}
+
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); err != nil {
+		t.Fatalf("confirmed install did not create project config: %v", err)
+	}
+	if !strings.Contains(out.String(), "- [project-config] "+projectconfig.ProjectConfigPath) {
+		t.Fatalf("install output missing project config action: %s", out.String())
+	}
 }
 
 func TestInstallDryRunPlanOutputRegression(t *testing.T) {
@@ -385,6 +406,9 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 
 	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); !os.IsNotExist(err) {
+		t.Fatalf("dry-run created project config, stat err=%v", err)
 	}
 
 	for _, want := range []string{
