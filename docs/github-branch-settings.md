@@ -32,6 +32,7 @@ Para que el release automático funcione, permitir que GitHub Actions cree y pus
 - El tag automático es anotado, apunta al merge commit del PR y no se sobrescribe si el tag calculado ya existe localmente o en `origin`; en ese caso el workflow reporta un no-op explícito.
 - El workflow `.github/workflows/auto-release-tag.yml` no construye binarios ni publica GitHub Releases; pushea el tag y luego invoca explícitamente `.github/workflows/release.yml` mediante `workflow_dispatch` apuntando al tag creado. Si el tag ya existía, no dispara release duplicada.
 - El workflow `.github/workflows/release.yml` conserva el trigger por push de tags `v*` para tags manuales/humanos y también acepta `workflow_dispatch` con input `tag`; siempre valida que el tag sea `v*` y que su commit sea alcanzable desde `origin/main` antes de publicar assets.
+- Después de publicar GitHub Release assets, `.github/workflows/release.yml` descarga el artifact publicado desde GitHub Releases, verifica checksums y ejecuta `version`, `install --dry-run`, `install` y `verify` contra un target temporal. Esto deja tag, build, release y smoke del artifact publicado en el mismo pipeline automático de merge a `main`.
 - No publicar GitHub Releases estables desde commits que existan únicamente en `develop`.
 
 ## Operaciones Git/GitHub

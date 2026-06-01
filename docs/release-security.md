@@ -18,6 +18,8 @@ Cada release estable debe publicar:
 - `lufy-ai_<version>_provenance.intoto.jsonl` con subjects y metadata de build.
 - `*.bundle` generado por `cosign sign-blob` para cada artifact/checksum/SBOM/provenance publicado.
 
+El pipeline de release debe validar el artifact publicado después de crear la GitHub Release: descarga el artifact desde GitHub, verifica checksums y ejecuta una instalación/verificación real en un directorio temporal.
+
 Plataformas esperadas:
 
 - `darwin/amd64`
