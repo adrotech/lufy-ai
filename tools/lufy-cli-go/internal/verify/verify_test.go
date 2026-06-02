@@ -10,6 +10,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -63,6 +64,34 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "fail: falta archivo crítico") {
 		t.Fatalf("missing output unexpected: %s", out.String())
+	}
+}
+
+func TestCheckBuilderFeedsSameReportToJSONPresenter(t *testing.T) {
+	target := validVerifyTarget(t)
+	resolved, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report := Report{TargetRoot: resolved, Scope: string(assets.ScopeProject)}
+
+	if err := (CheckBuilder{}).Build(Options{Target: resolved, NoEngram: true, Scope: assets.ScopeProject}, &report); err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	if report.Failures != 0 || len(report.Checks) == 0 {
+		t.Fatalf("expected complete report model without failures, got %#v", report)
+	}
+	var out bytes.Buffer
+	if err := (ReportPresenter{}).Present(report, Options{JSON: true}, &out, nil); err != nil {
+		t.Fatalf("Present() error = %v", err)
+	}
+	var rendered Report
+	if err := json.Unmarshal(out.Bytes(), &rendered); err != nil {
+		t.Fatal(err)
+	}
+	if !rendered.OK || len(rendered.Checks) != len(report.Checks) {
+		t.Fatalf("presenter did not render same report model: %#v", rendered)
 	}
 }
 

@@ -28,12 +28,55 @@ type Options struct {
 	Rescan bool
 }
 
-type Service struct {
+type configScanner interface {
+	Scan(string) (ProjectConfig, error)
+}
+
+type rescanPlanner interface {
+	Build(ProjectConfig, ProjectConfig) RescanPlan
+}
+
+type configStore interface {
+	Exists(string) (bool, error)
+	Load(string) (ProjectConfig, error)
+	Write(string, ProjectConfig) error
+}
+
+type Scanner struct {
 	Now func() time.Time
 }
 
+type RescanMerger struct{}
+
+type ConfigStore struct{}
+
+type Service struct {
+	Now     func() time.Time
+	scanner configScanner
+	merger  rescanPlanner
+	store   configStore
+}
+
 func NewService() Service {
-	return Service{Now: func() time.Time { return time.Now().UTC() }}
+	return Service{Now: func() time.Time { return time.Now().UTC() }}.withDefaults()
+}
+
+func (s Service) withDefaults() Service {
+	now := s.Now
+	if now == nil {
+		now = func() time.Time { return time.Now().UTC() }
+	}
+	s.Now = now
+	if s.scanner == nil {
+		s.scanner = Scanner{Now: now}
+	}
+	if s.merger == nil {
+		s.merger = RescanMerger{}
+	}
+	if s.store == nil {
+		s.store = ConfigStore{}
+	}
+	return s
 }
 
 type ProjectConfig struct {
@@ -134,32 +177,32 @@ type WorkflowRouting struct {
 }
 
 func (s Service) Run(opts Options, out io.Writer) error {
+	s = s.withDefaults()
 	target, err := platform.ResolveTargetPath(opts.Target)
 	if err != nil {
 		return fmt.Errorf("resolver target: %w", err)
 	}
 	configPath := filepath.Join(target, ProjectConfigPath)
-	_, statErr := os.Stat(configPath)
-	exists := statErr == nil
-	if statErr != nil && !errors.Is(statErr, os.ErrNotExist) {
-		return statErr
+	exists, err := s.store.Exists(configPath)
+	if err != nil {
+		return err
 	}
 	if exists && !opts.Force && !opts.Rescan {
 		return fmt.Errorf("%s ya existe; usa --rescan para preservar overrides o --force para reemplazarlo", ProjectConfigPath)
 	}
 
-	detected, err := Scan(target, s.Now())
+	detected, err := s.scanner.Scan(target)
 	if err != nil {
 		return err
 	}
 	finalConfig := detected
 	var report *RescanPlan
 	if opts.Rescan && exists {
-		current, err := Load(configPath)
+		current, err := s.store.Load(configPath)
 		if err != nil {
 			return fmt.Errorf("leer config existente para rescan: corrige o respalda %s antes de reintentar: %w", ProjectConfigPath, err)
 		}
-		plan := BuildRescanPlan(current, detected)
+		plan := s.merger.Build(current, detected)
 		report = &plan
 		finalConfig = plan.Merged
 		if !plan.HasChanges {
@@ -167,11 +210,7 @@ func (s Service) Run(opts Options, out io.Writer) error {
 			return nil
 		}
 	}
-	content, err := Marshal(finalConfig)
-	if err != nil {
-		return err
-	}
-	if err := platform.WriteFileAtomic(configPath, content, 0o644); err != nil {
+	if err := s.store.Write(configPath, finalConfig); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "Generado %s\n", configPath)
@@ -183,25 +222,22 @@ func (s Service) Run(opts Options, out io.Writer) error {
 }
 
 func (s Service) Ensure(target string) (bool, error) {
+	s = s.withDefaults()
 	target, err := platform.ResolveTargetPath(target)
 	if err != nil {
 		return false, fmt.Errorf("resolver target: %w", err)
 	}
 	configPath := filepath.Join(target, ProjectConfigPath)
-	if _, err := os.Stat(configPath); err == nil {
+	if exists, err := s.store.Exists(configPath); err != nil {
+		return false, err
+	} else if exists {
 		return false, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return false, err
 	}
-	detected, err := Scan(target, s.Now())
+	detected, err := s.scanner.Scan(target)
 	if err != nil {
 		return false, err
 	}
-	content, err := Marshal(detected)
-	if err != nil {
-		return false, err
-	}
-	if err := platform.WriteFileAtomic(configPath, content, 0o644); err != nil {
+	if err := s.store.Write(configPath, detected); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -238,6 +274,14 @@ func Marshal(cfg ProjectConfig) ([]byte, error) {
 }
 
 func Scan(root string, now time.Time) (ProjectConfig, error) {
+	return Scanner{Now: func() time.Time { return now }}.Scan(root)
+}
+
+func (s Scanner) Scan(root string) (ProjectConfig, error) {
+	now := s.Now
+	if now == nil {
+		now = func() time.Time { return time.Now().UTC() }
+	}
 	stacks := []Stack{}
 	if exists(root, "go.mod") {
 		stacks = append(stacks, scanGo(root))
@@ -261,7 +305,7 @@ func Scan(root string, now time.Time) (ProjectConfig, error) {
 	sort.SliceStable(stacks, func(i, j int) bool { return stacks[i].ID < stacks[j].ID })
 	return ProjectConfig{
 		SchemaVersion:     SchemaVersion,
-		DetectedAt:        now.UTC(),
+		DetectedAt:        now().UTC(),
 		Tool:              domain.ToolInitialDefault,
 		MethodologyByTier: domain.DefaultMethodologyByTier(),
 		Stacks:            stacks,
@@ -277,6 +321,10 @@ func MergeRescan(current, detected ProjectConfig) ProjectConfig {
 }
 
 func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
+	return RescanMerger{}.Build(current, detected)
+}
+
+func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	merged := detected
 	merged.Extra = sanitizedTopLevelExtra(current.Extra)
 	items := legacyWorkflowFieldItems(current.Extra)
@@ -336,6 +384,29 @@ func BuildRescanPlan(current, detected ProjectConfig) RescanPlan {
 		merged.DetectedAt = current.DetectedAt
 	}
 	return RescanPlan{Merged: merged, Items: items, HasChanges: hasChanges}
+}
+
+func (s ConfigStore) Exists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
+}
+
+func (s ConfigStore) Load(path string) (ProjectConfig, error) {
+	return Load(path)
+}
+
+func (s ConfigStore) Write(path string, cfg ProjectConfig) error {
+	content, err := Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	return platform.WriteFileAtomic(path, content, 0o644)
 }
 
 func validateHarnessConfig(cfg ProjectConfig) error {

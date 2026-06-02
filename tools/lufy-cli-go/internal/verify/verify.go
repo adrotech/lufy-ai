@@ -54,10 +54,38 @@ type Check struct {
 	Message           string `json:"message"`
 }
 
-type Service struct{}
+type reportRecorder struct {
+	report *Report
+}
+
+type checkBuilder interface {
+	Build(Options, *Report) error
+}
+
+type reportPresenter interface {
+	Present(Report, Options, io.Writer, error) error
+}
+
+type projectConfigEnsurer interface {
+	Ensure(string) (bool, error)
+}
+
+type CheckBuilder struct{}
+
+type ReportPresenter struct{}
+
+type Service struct {
+	checkBuilder  checkBuilder
+	presenter     reportPresenter
+	projectConfig projectConfigEnsurer
+}
 
 func NewService() Service {
-	return Service{}
+	return Service{
+		checkBuilder:  CheckBuilder{},
+		presenter:     ReportPresenter{},
+		projectConfig: projectconfig.NewService(),
+	}
 }
 
 var fallbackRequiredDirs = []string{
@@ -106,80 +134,52 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		report.GlobalRoot = globalRoot
 	}
-	emit := func(level, path, format string, args ...any) {
-		message := fmt.Sprintf(format, args...)
-		report.Checks = append(report.Checks, Check{Level: level, Path: path, Message: message})
-		switch level {
-		case "fail":
-			report.Failures++
-		case "warn":
-			report.Warnings++
-		case "info":
-			report.Infos++
-		}
-		if !opts.JSON && !opts.Quiet {
-			if path == "" {
-				fmt.Fprintf(stdout, "%s: %s\n", level, message)
-				return
-			}
-			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
-		}
+	recorder := reportRecorder{report: &report}
+
+	if created, err := s.projectConfig.Ensure(target); err != nil {
+		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
+		return s.presenter.Present(report, opts, stdout, fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
+	} else if created {
+		recorder.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
+	} else {
+		recorder.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
 	}
-	emitAsset := func(level, path, policy, recommendedAction, format string, args ...any) {
-		message := fmt.Sprintf(format, args...)
-		report.Checks = append(report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
-		switch level {
-		case "fail":
-			report.Failures++
-		case "warn":
-			report.Warnings++
-		case "info":
-			report.Infos++
-		}
-		if !opts.JSON && !opts.Quiet {
-			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
-		}
-	}
-	finish := func(err error) error {
-		report.OK = report.Failures == 0
-		if opts.JSON {
-			body, jsonErr := json.MarshalIndent(report, "", "  ")
-			if jsonErr != nil {
-				return jsonErr
-			}
-			fmt.Fprintf(stdout, "%s\n", body)
-		}
+
+	opts.Target = target
+	opts.Scope = scope
+	if err := s.checkBuilder.Build(opts, &report); err != nil {
 		return err
 	}
-
-	if created, err := projectconfig.NewService().Ensure(target); err != nil {
-		emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
-		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
-	} else if created {
-		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
-	} else {
-		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
+	recorder = reportRecorder{report: &report}
+	if report.Failures > 0 {
+		return s.presenter.Present(report, opts, stdout, fmt.Errorf("verify falló con %d problema(s) crítico(s)", report.Failures))
 	}
+	recorder.emit("ok", "", "verify estructural completo")
+	return s.presenter.Present(report, opts, stdout, nil)
+}
 
+func (b CheckBuilder) Build(opts Options, report *Report) error {
+	target := opts.Target
+	recorder := reportRecorder{report: report}
 	st, err := state.Load(target)
 	if err != nil {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		emit("fail", state.Path(target), "falta estado de instalación")
-		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
+		recorder.emit("fail", state.Path(target), "falta estado de instalación")
+		return nil
 	}
 	report.SchemaVersion = st.SchemaVersion
 	report.Tool = string(st.Tool)
 	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
 	if opts.ExpectedTool != "" && st.Tool != opts.ExpectedTool {
-		emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
+		recorder.emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
 	}
 	assetMap := st.AssetMap()
 	requiredDirs, requiredManagedFiles := catalogRequirements(st)
 	if opts.Verbose {
-		emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
+		recorder.emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
 	for _, rel := range requiredStateFiles {
 		path, err := platform.SafeJoin(target, rel)
@@ -187,34 +187,34 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return err
 		}
 		if !regularFile(path) {
-			emit("fail", rel, "falta archivo crítico")
+			recorder.emit("fail", rel, "falta archivo crítico")
 			continue
 		}
-		emit("ok", rel, "archivo crítico")
+		recorder.emit("ok", rel, "archivo crítico")
 	}
 	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
-		emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
+		recorder.emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
 	}
 	for _, rel := range jsonValidationFiles {
 		status, err := validateJSONFile(target, rel)
 		if err != nil {
-			emit("fail", "", "JSON inválido en %s: %s", rel, err.Error())
+			recorder.emit("fail", "", "JSON inválido en %s: %s", rel, err.Error())
 			continue
 		}
 		if status != "" {
-			emit("ok", rel, "JSON parseable")
+			recorder.emit("ok", rel, "JSON parseable")
 		}
 	}
 	if opts.Deep {
-		runDeepVerify(st.Tool, target, emit)
+		runDeepVerify(st.Tool, target, recorder.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
-		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+		recorder.emit("fail", "", "runtime de configuración inválido: %s", err.Error())
 	} else if exists, err := toolruntime.ValidateProjectConfig(st.Tool, target); err != nil {
-		emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
+		recorder.emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
 	} else if exists {
-		emit("ok", projectConfigFile, "estructura merge-managed")
+		recorder.emit("ok", projectConfigFile, "estructura merge-managed")
 	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
@@ -223,9 +223,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 	}
 	if manifestTarget != "" && manifestTarget != target {
-		emit("fail", "install-state.json", "targetRoot del manifest no coincide: manifest=%s actual=%s", st.TargetRoot, target)
+		recorder.emit("fail", "install-state.json", "targetRoot del manifest no coincide: manifest=%s actual=%s", st.TargetRoot, target)
 	}
-	emit("ok", "install-state.json", "install-state.json schema=%d assets=%d", st.SchemaVersion, len(st.Assets))
+	recorder.emit("ok", "install-state.json", "install-state.json schema=%d assets=%d", st.SchemaVersion, len(st.Assets))
 
 	for _, required := range requiredDirs {
 		clean, err := platform.EnsureRelativeSafe(required)
@@ -234,14 +234,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "directorio crítico inseguro: %s", err.Error())
+			recorder.emit("fail", clean, "directorio crítico inseguro: %s", err.Error())
 			continue
 		}
 		if !directory(path) {
-			emit("fail", clean, "falta directorio crítico")
+			recorder.emit("fail", clean, "falta directorio crítico")
 			continue
 		}
-		emit("ok", clean, "directorio crítico")
+		recorder.emit("ok", clean, "directorio crítico")
 	}
 
 	for _, required := range requiredManagedFiles {
@@ -253,20 +253,20 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			if opts.AllowCatalogNewAssets {
 				continue
 			}
-			emit("fail", clean, "asset clave no está en manifest")
+			recorder.emit("fail", clean, "asset clave no está en manifest")
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "asset clave inseguro: %s", err.Error())
+			recorder.emit("fail", clean, "asset clave inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			emit("fail", clean, "falta archivo crítico")
+			recorder.emit("fail", clean, "falta archivo crítico")
 			continue
 		}
-		emit("ok", clean, "archivo crítico")
+		recorder.emit("ok", clean, "archivo crítico")
 	}
-	verifyAgentsReference(target, opts.AllowMissingAgentsRef, emitAsset)
+	verifyAgentsReference(target, opts.AllowMissingAgentsRef, recorder.emitAsset)
 
 	for _, asset := range st.Assets {
 		clean, err := platform.EnsureRelativeSafe(asset.TargetRel)
@@ -275,11 +275,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "asset inseguro: %s", err.Error())
+			recorder.emit("fail", clean, "asset inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			emit("fail", clean, "falta asset gestionado")
+			recorder.emit("fail", clean, "falta asset gestionado")
 			continue
 		}
 		actual, err := assets.FileSHA256(path)
@@ -288,29 +288,70 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		if actual != asset.TargetSHA256 {
 			if asset.Policy == string(assets.PolicyNoReplace) && regularFile(path+".lufy-new") {
-				emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
+				recorder.emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
 				continue
 			}
-			emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
+			recorder.emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 			continue
 		}
-		emit("ok", clean, "sha256=%s", shortHash(actual))
+		recorder.emit("ok", clean, "sha256=%s", shortHash(actual))
 	}
-	reportExtraManagedDirFiles(target, requiredDirs, assetMap, emit)
+	reportExtraManagedDirFiles(target, requiredDirs, assetMap, recorder.emit)
 
 	if opts.NoEngram {
-		emit("warn", "", "chequeo de Engram omitido por --no-engram")
+		recorder.emit("warn", "", "chequeo de Engram omitido por --no-engram")
 	} else if path, ok := platform.ResolveEngram(false, platform.OSResolver{}); ok {
-		emit("ok", "", "engram detectado en PATH (%s)", path)
+		recorder.emit("ok", "", "engram detectado en PATH (%s)", path)
 	} else {
-		emit("warn", "", "engram no encontrado en PATH")
+		recorder.emit("warn", "", "engram no encontrado en PATH")
 	}
+	return nil
+}
 
-	if report.Failures > 0 {
-		return finish(fmt.Errorf("verify falló con %d problema(s) crítico(s)", report.Failures))
+func (e reportRecorder) emit(level, path, format string, args ...any) {
+	message := fmt.Sprintf(format, args...)
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Message: message})
+	e.count(level)
+}
+
+func (e reportRecorder) emitAsset(level, path, policy, recommendedAction, format string, args ...any) {
+	message := fmt.Sprintf(format, args...)
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
+	e.count(level)
+}
+
+func (e reportRecorder) count(level string) {
+	switch level {
+	case "fail":
+		e.report.Failures++
+	case "warn":
+		e.report.Warnings++
+	case "info":
+		e.report.Infos++
 	}
-	emit("ok", "", "verify estructural completo")
-	return finish(nil)
+}
+
+func (p ReportPresenter) Present(report Report, opts Options, stdout io.Writer, err error) error {
+	report.OK = report.Failures == 0
+	if opts.JSON {
+		body, jsonErr := json.MarshalIndent(report, "", "  ")
+		if jsonErr != nil {
+			return jsonErr
+		}
+		fmt.Fprintf(stdout, "%s\n", body)
+		return err
+	}
+	if opts.Quiet {
+		return err
+	}
+	for _, check := range report.Checks {
+		if check.Path == "" {
+			fmt.Fprintf(stdout, "%s: %s\n", check.Level, check.Message)
+			continue
+		}
+		fmt.Fprintf(stdout, "%s: %s: %s\n", check.Level, check.Message, check.Path)
+	}
+	return err
 }
 
 func verifyAgentsReference(target string, allowMissing bool, emitAsset func(level, path, policy, recommendedAction, format string, args ...any)) {
