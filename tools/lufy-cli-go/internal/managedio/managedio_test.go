@@ -5,7 +5,33 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
+
+func TestCopyRenderedFileAndWriteAncestor(t *testing.T) {
+	source := t.TempDir()
+	target := t.TempDir()
+	writeTestFile(t, filepath.Join(source, "docs", "guide.md"), "managed\n")
+
+	if err := CopyRenderedFile(source, filepath.Join("docs", "guide.md"), target, filepath.Join("docs", "guide.md")); err != nil {
+		t.Fatalf("CopyRenderedFile() error = %v", err)
+	}
+
+	if got := readTestFile(t, filepath.Join(target, "docs", "guide.md")); got != "managed\n" {
+		t.Fatalf("copied content = %q", got)
+	}
+	if err := WriteAncestor(source, filepath.Join("docs", "guide.md"), target, filepath.Join("docs", "guide.md")); err != nil {
+		t.Fatalf("WriteAncestor() error = %v", err)
+	}
+	ancestorPath, err := state.AncestorPath(target, filepath.Join("docs", "guide.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := readTestFile(t, ancestorPath); got != "managed\n" {
+		t.Fatalf("ancestor content = %q", got)
+	}
+}
 
 func TestRenderMergeBlockPreservesLocalTextAndUpdatesManagedBlock(t *testing.T) {
 	source := t.TempDir()
@@ -68,4 +94,13 @@ func writeTestFile(t *testing.T, path string, body string) {
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func readTestFile(t *testing.T, path string) string {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(body)
 }
