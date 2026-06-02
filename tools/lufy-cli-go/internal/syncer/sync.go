@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
@@ -15,7 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -68,10 +67,34 @@ type Plan struct {
 	Conflicts  []Conflict
 }
 
-type Service struct{}
+type planBuilder interface {
+	Build(Options) (Plan, error)
+}
+
+type actionExecutor interface {
+	Apply(Plan, io.Writer) error
+}
+
+type projectConfigEnsurer interface {
+	Ensure(string) (bool, error)
+}
+
+type PlanBuilder struct{}
+
+type ActionExecutor struct{}
+
+type Service struct {
+	planBuilder    planBuilder
+	actionExecutor actionExecutor
+	projectConfig  projectConfigEnsurer
+}
 
 func NewService() Service {
-	return Service{}
+	return Service{
+		planBuilder:    PlanBuilder{},
+		actionExecutor: ActionExecutor{},
+		projectConfig:  projectconfig.NewService(),
+	}
 }
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
@@ -103,7 +126,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if requiresConfirmation(plan.Actions) && !opts.Yes {
 		return fmt.Errorf("sync requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
-	if created, err := projectconfig.NewService().Ensure(plan.TargetRoot); err != nil {
+	if created, err := s.projectConfig.Ensure(plan.TargetRoot); err != nil {
 		return err
 	} else if created {
 		fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
@@ -123,6 +146,10 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 }
 
 func (s Service) BuildPlan(opts Options) (Plan, error) {
+	return s.planBuilder.Build(opts)
+}
+
+func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	target, err := platform.ResolveTargetPath(opts.Target)
 	if err != nil {
 		return Plan{}, err
@@ -220,7 +247,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		}
 		if currentHash != prev.TargetSHA256 {
 			if asset.Policy == assets.PolicyMergeBlock {
-				if _, err := renderMergeBlock(plan.SourceRoot, asset.SourceRel, plan.TargetRoot, asset.TargetRel); err != nil {
+				if _, err := managedio.RenderMergeBlock(plan.SourceRoot, asset.SourceRel, plan.TargetRoot, asset.TargetRel); err != nil {
 					plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Policy: asset.Policy, Reason: err.Error(), SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 					continue
 				}
@@ -244,7 +271,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		kind := ActionUpdateManaged
 		reason := "source cambió y target coincide con hash registrado"
 		if asset.Policy == assets.PolicyMergeBlock {
-			if _, err := renderMergeBlock(plan.SourceRoot, asset.SourceRel, plan.TargetRoot, asset.TargetRel); err != nil {
+			if _, err := managedio.RenderMergeBlock(plan.SourceRoot, asset.SourceRel, plan.TargetRoot, asset.TargetRel); err != nil {
 				plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Policy: asset.Policy, Reason: err.Error(), SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				continue
 			}
@@ -319,7 +346,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		return Plan{}, err
 	}
 	if configPlan.Action == string(ActionMergeJSON) {
-		if fileExists(filepath.Join(target, configPlan.File)) {
+		if managedio.FileExists(filepath.Join(target, configPlan.File)) {
 			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado conservadoramente"})
 		}
 		plan.Actions = append(plan.Actions, Action{Kind: ActionMergeJSON, Target: configPlan.File, Reason: "configuración OpenCode merge-managed parcial"})
@@ -336,10 +363,14 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 }
 
 func (s Service) apply(plan Plan, stdout io.Writer) error {
+	return s.actionExecutor.Apply(plan, stdout)
+}
+
+func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 	if err := validateActionKinds(plan.Actions); err != nil {
 		return err
 	}
-	updates := uniqueTargets(append(append(targetsForKind(plan.Actions, ActionCreateManaged), targetsForKind(plan.Actions, ActionUpdateManaged)...), targetsForKind(plan.Actions, ActionMergeBlock)...))
+	updates := managedio.UniqueTargets(append(append(targetsForKind(plan.Actions, ActionCreateManaged), targetsForKind(plan.Actions, ActionUpdateManaged)...), targetsForKind(plan.Actions, ActionMergeBlock)...))
 	lufyNew := targetsForKind(plan.Actions, ActionWriteLufyNew)
 	merges := targetsForKind(plan.Actions, ActionMergeJSON)
 	stateOnly := hasActionKind(plan.Actions, ActionRetired) || hasActionKind(plan.Actions, ActionWarnAgentsReference)
@@ -347,7 +378,7 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 		fmt.Fprintln(stdout, "- [skip] sin cambios gestionados")
 		return nil
 	}
-	backupTargets := uniqueTargets(append(append([]string{}, updates...), targetsForKind(plan.Actions, ActionBackup)...))
+	backupTargets := managedio.UniqueTargets(append(append([]string{}, updates...), targetsForKind(plan.Actions, ActionBackup)...))
 	manifestPath := ""
 	if len(backupTargets) > 0 {
 		backupDir, err := backup.BackupFiles(plan.TargetRoot, backupTargets, "sync", stdout)
@@ -361,42 +392,42 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	for _, action := range plan.Actions {
 		switch action.Kind {
 		case ActionCreateManaged:
-			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+			if err := managedio.CopyRenderedFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			if action.Policy.SupportsAncestor() {
-				if err := writeAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+				if err := managedio.WriteAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 					return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 				}
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [create-managed] %s\n", action.Target)
 		case ActionUpdateManaged:
-			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+			if err := managedio.CopyRenderedFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			if action.Policy.SupportsAncestor() {
-				if err := writeAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+				if err := managedio.WriteAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 					return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 				}
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [update-managed] %s\n", action.Target)
 		case ActionMergeBlock:
-			merged, err := renderMergeBlock(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target)
+			merged, err := managedio.RenderMergeBlock(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target)
 			if err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
-			if err := writeTargetFile(plan.TargetRoot, action.Target, merged); err != nil {
+			if err := managedio.WriteTargetFile(plan.TargetRoot, action.Target, merged); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
-			if err := writeAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+			if err := managedio.WriteAncestor(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-block] %s\n", action.Target)
 		case ActionWriteLufyNew:
-			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
+			if err := managedio.CopyRenderedFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
@@ -443,7 +474,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 	lufyNew := map[string]bool{}
 	for _, action := range plan.Actions {
 		if action.Kind == ActionWriteLufyNew {
-			lufyNew[trimLufyNewSuffix(action.Target)] = true
+			lufyNew[managedio.TrimLufyNewSuffix(action.Target)] = true
 		}
 	}
 	previous := plan.Previous.AssetMap()
@@ -515,103 +546,6 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Methodology: prev.Methodology, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: prev.InstalledAt, LastAction: "retired"})
 	}
 	return out, nil
-}
-
-func trimLufyNewSuffix(path string) string {
-	return strings.TrimSuffix(path, ".lufy-new")
-}
-
-func copyFile(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	body, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
-	if err != nil {
-		return err
-	}
-	return writeTargetFile(targetRoot, targetRel, body)
-}
-
-func writeAncestor(sourceRoot, sourceRel, targetRoot, targetRel string) error {
-	body, err := managedcontent.Render(sourceRoot, sourceRel, targetRoot, targetRel)
-	if err != nil {
-		return err
-	}
-	ancestorPath, err := state.AncestorPath(targetRoot, targetRel)
-	if err != nil {
-		return err
-	}
-	return platform.WriteFileAtomic(ancestorPath, body, 0o644)
-}
-
-func renderMergeBlock(sourceRoot, sourceRel, targetRoot, targetRel string) ([]byte, error) {
-	sourceContent, err := readSourceContent(sourceRoot, sourceRel)
-	if err != nil {
-		return nil, err
-	}
-	targetPath, err := platform.SafeJoin(targetRoot, targetRel)
-	if err != nil {
-		return nil, err
-	}
-	targetContent, err := os.ReadFile(targetPath)
-	if err != nil {
-		return nil, err
-	}
-	return mergeblock.Render(targetContent, sourceContent)
-}
-
-func readSourceContent(sourceRoot, sourceRel string) ([]byte, error) {
-	var body []byte
-	if sourceRoot == assets.EmbeddedSourceRoot {
-		var err error
-		body, err = assets.ReadSourceFile(sourceRoot, sourceRel)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		src := filepath.Join(sourceRoot, sourceRel)
-		info, err := os.Lstat(src)
-		if err != nil {
-			return nil, err
-		}
-		if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
-			return nil, fmt.Errorf("source no es archivo regular seguro: %s", src)
-		}
-		body, err = os.ReadFile(src)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return body, nil
-}
-
-func writeTargetFile(targetRoot, targetRel string, body []byte) error {
-	dst, err := platform.SafeJoin(targetRoot, targetRel)
-	if err != nil {
-		return err
-	}
-	if info, err := os.Lstat(dst); err == nil && info.Mode()&os.ModeSymlink != 0 {
-		return fmt.Errorf("destino symlink no permitido: %s", dst)
-	}
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	return platform.WriteFileAtomic(dst, body, 0o644)
-}
-
-func uniqueTargets(in []string) []string {
-	seen := map[string]bool{}
-	var out []string
-	for _, target := range in {
-		if seen[target] {
-			continue
-		}
-		seen[target] = true
-		out = append(out, target)
-	}
-	return out
-}
-
-func fileExists(path string) bool {
-	info, err := os.Lstat(path)
-	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
 }
 
 func syncRecoveryError(err error, targetRoot string, manifestPath string, applied int) error {

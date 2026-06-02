@@ -7,10 +7,10 @@
 
 ## 2. Puertos de aplicacion
 
-- [ ] Introducir puertos minimos para filesystem/state/catalog/runtime/clock solo donde el slice los use.
-- [ ] Ensamblar implementaciones concretas en constructors/factories sin cambiar la CLI publica.
-- [ ] Actualizar tests para usar fakes o temp dirs segun corresponda.
-- [ ] Verificar que dominio y puertos neutrales no importen detalles concretos de runtime.
+- [x] Introducir puertos minimos para filesystem/state/catalog/runtime/clock solo donde el slice los use.
+- [x] Ensamblar implementaciones concretas en constructors/factories sin cambiar la CLI publica.
+- [x] Actualizar tests para usar fakes o temp dirs segun corresponda.
+- [x] Verificar que dominio y puertos neutrales no importen detalles concretos de runtime.
 
 ## 3. Separacion de servicios grandes
 
@@ -19,10 +19,10 @@
 - [x] Extraer tipos/helpers de acciones de `syncer` a componente revisable.
 - [x] Extraer presentacion del plan de `syncer` fuera de `Run`.
 - [x] Extraer emision/presentacion de reportes de `verify` a `reportEmitter`.
-- [ ] Extraer `installer` plan/apply completos a componentes revisables.
-- [ ] Extraer `syncer` plan/apply completos y consolidar reglas compartidas reales con `installer`.
-- [ ] Extraer `verify` check building/check running completos.
-- [ ] Revisar `projectconfig` para separar scanning, merge y persistencia.
+- [x] Extraer `installer` plan/apply completos a componentes revisables.
+- [x] Extraer `syncer` plan/apply completos y consolidar reglas compartidas reales con `installer`.
+- [x] Extraer `verify` check building/check running completos.
+- [x] Revisar `projectconfig` para separar scanning, merge y persistencia.
 
 ## 4. Acciones tipadas y strategy
 
@@ -36,14 +36,14 @@
 
 - [x] Documentar en el resultado del slice como se cumple SRP/OCP/LSP/ISP/DIP o que queda pendiente.
 - [x] Reducir mezcla de decision y reporting en `installer`, `syncer` y `verify` para el primer slice.
-- [ ] Eliminar duplicacion significativa entre install/sync sin crear abstracciones prematuras.
+- [x] Eliminar duplicacion significativa entre install/sync sin crear abstracciones prematuras.
 - [x] Validar que errores nuevos sigan siendo accionables y en espanol.
 
 ## 6. TDD / AAA
 
 - [x] Para cada cambio de comportamiento del slice inicial, registrar RED/GREEN o `not_applicable` con razon.
 - [x] Estructurar tests nuevos con AAA explicito o implicitamente claro.
-- [ ] Agregar triangulacion para edge cases de path safety, drift, rollback, dry-run y mismatches de tool/metodologia.
+- [x] Agregar triangulacion para edge cases de path safety, drift, rollback, dry-run y mismatches de tool/metodologia.
 - [x] Mantener tests de integracion end-to-end para compatibilidad observable.
 
 ## 7. Validacion final

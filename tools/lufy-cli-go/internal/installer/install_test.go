@@ -13,6 +13,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -68,6 +69,27 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	}
 	if !hasAction(updatePlan.Actions, "backup", "lufy-ia.harness.md") || !hasAction(updatePlan.Actions, "update-managed", "lufy-ia.harness.md") {
 		t.Fatalf("update plan missing backup/update-managed: %#v", updatePlan.Actions)
+	}
+}
+
+func TestPlanBuilderBuildsPlanWithoutApplyingMutations(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+
+	plan, err := PlanBuilder{}.Build(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	if !hasAction(plan.Actions, "copy", "lufy-ia.harness.md") {
+		t.Fatalf("plan missing expected copy action: %#v", plan.Actions)
+	}
+	if _, err := os.Stat(filepath.Join(target, "AGENTS.md")); !os.IsNotExist(err) {
+		t.Fatalf("planner mutated AGENTS.md, stat err=%v", err)
+	}
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("planner wrote install-state, stat err=%v", err)
 	}
 }
 
@@ -261,9 +283,9 @@ func TestRenderMergeBlockPreservesLocalTextAndUpdatesBlocks(t *testing.T) {
 	writeInstallerFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nnew lufy\n<!-- LUFY:END project-guide -->\n")
 	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), "local intro\n<!-- LUFY:BEGIN project-guide -->\nold lufy\n<!-- LUFY:END project-guide -->\nlocal outro\n")
 
-	merged, err := renderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
+	merged, err := managedio.RenderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
 	if err != nil {
-		t.Fatalf("renderMergeBlock() error = %v", err)
+		t.Fatalf("managedio.RenderMergeBlock() error = %v", err)
 	}
 	got := string(merged)
 	for _, want := range []string{"local intro", "new lufy", "local outro"} {
@@ -281,7 +303,7 @@ func TestReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(root, "source.md"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readSourceContent(root, "source.md"); err == nil {
+	if _, err := managedio.ReadSourceContent(root, "source.md"); err == nil {
 		t.Fatalf("expected directory source to fail")
 	}
 
@@ -291,7 +313,7 @@ func TestReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(target, "dest.md")); err != nil {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
-	if err := writeTargetFile(target, "dest.md", []byte("new\n")); err == nil {
+	if err := managedio.WriteTargetFile(target, "dest.md", []byte("new\n")); err == nil {
 		t.Fatalf("expected symlink target to fail")
 	}
 }

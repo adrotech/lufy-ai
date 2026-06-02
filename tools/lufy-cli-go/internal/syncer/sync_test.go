@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -64,6 +65,25 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	}
 	if !hasSyncAction(untrackedPlan.Actions, "warn-agents-reference", "AGENTS.md") {
 		t.Fatalf("expected untracked AGENTS warning, got actions=%#v conflicts=%#v", untrackedPlan.Actions, untrackedPlan.Conflicts)
+	}
+}
+
+func TestPlanBuilderBuildsSyncPlanWithoutRewritingState(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	before := readFile(t, state.Path(target))
+
+	plan, err := PlanBuilder{}.Build(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+
+	if !hasSyncAction(plan.Actions, "skip", "lufy-ia.harness.md") {
+		t.Fatalf("plan missing expected skip action: %#v", plan.Actions)
+	}
+	if !bytes.Equal(before, readFile(t, state.Path(target))) {
+		t.Fatal("planner rewrote install-state")
 	}
 }
 
@@ -154,9 +174,9 @@ func TestRenderMergeBlockForSync(t *testing.T) {
 	writeFile(t, filepath.Join(source, "AGENTS.md.template"), "<!-- LUFY:BEGIN project-guide -->\nnew sync\n<!-- LUFY:END project-guide -->\n")
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "local\n<!-- LUFY:BEGIN project-guide -->\nold sync\n<!-- LUFY:END project-guide -->\n")
 
-	merged, err := renderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
+	merged, err := managedio.RenderMergeBlock(source, "AGENTS.md.template", target, "AGENTS.md")
 	if err != nil {
-		t.Fatalf("renderMergeBlock() error = %v", err)
+		t.Fatalf("managedio.RenderMergeBlock() error = %v", err)
 	}
 	if got := string(merged); !strings.Contains(got, "local") || !strings.Contains(got, "new sync") || strings.Contains(got, "old sync") {
 		t.Fatalf("unexpected merge-block output: %s", got)
@@ -168,7 +188,7 @@ func TestSyncReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
 	if err := os.Mkdir(filepath.Join(root, "source.md"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readSourceContent(root, "source.md"); err == nil {
+	if _, err := managedio.ReadSourceContent(root, "source.md"); err == nil {
 		t.Fatalf("expected directory source to fail")
 	}
 
@@ -178,7 +198,7 @@ func TestSyncReadSourceAndWriteTargetRejectUnsafeFiles(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(target, "dest.md")); err != nil {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
-	if err := writeTargetFile(target, "dest.md", []byte("new\n")); err == nil {
+	if err := managedio.WriteTargetFile(target, "dest.md", []byte("new\n")); err == nil {
 		t.Fatalf("expected symlink target to fail")
 	}
 }
