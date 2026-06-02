@@ -609,6 +609,19 @@ func TestApplyInstallReportsRecoveryBackupOnPartialError(t *testing.T) {
 	}
 }
 
+func TestApplyInstallRejectsUnknownActionKind(t *testing.T) {
+	target := t.TempDir()
+	plan := Plan{
+		TargetRoot: target,
+		Actions:    []Action{{Kind: ActionKind("unknown-action"), Target: "x"}},
+	}
+
+	err := NewService().applyInstall(plan, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "acción install no soportada: unknown-action") {
+		t.Fatalf("expected unknown action error, got %v", err)
+	}
+}
+
 func TestInstallAndVerifyIntegration(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
@@ -637,7 +650,7 @@ func TestApplyInstallRemovesNewStateWhenPostVerifyFails(t *testing.T) {
 	}
 }
 
-func hasAction(actions []Action, kind, target string) bool {
+func hasAction(actions []Action, kind ActionKind, target string) bool {
 	for _, action := range actions {
 		if action.Kind == kind && action.Target == target {
 			return true
@@ -646,7 +659,7 @@ func hasAction(actions []Action, kind, target string) bool {
 	return false
 }
 
-func hasActionKind(actions []Action, kind string) bool {
+func hasActionKind(actions []Action, kind ActionKind) bool {
 	for _, action := range actions {
 		if action.Kind == kind {
 			return true

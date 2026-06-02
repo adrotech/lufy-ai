@@ -453,6 +453,20 @@ func TestSyncRecoveryErrorRestoresBackup(t *testing.T) {
 	}
 }
 
+func TestApplyRejectsUnknownActionKind(t *testing.T) {
+	target := t.TempDir()
+	plan := Plan{
+		TargetRoot: target,
+		Previous:   &state.InstallState{SchemaVersion: state.SchemaVersion},
+		Actions:    []Action{{Kind: ActionKind("unknown-action"), Target: "x"}},
+	}
+
+	err := NewService().apply(plan, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "acción sync no soportada: unknown-action") {
+		t.Fatalf("expected unknown action error, got %v", err)
+	}
+}
+
 func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -672,7 +686,7 @@ func installedTarget(t *testing.T) string {
 	return target
 }
 
-func hasSyncAction(actions []Action, kind, target string) bool {
+func hasSyncAction(actions []Action, kind ActionKind, target string) bool {
 	for _, action := range actions {
 		if action.Kind == kind && action.Target == target {
 			return true
@@ -681,7 +695,7 @@ func hasSyncAction(actions []Action, kind, target string) bool {
 	return false
 }
 
-func hasSyncActionKind(actions []Action, kind string) bool {
+func hasSyncActionKind(actions []Action, kind ActionKind) bool {
 	for _, action := range actions {
 		if action.Kind == kind {
 			return true

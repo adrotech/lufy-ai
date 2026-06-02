@@ -54,6 +54,13 @@ type Check struct {
 	Message           string `json:"message"`
 }
 
+type reportEmitter struct {
+	report *Report
+	json   bool
+	quiet  bool
+	stdout io.Writer
+}
+
 type Service struct{}
 
 func NewService() Service {
@@ -106,59 +113,15 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		report.GlobalRoot = globalRoot
 	}
-	emit := func(level, path, format string, args ...any) {
-		message := fmt.Sprintf(format, args...)
-		report.Checks = append(report.Checks, Check{Level: level, Path: path, Message: message})
-		switch level {
-		case "fail":
-			report.Failures++
-		case "warn":
-			report.Warnings++
-		case "info":
-			report.Infos++
-		}
-		if !opts.JSON && !opts.Quiet {
-			if path == "" {
-				fmt.Fprintf(stdout, "%s: %s\n", level, message)
-				return
-			}
-			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
-		}
-	}
-	emitAsset := func(level, path, policy, recommendedAction, format string, args ...any) {
-		message := fmt.Sprintf(format, args...)
-		report.Checks = append(report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
-		switch level {
-		case "fail":
-			report.Failures++
-		case "warn":
-			report.Warnings++
-		case "info":
-			report.Infos++
-		}
-		if !opts.JSON && !opts.Quiet {
-			fmt.Fprintf(stdout, "%s: %s: %s\n", level, message, path)
-		}
-	}
-	finish := func(err error) error {
-		report.OK = report.Failures == 0
-		if opts.JSON {
-			body, jsonErr := json.MarshalIndent(report, "", "  ")
-			if jsonErr != nil {
-				return jsonErr
-			}
-			fmt.Fprintf(stdout, "%s\n", body)
-		}
-		return err
-	}
+	emitter := reportEmitter{report: &report, json: opts.JSON, quiet: opts.Quiet, stdout: stdout}
 
 	if created, err := projectconfig.NewService().Ensure(target); err != nil {
-		emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
-		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
+		emitter.emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
+		return emitter.finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	} else if created {
-		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
+		emitter.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
 	} else {
-		emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
+		emitter.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
 	}
 
 	st, err := state.Load(target)
@@ -166,20 +129,20 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		emit("fail", state.Path(target), "falta estado de instalación")
-		return finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
+		emitter.emit("fail", state.Path(target), "falta estado de instalación")
+		return emitter.finish(fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	}
 	report.SchemaVersion = st.SchemaVersion
 	report.Tool = string(st.Tool)
 	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
 	if opts.ExpectedTool != "" && st.Tool != opts.ExpectedTool {
-		emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
+		emitter.emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
 	}
 	assetMap := st.AssetMap()
 	requiredDirs, requiredManagedFiles := catalogRequirements(st)
 	if opts.Verbose {
-		emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
+		emitter.emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
 	for _, rel := range requiredStateFiles {
 		path, err := platform.SafeJoin(target, rel)
@@ -187,34 +150,34 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			return err
 		}
 		if !regularFile(path) {
-			emit("fail", rel, "falta archivo crítico")
+			emitter.emit("fail", rel, "falta archivo crítico")
 			continue
 		}
-		emit("ok", rel, "archivo crítico")
+		emitter.emit("ok", rel, "archivo crítico")
 	}
 	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
-		emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
+		emitter.emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
 	}
 	for _, rel := range jsonValidationFiles {
 		status, err := validateJSONFile(target, rel)
 		if err != nil {
-			emit("fail", "", "JSON inválido en %s: %s", rel, err.Error())
+			emitter.emit("fail", "", "JSON inválido en %s: %s", rel, err.Error())
 			continue
 		}
 		if status != "" {
-			emit("ok", rel, "JSON parseable")
+			emitter.emit("ok", rel, "JSON parseable")
 		}
 	}
 	if opts.Deep {
-		runDeepVerify(st.Tool, target, emit)
+		runDeepVerify(st.Tool, target, emitter.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
-		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
+		emitter.emit("fail", "", "runtime de configuración inválido: %s", err.Error())
 	} else if exists, err := toolruntime.ValidateProjectConfig(st.Tool, target); err != nil {
-		emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
+		emitter.emit("fail", "", "estructura gestionada inválida en %s: %s", projectConfigFile, err.Error())
 	} else if exists {
-		emit("ok", projectConfigFile, "estructura merge-managed")
+		emitter.emit("ok", projectConfigFile, "estructura merge-managed")
 	}
 	manifestTarget := st.TargetRoot
 	if manifestTarget != "" {
@@ -223,9 +186,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 	}
 	if manifestTarget != "" && manifestTarget != target {
-		emit("fail", "install-state.json", "targetRoot del manifest no coincide: manifest=%s actual=%s", st.TargetRoot, target)
+		emitter.emit("fail", "install-state.json", "targetRoot del manifest no coincide: manifest=%s actual=%s", st.TargetRoot, target)
 	}
-	emit("ok", "install-state.json", "install-state.json schema=%d assets=%d", st.SchemaVersion, len(st.Assets))
+	emitter.emit("ok", "install-state.json", "install-state.json schema=%d assets=%d", st.SchemaVersion, len(st.Assets))
 
 	for _, required := range requiredDirs {
 		clean, err := platform.EnsureRelativeSafe(required)
@@ -234,14 +197,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "directorio crítico inseguro: %s", err.Error())
+			emitter.emit("fail", clean, "directorio crítico inseguro: %s", err.Error())
 			continue
 		}
 		if !directory(path) {
-			emit("fail", clean, "falta directorio crítico")
+			emitter.emit("fail", clean, "falta directorio crítico")
 			continue
 		}
-		emit("ok", clean, "directorio crítico")
+		emitter.emit("ok", clean, "directorio crítico")
 	}
 
 	for _, required := range requiredManagedFiles {
@@ -253,20 +216,20 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 			if opts.AllowCatalogNewAssets {
 				continue
 			}
-			emit("fail", clean, "asset clave no está en manifest")
+			emitter.emit("fail", clean, "asset clave no está en manifest")
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "asset clave inseguro: %s", err.Error())
+			emitter.emit("fail", clean, "asset clave inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			emit("fail", clean, "falta archivo crítico")
+			emitter.emit("fail", clean, "falta archivo crítico")
 			continue
 		}
-		emit("ok", clean, "archivo crítico")
+		emitter.emit("ok", clean, "archivo crítico")
 	}
-	verifyAgentsReference(target, opts.AllowMissingAgentsRef, emitAsset)
+	verifyAgentsReference(target, opts.AllowMissingAgentsRef, emitter.emitAsset)
 
 	for _, asset := range st.Assets {
 		clean, err := platform.EnsureRelativeSafe(asset.TargetRel)
@@ -275,11 +238,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		path, err := platform.SafeJoin(target, clean)
 		if err != nil {
-			emit("fail", clean, "asset inseguro: %s", err.Error())
+			emitter.emit("fail", clean, "asset inseguro: %s", err.Error())
 			continue
 		}
 		if !regularFile(path) {
-			emit("fail", clean, "falta asset gestionado")
+			emitter.emit("fail", clean, "falta asset gestionado")
 			continue
 		}
 		actual, err := assets.FileSHA256(path)
@@ -288,29 +251,75 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		if actual != asset.TargetSHA256 {
 			if asset.Policy == string(assets.PolicyNoReplace) && regularFile(path+".lufy-new") {
-				emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
+				emitter.emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
 				continue
 			}
-			emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
+			emitter.emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 			continue
 		}
-		emit("ok", clean, "sha256=%s", shortHash(actual))
+		emitter.emit("ok", clean, "sha256=%s", shortHash(actual))
 	}
-	reportExtraManagedDirFiles(target, requiredDirs, assetMap, emit)
+	reportExtraManagedDirFiles(target, requiredDirs, assetMap, emitter.emit)
 
 	if opts.NoEngram {
-		emit("warn", "", "chequeo de Engram omitido por --no-engram")
+		emitter.emit("warn", "", "chequeo de Engram omitido por --no-engram")
 	} else if path, ok := platform.ResolveEngram(false, platform.OSResolver{}); ok {
-		emit("ok", "", "engram detectado en PATH (%s)", path)
+		emitter.emit("ok", "", "engram detectado en PATH (%s)", path)
 	} else {
-		emit("warn", "", "engram no encontrado en PATH")
+		emitter.emit("warn", "", "engram no encontrado en PATH")
 	}
 
 	if report.Failures > 0 {
-		return finish(fmt.Errorf("verify falló con %d problema(s) crítico(s)", report.Failures))
+		return emitter.finish(fmt.Errorf("verify falló con %d problema(s) crítico(s)", report.Failures))
 	}
-	emit("ok", "", "verify estructural completo")
-	return finish(nil)
+	emitter.emit("ok", "", "verify estructural completo")
+	return emitter.finish(nil)
+}
+
+func (e reportEmitter) emit(level, path, format string, args ...any) {
+	message := fmt.Sprintf(format, args...)
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Message: message})
+	e.count(level)
+	if e.json || e.quiet {
+		return
+	}
+	if path == "" {
+		fmt.Fprintf(e.stdout, "%s: %s\n", level, message)
+		return
+	}
+	fmt.Fprintf(e.stdout, "%s: %s: %s\n", level, message, path)
+}
+
+func (e reportEmitter) emitAsset(level, path, policy, recommendedAction, format string, args ...any) {
+	message := fmt.Sprintf(format, args...)
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
+	e.count(level)
+	if !e.json && !e.quiet {
+		fmt.Fprintf(e.stdout, "%s: %s: %s\n", level, message, path)
+	}
+}
+
+func (e reportEmitter) count(level string) {
+	switch level {
+	case "fail":
+		e.report.Failures++
+	case "warn":
+		e.report.Warnings++
+	case "info":
+		e.report.Infos++
+	}
+}
+
+func (e reportEmitter) finish(err error) error {
+	e.report.OK = e.report.Failures == 0
+	if e.json {
+		body, jsonErr := json.MarshalIndent(e.report, "", "  ")
+		if jsonErr != nil {
+			return jsonErr
+		}
+		fmt.Fprintf(e.stdout, "%s\n", body)
+	}
+	return err
 }
 
 func verifyAgentsReference(target string, allowMissing bool, emitAsset func(level, path, policy, recommendedAction, format string, args ...any)) {

@@ -33,7 +33,7 @@ type Options struct {
 }
 
 type Action struct {
-	Kind               string
+	Kind               ActionKind
 	Source             string
 	Target             string
 	Policy             assets.Policy
@@ -92,35 +92,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return err
 	}
 
-	fmt.Fprintf(stdout, "Plan de sync para %s\n", plan.TargetRoot)
-	fmt.Fprintf(stdout, "Source root: %s\n", plan.SourceRoot)
-	fmt.Fprintf(stdout, "Scope: %s projectRoot=%s", plan.Scope, plan.TargetRoot)
-	if plan.GlobalRoot != "" {
-		fmt.Fprintf(stdout, " globalRoot=%s", plan.GlobalRoot)
-	}
-	fmt.Fprintln(stdout)
-	for _, action := range plan.Actions {
-		fmt.Fprintf(stdout, "- [%s] %s (%s)", action.Kind, action.Target, action.Reason)
-		if action.SourceHash != "" {
-			fmt.Fprintf(stdout, " source=%s", shortHash(action.SourceHash))
-		}
-		if action.CurrentHash != "" {
-			fmt.Fprintf(stdout, " current=%s", shortHash(action.CurrentHash))
-		}
-		if action.RecordedSourceHash != "" {
-			fmt.Fprintf(stdout, " recordedSource=%s", shortHash(action.RecordedSourceHash))
-		}
-		if action.RecordedTargetHash != "" {
-			fmt.Fprintf(stdout, " recordedTarget=%s", shortHash(action.RecordedTargetHash))
-		}
-		fmt.Fprintln(stdout)
-	}
-	for _, conflict := range plan.Conflicts {
-		fmt.Fprintf(stdout, "- [conflict] %s (%s) source=%s current=%s recordedSource=%s recordedTarget=%s\n", conflict.Path, conflict.Reason, shortHash(conflict.SourceHash), shortHash(conflict.CurrentHash), shortHash(conflict.RecordedSourceHash), shortHash(conflict.RecordedTargetHash))
-	}
-	if opts.NoEngram {
-		fmt.Fprintln(stdout, "Engram: omitido por --no-engram")
-	}
+	printPlan(plan, opts.NoEngram, stdout)
 	if opts.DryRun {
 		fmt.Fprintln(stdout, "Modo dry-run: sin mutaciones en filesystem")
 		return nil
@@ -223,7 +195,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			if managed {
 				plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Reason: "asset gestionado ausente; no se recrea sin estrategia explícita", SourceHash: asset.SourceSHA256, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			} else {
-				plan.Actions = append(plan.Actions, Action{Kind: "create-managed", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset nuevo del catálogo ausente; se instala sin tocar drift local", SourceHash: asset.SourceSHA256})
+				plan.Actions = append(plan.Actions, Action{Kind: ActionCreateManaged, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset nuevo del catálogo ausente; se instala sin tocar drift local", SourceHash: asset.SourceSHA256})
 			}
 			continue
 		}
@@ -253,34 +225,34 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 					continue
 				}
 				plan.Actions = append(plan.Actions,
-					Action{Kind: "backup", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "merge-block preserva texto local fuera de bloques; backup requerido", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
-					Action{Kind: "merge-block", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset merge-block con drift local; se actualizan solo bloques LUFY", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
+					Action{Kind: ActionBackup, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "merge-block preserva texto local fuera de bloques; backup requerido", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
+					Action{Kind: ActionMergeBlock, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset merge-block con drift local; se actualizan solo bloques LUFY", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
 				)
 				continue
 			}
 			if asset.Policy == assets.PolicyNoReplace && asset.SourceSHA256 != prev.SourceSHA256 {
-				plan.Actions = append(plan.Actions, Action{Kind: "write-lufy-new", Source: asset.SourceRel, Target: asset.TargetRel + ".lufy-new", Policy: asset.Policy, Scope: asset.Scope, Reason: "asset no-replace con drift local; se escribe nueva versión sin tocar original", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+				plan.Actions = append(plan.Actions, Action{Kind: ActionWriteLufyNew, Source: asset.SourceRel, Target: asset.TargetRel + ".lufy-new", Policy: asset.Policy, Scope: asset.Scope, Reason: "asset no-replace con drift local; se escribe nueva versión sin tocar original", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				continue
 			}
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Policy: asset.Policy, Reason: "archivo gestionado con drift local", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			continue
 		}
 		if asset.SourceSHA256 == prev.SourceSHA256 {
-			plan.Actions = append(plan.Actions, Action{Kind: "skip", Source: asset.SourceRel, Target: asset.TargetRel, Reason: "source y target coinciden con el estado registrado", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionSkip, Source: asset.SourceRel, Target: asset.TargetRel, Reason: "source y target coinciden con el estado registrado", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			continue
 		}
-		kind := "update-managed"
+		kind := ActionUpdateManaged
 		reason := "source cambió y target coincide con hash registrado"
 		if asset.Policy == assets.PolicyMergeBlock {
 			if _, err := renderMergeBlock(plan.SourceRoot, asset.SourceRel, plan.TargetRoot, asset.TargetRel); err != nil {
 				plan.Conflicts = append(plan.Conflicts, Conflict{Path: asset.TargetRel, Policy: asset.Policy, Reason: err.Error(), SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				continue
 			}
-			kind = "merge-block"
+			kind = ActionMergeBlock
 			reason = "source merge-block cambió; se actualizan solo bloques LUFY"
 		}
 		plan.Actions = append(plan.Actions,
-			Action{Kind: "backup", Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "source cambió y target no tiene drift; backup requerido", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
+			Action{Kind: ActionBackup, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "source cambió y target no tiene drift; backup requerido", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
 			Action{Kind: kind, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: reason, SourceHash: asset.SourceSHA256, CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256},
 		)
 	}
@@ -299,7 +271,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 				if currentHash != prev.TargetSHA256 {
 					plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "AGENTS.md legacy gestionado tiene drift local y falta @lufy-ia.harness.md; preservado, agrega la referencia manualmente o resuelve el drift antes de reintentar sync", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				} else {
-					plan.Actions = append(plan.Actions, Action{Kind: "warn-agents-reference", Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega @lufy-ia.harness.md con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+					plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega @lufy-ia.harness.md con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				}
 			}
 			continue
@@ -314,7 +286,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 		}
 		info, err := os.Lstat(targetPath)
 		if os.IsNotExist(err) {
-			plan.Actions = append(plan.Actions, Action{Kind: "retired", Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo y tampoco existe en target", RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionRetired, Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo y tampoco existe en target", RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			continue
 		}
 		if err != nil {
@@ -332,48 +304,50 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "asset retirado con drift local; cleanup manual requerido", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			continue
 		}
-		plan.Actions = append(plan.Actions, Action{Kind: "retired", Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo; se preserva y queda rastreado", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+		plan.Actions = append(plan.Actions, Action{Kind: ActionRetired, Target: prev.TargetRel, Reason: "asset previamente gestionado ya no está en el catálogo; se preserva y queda rastreado", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 	}
 	if previousAssets[agentsref.AgentsFile].TargetRel == "" {
 		exists, hasReference, err := agentsref.Status(target)
 		if err != nil {
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error()})
 		} else if !exists || !hasReference {
-			plan.Actions = append(plan.Actions, Action{Kind: "warn-agents-reference", Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega @lufy-ia.harness.md con install --yes o edición manual"})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega @lufy-ia.harness.md con install --yes o edición manual"})
 		}
 	}
 	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target, opts.NoEngram)
 	if err != nil {
 		return Plan{}, err
 	}
-	if configPlan.Action == "merge-json" {
+	if configPlan.Action == string(ActionMergeJSON) {
 		if fileExists(filepath.Join(target, configPlan.File)) {
-			plan.Actions = append(plan.Actions, Action{Kind: "backup", Target: configPlan.File, Reason: "opencode.json existente será mergeado conservadoramente"})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado conservadoramente"})
 		}
-		plan.Actions = append(plan.Actions, Action{Kind: "merge-json", Target: configPlan.File, Reason: "configuración OpenCode merge-managed parcial"})
+		plan.Actions = append(plan.Actions, Action{Kind: ActionMergeJSON, Target: configPlan.File, Reason: "configuración OpenCode merge-managed parcial"})
 	} else {
-		plan.Actions = append(plan.Actions, Action{Kind: "skip", Target: configPlan.File, Reason: "configuración OpenCode merge-managed sin cambios"})
+		plan.Actions = append(plan.Actions, Action{Kind: ActionSkip, Target: configPlan.File, Reason: "configuración OpenCode merge-managed sin cambios"})
 	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
-		order := map[string]int{"backup": 0, "create-managed": 1, "update-managed": 2, "merge-block": 3, "write-lufy-new": 4, "merge-json": 5, "retired": 6, "warn-agents-reference": 7, "skip": 8}
-		if order[plan.Actions[i].Kind] == order[plan.Actions[j].Kind] {
+		if actionOrder[plan.Actions[i].Kind] == actionOrder[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
 		}
-		return order[plan.Actions[i].Kind] < order[plan.Actions[j].Kind]
+		return actionOrder[plan.Actions[i].Kind] < actionOrder[plan.Actions[j].Kind]
 	})
 	return plan, nil
 }
 
 func (s Service) apply(plan Plan, stdout io.Writer) error {
-	updates := uniqueTargets(append(append(targetsForKind(plan.Actions, "create-managed"), targetsForKind(plan.Actions, "update-managed")...), targetsForKind(plan.Actions, "merge-block")...))
-	lufyNew := targetsForKind(plan.Actions, "write-lufy-new")
-	merges := targetsForKind(plan.Actions, "merge-json")
-	stateOnly := hasActionKind(plan.Actions, "retired") || hasActionKind(plan.Actions, "warn-agents-reference")
+	if err := validateActionKinds(plan.Actions); err != nil {
+		return err
+	}
+	updates := uniqueTargets(append(append(targetsForKind(plan.Actions, ActionCreateManaged), targetsForKind(plan.Actions, ActionUpdateManaged)...), targetsForKind(plan.Actions, ActionMergeBlock)...))
+	lufyNew := targetsForKind(plan.Actions, ActionWriteLufyNew)
+	merges := targetsForKind(plan.Actions, ActionMergeJSON)
+	stateOnly := hasActionKind(plan.Actions, ActionRetired) || hasActionKind(plan.Actions, ActionWarnAgentsReference)
 	if len(updates) == 0 && len(lufyNew) == 0 && len(merges) == 0 && !stateOnly {
 		fmt.Fprintln(stdout, "- [skip] sin cambios gestionados")
 		return nil
 	}
-	backupTargets := uniqueTargets(append(append([]string{}, updates...), targetsForKind(plan.Actions, "backup")...))
+	backupTargets := uniqueTargets(append(append([]string{}, updates...), targetsForKind(plan.Actions, ActionBackup)...))
 	manifestPath := ""
 	if len(backupTargets) > 0 {
 		backupDir, err := backup.BackupFiles(plan.TargetRoot, backupTargets, "sync", stdout)
@@ -386,7 +360,7 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 	applied := 0
 	for _, action := range plan.Actions {
 		switch action.Kind {
-		case "create-managed":
+		case ActionCreateManaged:
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
@@ -397,7 +371,7 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [create-managed] %s\n", action.Target)
-		case "update-managed":
+		case ActionUpdateManaged:
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
@@ -408,7 +382,7 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [update-managed] %s\n", action.Target)
-		case "merge-block":
+		case ActionMergeBlock:
 			merged, err := renderMergeBlock(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target)
 			if err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
@@ -421,20 +395,23 @@ func (s Service) apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-block] %s\n", action.Target)
-		case "write-lufy-new":
+		case ActionWriteLufyNew:
 			if err := copyFile(plan.SourceRoot, action.Source, plan.TargetRoot, action.Target); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
-		case "merge-json":
+		case ActionMergeJSON:
 			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot, plan.NoEngram); err != nil {
 				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
-		default:
+		case ActionBackup, ActionRetired, ActionWarnAgentsReference, ActionSkip:
 			continue
+		default:
+			err := fmt.Errorf("acción sync no soportada: %s", action.Kind)
+			return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 		}
 	}
 	assetStates, err := buildAssetStates(plan, updates)
@@ -465,7 +442,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 	}
 	lufyNew := map[string]bool{}
 	for _, action := range plan.Actions {
-		if action.Kind == "write-lufy-new" {
+		if action.Kind == ActionWriteLufyNew {
 			lufyNew[trimLufyNewSuffix(action.Target)] = true
 		}
 	}
@@ -492,7 +469,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 			installedAt = now
 		}
 		if lufyNew[asset.TargetRel] {
-			prev.LastAction = "write-lufy-new"
+			prev.LastAction = string(ActionWriteLufyNew)
 			out = append(out, prev)
 			continue
 		}
@@ -617,34 +594,6 @@ func writeTargetFile(targetRoot, targetRel string, body []byte) error {
 		return err
 	}
 	return platform.WriteFileAtomic(dst, body, 0o644)
-}
-
-func requiresConfirmation(actions []Action) bool {
-	for _, action := range actions {
-		if action.Kind == "create-managed" || action.Kind == "update-managed" || action.Kind == "merge-block" || action.Kind == "write-lufy-new" || action.Kind == "backup" || action.Kind == "merge-json" {
-			return true
-		}
-	}
-	return false
-}
-
-func targetsForKind(actions []Action, kind string) []string {
-	var out []string
-	for _, action := range actions {
-		if action.Kind == kind {
-			out = append(out, action.Target)
-		}
-	}
-	return out
-}
-
-func hasActionKind(actions []Action, kind string) bool {
-	for _, action := range actions {
-		if action.Kind == kind {
-			return true
-		}
-	}
-	return false
 }
 
 func uniqueTargets(in []string) []string {
