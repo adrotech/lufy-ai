@@ -134,7 +134,7 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 		if err != nil {
 			return nil, nil, "", "", false, err
 		}
-		mcp["engram"] = mergeEngramConfig(mcp["engram"], engramPath)
+		mcp["engram"] = mergeEngramConfig(mcp["engram"], engramPath, projectName(opts.TargetRoot))
 	}
 	return current, desired, path, engramPath, engramFound, nil
 }
@@ -215,7 +215,7 @@ func objectAt(root map[string]any, key string) (map[string]any, error) {
 	return obj, nil
 }
 
-func mergeEngramConfig(existing any, engramPath string) map[string]any {
+func mergeEngramConfig(existing any, engramPath, project string) map[string]any {
 	engram, ok := existing.(map[string]any)
 	if !ok {
 		engram = map[string]any{}
@@ -229,8 +229,24 @@ func mergeEngramConfig(existing any, engramPath string) map[string]any {
 		engram["timeout"] = float64(3000)
 	}
 	engram["type"] = "local"
-	engram["command"] = []any{engramPath, "mcp", "--tools=agent"}
+	command := []any{engramPath, "mcp", "--tools=agent"}
+	if project != "" {
+		command = append(command, "--project", project)
+	}
+	engram["command"] = command
 	return engram
+}
+
+func projectName(targetRoot string) string {
+	root := targetRoot
+	if abs, err := filepath.Abs(targetRoot); err == nil {
+		root = abs
+	}
+	name := filepath.Base(filepath.Clean(root))
+	if name == "." || name == string(filepath.Separator) {
+		return ""
+	}
+	return name
 }
 
 func cloneMap(in map[string]any) map[string]any {

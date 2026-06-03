@@ -49,6 +49,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Delivery authorization status when the request mentions Git/GH operations.
 - Relevant local rules already discovered by the orchestrator.
 
+## Optional Engram Memory Context
+
+- Do not call Engram tools yourself; this role is read-only/no-shell and uses only context already provided.
+- If the orchestrator provides Engram findings, include only the relevant memory hints in `context_slice` and mark them as memory context, not repository evidence.
+- If Engram is unavailable or not provided, do not require it for routing and leave memory context as `not_available` or omitted.
+
 ## Tier Rules
 
 - **T1 Full SDD**: new capability, cross-cutting behavior, architecture decision, public contract change, security concern, delivery policy change, unclear requirements, high uncertainty, or broad repo impact.

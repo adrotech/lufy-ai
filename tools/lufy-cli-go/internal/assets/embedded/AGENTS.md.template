@@ -70,6 +70,14 @@ Run from repository root.
 
 Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
 
+## Optional Engram Memory Workflow
+
+- Engram is optional and conditional: use it only when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip this workflow and report memory evidence as `not_available` or omitted; do not block normal work for Engram alone.
+- For non-trivial T1/T2 work, and for T3 work with likely historical context, consult memory before acting: identify the current project, load recent context, and search for relevant prior decisions, bugs, specs, files, issues, or validation blockers.
+- During exploration, validation, review, and delivery, use relevant Engram findings as context to reduce repeated discovery; do not treat memory as stronger evidence than repository files, commands, or explicit user instructions.
+- After significant work, save only durable learnings: architectural decisions, bug fixes, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
+- Never claim Engram traceability, memory lookup, or saved context unless the relevant Engram tool actually ran or explicit evidence was provided.
+
 ## Proportional SDD Routing
 
 - **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full OpenSpec.

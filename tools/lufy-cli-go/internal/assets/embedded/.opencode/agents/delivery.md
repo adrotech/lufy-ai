@@ -65,6 +65,12 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 - Explicit delivery authorization, desired operation, change summary, validation evidence, issue/spec IDs, and target base branch if not `develop`.
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available, search for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change before staging or creating a PR.
+- If Engram is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
+- After authorized delivery or a significant blocker, save a concise durable memory with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
+
 ## Workflow
 
 - Before any commit, push, PR, issue comment, or GitHub Project delivery step, check whether `.opencode/skills/git-delivery` exists.

@@ -41,6 +41,9 @@ func TestEnsureCreatesOpenCodeJSONWithPortableEngram(t *testing.T) {
 	if cmd[0] != "/usr/local/bin/engram" {
 		t.Fatalf("unexpected engram command: %#v", cmd)
 	}
+	if !commandContainsProject(cmd, filepath.Base(target)) {
+		t.Fatalf("engram command missing project scope: %#v", cmd)
+	}
 	if _, ok := decoded["x-lufy-ai"]; ok {
 		t.Fatalf("opencode.json contiene clave no soportada por OpenCode: %s", string(body))
 	}
@@ -77,6 +80,9 @@ func TestEnsurePreservesExistingEngramUserOptions(t *testing.T) {
 	cmd := engram["command"].([]any)
 	if cmd[0] != "/usr/local/bin/engram" {
 		t.Fatalf("unexpected engram command: %#v", cmd)
+	}
+	if !commandContainsProject(cmd, filepath.Base(target)) {
+		t.Fatalf("engram command missing project scope: %#v", cmd)
 	}
 	if engram["enabled"] != false || engram["timeout"] != float64(10000) || engram["env"] == nil {
 		t.Fatalf("existing engram user options not preserved: %#v", engram)
@@ -275,4 +281,13 @@ func readConfig(t *testing.T, target string) []byte {
 		t.Fatal(err)
 	}
 	return body
+}
+
+func commandContainsProject(cmd []any, project string) bool {
+	for i := 0; i < len(cmd)-1; i++ {
+		if cmd[i] == "--project" && cmd[i+1] == project {
+			return true
+		}
+	}
+	return false
 }

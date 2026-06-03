@@ -51,6 +51,14 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Current progress or handoff from a specialist if this is a continuation.
 - Desired thoroughness or urgency when known.
 
+## Optional Engram Memory Gate
+
+- Use Engram only when an Engram MCP/tool is available in the current session. If it is unavailable, do not route extra memory work; carry `not_available`/omitted memory evidence and continue normally.
+- Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to consult Engram for current project context and relevant prior decisions, bugs, specs, issues, files, validation blockers, or delivery outcomes.
+- For trivial T3 work with no historical dependency, do not force memory lookup.
+- Require downstream agents to distinguish Engram memory from repository/file/command evidence and to avoid claiming Engram traceability unless an Engram tool actually ran.
+- At closure or major handoff, request Engram saves only for durable learnings or significant outcomes; do not save routine routing noise.
+
 ## Workflow
 
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.

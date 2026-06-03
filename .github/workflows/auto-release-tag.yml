@@ -34,42 +34,43 @@ jobs:
         env:
           MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_LABELS_JSON: ${{ toJson(github.event.pull_request.labels.*.name) }}
           PR_TITLE: ${{ github.event.pull_request.title }}
+          HAS_RELEASE_PATCH: ${{ contains(github.event.pull_request.labels.*.name, 'release:patch') }}
+          HAS_RELEASE_MINOR: ${{ contains(github.event.pull_request.labels.*.name, 'release:minor') }}
+          HAS_RELEASE_MAJOR: ${{ contains(github.event.pull_request.labels.*.name, 'release:major') }}
+          HAS_RELEASE_SKIP: ${{ contains(github.event.pull_request.labels.*.name, 'release:skip') }}
         run: |
           if [[ -z "$MERGE_COMMIT_SHA" ]]; then
             echo "No se recibió merge_commit_sha para el PR #${PR_NUMBER}" >&2
             exit 2
           fi
 
-          bump="$(python3 <<'PY'
-          import json, os, sys
-          labels = set(json.loads(os.environ.get("PR_LABELS_JSON") or "[]"))
-          bumps = sorted(labels.intersection({"release:patch", "release:minor", "release:major"}))
-          skip = "release:skip" in labels
-          if skip and bumps:
-              print("release:skip no puede combinarse con release:* bump labels", file=sys.stderr)
-              sys.exit(2)
-          if len(bumps) > 1:
-              print(f"labels de release conflictivos: {', '.join(bumps)}", file=sys.stderr)
-              sys.exit(2)
-          if skip:
-              print("skip")
-          elif bumps:
-              print(bumps[0].split(":", 1)[1])
-          else:
-              print("patch")
-          PY
-          )"
+          bump_count=0
+          [ "$HAS_RELEASE_PATCH" = "true" ] && bump_count=$((bump_count + 1))
+          [ "$HAS_RELEASE_MINOR" = "true" ] && bump_count=$((bump_count + 1))
+          [ "$HAS_RELEASE_MAJOR" = "true" ] && bump_count=$((bump_count + 1))
 
-          title_sanitized="$(python3 <<'PY'
-          import os, re
-          title = os.environ.get("PR_TITLE", "")
-          title = re.sub(r"[\x00-\x1f\x7f]+", " ", title)
-          title = re.sub(r"\s+", " ", title).strip()
-          print(title[:160] or "sin titulo")
-          PY
-          )"
+          if [ "$HAS_RELEASE_SKIP" = "true" ] && [ "$bump_count" -gt 0 ]; then
+            echo "release:skip no puede combinarse con release:* bump labels" >&2
+            exit 2
+          fi
+          if [ "$bump_count" -gt 1 ]; then
+            echo "labels de release conflictivos: solo puede existir un release:* bump label" >&2
+            exit 2
+          fi
+
+          if [ "$HAS_RELEASE_SKIP" = "true" ]; then
+            bump="skip"
+          elif [ "$HAS_RELEASE_MAJOR" = "true" ]; then
+            bump="major"
+          elif [ "$HAS_RELEASE_MINOR" = "true" ]; then
+            bump="minor"
+          else
+            bump="patch"
+          fi
+
+          title_sanitized="$(printf '%s' "$PR_TITLE" | tr '\r\n\t' '   ' | tr -cd '[:print:] ' | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//' | cut -c1-160)"
+          title_sanitized="${title_sanitized:-sin titulo}"
 
           git fetch --no-tags origin '+refs/heads/main:refs/remotes/origin/main'
           git fetch --tags origin
