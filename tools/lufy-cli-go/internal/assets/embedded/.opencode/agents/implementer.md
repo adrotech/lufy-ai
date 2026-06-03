@@ -59,6 +59,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Existing handoff from `explorer` when scope is broad.
 - Validation expectations or known unavailable toolchain.
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available and no memory context was carried forward for non-trivial T1/T2 work, consult current project context and search for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns before editing.
+- If Engram is unavailable, skip memory work and continue with repository evidence; do not block implementation for memory alone.
+- After significant implementation, save only durable learnings through Engram when available: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
+
 ## Workflow
 
 - Feature and bug implementation.

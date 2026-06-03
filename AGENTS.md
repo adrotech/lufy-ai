@@ -159,6 +159,14 @@ skill_resolution:
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
 
+## Workflow opcional de memoria Engram
+
+- Engram es opcional y condicional: usarlo solo cuando la sesión actual expone un MCP/tool Engram disponible. Si Engram no está configurado, está deshabilitado o no está disponible, omitir este workflow y reportar la evidencia de memoria como `not_available` u omitida; no bloquear trabajo normal solo por Engram.
+- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, consultar memoria antes de actuar: identificar el proyecto actual, cargar contexto reciente y buscar decisiones, bugs, specs, archivos, issues o blockers de validación relevantes.
+- Durante exploración, validación, review y delivery, usar hallazgos de Engram como contexto para reducir redescubrimiento; no tratarlos como evidencia más fuerte que archivos, comandos o instrucciones explícitas del usuario.
+- Después de trabajo significativo, guardar solo aprendizajes durables: decisiones de arquitectura, bugfixes, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
+- Nunca afirmar trazabilidad Engram, consulta de memoria o contexto guardado sin que haya corrido la herramienta Engram correspondiente o exista evidencia explícita.
+
 ## Política de delivery
 
 - Consultar `.opencode/policies/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.

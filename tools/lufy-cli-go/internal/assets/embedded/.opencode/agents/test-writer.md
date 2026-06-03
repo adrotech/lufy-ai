@@ -66,6 +66,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Existing proposal/tasks when working from OpenSpec.
 - Any known `.lufy/project.yaml` constraints or unavailable toolchain notes.
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available, search for prior stack/test commands, coverage blockers, test patterns, anti-patterns, and bug cases related to the behavior under test.
+- If Engram is unavailable, skip memory lookup and rely on `.lufy/project.yaml`, repository tests, and user-provided evidence.
+- Save memory only for durable test/toolchain gotchas or reusable coverage patterns, not routine TDD phase status.
+
 ## Workflow
 
 - Inspect `.lufy/project.yaml` first when present; identify the relevant stack, test command, coverage threshold, formatter/linter if applicable, and anti-pattern guidance.

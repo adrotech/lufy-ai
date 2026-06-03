@@ -47,6 +47,12 @@ Use `AGENTS.md` for project conventions, `.lufy/project.yaml` for stack-specific
 - Diff or branch context, change objective, validation evidence, and any known acceptance criteria.
 - Relevant `.lufy/project.yaml` stack context when available: affected stacks, coverage thresholds, anti-patterns, observability libraries and workflow limits.
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available, search for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- If Engram is unavailable, skip memory lookup and continue the review without penalty.
+- Treat memory as review context only; findings still need current diff/file/evidence references.
+
 ## Workflow
 
 - Load `.lufy/project.yaml` when available and use affected stack data for anti-patterns, coverage expectations and observability libraries.

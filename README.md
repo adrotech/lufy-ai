@@ -47,14 +47,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable objetivo: `v0.6.0`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable objetivo: `v0.6.1`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.1/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.0 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.1 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
@@ -71,6 +71,8 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 ```
+
+Engram es opcional. Si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados consultan/guardan memoria solo cuando el MCP/tool está disponible y omiten el workflow cuando no lo está.
 
 ### 4. Desinstalar o reinstalar si hace falta
 

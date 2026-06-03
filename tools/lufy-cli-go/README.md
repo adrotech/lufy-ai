@@ -231,11 +231,13 @@ Release:
 Bootstrap:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.0 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.1/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version v0.6.1 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap instala solo el binario. No toca repositorios destino.
+
+Engram es opcional: si `install`/`sync` corre sin `--no-engram` y `engram` está en `PATH`, la config OpenCode merge-managed registra `engram mcp --tools=agent --project <target>`. Los agentes instalados usan memoria activa solo cuando el MCP/tool está disponible y omiten el workflow sin bloquear cuando no lo está.
 
 ## Wrapper Bash
 

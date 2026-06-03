@@ -46,6 +46,12 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 - User objective, suspected area, linked OpenSpec change/issue, and requested thoroughness if known.
 - Optional thoroughness levels: `quick` (few targeted reads), `medium` (default, enough to plan), `deep` (broader impact/risk map).
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available, consult current project context and search for memories related to the objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers before broad repository exploration.
+- If Engram is unavailable, skip memory lookup and report it only when relevant as `not_available`; do not block exploration.
+- Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
+
 ## Workflow
 
 - Identify relevant files, modules, packages, endpoints, migrations, tests, and OpenSpec artifacts.

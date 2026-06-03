@@ -47,6 +47,12 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Change summary, relevant diff/files, expected validation tier, and any known toolchain constraints.
 - Specific commands requested by the user when applicable.
 
+## Optional Engram Memory
+
+- If an Engram MCP/tool is available, search for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures before diagnosing or choosing validation scope.
+- If Engram is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
+- Save a memory only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
+
 ## Workflow
 
 - Run relevant compile/test checks for assigned change.
