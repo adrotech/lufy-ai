@@ -54,9 +54,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Optional Engram Memory Gate
 
 - Use Engram only when an Engram MCP/tool is available in the current session. If it is unavailable, do not route extra memory work; carry `not_available`/omitted memory evidence and continue normally.
-- Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to consult Engram for current project context and relevant prior decisions, bugs, specs, issues, files, validation blockers, or delivery outcomes.
+- Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to use Engram as a compact index: current project, recent context only if useful, short searches by issue/spec/path/concept, and `mem_get_observation` for only 1-3 relevant hits.
 - For trivial T3 work with no historical dependency, do not force memory lookup.
-- Require downstream agents to distinguish Engram memory from repository/file/command evidence and to avoid claiming Engram traceability unless an Engram tool actually ran.
+- Require downstream agents to pass Engram as compact `memory_hints` (id, title, relevance), distinguish it from repository/file/command evidence, and avoid claiming Engram traceability unless an Engram tool actually ran.
 - At closure or major handoff, request Engram saves only for durable learnings or significant outcomes; do not save routine routing noise.
 
 ## Workflow
@@ -81,8 +81,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
   - For `/opsx-propose` or `openspec-propose`, read the expected files under `openspec/changes/<change>/` after creation and verify `proposal.md`, `tasks.md`, and at least one `specs/**/spec.md` exist and are non-empty; if design is required by the active schema, verify `design.md` too.
   - For generated change specs, verify delta markers and `#### Scenario:` blocks with `WHEN` and `THEN` by reading the files just written, not by trusting tool output.
   - For `/opsx-sync` or `openspec-sync`, map every delta spec to `openspec/specs/<capability>/spec.md`, read each affected target after sync, and verify that added/modified/removed requirement titles reflect the planned delta.
-  - If Engram MCP is enabled in OpenCode config and an Engram tool is available, verify the expected change/delta record was written; if Engram is enabled but unavailable, report the limitation explicitly and do not claim Engram traceability.
-  - If any expected file, synced requirement, or required trace record is missing, STOP with `status: blocked`, cite the missing path/requirement, and recommend the exact recovery action instead of continuing to apply, verify, archive, or delivery.
+  - If Engram MCP is enabled in OpenCode config and an Engram tool is available, verify the expected change/delta observation exists or save/update it with a stable `topic_key`; if Engram is enabled but unavailable, report `not_available` and do not claim Engram traceability.
+  - If any expected file or synced requirement is missing, STOP with `status: blocked`, cite the missing path/requirement, and recommend the exact recovery action instead of continuing to apply, verify, archive, or delivery. Missing Engram traceability alone must not block unless the user explicitly required it and the tool was available.
 - When routing rationale, handoff constraints, review slices or result contracts depend on project workflow limits, reference `.lufy/project.yaml` top-level `workflow_limits` as the source of truth.
 - Keep proposal/review slicing (`workflow_limits.proposal_slicing_strategy`) separate from delivery grouping (`workflow_limits.delivery_batch_strategy`).
 - Do not report top-level `loc_budget` or top-level `delivery_strategy` as canonical workflow-limit fields.

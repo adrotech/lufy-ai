@@ -61,9 +61,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Optional Engram Memory
 
-- If an Engram MCP/tool is available and no memory context was carried forward for non-trivial T1/T2 work, consult current project context and search for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns before editing.
+- If an Engram MCP/tool is available and no memory context was carried forward for non-trivial T1/T2 work, use it as a compact index before editing: current project, recent context only if useful, short searches for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns, and expand only 1-3 relevant hits.
 - If Engram is unavailable, skip memory work and continue with repository evidence; do not block implementation for memory alone.
-- After significant implementation, save only durable learnings through Engram when available: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
+- Carry Engram findings as compact `memory_hints` (id, title, relevance), not full dumps. After significant implementation, save only durable learnings through Engram when available: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
 
 ## Workflow
 

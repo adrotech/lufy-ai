@@ -48,9 +48,9 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 
 ## Optional Engram Memory
 
-- If an Engram MCP/tool is available, consult current project context and search for memories related to the objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers before broad repository exploration.
+- If an Engram MCP/tool is available, use it as a compact index before broad repository exploration: identify the current project, load recent context only if useful, search with short queries by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers, and expand only 1-3 relevant hits.
 - If Engram is unavailable, skip memory lookup and report it only when relevant as `not_available`; do not block exploration.
-- Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
+- Return Engram findings as compact `memory_hints` (id, title, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
 
 ## Workflow
 

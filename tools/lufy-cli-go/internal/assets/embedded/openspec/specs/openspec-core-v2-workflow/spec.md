@@ -63,10 +63,10 @@ The installed workflow SHALL actively verify expected OpenSpec artifacts after p
 
 #### Scenario: Engram traceability is explicit
 - **WHEN** Engram MCP is enabled during proposal generation or sync
-- **THEN** the workflow verifies the expected proposal or delta trace record when an Engram tool is available, or reports the traceability limitation explicitly when Engram is enabled but unavailable
+- **THEN** the workflow verifies or saves/updates the expected proposal or delta observation with a stable `topic_key` when an Engram tool is available, or reports `not_available` when Engram is enabled but unavailable without blocking for Engram alone
 
 #### Scenario: Failed post-spec verification blocks continuation
-- **WHEN** active post-spec verification cannot find an expected artifact, synced requirement, or required trace record
+- **WHEN** active post-spec verification cannot find an expected artifact or synced requirement
 - **THEN** the workflow reports `status: blocked`, names the missing path or requirement, and does not continue to apply, verify, archive or delivery guidance until the issue is repaired
 
 ### Requirement: Baseline metadata is installed

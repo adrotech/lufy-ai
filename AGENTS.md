@@ -162,9 +162,10 @@ skill_resolution:
 ## Workflow opcional de memoria Engram
 
 - Engram es opcional y condicional: usarlo solo cuando la sesión actual expone un MCP/tool Engram disponible. Si Engram no está configurado, está deshabilitado o no está disponible, omitir este workflow y reportar la evidencia de memoria como `not_available` u omitida; no bloquear trabajo normal solo por Engram.
-- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, consultar memoria antes de actuar: identificar el proyecto actual, cargar contexto reciente y buscar decisiones, bugs, specs, archivos, issues o blockers de validación relevantes.
-- Durante exploración, validación, review y delivery, usar hallazgos de Engram como contexto para reducir redescubrimiento; no tratarlos como evidencia más fuerte que archivos, comandos o instrucciones explícitas del usuario.
+- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, usar Engram como índice compacto antes de actuar: identificar el proyecto actual, cargar contexto reciente solo si aporta, buscar con consultas cortas por issue/spec/ruta/concepto y expandir con `mem_get_observation` solo 1-3 hits relevantes.
+- Durante exploración, validación, review y delivery, resumir hallazgos de Engram como `memory_hints` compactos (id, título, relevancia) para reducir redescubrimiento; no pasar dumps completos ni tratarlos como evidencia más fuerte que archivos, comandos o instrucciones explícitas.
 - Después de trabajo significativo, guardar solo aprendizajes durables: decisiones de arquitectura, bugfixes, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
+- Para temas evolutivos o trazabilidad OpenSpec, guardar/actualizar observaciones con `topic_key` estable solo cuando Engram esté disponible; si no está disponible, reportar `not_available` y continuar sin bloquear.
 - Nunca afirmar trazabilidad Engram, consulta de memoria o contexto guardado sin que haya corrido la herramienta Engram correspondiente o exista evidencia explícita.
 
 ## Política de delivery

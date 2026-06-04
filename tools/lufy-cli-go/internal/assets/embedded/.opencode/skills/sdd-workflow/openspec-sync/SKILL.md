@@ -66,7 +66,7 @@ Sync an OpenSpec change into the main specs after implementation or before archi
    - For `MODIFIED`, verify the target contains the updated requirement body and no stale duplicate of the old requirement remains.
    - For `REMOVED`, verify the target no longer contains the removed requirement title.
    - If any expected target file or requirement state is missing, STOP with `status: blocked`, cite the path/requirement, and do not recommend archive.
-   - If Engram MCP is enabled and an Engram tool is available, verify the sync/delta trace record for `<name>` exists. If Engram is enabled but unavailable, report that traceability limitation explicitly.
+   - If Engram MCP is enabled and an Engram tool is available, verify or save/update a sync/delta observation for `<name>` with a stable `topic_key`. If Engram is enabled but unavailable, report `not_available`; do not block sync for Engram alone unless the user explicitly required traceability and the tool was available.
 
    ```bash
    openspec validate "<name>"

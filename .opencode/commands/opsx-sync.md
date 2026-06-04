@@ -15,7 +15,7 @@ Run the concrete OpenSpec sync skill.
 - After applying deltas, actively read every affected target spec and verify the planned requirement titles were added, modified or removed as expected.
 - If any delta is ambiguous, conflicting or invalid, stop with an actionable error and do not mutate main specs.
 - If an affected target spec is missing, unchanged, or does not reflect the planned delta, STOP with `blocked`, name the exact missing path/requirement, and do not proceed to `/opsx-verify` or archive guidance.
-- If Engram MCP is enabled and available, verify a sync/delta trace record exists; if enabled but unavailable, report the traceability limitation explicitly.
+- If Engram MCP is enabled and available, verify or save/update a sync/delta observation with a stable `topic_key`; if enabled but unavailable, report `not_available` and do not block sync for Engram alone.
 - Preserve repo context: CLI Go lives in `tools/lufy-cli-go`; `scripts/install.sh` is a wrapper estricto with no legacy fallback.
 
 ## Recommended execution
