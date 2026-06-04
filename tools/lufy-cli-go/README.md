@@ -66,7 +66,7 @@ scripts/validate.sh
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
-| `lufy-ai opsx render` | Renderiza opcionalmente un change OpenSpec a HTML offline tipo Notion dark. | `--target`, `--change`, `--format`, `--theme`, `--output` |
+| `lufy-ai opsx render` | Renderiza un change OpenSpec a HTML offline/autocontenido para revisión humana. | `--target`, `--change`, `--format`, `--theme`, `--output` |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. | `--to`, `--dry-run` |
 | `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH. | n/a |
 
@@ -111,9 +111,14 @@ Reglas actuales:
 
 ```bash
 lufy-ai opsx render --target <repo> --change <name> --format html --theme notion-dark
+lufy-ai opsx render --target <repo> --change <name> --format html --theme notion-dark --output /tmp/lufy-opsx-overview.html
 ```
 
-La salida default es `openspec/changes/<name>/change-overview.html`. Incluye Markdown top-level del change: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` top-level cuando existen; si `plan.md` no existe, se muestra como no disponible.
+La salida default es `openspec/changes/<name>/change-overview.html`; con `--output` puede escribirse en otra ruta, por ejemplo `/tmp/lufy-opsx-overview.html`. El render incluye solo Markdown top-level del change: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` directos cuando existen. Excluye `specs/**`.
+
+El HTML usa diseño dark con tabs y no carga recursos remotos. No muestra los badges/textos removidos `Notion dark`, `Offline HTML`, `Artifacts disponibles` ni `Sin recursos remotos`.
+
+El parser Markdown local soporta headings, listas, checkboxes deshabilitados/checked, fenced code, inline code y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados y no se convierten en anchors. Si un artifact falta o está vacío, se marca como `No disponible` y muestra `Este artefacto no existe o está vacío.`
 
 ## Managed assets
 

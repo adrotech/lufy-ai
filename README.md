@@ -161,9 +161,21 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/`. |
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
-| `lufy-ai opsx render` | Genera opcionalmente un HTML offline tipo Notion dark para un change OpenSpec. |
+| `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
 | `lufy-ai version` | Muestra versión, commit, build date y plataforma. |
+
+### Preview HTML de changes OpenSpec
+
+`lufy-ai opsx render` crea una vista HTML local para revisión humana de un change OpenSpec:
+
+```bash
+lufy-ai opsx render --target <repo> --change <name> --format html --theme notion-dark --output /tmp/lufy-opsx-overview.html
+```
+
+El render incluye solo Markdown directo de `openspec/changes/<name>/`: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` top-level. Excluye `specs/**`. El HTML es autocontenido, usa diseño dark con tabs y no carga recursos remotos.
+
+El parser local soporta headings, listas, checkboxes deshabilitados, fenced code, inline code y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados. Si un artefacto falta o está vacío, la UI muestra `No disponible` y `Este artefacto no existe o está vacío.`
 
 Lifecycle recomendado:
 
