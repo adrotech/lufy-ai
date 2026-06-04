@@ -10,6 +10,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
@@ -46,6 +47,8 @@ func Run(args []string, deps Dependencies) int {
 		return runStatus(args[1:], deps)
 	case "upgrade":
 		return runUpgrade(args[1:], deps)
+	case "opsx":
+		return runOpsx(args[1:], deps)
 	case "version":
 		return runVersion(args[1:], deps)
 	case "-h", "--help", "help":
@@ -56,6 +59,57 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runOpsx(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printOpsxHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "render":
+		return runOpsxRender(args[1:], deps)
+	case "-h", "--help", "help":
+		printOpsxHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando opsx desconocido: %s\n\n", args[0])
+		printOpsxHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func runOpsxRender(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("opsx render", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	change := fs.String("change", "", "Nombre del change OpenSpec")
+	format := fs.String("format", "html", "Formato de salida: html")
+	theme := fs.String("theme", "notion-dark", "Tema HTML: notion-dark")
+	output := fs.String("output", "", "Ruta de salida opcional")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai opsx render --change <name> [--target <dir>] [--format html] [--theme notion-dark] [--output <path>]")
+		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/plan/tasks/specs en un HTML offline opcional.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "opsx render no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res, err := opsx.NewChangeRenderer().Render(opsx.RenderOptions{Target: *target, Change: *change, Format: *format, Theme: *theme, Output: *output})
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	fmt.Fprintf(deps.Stdout, "HTML OpenSpec generado: %s\n", res.OutputPath)
+	return ExitOK
 }
 
 func runUninstall(args []string, deps Dependencies) int {
@@ -417,6 +471,13 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
+	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
+}
+
+func printOpsxHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai opsx <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  render    Renderiza un change OpenSpec a HTML offline")
 }

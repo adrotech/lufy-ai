@@ -161,6 +161,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/`. |
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
+| `lufy-ai opsx render` | Genera opcionalmente un HTML offline tipo Notion dark para un change OpenSpec. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
 | `lufy-ai version` | Muestra versión, commit, build date y plataforma. |
 
