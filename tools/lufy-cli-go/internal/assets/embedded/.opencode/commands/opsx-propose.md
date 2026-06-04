@@ -22,6 +22,7 @@ Run the concrete OpenSpec proposal skill.
 - If any expected artifact is missing, empty, lacks required delta markers or lacks testable scenarios, STOP with a blocked result that names the exact path and recovery action; do not route to `/opsx-apply`.
 - If Engram MCP is enabled and available, verify the proposal/delta trace record after artifact creation; if enabled but unavailable, report the traceability limitation explicitly.
 - Write proposal, design, tasks, specs in Spanish by default; keep filenames unchanged.
+- After artifacts are ready, offer an optional HTML overview: ask whether the user wants to run `lufy-ai opsx render --change <change> --format html --theme notion-dark`. If accepted, run it and report the generated path; if skipped or unavailable, do not block `/opsx-apply`.
 - If GitHub Project tracking enabled, call sync with status Ready.
 
 ## Recommended execution

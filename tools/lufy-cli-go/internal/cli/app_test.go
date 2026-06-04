@@ -597,6 +597,73 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 	}
 }
 
+func TestRunOpsxRenderGeneratesHTML(t *testing.T) {
+	target := t.TempDir()
+	changeDir := filepath.Join(target, "openspec", "changes", "render-demo")
+	writeCLITestFile(t, filepath.Join(changeDir, "proposal.md"), "# Proposal")
+	writeCLITestFile(t, filepath.Join(changeDir, "design.md"), "# Design")
+	writeCLITestFile(t, filepath.Join(changeDir, "tasks.md"), "# Tasks")
+	writeCLITestFile(t, filepath.Join(changeDir, "specs", "demo", "spec.md"), "## ADDED Requirements\n\n### Requirement: Demo\n\n#### Scenario: View\nWHEN opened\nTHEN visible")
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"opsx", "render", "--target", target, "--change", "render-demo"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("opsx render expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("HTML OpenSpec generado")) {
+		t.Fatalf("unexpected stdout: %s", out.String())
+	}
+	body := readCLITestFile(t, filepath.Join(changeDir, "change-overview.html"))
+	for _, want := range [][]byte{[]byte("Proposal"), []byte("Design"), []byte("Plan"), []byte("Tasks"), []byte(`class="tabs"`)} {
+		if !bytes.Contains(body, want) {
+			t.Fatalf("generated html missing %q", want)
+		}
+	}
+	for _, unwanted := range [][]byte{[]byte("Notion dark"), []byte("Offline HTML"), []byte("Artifacts disponibles:"), []byte("Sin recursos remotos")} {
+		if bytes.Contains(body, unwanted) {
+			t.Fatalf("generated html should not include %q", unwanted)
+		}
+	}
+	if bytes.Contains(body, []byte("specs/demo/spec.md")) {
+		t.Fatalf("generated html should not include nested spec artifact")
+	}
+}
+
+func TestRunOpsxRenderRejectsPositionalArgs(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"opsx", "render", "extra"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("opsx render positional expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("opsx render no acepta argumentos posicionales")) {
+		t.Fatalf("unexpected stderr: %s", errOut.String())
+	}
+}
+
+func TestRunOpsxHelpAndUnknownSubcommand(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"opsx", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("opsx help expected ExitOK, got %d", code)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("render")) {
+		t.Fatalf("opsx help missing render: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"opsx", "unknown"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("unknown opsx expected ExitUsageErr, got %d", code)
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("Subcomando opsx desconocido")) {
+		t.Fatalf("unexpected stderr: %s", errOut.String())
+	}
+}
+
 func writeCLITestFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

@@ -66,6 +66,7 @@ scripts/validate.sh
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
+| `lufy-ai opsx render` | Renderiza opcionalmente un change OpenSpec a HTML offline tipo Notion dark. | `--target`, `--change`, `--format`, `--theme`, `--output` |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. | `--to`, `--dry-run` |
 | `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH. | n/a |
 
@@ -103,6 +104,16 @@ Reglas actuales:
 - `T1:none` y `T2:none` están bloqueados en comandos mutantes.
 
 `verify --tool opencode`, `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
+
+## OpenSpec helpers
+
+`opsx render` es un helper opcional, tool-agnostic y no bloqueante. Toma artifacts OpenSpec ya generados y produce un HTML autocontenido/offline para revisión humana:
+
+```bash
+lufy-ai opsx render --target <repo> --change <name> --format html --theme notion-dark
+```
+
+La salida default es `openspec/changes/<name>/change-overview.html`. Incluye Markdown top-level del change: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` top-level cuando existen; si `plan.md` no existe, se muestra como no disponible.
 
 ## Managed assets
 
