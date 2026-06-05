@@ -68,7 +68,8 @@ Run from repository root.
 
 ## OpenSpec Workflow
 
-Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive` for spec-driven development. Use `lufy.close` for cross-workflow finalization with validation, delivery, PR, and branch cleanup gates.
+Use `lufy.pr-review` to generate Spanish, read-only HTML reviews for existing Pull Requests.
 
 ## Optional Engram Memory Workflow
 

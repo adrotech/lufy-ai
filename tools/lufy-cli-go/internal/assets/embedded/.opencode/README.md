@@ -102,6 +102,8 @@ Comandos OpenSpec:
 
 Comandos Lufy:
 
+- `/lufy.close`: cerrar/finalizar un cambio activo con validación, sync de specs si aplica, PR cerrado/merged y limpieza segura de rama.
+- `/lufy.pr-review`: generar un review HTML en español para un PR existente.
 - `/lufy.timereport`: generar un reporte local de tiempo/ROI como extra del kit.
 - `/lufy.onboard`: onboarding/demo stack-aware cuando el asset esté disponible en el target.
 
@@ -111,10 +113,13 @@ Comandos Lufy:
 - `skills/sdd-workflow/openspec-propose`: proponer cambios.
 - `skills/sdd-workflow/openspec-apply-change`: implementar tasks.
 - `skills/sdd-workflow/openspec-verify-change`: verificar implementación contra artefactos.
+- `skills/sdd-workflow/openspec-sync`: sincronizar deltas validados a specs principales.
 - `skills/sdd-workflow/openspec-archive-change`: archivar solo cambios completos.
+- `skills/lufy.close`: finalizar un cambio activo con gates de cierre, delivery, PR y limpieza segura.
 - `skills/lufy.timereport`: generar reportes locales de tiempo/ROI.
 - `skills/lufy.onboard`: onboarding operativo del harness cuando corresponda.
 - `skills/pr.creator`: asistencia para cuerpo de PR cuando delivery está autorizado.
+- `skills/pr.reviewer`: review read-only de PR existente con reporte HTML en español.
 
 Skills opcionales de memoria, release o dominios específicos pueden agregarse en proyectos downstream. El kit base incluye lifecycle OpenSpec y extras Lufy catalogados.
 

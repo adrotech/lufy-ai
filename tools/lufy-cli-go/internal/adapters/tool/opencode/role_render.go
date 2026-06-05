@@ -42,11 +42,19 @@ func RenderAgentMarkdown(role registry.RoleDefinition, surface corerender.RoleSu
 		fmt.Sprintf("methodology_mode=%s", surface.ResultContractContext.MethodologyMode),
 		fmt.Sprintf("methodology_required=%t", surface.ResultContractContext.MethodologyRequired),
 	})
-	writeSection(&b, "Permissions", []string{
+	permissions := []string{
 		fmt.Sprintf("edit=%s", scalar(role.Permissions.Edit)),
 		fmt.Sprintf("shell=%s", scalar(role.Permissions.Shell)),
 		fmt.Sprintf("delivery=%s", scalar(role.Permissions.Delivery)),
-	})
+	}
+	if hasPermissionPolicy(role.Permissions.ShellPolicy) {
+		permissions = append(permissions,
+			fmt.Sprintf("shell_policy.default=%s", permissionPolicyDefault(role.Permissions.ShellPolicy)),
+			fmt.Sprintf("shell_policy.ask=%s", permissionPolicyList(role.Permissions.ShellPolicy.Ask)),
+			fmt.Sprintf("shell_policy.deny=%s", permissionPolicyList(role.Permissions.ShellPolicy.Deny)),
+		)
+	}
+	writeSection(&b, "Permissions", permissions)
 	writeSection(&b, "Delegation", []string{
 		fmt.Sprintf("preferred=%s", role.Delegation.Preferred),
 		fmt.Sprintf("fallback=%s", role.Delegation.Fallback),
@@ -122,4 +130,22 @@ func scalar(value any) string {
 		return "not_configured"
 	}
 	return fmt.Sprint(value)
+}
+
+func permissionPolicyDefault(policy registry.RoleShellPolicy) string {
+	if policy.Default == "" {
+		return "not_configured"
+	}
+	return policy.Default
+}
+
+func hasPermissionPolicy(policy registry.RoleShellPolicy) bool {
+	return policy.Default != "" || len(policy.Ask) > 0 || len(policy.Deny) > 0
+}
+
+func permissionPolicyList(values []string) string {
+	if len(values) == 0 {
+		return "none"
+	}
+	return strings.Join(values, ", ")
 }

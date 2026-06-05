@@ -22,7 +22,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - Protected PR source branches: `develop`, `main`, `master`, `development`.
 - Never force push unless the user explicitly requests it.
 - Report dirty or mixed worktrees before staging.
-- With explicit delivery authorization, `delivery` can run `git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, and `gh` without intermediate prompts.
+- `delivery` permissions should allow normal read-only, diagnostic, validation, staging, and non-destructive Git/GH commands without intermediate prompts; commit, push, PR creation, deletion/destructive commands, and `gh api` DELETE calls must still ask for user permission.
 - Without explicit delivery authorization, return `blocked` with exact recovery instruction.
 
 ## Validation Tiers
