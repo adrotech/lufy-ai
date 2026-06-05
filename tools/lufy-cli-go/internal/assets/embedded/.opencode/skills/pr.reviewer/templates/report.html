@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review de PR</title>
+  <style>
+    :root{--primary:#5645d4;--primary-pressed:#4534b3;--navy:#0a1530;--navy-deep:#070f24;--navy-mid:#1a2a52;--link:#0075de;--orange:#dd5b00;--pink:#ff64c8;--purple:#7b3ff2;--teal:#2a9d99;--green:#1aae39;--yellow:#f5d75e;--peach:#ffe8d4;--rose:#fde0ec;--mint:#d9f3e1;--lavender:#e6e0f5;--sky:#dcecfa;--cream:#f8f5e8;--canvas:#ffffff;--surface:#f6f5f4;--hairline:#e5e3df;--ink:#1a1a1a;--charcoal:#37352f;--slate:#5d5b54;--stone:#a4a097;--error:#e03131;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{overflow-x:hidden;}
+    body{font-family:"Notion Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,var(--navy) 0,var(--navy-deep) 360px,var(--surface) 360px);color:var(--charcoal);line-height:1.55;}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 12% 90px,var(--pink) 0 6px,transparent 7px),radial-gradient(circle at 84% 120px,var(--yellow) 0 7px,transparent 8px),radial-gradient(circle at 70% 250px,var(--teal) 0 5px,transparent 6px),radial-gradient(circle at 24% 260px,var(--purple) 0 5px,transparent 6px);opacity:.9;}
+    .container{max-width:1180px;margin:0 auto;padding:48px 16px 72px;position:relative;}
+    h1{font-size:clamp(36px,6vw,64px);font-weight:600;line-height:1.05;letter-spacing:-1.6px;text-align:center;margin:16px auto 12px;color:#fff;max-width:900px;}
+    h2{font-size:clamp(24px,3vw,36px);font-weight:600;line-height:1.2;letter-spacing:-.5px;margin:48px 0 14px;color:var(--ink);}
+    h3{font-size:18px;font-weight:600;line-height:1.4;margin:4px 0 10px;color:var(--ink);}
+    .muted{color:#a4a097;font-size:14px;text-align:center;margin:0 auto 18px;max-width:980px;}
+    .pr-link{display:block;width:max-content;max-width:100%;margin:0 auto 22px;color:#fff;text-decoration:none;font-size:14px;font-weight:500;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:10px 18px;overflow-wrap:anywhere;}
+    .card,.issue,details,.gauge{background:var(--canvas);border:1px solid var(--hairline);border-radius:12px;padding:24px;margin:12px 0;box-shadow:rgba(15,15,15,.08) 0 4px 12px;overflow-wrap:break-word;word-wrap:break-word;word-break:break-word;max-width:100%;}
+    .gauge{margin:30px auto 36px;text-align:center;box-shadow:rgba(15,15,15,.20) 0 24px 48px -8px;}
+    .gauge .score{font-size:56px;font-weight:600;letter-spacing:-1px;color:var(--primary);}
+    .gauge .verdict{font-size:18px;font-weight:600;margin-top:8px;color:var(--ink);}
+    .scoregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:20px;}
+    .scoreitem{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:14px;text-align:center;}
+    .scoreitem:nth-child(1){background:var(--lavender);}.scoreitem:nth-child(2){background:var(--sky);}.scoreitem:nth-child(3){background:var(--mint);}.scoreitem:nth-child(4){background:var(--rose);}.scoreitem:nth-child(5){background:var(--peach);}.scoreitem:nth-child(6){background:#fef7d6;}
+    .scoreitem .n{font-size:22px;font-weight:600;color:var(--ink);}.scoreitem .l{font-size:13px;color:var(--slate);}
+    .issue{border-left:6px solid var(--error);}.issue.alto{border-left-color:var(--orange);}.issue.medio{border-left-color:#d97706;}.issue.bajo{border-left-color:var(--link);}.issue.info{border-left-color:var(--stone);}.issue.good{border-left-color:var(--green);background:var(--mint);}
+    ul,ol{padding-left:22px;margin:6px 0 10px;}li{overflow-wrap:break-word;word-break:break-word;margin:5px 0;}
+    pre{background:var(--navy-deep);color:#e2e8f0;padding:14px;border-radius:8px;overflow-x:auto;max-width:100%;white-space:pre;word-wrap:normal;font-size:13px;margin:10px 0;}code{background:var(--surface);color:var(--ink);padding:2px 6px;border-radius:6px;font-size:13px;word-break:break-word;overflow-wrap:anywhere;}pre code{background:none;color:inherit;padding:0;}
+    table{width:100%;table-layout:fixed;border-collapse:collapse;margin:10px 0;font-size:14px;background:var(--canvas);border:1px solid var(--hairline);border-radius:8px;overflow:hidden;}th,td{overflow-wrap:break-word;word-break:break-word;vertical-align:top;padding:10px 12px;border-bottom:1px solid #ede9e4;text-align:left;}th{background:var(--surface);font-weight:600;color:var(--ink);}tr:last-child td{border-bottom:0;}
+    .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;}.b-crit{background:var(--error);}.b-alto{background:var(--orange);}.b-medio{background:#d97706;}.b-bajo{background:var(--link);}.b-ok{background:var(--green);}.b-info{background:var(--primary);}
+    details summary{cursor:pointer;font-weight:600;font-size:15px;color:var(--ink);}details[open] summary{margin-bottom:12px;}
+    @media (max-width:640px){.container{padding:32px 12px 56px;}h1{text-align:left;font-size:36px}.muted{text-align:left}.pr-link{margin-left:0}.card,.issue,details,.gauge{padding:18px;}table{font-size:13px;}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Review de PR #PR_NUMBER</h1>
+    <a class="pr-link" href="PR_URL" target="_blank" rel="noreferrer">Ver PR</a>
+    <p class="muted">Base: BASE_REF · Head: HEAD_REF · Autor: AUTHOR · Generado: GENERATED_AT</p>
+
+    <div class="gauge">
+      <div class="score">SCORE%</div>
+      <div class="verdict">VEREDICTO</div>
+      <div class="scoregrid">
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Arquitectura</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Correctitud</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Pruebas</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Seguridad</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Observabilidad</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Desk check</div></div>
+      </div>
+    </div>
+
+    <h2>Resumen ejecutivo</h2>
+    <div class="card"><ul><li>Completar con hallazgos principales.</li></ul></div>
+
+    <h2>Hallazgos críticos y altos</h2>
+    <div class="issue info">No se registraron hallazgos en esta plantilla base.</div>
+
+    <h2>Desk check y simulación</h2>
+    <details><summary>Escenario TC-1</summary><div>Completar trazabilidad por capas.</div></details>
+  </div>
+</body>
+</html>

@@ -25,9 +25,16 @@ type RoleDefinition struct {
 }
 
 type RolePermissions struct {
-	Edit     any `yaml:"edit"`
-	Shell    any `yaml:"shell"`
-	Delivery any `yaml:"delivery"`
+	Edit        any             `yaml:"edit"`
+	Shell       any             `yaml:"shell"`
+	Delivery    any             `yaml:"delivery"`
+	ShellPolicy RoleShellPolicy `yaml:"shell_policy"`
+}
+
+type RoleShellPolicy struct {
+	Default string   `yaml:"default"`
+	Ask     []string `yaml:"ask"`
+	Deny    []string `yaml:"deny"`
 }
 
 type RoleDelegation struct {
