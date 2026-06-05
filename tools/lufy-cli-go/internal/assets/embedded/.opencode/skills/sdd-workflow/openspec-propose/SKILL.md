@@ -102,7 +102,7 @@ When ready to implement, run /opsx-apply
 After completing all artifacts, summarize:
 - Change name and location
 - List of artifacts created with brief descriptions
-- Optional HTML overview: ask whether to generate a Notion dark offline overview with `lufy-ai opsx render --change <name> --format html --theme notion-dark`; if the user declines or the CLI is unavailable, record it as skipped/not_available and continue.
+- Harness-level `HTML overview opcional` outcome: always include the command `lufy-ai opsx render --change <name> --format html --theme notion-dark` and ask whether to generate a Notion dark offline overview. If generated, report the output path; if the user declines, record `skipped`; if the CLI is unavailable, record `not_available`. Do not omit this item from a successful final response; only omit it when the proposal is `blocked`. Tool adapters such as OpenCode, Codex or Claude Code must preserve this outcome when summarizing this methodology action.
 - What's ready: "All artifacts created! Ready for implementation."
 - Prompt: "Run `/opsx-apply` or ask me to implement to start working on the tasks."
 
