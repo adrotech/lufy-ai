@@ -19,8 +19,8 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 ## Estructura relevante
 
 - `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`).
-- `.opencode/commands/`: slash commands del flujo OpenSpec: `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive`.
-- `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar y archivar cambios OpenSpec.
+- `.opencode/commands/`: slash commands del flujo OpenSpec (`opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive`) y comandos LUFY (`lufy.close`, `lufy.pr-review`, `lufy.onboard`, `lufy.timereport`).
+- `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios OpenSpec; skills LUFY transversales viven en `.opencode/skills/lufy.*`.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
 - `.opencode/policies/delivery.md`: fuente canónica para delivery, branch safety, validación y gates de cambios completos.
 - `openspec/`: propuestas, especificaciones y tareas del flujo OpenSpec.
@@ -33,7 +33,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 
 Ejecutar desde la raíz salvo que se indique otra ruta.
 
-- OpenSpec/OpenCode: usar `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-archive` cuando corresponda.
+- OpenSpec/OpenCode: usar `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` cuando corresponda; usar `/lufy.close` para cierre transversal del workflow con PR/branch cleanup; usar `/lufy.pr-review` para reviews HTML de PR en español.
 - Observatory TUI: `/observatory`, `/observatory-agents`, `/observatory-subagents`, `/observatory-cost`.
 - Validación agrupada local: `scripts/validate.sh` ejecuta el whitespace check con rango/base de PR y la validación Go disponible.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
@@ -153,7 +153,9 @@ skill_resolution:
 - Crear propuesta completa: `opsx-propose` / skill `openspec-propose`.
 - Implementar tareas: `opsx-apply` / skill `openspec-apply-change`.
 - Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
+- Sincronizar deltas validados a specs principales: `opsx-sync` / skill `openspec-sync`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
+- Cerrar/finalizar spec activa o cambio LUFY con gates de validación, sync, delivery, PR cerrado/merged y limpieza segura de rama: `/lufy.close` / skill `lufy.close`.
 - Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md` con estado explícito.
 - En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).

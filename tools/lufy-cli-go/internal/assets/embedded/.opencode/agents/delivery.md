@@ -8,29 +8,34 @@ permission:
   write: deny
   patch: deny
   bash:
-    "*": ask
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "git add*": allow
-    "git commit": allow
-    "git commit -m*": allow
+    "*": allow
+    "rm*": ask
+    "rmdir*": ask
+    "unlink*": ask
+    "trash*": ask
+    "sudo rm*": ask
+    "sudo rmdir*": ask
+    "* delete*": ask
+    "git clean*": ask
+    "git rm*": ask
+    "git branch -d*": ask
+    "git branch -D*": ask
+    "git branch --delete*": ask
+    "git commit*": ask
     "git commit --amend*": ask
     "git commit --allow-empty*": ask
     "git commit *--amend*": ask
     "git commit *--allow-empty*": ask
-    "git push": allow
+    "git push*": ask
     "git push --force*": ask
     "git push -f*": ask
     "git push origin --force*": ask
     "git push origin -f*": ask
     "git push *--force*": ask
     "git push *-f*": ask
-    "gh pr*": allow
-    "gh issue*": allow
-    "gh api*": ask
+    "gh pr create*": ask
+    "gh api -X DELETE*": ask
+    "gh api --method DELETE*": ask
   task:
     "*": deny
 ---
@@ -98,7 +103,8 @@ You handle safe delivery operations only. This file is the operational runbook f
 ## Boundaries
 
 - Read-only branch/workspace inspections (`git status`, `git diff`, `git log`, `git branch`, `git rev-parse`) may run to evaluate delivery safety.
-- If user gives explicit delivery authorization, execute normal mutating Git/GH delivery commands without intermediate prompts.
+- Permission prompts are only expected for commit, push, PR creation, deletion/destructive commands, and `gh api` DELETE calls; read-only, diagnostic, validation, staging, and non-destructive Git/GH commands should run without prompting.
+- If user gives explicit delivery authorization, commit, push, PR creation, deletion/destructive commands, and `gh api` DELETE calls may proceed after the required tool permission prompt.
 - If explicit authorization missing, return `blocked` with authorization needed.
 - If validation exists but delivery authorization is missing, return `delivery_pending` or `blocked`; do not treat validation or task completion as authorization.
 - Never force push unless explicitly requested.

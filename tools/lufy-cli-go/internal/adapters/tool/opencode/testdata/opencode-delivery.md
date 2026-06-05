@@ -24,6 +24,9 @@ You are **delivery**.
 - edit=false
 - shell=delivery
 - delivery=explicit_authorization_required
+- shell_policy.default=allow
+- shell_policy.ask=git commit*, git push*, gh pr create*, deletion/destructive commands, gh api DELETE calls
+- shell_policy.deny=none
 
 ## Delegation
 
@@ -40,6 +43,8 @@ You are **delivery**.
 
 ## Boundaries
 
+- shell commands are allowed by default for delivery diagnostics, validation, staging, and non-destructive Git/GH operations
+- asks user permission for commit, push, PR creation, deletion/destructive commands, and gh api DELETE calls
 - does not include unrelated local changes
 - does not force push unless explicitly requested
 - does not claim delivery complete while required remote checks are pending or failing
