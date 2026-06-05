@@ -49,8 +49,9 @@ Use `AGENTS.md` for project conventions, `.lufy/project.yaml` for stack-specific
 
 ## Optional Engram Memory
 
-- If an Engram MCP/tool is available, search for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- If an Engram MCP/tool is available, use it as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective, and expand only 1-3 relevant hits.
 - If Engram is unavailable, skip memory lookup and continue the review without penalty.
+- Return findings as compact `memory_hints` (id, title, relevance), not full memory dumps.
 - Treat memory as review context only; findings still need current diff/file/evidence references.
 
 ## Workflow

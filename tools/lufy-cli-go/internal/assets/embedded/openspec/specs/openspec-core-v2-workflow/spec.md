@@ -57,16 +57,24 @@ The installed workflow SHALL actively verify expected OpenSpec artifacts after p
 - **WHEN** `/opsx-propose` or `openspec-propose` creates a change
 - **THEN** the workflow reads the expected files under `openspec/changes/<change>/`, verifies required artifacts are non-empty, verifies delta markers and testable scenarios, and stops with an actionable blocked result if any expected file is missing or invalid
 
+#### Scenario: Proposal generation surfaces optional HTML overview
+- **WHEN** the OpenSpec propose action completes successfully through any tool adapter
+- **THEN** the harness workflow surfaces the optional HTML overview command `lufy-ai opsx render --change <change> --format html --theme notion-dark` or records the outcome explicitly as `skipped` or `not_available`
+
+#### Scenario: Tool adapters preserve proposal overview outcome
+- **WHEN** a tool adapter summarizes a completed OpenSpec propose action from a command, skill, subagent, or other methodology adapter
+- **THEN** the adapter preserves the optional HTML overview prompt/outcome unless the proposal is `blocked`
+
 #### Scenario: Sync verifies target specs
 - **WHEN** `/opsx-sync` or `openspec-sync` applies deltas to main specs
 - **THEN** the workflow reads every affected `openspec/specs/<capability>/spec.md` and verifies the added, modified or removed requirement titles match the planned delta before recommending verify or archive
 
 #### Scenario: Engram traceability is explicit
 - **WHEN** Engram MCP is enabled during proposal generation or sync
-- **THEN** the workflow verifies the expected proposal or delta trace record when an Engram tool is available, or reports the traceability limitation explicitly when Engram is enabled but unavailable
+- **THEN** the workflow verifies or saves/updates the expected proposal or delta observation with a stable `topic_key` when an Engram tool is available, or reports `not_available` when Engram is enabled but unavailable without blocking for Engram alone
 
 #### Scenario: Failed post-spec verification blocks continuation
-- **WHEN** active post-spec verification cannot find an expected artifact, synced requirement, or required trace record
+- **WHEN** active post-spec verification cannot find an expected artifact or synced requirement
 - **THEN** the workflow reports `status: blocked`, names the missing path or requirement, and does not continue to apply, verify, archive or delivery guidance until the issue is repaired
 
 ### Requirement: Baseline metadata is installed

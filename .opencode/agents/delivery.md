@@ -67,9 +67,9 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 ## Optional Engram Memory
 
-- If an Engram MCP/tool is available, search for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change before staging or creating a PR.
+- If an Engram MCP/tool is available, use it as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change, and expand only 1-3 relevant hits.
 - If Engram is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
-- After authorized delivery or a significant blocker, save a concise durable memory with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
+- Return findings as compact `memory_hints` (id, title, relevance). After authorized delivery or a significant blocker, save a concise durable memory with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
 
 ## Workflow
 

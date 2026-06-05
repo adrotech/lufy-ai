@@ -49,9 +49,9 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 ## Optional Engram Memory
 
-- If an Engram MCP/tool is available, search for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures before diagnosing or choosing validation scope.
+- If an Engram MCP/tool is available, use it as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures, and expand only 1-3 relevant hits.
 - If Engram is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
-- Save a memory only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
+- Return findings as compact `memory_hints` (id, title, relevance). Save a memory only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
 
 ## Workflow
 

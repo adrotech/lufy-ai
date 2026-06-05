@@ -71,6 +71,7 @@ Use only when slicing reduces reviewer cognitive load or risk.
 - Objective:
 - Actions performed:
 - Evidence:
+- Optional overview/render: offered | generated | skipped | not_available; include command/path only when the selected methodology and tool adapter provide one.
 - Review slices completed:
 - Risks/follow-ups:
 - State: ready | blocked | escalated | pending_validation

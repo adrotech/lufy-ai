@@ -20,9 +20,9 @@ Run the concrete OpenSpec proposal skill.
 - Ensure change specs use explicit delta sections: `## ADDED Requirements`, `## MODIFIED Requirements` or `## REMOVED Requirements`.
 - Ensure each added or modified requirement has at least one `#### Scenario:` with `WHEN` and `THEN`; `GIVEN` is optional.
 - If any expected artifact is missing, empty, lacks required delta markers or lacks testable scenarios, STOP with a blocked result that names the exact path and recovery action; do not route to `/opsx-apply`.
-- If Engram MCP is enabled and available, verify the proposal/delta trace record after artifact creation; if enabled but unavailable, report the traceability limitation explicitly.
+- If Engram MCP is enabled and available, verify or save/update a proposal/delta observation after artifact creation with a stable `topic_key`; if enabled but unavailable, report `not_available` and do not block readiness for Engram alone.
 - Write proposal, design, tasks, specs in Spanish by default; keep filenames unchanged.
-- After artifacts are ready, offer an optional HTML overview: ask whether the user wants to run `lufy-ai opsx render --change <change> --format html --theme notion-dark`. If accepted, run it and report the generated path; if skipped or unavailable, do not block `/opsx-apply`.
+- After artifacts are ready, enforce the harness-level OpenSpec propose contract: the final response MUST include `HTML overview opcional` unless the proposal is blocked. Always show the command `lufy-ai opsx render --change <change> --format html --theme notion-dark` and ask whether the user wants to run it. If accepted, run it and report the generated path; if the user declines, record `skipped`; if the CLI is unavailable, record `not_available`. Skipped/unavailable HTML rendering does not block `/opsx-apply`.
 - If GitHub Project tracking enabled, call sync with status Ready.
 
 ## Recommended execution

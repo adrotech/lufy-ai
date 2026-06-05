@@ -73,9 +73,10 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 ## Optional Engram Memory Workflow
 
 - Engram is optional and conditional: use it only when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip this workflow and report memory evidence as `not_available` or omitted; do not block normal work for Engram alone.
-- For non-trivial T1/T2 work, and for T3 work with likely historical context, consult memory before acting: identify the current project, load recent context, and search for relevant prior decisions, bugs, specs, files, issues, or validation blockers.
-- During exploration, validation, review, and delivery, use relevant Engram findings as context to reduce repeated discovery; do not treat memory as stronger evidence than repository files, commands, or explicit user instructions.
+- For non-trivial T1/T2 work, and for T3 work with likely historical context, use Engram as a compact index before acting: identify the current project, load recent context only when useful, search with short queries by issue/spec/path/concept, and expand with `mem_get_observation` only for 1-3 relevant hits.
+- During exploration, validation, review, and delivery, pass Engram findings as compact `memory_hints` (id, title, relevance) to reduce repeated discovery; do not pass full memory dumps or treat memory as stronger evidence than repository files, commands, or explicit user instructions.
 - After significant work, save only durable learnings: architectural decisions, bug fixes, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
+- For evolving topics or OpenSpec traceability, save/update observations with a stable `topic_key` only when Engram is available; if it is unavailable, report `not_available` and continue without blocking.
 - Never claim Engram traceability, memory lookup, or saved context unless the relevant Engram tool actually ran or explicit evidence was provided.
 
 ## Proportional SDD Routing
@@ -119,12 +120,6 @@ workflow_decision:
   program_tier: T1 | T2 | T3 | not_applicable
   slice_tier: T1 | T2 | T3 | not_applicable
   fast_path_allowed: true | false | not_applicable
-  adapter_context:
-    tool_id: opencode | not_applicable
-    methodology_id: openspec | lufy-sdd | none | not_applicable
-    methodology_mode: full | lite | none | not_applicable
-    methodology_required: true | false | not_applicable
-    execution_mode: full-sdd | sdd-lite | express | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available
