@@ -57,6 +57,14 @@ The installed workflow SHALL actively verify expected OpenSpec artifacts after p
 - **WHEN** `/opsx-propose` or `openspec-propose` creates a change
 - **THEN** the workflow reads the expected files under `openspec/changes/<change>/`, verifies required artifacts are non-empty, verifies delta markers and testable scenarios, and stops with an actionable blocked result if any expected file is missing or invalid
 
+#### Scenario: Proposal generation surfaces optional HTML overview
+- **WHEN** the OpenSpec propose action completes successfully through any tool adapter
+- **THEN** the harness workflow surfaces the optional HTML overview command `lufy-ai opsx render --change <change> --format html --theme notion-dark` or records the outcome explicitly as `skipped` or `not_available`
+
+#### Scenario: Tool adapters preserve proposal overview outcome
+- **WHEN** a tool adapter summarizes a completed OpenSpec propose action from a command, skill, subagent, or other methodology adapter
+- **THEN** the adapter preserves the optional HTML overview prompt/outcome unless the proposal is `blocked`
+
 #### Scenario: Sync verifies target specs
 - **WHEN** `/opsx-sync` or `openspec-sync` applies deltas to main specs
 - **THEN** the workflow reads every affected `openspec/specs/<capability>/spec.md` and verifies the added, modified or removed requirement titles match the planned delta before recommending verify or archive

@@ -83,6 +83,10 @@ The system SHALL define T2 SDD Lite as a compact professional artifact containin
 - **WHEN** a request is classified as T2
 - **THEN** the workflow SHALL produce or maintain acceptance criteria with observable WHEN and THEN outcomes before implementation completes
 
+#### Scenario: T2 surfaces optional overview outcome
+- **WHEN** a T2 SDD Lite specification or structured handoff is ready
+- **THEN** the workflow SHALL surface the optional overview/render outcome when the selected methodology and tool adapter provide one, or record `not_available` when no render surface exists
+
 #### Scenario: T2 escalates to T1
 - **WHEN** T2 exploration or implementation reveals cross-cutting impact, unresolved architecture trade-offs, or high risk
 - **THEN** the workflow SHALL recommend escalation to T1 Full SDD
