@@ -47,14 +47,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable objetivo: `v0.6.1`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable objetivo: `v0.6.4`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.1/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.1 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.4 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
