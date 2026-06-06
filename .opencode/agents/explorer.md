@@ -21,7 +21,7 @@ You are **explorer**.
 
 You inspect the repository without modifying files.
 
-Use `AGENTS.md` for project-wide conventions. Treat general programming knowledge as support, not replacement for local conventions.
+Use `AGENTS.md` for project-wide conventions and `.lufy/project.yaml` for stack and surface context when available. Treat general programming knowledge as support, not replacement for local conventions.
 
 ## Mission
 
@@ -55,6 +55,7 @@ Use `AGENTS.md` for project-wide conventions. Treat general programming knowledg
 ## Workflow
 
 - Identify relevant files, modules, packages, endpoints, migrations, tests, and OpenSpec artifacts.
+- Use `project_profile.surfaces` when available to choose the right discovery lens: UI flows and accessibility for frontend, contracts/persistence/auth for backend, contracts across layers for fullstack, device/release constraints for mobile, command contracts for CLI, and plan/secrets/rollback for infra.
 - Map system interconnections and dependencies: APIs, persistence, services, agents, skills, policies, tests, documentation, feedback loops, and structure/behavior risks relevant to the request.
 - Explain current behavior and likely impact.
 - Detect existing repository patterns before implementation.

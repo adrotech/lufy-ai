@@ -23,10 +23,13 @@ const (
 )
 
 type Options struct {
-	Target string
-	Force  bool
-	Rescan bool
+	Target        string
+	Force         bool
+	Rescan        bool
+	ProfilePrompt ProfilePrompt
 }
+
+type ProfilePrompt func(ProjectConfig) (ProjectProfile, error)
 
 type configScanner interface {
 	Scan(string) (ProjectConfig, error)
@@ -84,12 +87,34 @@ type ProjectConfig struct {
 	DetectedAt        time.Time                `yaml:"detected_at"`
 	Tool              domain.ToolID            `yaml:"tool"`
 	MethodologyByTier domain.MethodologyByTier `yaml:"methodology_by_tier"`
+	ProjectProfile    ProjectProfile           `yaml:"project_profile"`
 	Stacks            []Stack                  `yaml:"stacks"`
 	CI                CIConfig                 `yaml:"ci"`
 	TDD               TDDConfig                `yaml:"tdd"`
 	Validation        ValidationConfig         `yaml:"validation"`
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
+}
+
+type ProjectProfile struct {
+	Surfaces []ProjectSurface `yaml:"surfaces"`
+	Extra    map[string]any   `yaml:",inline,omitempty"`
+}
+
+type ProjectSurface struct {
+	ID         string         `yaml:"id"`
+	Type       string         `yaml:"type"`
+	Roots      []string       `yaml:"roots"`
+	Stacks     []string       `yaml:"stacks"`
+	Frameworks []string       `yaml:"frameworks"`
+	Connects   []string       `yaml:"connects,omitempty"`
+	AgentLens  AgentLens      `yaml:"agent_lens"`
+	Extra      map[string]any `yaml:",inline,omitempty"`
+}
+
+type AgentLens struct {
+	PrimaryConcerns        []string `yaml:"primary_concerns"`
+	ValidationExpectations []string `yaml:"validation_expectations"`
 }
 
 type Stack struct {
@@ -210,11 +235,19 @@ func (s Service) Run(opts Options, out io.Writer) error {
 			return nil
 		}
 	}
+	if opts.ProfilePrompt != nil {
+		profile, err := opts.ProfilePrompt(finalConfig)
+		if err != nil {
+			return err
+		}
+		finalConfig.ProjectProfile = profile
+	}
 	if err := s.store.Write(configPath, finalConfig); err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "Generado %s\n", configPath)
 	fmt.Fprintf(out, "Stacks detectados: %s\n", stackSummary(finalConfig.Stacks))
+	fmt.Fprintf(out, "Superficies detectadas: %s\n", surfaceSummary(finalConfig.ProjectProfile.Surfaces))
 	if report != nil {
 		printRescanReport(out, *report)
 	}
@@ -308,6 +341,7 @@ func (s Scanner) Scan(root string) (ProjectConfig, error) {
 		DetectedAt:        now().UTC(),
 		Tool:              domain.ToolInitialDefault,
 		MethodologyByTier: domain.DefaultMethodologyByTier(),
+		ProjectProfile:    detectProjectProfile(root, stacks),
 		Stacks:            stacks,
 		CI:                scanCI(root),
 		TDD:               defaultTDD(),
@@ -349,6 +383,10 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 		}
 	} else if !isZeroValidationConfig(detected.Validation) {
 		items = append(items, DriftItem{Category: "validation", Severity: "info", Path: "validation.allowed_commands", Status: "applied", SuggestedAction: "Se agregó allowlist de validación para roles a partir del toolchain detectado."})
+	}
+	merged.ProjectProfile = mergeProjectProfile(current.ProjectProfile, detected.ProjectProfile)
+	if !reflect.DeepEqual(current.ProjectProfile, merged.ProjectProfile) {
+		items = append(items, DriftItem{Category: "project_profile", Severity: "info", Path: "project_profile.surfaces", Status: "applied", SuggestedAction: "Se preservaron superficies configuradas y se agregaron superficies nuevas detectadas."})
 	}
 	if !reflect.DeepEqual(current.CI, detected.CI) {
 		items = append(items, DriftItem{Category: "ci", Severity: "info", Path: "ci", Status: "applied", SuggestedAction: "Revisa workflows detectados y ajusta manualmente si necesitas una política distinta."})
@@ -513,6 +551,26 @@ func isZeroValidationConfig(config ValidationConfig) bool {
 func mergeValidationConfig(current, detected ValidationConfig) ValidationConfig {
 	merged := current
 	merged.AllowedCommands.Implementer = unique(append(append([]string{}, current.AllowedCommands.Implementer...), detected.AllowedCommands.Implementer...))
+	return merged
+}
+
+func mergeProjectProfile(current, detected ProjectProfile) ProjectProfile {
+	if len(current.Surfaces) == 0 && len(current.Extra) == 0 {
+		return detected
+	}
+	merged := current
+	byID := map[string]bool{}
+	for _, surface := range merged.Surfaces {
+		byID[surface.ID] = true
+	}
+	for _, surface := range detected.Surfaces {
+		if surface.ID == "" || byID[surface.ID] {
+			continue
+		}
+		merged.Surfaces = append(merged.Surfaces, surface)
+		byID[surface.ID] = true
+	}
+	sort.SliceStable(merged.Surfaces, func(i, j int) bool { return merged.Surfaces[i].ID < merged.Surfaces[j].ID })
 	return merged
 }
 
@@ -766,6 +824,78 @@ func defaultWorkflowLimits() WorkflowLimits {
 	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
 
+func detectProjectProfile(root string, stacks []Stack) ProjectProfile {
+	var surfaces []ProjectSurface
+	for _, stack := range stacks {
+		switch {
+		case stack.ID == "typescript" || stack.ID == "javascript":
+			surfaces = append(surfaces, detectJSSurface(root, stack))
+		case stack.ID == "go":
+			surfaces = append(surfaces, detectGoSurface(root, stack))
+		case stack.ID == "python":
+			surfaces = append(surfaces, detectServerSurface("python-app", root, stack))
+		case stack.ID == "java" || stack.ID == "kotlin":
+			surfaces = append(surfaces, detectServerSurface(stack.ID+"-app", root, stack))
+		}
+	}
+	if hasInfraEvidence(root) {
+		surfaces = append(surfaces, ProjectSurface{ID: "infra", Type: "infra", Roots: existingRoots(root, []string{"infra", "terraform", "deployments", "k8s", "."}), Stacks: []string{}, Frameworks: []string{}, AgentLens: DefaultAgentLens("infra")})
+	}
+	surfaces = compactSurfaces(surfaces)
+	if hasSurfaceType(surfaces, "frontend") && hasSurfaceType(surfaces, "backend") {
+		surfaces = append(surfaces, ProjectSurface{ID: "fullstack-flow", Type: "fullstack", Roots: []string{"."}, Stacks: surfaceStackIDs(surfaces), Frameworks: surfaceFrameworks(surfaces), Connects: surfaceIDs(surfaces), AgentLens: DefaultAgentLens("fullstack")})
+	}
+	sort.SliceStable(surfaces, func(i, j int) bool { return surfaces[i].ID < surfaces[j].ID })
+	return ProjectProfile{Surfaces: surfaces}
+}
+
+func detectJSSurface(root string, stack Stack) ProjectSurface {
+	pkg := readPackageJSON(root)
+	if hasDep(pkg, "expo") || hasDep(pkg, "react-native") {
+		return ProjectSurface{ID: "mobile-app", Type: "mobile", Roots: existingRoots(root, []string{"app", "src", "mobile", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("mobile")}
+	}
+	if hasAny(stack.Frameworks, []string{"react", "next", "remix", "vue", "svelte"}) {
+		return ProjectSurface{ID: "web-app", Type: "frontend", Roots: existingRoots(root, []string{"app", "src", "components", "pages", "frontend", "web", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("frontend")}
+	}
+	return ProjectSurface{ID: stack.ID + "-package", Type: "library", Roots: existingRoots(root, []string{"src", "packages", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+}
+
+func detectGoSurface(root string, stack Stack) ProjectSurface {
+	if existsAny(root, "api", "internal/api", "internal/server") {
+		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "internal", "cmd", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("backend")}
+	}
+	if exists(root, "cmd") {
+		return ProjectSurface{ID: "cli", Type: "cli", Roots: existingRoots(root, []string{"cmd", "internal", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("cli")}
+	}
+	return ProjectSurface{ID: "go-library", Type: "library", Roots: existingRoots(root, []string{"internal", "pkg", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+}
+
+func detectServerSurface(fallbackID, root string, stack Stack) ProjectSurface {
+	if hasAny(stack.Frameworks, []string{"fastapi", "django", "flask", "spring-boot"}) || existsAny(root, "api", "server", "src/main") {
+		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "server", "src", "src/main", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("backend")}
+	}
+	return ProjectSurface{ID: fallbackID, Type: "library", Roots: existingRoots(root, []string{"src", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+}
+
+func DefaultAgentLens(surfaceType string) AgentLens {
+	switch surfaceType {
+	case "frontend":
+		return AgentLens{PrimaryConcerns: []string{"ux_states", "accessibility", "responsive_layout", "design_system", "client_state", "api_consumption", "perceived_performance"}, ValidationExpectations: []string{"typecheck", "lint", "unit_tests", "build", "browser_check_when_ui_changes"}}
+	case "backend":
+		return AgentLens{PrimaryConcerns: []string{"domain_invariants", "api_contracts", "auth", "persistence", "transactions", "idempotency", "observability", "resilience"}, ValidationExpectations: []string{"unit_tests", "integration_tests_when_contract_changes", "static_analysis", "coverage"}}
+	case "mobile":
+		return AgentLens{PrimaryConcerns: []string{"navigation_flows", "offline_and_network_states", "accessibility", "device_constraints", "platform_differences", "release_channels"}, ValidationExpectations: []string{"typecheck", "lint", "unit_tests", "build_or_bundle_check", "device_flow_check_when_ui_changes"}}
+	case "cli":
+		return AgentLens{PrimaryConcerns: []string{"command_contracts", "flags_and_exit_codes", "filesystem_safety", "idempotency", "scriptability", "error_messages"}, ValidationExpectations: []string{"unit_tests", "command_smokes", "static_analysis", "build"}}
+	case "infra":
+		return AgentLens{PrimaryConcerns: []string{"plan_drift", "secrets", "least_privilege", "rollback", "environment_parity", "supply_chain"}, ValidationExpectations: []string{"format", "validate", "plan_review", "policy_check_when_available"}}
+	case "fullstack":
+		return AgentLens{PrimaryConcerns: []string{"frontend_backend_contract", "error_state_mapping", "e2e_critical_paths", "rollout_and_rollback", "api_version_compatibility"}, ValidationExpectations: []string{"contract_tests_when_available", "frontend_validation", "backend_validation", "e2e_smoke_when_flow_changes"}}
+	default:
+		return AgentLens{PrimaryConcerns: []string{"public_contracts", "api_shape", "compatibility", "maintainability", "consumer_usage"}, ValidationExpectations: []string{"unit_tests", "static_analysis", "build_or_package_check"}}
+	}
+}
+
 func scanCommonSubdirs(root string) []Stack {
 	var stacks []Stack
 	patterns := []string{"frontend", "backend", "web", "api", "apps/*", "packages/*"}
@@ -905,6 +1035,103 @@ func hasDepPrefix(deps map[string]string, prefix string) bool {
 	return false
 }
 
+func hasAny(values, candidates []string) bool {
+	for _, candidate := range candidates {
+		if containsString(values, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSurfaceType(surfaces []ProjectSurface, surfaceType string) bool {
+	for _, surface := range surfaces {
+		if surface.Type == surfaceType {
+			return true
+		}
+	}
+	return false
+}
+
+func hasInfraEvidence(root string) bool {
+	return existsGlob(root, "*.tf") || existsAny(root, "terraform", "infra", "k8s", "deployments") || exists(root, "Dockerfile")
+}
+
+func existingRoots(root string, candidates []string) []string {
+	var out []string
+	for _, candidate := range candidates {
+		if candidate == "." || exists(root, candidate) {
+			out = append(out, candidate)
+		}
+	}
+	if len(out) == 0 {
+		return []string{"."}
+	}
+	return unique(out)
+}
+
+func compactSurfaces(surfaces []ProjectSurface) []ProjectSurface {
+	byID := map[string]ProjectSurface{}
+	for _, surface := range surfaces {
+		if surface.ID == "" {
+			continue
+		}
+		existing, ok := byID[surface.ID]
+		if !ok {
+			surface.Roots = unique(surface.Roots)
+			surface.Stacks = unique(surface.Stacks)
+			surface.Frameworks = unique(surface.Frameworks)
+			byID[surface.ID] = surface
+			continue
+		}
+		existing.Roots = unique(append(existing.Roots, surface.Roots...))
+		existing.Stacks = unique(append(existing.Stacks, surface.Stacks...))
+		existing.Frameworks = unique(append(existing.Frameworks, surface.Frameworks...))
+		byID[surface.ID] = existing
+	}
+	out := make([]ProjectSurface, 0, len(byID))
+	for _, surface := range byID {
+		out = append(out, surface)
+	}
+	return out
+}
+
+func surfaceIDs(surfaces []ProjectSurface) []string {
+	var out []string
+	for _, surface := range surfaces {
+		if surface.Type == "fullstack" {
+			continue
+		}
+		out = append(out, surface.ID)
+	}
+	return unique(out)
+}
+
+func surfaceStackIDs(surfaces []ProjectSurface) []string {
+	var out []string
+	for _, surface := range surfaces {
+		out = append(out, surface.Stacks...)
+	}
+	return unique(out)
+}
+
+func surfaceFrameworks(surfaces []ProjectSurface) []string {
+	var out []string
+	for _, surface := range surfaces {
+		out = append(out, surface.Frameworks...)
+	}
+	return unique(out)
+}
+
 func jsPackageManager(root string) string {
 	switch {
 	case exists(root, "pnpm-lock.yaml"):
@@ -1022,6 +1249,17 @@ func stackSummary(stacks []Stack) string {
 			state = "deprecated"
 		}
 		parts = append(parts, fmt.Sprintf("%s (%s)", stack.ID, state))
+	}
+	return strings.Join(parts, ", ")
+}
+
+func surfaceSummary(surfaces []ProjectSurface) string {
+	if len(surfaces) == 0 {
+		return "ninguna"
+	}
+	parts := make([]string, 0, len(surfaces))
+	for _, surface := range surfaces {
+		parts = append(parts, fmt.Sprintf("%s:%s", surface.ID, surface.Type))
 	}
 	return strings.Join(parts, ", ")
 }

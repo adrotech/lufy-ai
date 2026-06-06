@@ -61,6 +61,10 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 			t.Fatalf("missing implementer validation command %q: %#v", command, cfg.Validation.AllowedCommands.Implementer)
 		}
 	}
+	surface := requireSurface(t, cfg, "web-app")
+	if surface.Type != "frontend" || !contains(surface.AgentLens.PrimaryConcerns, "accessibility") || !contains(surface.AgentLens.ValidationExpectations, "browser_check_when_ui_changes") {
+		t.Fatalf("unexpected frontend surface: %#v", surface)
+	}
 }
 
 func TestScanDetectsJavaScriptToolingFromScripts(t *testing.T) {
@@ -108,6 +112,32 @@ func TestScanDetectsPythonJVMRustAndCI(t *testing.T) {
 	rust := requireStack(t, cfg, "rust")
 	if rust.Supported || rust.TestRunner.Command != "TODO" {
 		t.Fatalf("unexpected rust placeholder: %#v", rust)
+	}
+}
+
+func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, "api/openapi.yaml", "openapi: 3.0.0\n")
+	writeFile(t, root, "package.json", `{"dependencies":{"react":"18.0.0","next":"14.0.0"},"devDependencies":{"typescript":"5.4.0"}}`)
+	writeFile(t, root, "tsconfig.json", "{}")
+	writeFile(t, root, "main.tf", "terraform {}\n")
+
+	cfg, err := Scan(root, fixedTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if surface := requireSurface(t, cfg, "api"); surface.Type != "backend" || !contains(surface.AgentLens.PrimaryConcerns, "api_contracts") {
+		t.Fatalf("unexpected backend surface: %#v", surface)
+	}
+	if surface := requireSurface(t, cfg, "web-app"); surface.Type != "frontend" {
+		t.Fatalf("unexpected frontend surface: %#v", surface)
+	}
+	if surface := requireSurface(t, cfg, "infra"); surface.Type != "infra" {
+		t.Fatalf("unexpected infra surface: %#v", surface)
+	}
+	if surface := requireSurface(t, cfg, "fullstack-flow"); surface.Type != "fullstack" || !contains(surface.Connects, "api") || !contains(surface.Connects, "web-app") {
+		t.Fatalf("unexpected fullstack surface: %#v", surface)
 	}
 }
 
@@ -400,6 +430,71 @@ workflow_limits:
 	}
 	if len(merged.WorkflowLimits.StopRules) == 0 || len(merged.WorkflowLimits.Preflight) == 0 {
 		t.Fatalf("rescan did not fill missing workflow gates: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestRescanPreservesProjectProfileAndAddsDetectedSurfaces(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, "cmd/app/main.go", "package main\n")
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+tool: opencode
+methodology_by_tier:
+  T1:
+    id: openspec
+    mode: full
+    required: true
+  T2:
+    id: openspec
+    mode: lite
+    required: true
+  T3:
+    id: none
+    mode: none
+    required: false
+project_profile:
+  surfaces:
+    - id: custom-product
+      type: backend
+      roots: [service]
+      stacks: [go]
+      frameworks: []
+      agent_lens:
+        primary_concerns: [custom-domain]
+        validation_expectations: [custom-validation]
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+workflow_limits:
+  sizing:
+    loc_budget: 400
+  routing:
+    strategy: proportional-sdd
+  proposal_slicing_strategy: review-slices-on-multi-risk
+  delivery_batch_strategy: ask-on-risk
+  stop_rules: [pause_on_scope_growth]
+  preflight: [read_project_config]
+`)
+
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	custom := requireSurface(t, cfg, "custom-product")
+	if custom.Type != "backend" || !contains(custom.AgentLens.PrimaryConcerns, "custom-domain") {
+		t.Fatalf("manual surface not preserved: %#v", custom)
+	}
+	if surface := requireSurface(t, cfg, "cli"); surface.Type != "cli" {
+		t.Fatalf("detected CLI surface not added: %#v", cfg.ProjectProfile.Surfaces)
 	}
 }
 
@@ -795,6 +890,17 @@ func requireStack(t *testing.T, cfg ProjectConfig, id string) Stack {
 	}
 	t.Fatalf("stack %s not found in %#v", id, cfg.Stacks)
 	return Stack{}
+}
+
+func requireSurface(t *testing.T, cfg ProjectConfig, id string) ProjectSurface {
+	t.Helper()
+	for _, surface := range cfg.ProjectProfile.Surfaces {
+		if surface.ID == id {
+			return surface
+		}
+	}
+	t.Fatalf("surface %s not found in %#v", id, cfg.ProjectProfile.Surfaces)
+	return ProjectSurface{}
 }
 
 func contains(values []string, want string) bool {
