@@ -21,7 +21,9 @@ func detectedArchitectures(root, surfaceType string) []string {
 	case "backend":
 		return detectBackendArchitectures(root)
 	case "fullstack":
-		return detectBackendArchitectures(root)
+		if existsAny(root, "src/features", "features") {
+			return []string{"feature_driven_frontend"}
+		}
 	}
 	return nil
 }

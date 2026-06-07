@@ -154,7 +154,7 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	if surface := requireSurface(t, cfg, "fullstack-flow"); surface.Type != "fullstack" ||
 		!contains(surface.Connects, "api") ||
 		!contains(surface.Connects, "web-app") ||
-		surface.Architecture.Preferred != "controller_service_repository" ||
+		surface.Architecture.Preferred != "feature_driven_frontend" ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_frontend_structure") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||

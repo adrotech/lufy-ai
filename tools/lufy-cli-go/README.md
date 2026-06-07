@@ -119,13 +119,15 @@ Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el 
 
 Esto permite que implementers, reviewers y test-writers traten frontend/fullstack con una mentalidad distinta a backend o CLI.
 
-Para `backend` y `fullstack`, las opciones de arquitectura son:
+Para `backend`, las opciones de arquitectura son:
 
 - `controller_service_repository`: default mínimo con controllers/handlers delgados, servicios para reglas de negocio y repositories para persistencia/adapters;
 - `clean_architecture`: capas de dominio/casos de uso/infraestructura cuando el proyecto ya lo usa o el usuario lo elige;
 - `hexagonal`: ports/adapters alrededor del dominio cuando el proyecto ya lo usa o el usuario lo elige.
 
 El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/project.yaml`.
+
+En `fullstack`, la surface de flujo mantiene frontend feature-driven; la arquitectura clean/hexagonal/controller-service-repository aplica solo al backend y se lee desde la surface backend conectada.
 
 ## OpenSpec helpers
 
