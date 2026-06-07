@@ -29,6 +29,8 @@ func Run(args []string, deps Dependencies) int {
 	switch args[0] {
 	case "init":
 		return runInit(args[1:], deps)
+	case "scan":
+		return runScan(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
 	case "uninstall":
@@ -148,9 +150,10 @@ func runInit(args []string, deps Dependencies) int {
 	target := fs.String("target", ".", "Directorio destino")
 	force := fs.Bool("force", false, "Reemplazar .lufy/project.yaml existente")
 	rescan := fs.Bool("rescan", false, "Refrescar evidencia de stacks, preservar overrides y reportar drift sin cleanup destructivo")
+	interactive := fs.Bool("interactive", false, "Abrir selector interactivo para project_profile.surfaces")
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan]")
-		fmt.Fprintln(deps.Stderr, "Genera .lufy/project.yaml con reglas stack-aware editables.")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan] [--interactive]")
+		fmt.Fprintln(deps.Stderr, "Genera .lufy/project.yaml con reglas stack-aware y surface-aware editables.")
 		fmt.Fprintln(deps.Stderr, "--rescan compara evidencia actual, preserva overrides de usuario y reporta drift sin borrar stacks ni archivos.")
 	}
 	if err := fs.Parse(args); err != nil {
@@ -169,7 +172,43 @@ func runInit(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "init no permite combinar --force y --rescan")
 		return ExitUsageErr
 	}
-	if err := projectconfig.NewService().Run(projectconfig.Options{Target: *target, Force: *force, Rescan: *rescan}, deps.Stdout); err != nil {
+	opts := projectconfig.Options{Target: *target, Force: *force, Rescan: *rescan}
+	if *interactive {
+		opts.ProfilePrompt = surfaceProfilePrompt(deps)
+	}
+	if err := projectconfig.NewService().Run(opts, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runScan(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("scan", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	interactive := fs.Bool("interactive", true, "Abrir selector interactivo para project_profile.surfaces cuando haya TTY")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai scan [--target <dir>] [--interactive=false]")
+		fmt.Fprintln(deps.Stderr, "Escanea stacks y superficies, crea o actualiza .lufy/project.yaml preservando overrides.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "scan no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	opts := projectconfig.Options{Target: *target, Rescan: true}
+	if *interactive {
+		opts.ProfilePrompt = surfaceProfilePrompt(deps)
+	}
+	if err := projectconfig.NewService().Run(opts, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -463,6 +502,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai <comando> [flags]")
 	fmt.Fprintln(out, "Comandos:")
 	fmt.Fprintln(out, "  init      Genera .lufy/project.yaml stack-aware")
+	fmt.Fprintln(out, "  scan      Escanea stacks/superficies y actualiza project.yaml")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")

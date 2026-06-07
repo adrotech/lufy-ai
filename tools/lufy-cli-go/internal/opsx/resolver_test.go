@@ -13,14 +13,14 @@ func TestResolvePrefersCompatiblePathOpenSpec(t *testing.T) {
 	svc := &Service{
 		lookPath: func(name string) (string, error) { return "/usr/local/bin/openspec", nil },
 		commandOutput: func(name string, args ...string) ([]byte, error) {
-			return []byte("OpenSpec 1.4.0\n"), nil
+			return []byte("OpenSpec 1.4.1\n"), nil
 		},
 	}
 	res, err := svc.Resolve(ResolveOptions{Target: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Layer != LayerPath || res.Version != "1.4.0" || res.Path == "" {
+	if res.Layer != LayerPath || res.Version != "1.4.1" || res.Path == "" {
 		t.Fatalf("resolution = %#v", res)
 	}
 }
@@ -34,8 +34,8 @@ func TestNewServiceUsesDefaultResolvers(t *testing.T) {
 
 func TestResolveUsesValidCacheWhenPathUnavailable(t *testing.T) {
 	target := t.TempDir()
-	writeCacheAsset(t, target, "1.3.2", "bin/openspec", "cache binary")
-	manifest := validManifest(t, target, "1.3.2")
+	writeCacheAsset(t, target, "1.4.1", "bin/openspec", "cache binary")
+	manifest := validManifest(t, target, "1.4.1")
 	if _, err := WriteCacheManifest(target, manifest); err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestResolveUsesValidCacheWhenPathUnavailable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Layer != LayerCache || res.Version != "1.3.2" {
+	if res.Layer != LayerCache || res.Version != "1.4.1" {
 		t.Fatalf("resolution = %#v", res)
 	}
 }

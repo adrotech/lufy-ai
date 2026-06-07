@@ -24,6 +24,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
+- When `.lufy/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` into routing context.
 - When `.lufy/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
 - Produce Result Contract envelope v1 with execution mode, context slice, required permissions, skill status, workflow-limit decisions, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
@@ -85,6 +86,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Context Slicing
 
 - Include only the user intent, tier reason, relevant constraints, likely files or questions, acceptance criteria draft when useful, and exact next action.
+- Include the applicable `project_profile.surfaces` entry when available so downstream agents know whether to apply frontend, backend, fullstack, mobile, CLI, infra or library reasoning.
 - For fast-path planning slices, include `program_tier`, `slice_tier`, `fast_path_allowed: true`, the exact 1-2 target files, and the lightweight validation expected; do not request `explorer` only to repackage already sufficient context.
 - Do not pass unrelated conversation history, broad repository dumps, or delivery authority unless it is relevant and explicit.
 - Treat `context_slice` as the source for the next agent, not as a full transcript.
