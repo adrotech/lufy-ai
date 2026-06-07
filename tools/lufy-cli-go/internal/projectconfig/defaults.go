@@ -11,7 +11,7 @@ func defaultWorkflowLimits() WorkflowLimits {
 func DefaultAgentLens(surfaceType string) AgentLens {
 	switch surfaceType {
 	case "frontend":
-		return AgentLens{PrimaryConcerns: []string{"ux_states", "accessibility", "responsive_layout", "design_system", "client_state", "api_consumption", "perceived_performance"}, ValidationExpectations: []string{"typecheck", "lint", "unit_tests", "build", "browser_check_when_ui_changes"}}
+		return AgentLens{PrimaryConcerns: []string{"ux_states", "accessibility", "responsive_layout", "design_system", "client_state", "api_consumption", "perceived_performance", "feature_driven_structure", "feature_colocation", "feature_public_barrels_index_ts", "pages_as_routing_only"}, ValidationExpectations: []string{"typecheck", "lint", "unit_tests", "build", "browser_check_when_ui_changes", "feature_boundary_review"}}
 	case "backend":
 		return AgentLens{PrimaryConcerns: []string{"domain_invariants", "api_contracts", "auth", "persistence", "transactions", "idempotency", "observability", "resilience"}, ValidationExpectations: []string{"unit_tests", "integration_tests_when_contract_changes", "static_analysis", "coverage"}}
 	case "mobile":
@@ -21,7 +21,7 @@ func DefaultAgentLens(surfaceType string) AgentLens {
 	case "infra":
 		return AgentLens{PrimaryConcerns: []string{"plan_drift", "secrets", "least_privilege", "rollback", "environment_parity", "supply_chain"}, ValidationExpectations: []string{"format", "validate", "plan_review", "policy_check_when_available"}}
 	case "fullstack":
-		return AgentLens{PrimaryConcerns: []string{"frontend_backend_contract", "error_state_mapping", "e2e_critical_paths", "rollout_and_rollback", "api_version_compatibility"}, ValidationExpectations: []string{"contract_tests_when_available", "frontend_validation", "backend_validation", "e2e_smoke_when_flow_changes"}}
+		return AgentLens{PrimaryConcerns: []string{"frontend_backend_contract", "error_state_mapping", "e2e_critical_paths", "rollout_and_rollback", "api_version_compatibility", "feature_driven_frontend_structure", "feature_colocation", "feature_public_barrels_index_ts", "pages_as_routing_only"}, ValidationExpectations: []string{"contract_tests_when_available", "frontend_validation", "backend_validation", "e2e_smoke_when_flow_changes", "feature_boundary_review"}}
 	default:
 		return AgentLens{PrimaryConcerns: []string{"public_contracts", "api_shape", "compatibility", "maintainability", "consumer_usage"}, ValidationExpectations: []string{"unit_tests", "static_analysis", "build_or_package_check"}}
 	}

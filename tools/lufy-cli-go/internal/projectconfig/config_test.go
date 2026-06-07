@@ -63,7 +63,14 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 		}
 	}
 	surface := requireSurface(t, cfg, "web-app")
-	if surface.Type != "frontend" || !contains(surface.AgentLens.PrimaryConcerns, "accessibility") || !contains(surface.AgentLens.ValidationExpectations, "browser_check_when_ui_changes") {
+	if surface.Type != "frontend" ||
+		!contains(surface.AgentLens.PrimaryConcerns, "accessibility") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_structure") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "pages_as_routing_only") ||
+		!contains(surface.AgentLens.ValidationExpectations, "browser_check_when_ui_changes") ||
+		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") {
 		t.Fatalf("unexpected frontend surface: %#v", surface)
 	}
 }
@@ -137,7 +144,13 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	if surface := requireSurface(t, cfg, "infra"); surface.Type != "infra" {
 		t.Fatalf("unexpected infra surface: %#v", surface)
 	}
-	if surface := requireSurface(t, cfg, "fullstack-flow"); surface.Type != "fullstack" || !contains(surface.Connects, "api") || !contains(surface.Connects, "web-app") {
+	if surface := requireSurface(t, cfg, "fullstack-flow"); surface.Type != "fullstack" ||
+		!contains(surface.Connects, "api") ||
+		!contains(surface.Connects, "web-app") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_frontend_structure") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||
+		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") {
 		t.Fatalf("unexpected fullstack surface: %#v", surface)
 	}
 }

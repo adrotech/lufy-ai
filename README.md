@@ -47,22 +47,25 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable objetivo: `v0.6.4`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable actual: `v0.6.8`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.8/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.4 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
 
 ```bash
 lufy-ai version
+lufy-ai scan --target /ruta/a/tu/proyecto --interactive=false
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
+
+`scan` crea o actualiza `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva puedes omitir `--interactive=false` para revisar con Bubble Tea si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
 
 ### 3. Instalar y verificar
 
@@ -90,7 +93,7 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 | --- | --- | --- |
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. |
 | Comandos OpenSpec | `.opencode/commands/opsx-*.md` | Ciclo OpenSpec: explore, propose, apply, verify, sync, archive y version. |
-| Comandos Lufy | `.opencode/commands/lufy.*.md` | Extras propios del kit, como `/lufy.timereport` y `/lufy.onboard` cuando estén disponibles. |
+| Comandos Lufy | `.opencode/commands/lufy.*.md` | Extras propios del kit: `/lufy.close`, `/lufy.pr-review`, `/lufy.timereport` y `/lufy.onboard`. |
 | Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding y reportes instalables. |
 | Templates | `.opencode/templates/` | `sdd-lite.md` y `result-contract.md` para T2 y handoffs recuperables. |
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
@@ -138,6 +141,8 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 
 La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
 
+Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services/`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas.
+
 Ejemplos:
 
 ```bash
@@ -152,8 +157,8 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable. |
-| `lufy-ai scan` | Reescanea stacks y superficies de producto preservando overrides. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; puede abrir selector Bubble Tea con `--interactive`. |
+| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y puede abrir selector Bubble Tea. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
@@ -168,7 +173,9 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 ### Overview/render de propuestas
 
-El contrato del harness exige que una propuesta o especificación lista preserve el outcome opcional de overview/render como `offered`, `generated`, `skipped` o `not_available`. Esto aplica a Full SDD y SDD Lite; si la metodología o el tool adapter seleccionado no tiene una superficie de render, el resultado debe decir `not_available` en vez de omitir el paso.
+El contrato del harness exige que una propuesta o especificación lista preserve el outcome opcional de overview/render como `generated`, `offered_pending`, `skipped_by_user` o `not_available`. Para OpenSpec propose, la respuesta exitosa debe mostrar el comando exacto `lufy-ai opsx render --change <change> --format html --theme notion-dark` y preguntar explícitamente: `¿Quieres que genere ahora el reporte HTML offline de los artifacts con tema Notion dark?`
+
+`offered_pending` significa que el reporte fue ofrecido y el usuario todavía no respondió. `skipped_by_user` solo es válido cuando el usuario lo rechazó explícitamente. Esto aplica a Full SDD y SDD Lite; si la metodología o el tool adapter seleccionado no tiene una superficie de render, el resultado debe decir `not_available` en vez de omitir el paso.
 
 ### Preview HTML de changes OpenSpec
 
@@ -181,6 +188,18 @@ lufy-ai opsx render --target <repo> --change <name> --format html --theme notion
 El render incluye solo Markdown directo de `openspec/changes/<name>/`: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` top-level. Excluye `specs/**`. El HTML es autocontenido, usa diseño dark con tabs y no carga recursos remotos.
 
 El parser local soporta headings, listas, checkboxes deshabilitados, fenced code, inline code y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados. Si un artefacto falta o está vacío, la UI muestra `No disponible` y `Este artefacto no existe o está vacío.`
+
+### Reportes HTML instalables
+
+La versión actual instala tres superficies de reporte offline/autocontenido con estética unificada basada en Notion:
+
+| Reporte | Cómo se genera | Uso |
+| --- | --- | --- |
+| Proposal overview | `lufy-ai opsx render --change <change> --format html --theme notion-dark` | Revisar artifacts OpenSpec generados antes de aplicar. |
+| PR review | `/lufy.pr-review` | Generar un review HTML en español para un PR existente. |
+| Time report | `/lufy.timereport` | Resumir tiempo, actividad, fases, herramientas, subagentes, skills, ROI y limitaciones desde fuentes locales. |
+
+Los reportes no cargan recursos remotos y deben marcar faltantes o limitaciones en vez de inventar evidencia.
 
 Lifecycle recomendado:
 
@@ -245,7 +264,9 @@ Disponible e instalable:
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
 - CLI Go con install, uninstall, verify, status, sync, merge, backup, restore, upgrade y version.
+- `init` y `scan` con `.lufy/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
+- Reportes HTML offline: overview OpenSpec, PR review y time report.
 - `codex` y `claude-code` solo como adapters dry-run/preview, no como instalación real.
 
 No disponible como feature escribible todavía:

@@ -59,11 +59,17 @@ The installed workflow SHALL actively verify expected OpenSpec artifacts after p
 
 #### Scenario: Proposal generation surfaces optional HTML overview
 - **WHEN** the OpenSpec propose action completes successfully through any tool adapter
-- **THEN** the harness workflow surfaces the optional HTML overview command `lufy-ai opsx render --change <change> --format html --theme notion-dark` or records the outcome explicitly as `skipped` or `not_available`
+- **THEN** the harness workflow surfaces the optional HTML overview command `lufy-ai opsx render --change <change> --format html --theme notion-dark`, asks `¿Quieres que genere ahora el reporte HTML offline de los artifacts con tema Notion dark?`, and records `offered_pending` while the user has not answered
 
 #### Scenario: Tool adapters preserve proposal overview outcome
 - **WHEN** a tool adapter summarizes a completed OpenSpec propose action from a command, skill, subagent, or other methodology adapter
 - **THEN** the adapter preserves the optional HTML overview prompt/outcome unless the proposal is `blocked`
+
+#### Scenario: Proposal overview outcome states are explicit
+- **WHEN** a successful proposal response reports the optional HTML overview outcome
+- **THEN** the outcome SHALL be one of `generated`, `offered_pending`, `skipped_by_user` or `not_available`
+- **AND** `skipped_by_user` SHALL only be used after an explicit user decline
+- **AND** bare `skipped` SHALL NOT be used for a pending or unanswered offer except when documenting legacy output
 
 #### Scenario: Sync verifies target specs
 - **WHEN** `/opsx-sync` or `openspec-sync` applies deltas to main specs
