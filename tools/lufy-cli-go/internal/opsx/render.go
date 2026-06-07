@@ -186,38 +186,41 @@ func renderNotionDarkHTML(change string, artifacts []changeArtifact) string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>` + html.EscapeString(change) + ` - OpenSpec</title>
   <style>
-    :root { color-scheme: dark; --bg: #141414; --panel: #191919; --card: #202020; --card2: #252525; --text: #ededeb; --muted: #a6a29b; --line: #33302b; --accent: #d4a96a; --accent2: #8f7351; --green: #6fbf8f; }
+    :root { color-scheme: light; --primary: #5645d4; --primary-pressed: #4534b3; --navy: #0a1530; --navy-deep: #070f24; --link: #0075de; --orange: #dd5b00; --green: #1aae39; --peach: #ffe8d4; --rose: #fde0ec; --mint: #d9f3e1; --lavender: #e6e0f5; --sky: #dcecfa; --canvas: #ffffff; --surface: #f6f5f4; --surface-soft: #fafaf9; --hairline: #e5e3df; --hairline-soft: #ede9e4; --hairline-strong: #c8c4be; --ink: #1a1a1a; --charcoal: #37352f; --slate: #5d5b54; --steel: #787671; --stone: #a4a097; --muted: #bbb8b1; --error: #e03131; --shadow-card: rgba(15,15,15,.08) 0 4px 12px; --shadow-hero: rgba(15,15,15,.20) 0 24px 48px -8px; }
     * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top left, rgba(212,169,106,.13), transparent 28%), radial-gradient(circle at bottom right, rgba(111,191,143,.08), transparent 30%), var(--bg); color: var(--text); font: 15px/1.6 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
-    main { width: min(1240px, calc(100vw - 32px)); height: 100vh; margin: 0 auto; padding: 28px 0; display: grid; grid-template-rows: auto 1fr; gap: 16px; }
-    .hero { border: 1px solid var(--line); background: linear-gradient(135deg, rgba(37,37,37,.98), rgba(25,25,25,.94)); border-radius: 24px; padding: 24px 28px; box-shadow: 0 24px 80px rgba(0,0,0,.35); }
-    .crumb { color: var(--accent); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
-    h1 { margin: 8px 0 16px; font-size: clamp(34px, 6vw, 64px); line-height: .95; letter-spacing: -.055em; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(180deg, var(--navy) 0, var(--navy-deep) 340px, var(--surface) 340px); color: var(--charcoal); font: 16px/1.55 "Notion Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+    main { max-width: 1180px; margin: 0 auto; padding: 48px 32px 72px; }
+    .hero { color: #fff; text-align: center; padding: 16px 0 30px; }
+    .crumb { color: var(--stone); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: uppercase; }
+    h1 { margin: 8px auto 16px; max-width: 900px; font-size: 56px; line-height: 1.08; letter-spacing: 0; font-weight: 600; }
     .meta { display: flex; flex-wrap: wrap; gap: 10px; }
-    .pill, .badge { border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; background: rgba(255,255,255,.035); color: var(--muted); font-size: 13px; }
-    .workspace { min-height: 0; border: 1px solid var(--line); border-radius: 22px; background: rgba(25,25,25,.9); box-shadow: 0 18px 60px rgba(0,0,0,.28); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
-    .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.025); }
+    .pill, .badge { border: 1px solid var(--hairline); border-radius: 999px; padding: 5px 11px; background: var(--surface); color: var(--slate); font-size: 13px; font-weight: 600; }
+    .workspace { border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); box-shadow: var(--shadow-hero); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+    .tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px; border-bottom: 1px solid var(--hairline); background: var(--surface); }
     .tabs input { position: absolute; opacity: 0; pointer-events: none; }
-    .tabs label { flex: 0 0 auto; display: grid; gap: 1px; min-width: 128px; border: 1px solid var(--line); border-radius: 14px; padding: 9px 12px; color: var(--muted); background: rgba(255,255,255,.03); cursor: pointer; user-select: none; }
-    .tabs label span { color: var(--text); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-    .tabs label small { color: var(--muted); font-size: 12px; }
-    .tabs label:hover { background: rgba(255,255,255,.06); }
-    .panels { min-height: 0; overflow: auto; padding: 22px; }
-    .panel { display: none; min-height: 100%; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(180deg, var(--card), var(--panel)); padding: 24px; box-shadow: 0 14px 42px rgba(0,0,0,.22); }
+    .tabs label { flex: 0 0 auto; display: grid; gap: 1px; min-width: 128px; border: 1px solid var(--hairline); border-radius: 8px; padding: 9px 12px; color: var(--slate); background: var(--canvas); cursor: pointer; user-select: none; }
+    .tabs label span { color: var(--ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+    .tabs label small { color: var(--slate); font-size: 12px; }
+    .tabs label:hover { background: var(--surface-soft); border-color: var(--hairline-strong); }
+    .panels { overflow: auto; padding: 22px; background: var(--surface-soft); }
+    .panel { display: none; min-height: 100%; border: 1px solid var(--hairline); border-radius: 12px; background: var(--canvas); padding: 24px; box-shadow: var(--shadow-card); }
     .panel-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
     ` + tabCSS(len(artifacts)) + `
-	.eyebrow, .path { color: var(--muted); font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0 0 6px; }
-    h2 { margin: 0; font-size: 25px; letter-spacing: -.025em; }
+	.eyebrow, .path { color: var(--slate); font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0 0 6px; }
+    h2 { margin: 0; font-size: 28px; line-height: 1.25; letter-spacing: 0; color: var(--ink); }
     .markdown { margin-top: 18px; }
-    .markdown h1, .markdown h2, .markdown h3, .markdown h4 { margin: 22px 0 8px; line-height: 1.2; letter-spacing: -.02em; }
-    .markdown h1 { font-size: 26px; } .markdown h2 { font-size: 22px; } .markdown h3 { font-size: 18px; color: var(--accent); } .markdown h4 { font-size: 15px; color: var(--green); }
-    .markdown p { margin: 9px 0; color: #ddd8cf; }
+    .markdown h1, .markdown h2, .markdown h3, .markdown h4 { margin: 22px 0 8px; line-height: 1.2; letter-spacing: 0; color: var(--ink); }
+    .markdown h1 { font-size: 28px; } .markdown h2 { font-size: 24px; } .markdown h3 { font-size: 18px; color: var(--primary); } .markdown h4 { font-size: 15px; color: var(--green); }
+    .markdown p { margin: 9px 0; color: var(--charcoal); }
     .markdown ul { margin: 10px 0 14px 20px; padding: 0; }
     .markdown li { margin: 6px 0; }
-    pre { overflow: auto; background: #0f0f0f; border: 1px solid var(--line); border-radius: 14px; padding: 14px; color: #f4ead9; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .empty { color: var(--muted); border-left: 3px solid var(--accent2); padding-left: 12px; }
-    @media (max-width: 820px) { body { overflow: auto; } main { height: auto; min-height: 100vh; padding: 16px 0; } .hero { padding: 20px; } .workspace { min-height: 70vh; } .tabs label { min-width: 112px; } .panels { padding: 14px; } .panel { padding: 18px; } }
+    pre { overflow: auto; background: var(--navy-deep); border: 1px solid var(--hairline); border-radius: 8px; padding: 14px; color: #e2e8f0; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--hairline-soft); border-radius: 6px; padding: 2px 6px; font-size: 13px; overflow-wrap: anywhere; }
+    pre code { background: none; border: 0; padding: 0; color: inherit; }
+    a { color: var(--link); }
+    input[type="checkbox"] { accent-color: var(--primary); }
+    .empty { color: var(--slate); border-left: 3px solid var(--orange); padding-left: 12px; }
+    @media (max-width: 820px) { body { background: linear-gradient(180deg, var(--navy) 0, var(--navy-deep) 300px, var(--surface) 300px); } main { min-height: 100vh; padding: 32px 16px 56px; } .hero { text-align: left; padding: 0 0 24px; } h1 { font-size: 36px; line-height: 1.12; } .workspace { min-height: 70vh; } .tabs label { min-width: 112px; } .panels { padding: 14px; } .panel { padding: 18px; } .panel-head { display: grid; } h2 { font-size: 24px; } }
   </style>
 </head>
 <body>
@@ -236,7 +239,7 @@ func renderNotionDarkHTML(change string, artifacts []changeArtifact) string {
 func tabCSS(count int) string {
 	var out strings.Builder
 	for i := 1; i <= count; i++ {
-		fmt.Fprintf(&out, ".tabs:has(#tab-%d:checked) label[for=\"tab-%d\"] { background: linear-gradient(180deg, rgba(212,169,106,.22), rgba(255,255,255,.04)); border-color: rgba(212,169,106,.55); color: var(--text); }\n", i, i)
+		fmt.Fprintf(&out, ".tabs:has(#tab-%d:checked) label[for=\"tab-%d\"] { background: var(--lavender); border-color: var(--primary); color: var(--ink); }\n", i, i)
 		fmt.Fprintf(&out, ".workspace:has(#tab-%d:checked) .panels .panel:nth-child(%d) { display: block; }\n", i, i)
 	}
 	return out.String()
