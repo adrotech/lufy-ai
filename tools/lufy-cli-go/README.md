@@ -105,18 +105,6 @@ Reglas actuales:
 
 `verify --tool opencode`, `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 
-## Project profile
-
-`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el `agent_lens` incluye reglas para estructura feature-driven:
-
-- colocation por funcionalidad en `src/features/<feature>/`;
-- `components/`, `hooks/`, `services/` y `types.ts` dentro de cada feature cuando son exclusivos de esa funcionalidad;
-- `index.ts` como barril público y frontera de acoplamiento de la feature;
-- `src/pages/` solo para routing/layouts;
-- `src/components`, `src/hooks`, `src/services` y `src/utils` reservados para piezas globales compartidas.
-
-Esto permite que implementers, reviewers y test-writers traten frontend/fullstack con una mentalidad distinta a backend o CLI.
-
 ## OpenSpec helpers
 
 `opsx render` es un helper opcional, tool-agnostic y no bloqueante. Toma artifacts OpenSpec ya generados y produce un HTML autocontenido/offline para revisión humana:

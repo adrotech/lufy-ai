@@ -57,7 +57,7 @@ Use `AGENTS.md` for project conventions, `.lufy/project.yaml` for stack-specific
 ## Workflow
 
 - Load `.lufy/project.yaml` when available and use affected stack data for anti-patterns, coverage expectations and observability libraries.
-- Use `project_profile.surfaces[*].agent_lens.primary_concerns` to adapt review scoring: frontend findings should consider UX states/accessibility/responsive behavior and feature-driven colocation with `index.ts` public barrels, backend findings contracts/domain/auth/persistence/observability, fullstack findings cross-layer contracts, rollout and frontend feature boundaries, and CLI/infra/mobile/library findings their declared concerns.
+- Use `project_profile.surfaces[*].agent_lens.primary_concerns` to adapt review scoring: frontend findings should consider UX states/accessibility/responsive behavior, backend findings contracts/domain/auth/persistence/observability, fullstack findings cross-layer contracts and rollout, and CLI/infra/mobile/library findings their declared concerns.
 - If config or relevant stack fields are missing, report them as `not_available`; do not invent project-specific stack rules.
 - Review code quality, architecture, missing tests, observability and release risk.
 - Classify findings by severity L1-L5.

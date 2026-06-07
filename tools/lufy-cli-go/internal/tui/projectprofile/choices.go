@@ -9,9 +9,9 @@ type SurfaceChoice struct {
 }
 
 var SurfaceChoices = []SurfaceChoice{
-	{Type: "frontend", Label: "Frontend web", Description: "UI, accesibilidad, responsive y estructura feature-driven"},
+	{Type: "frontend", Label: "Frontend web", Description: "UI, accesibilidad, responsive, estados y consumo de APIs"},
 	{Type: "backend", Label: "Backend/API", Description: "Contratos, dominio, persistencia, auth, idempotencia y observabilidad"},
-	{Type: "fullstack", Label: "Fullstack", Description: "Contrato front/back, E2E y feature-driven en la capa frontend"},
+	{Type: "fullstack", Label: "Fullstack", Description: "Contrato front/back, errores entre capas, E2E y rollout"},
 	{Type: "mobile", Label: "Mobile", Description: "Navegación, estados offline/red, dispositivos y release channels"},
 	{Type: "cli", Label: "CLI/tooling", Description: "Flags, exit codes, filesystem safety, idempotencia y scriptability"},
 	{Type: "infra", Label: "Infra/DevOps", Description: "Drift, secrets, permisos, rollback, entornos y supply chain"},
