@@ -1,6 +1,7 @@
 package projectconfig
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -199,6 +200,26 @@ func TestServiceRunBlocksForceAndRescan(t *testing.T) {
 		t.Fatal(err)
 	}
 	assertWorkflowLimitsOnly(t, string(data))
+}
+
+func TestServiceRunPromptErrorDoesNotWriteProjectConfig(t *testing.T) {
+	var out strings.Builder
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	cancelled := errors.New("project_profile cancelado")
+
+	err := (Service{Now: fixedTime}).Run(Options{
+		Target: root,
+		ProfilePrompt: func(ProjectConfig) (ProjectProfile, error) {
+			return ProjectProfile{}, cancelled
+		},
+	}, &out)
+	if !errors.Is(err, cancelled) {
+		t.Fatalf("expected prompt cancellation, got %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(root, ProjectConfigPath)); !os.IsNotExist(statErr) {
+		t.Fatalf("project config should not be written after prompt error, stat=%v", statErr)
+	}
 }
 
 func TestServiceEnsureCreatesProjectConfigWhenMissing(t *testing.T) {

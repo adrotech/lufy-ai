@@ -44,7 +44,7 @@ Después de instalar:
 lufy-ai init --target /ruta/a/tu/proyecto
 ```
 
-Para revisar o ajustar la mentalidad principal de los agentes durante el scan:
+Para revisar o ajustar la mentalidad de los agentes durante el scan, usa el modo interactivo. En una terminal real abre una TUI Bubble Tea/Charm para revisar superficies detectadas, cambiar su tipo y confirmar el `agent_lens`; en CI, pipes o salidas no TTY conserva la detección automática sin bloquear.
 
 ```bash
 lufy-ai init --target /ruta/a/tu/proyecto --interactive
