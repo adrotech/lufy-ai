@@ -1105,23 +1105,27 @@ def phase_card_value(row: dict[str, Any] | None, key: str = "active_seconds") ->
 def render_phase_cost_table(rows: list[dict[str, Any]]) -> str:
     if not rows:
         return "<p class='warn'>Sin fases suficientes para desglose de tiempo.</p>"
-    html_rows = []
+    items = []
     for row in rows:
-        html_rows.append(
-            "<tr>"
-            f"<td>{esc(str(row['phase']))}</td>"
-            f"<td>{esc(format_seconds(float(row['active_seconds'])))}</td>"
-            f"<td>{esc(format_seconds(float(row['ai_seconds'])))}</td>"
-            f"<td>{esc(format_seconds(float(row['human_seconds'])))}</td>"
-            f"<td>{row['events']}</td>"
-            f"<td>{esc(phase_interpretation(row))}</td>"
-            "</tr>"
+        items.append(
+            "<article class='phase-item'>"
+            "<div>"
+            f"<h4 class='phase-title'>{esc(str(row['phase']))}</h4>"
+            f"<p class='phase-reading'>{esc(phase_interpretation(row))}</p>"
+            "</div>"
+            "<div class='phase-stats'>"
+            + phase_stat("Total activo", format_seconds(float(row["active_seconds"])))
+            + phase_stat("IA", format_seconds(float(row["ai_seconds"])))
+            + phase_stat("Humano", format_seconds(float(row["human_seconds"])))
+            + phase_stat("Eventos", str(row["events"]))
+            + "</div>"
+            "</article>"
         )
-    return (
-        "<h3>Dónde se fue el tiempo</h3><div class='table-wrap'><table><thead><tr>"
-        "<th>Fase</th><th>Total activo</th><th>IA</th><th>Humano</th><th>Eventos</th><th>Lectura</th>"
-        "</tr></thead><tbody>" + "".join(html_rows) + "</tbody></table></div>"
-    )
+    return "<h3>Dónde se fue el tiempo</h3><div class='phase-list'>" + "".join(items) + "</div>"
+
+
+def phase_stat(label: str, value: str) -> str:
+    return f"<div class='phase-stat'><span>{esc(label)}</span><strong>{esc(value)}</strong></div>"
 
 
 def phase_interpretation(row: dict[str, Any]) -> str:
@@ -1148,28 +1152,31 @@ def phase_interpretation(row: dict[str, Any]) -> str:
 def render_steps(steps: list[dict[str, Any]]) -> str:
     if not steps:
         return "<section><h2>Paso a paso</h2><p class='warn'>No disponible</p></section>"
-    rows = []
+    items = []
     for step in steps:
-        rows.append(
-            "<tr>"
-            f"<td>{step['index']}</td>"
-            f"<td>{esc(step['phase'])}</td>"
-            f"<td>{esc(step['what'])}<br><span class='muted'>Actores: {esc(step['actors'])}<br>Tools/skills: {esc(step['tools'])}</span></td>"
-            f"<td>{esc(step['why'])}</td>"
-            f"<td>{esc(step['start'])}<br><span class='muted'>{esc(step['end'])}</span></td>"
-            f"<td>{esc(step['wall_clock'])}</td>"
-            f"<td>{esc(step['ai_time'])}</td>"
-            f"<td>{esc(step['human_time'])}</td>"
-            f"<td>{step['events']}</td>"
-            "</tr>"
+        items.append(
+            "<article class='step-item'>"
+            "<div class='step-main'>"
+            f"<div class='step-kicker'>Paso {step['index']} · {esc(step['phase'])}</div>"
+            "<span class='step-label'>Qué se hizo</span>"
+            f"<h3 class='step-title'>{esc(step['what'])}</h3>"
+            f"<div class='step-meta'>Actores: {esc(step['actors'])}<br>Tools/skills: {esc(step['tools'])}</div>"
+            f"<p class='step-reason'><strong>Por qué:</strong> {esc(step['why'])}</p>"
+            "</div>"
+            "<div class='step-stats'>"
+            + step_stat("Primera / última actividad", f"{step['start']} → {step['end']}")
+            + step_stat("Duración activa", str(step["wall_clock"]))
+            + step_stat("IA", str(step["ai_time"]))
+            + step_stat("Humano", str(step["human_time"]))
+            + step_stat("Eventos", str(step["events"]))
+            + "</div>"
+            "</article>"
         )
-    table = (
-        "<div class='table-wrap'><table><thead><tr><th>#</th><th>Paso</th><th>Qué se hizo</th><th>Por qué</th><th>Primera / última actividad</th>"
-        "<th>Duración activa</th><th>IA</th><th>Humano</th><th>Eventos</th></tr></thead><tbody>"
-        + "".join(rows)
-        + "</tbody></table></div>"
-    )
-    return "<section><h2>Paso a paso</h2><p class='muted'>Timeline estructural sanitizado de la tarea, agregado por fase y ordenado por primera aparición. La duración muestra actividad estimada del paso, no el tiempo calendario entre primera y última aparición. No incluye prompts, outputs, argumentos completos ni diffs.</p>" + table + "</section>"
+    return "<section><h2>Paso a paso</h2><p class='muted'>Timeline estructural sanitizado de la tarea, agregado por fase y ordenado por primera aparición. La duración muestra actividad estimada del paso, no el tiempo calendario entre primera y última aparición. No incluye prompts, outputs, argumentos completos ni diffs.</p><div class='step-list'>" + "".join(items) + "</div></section>"
+
+
+def step_stat(label: str, value: str) -> str:
+    return f"<div class='step-stat'><span>{esc(label)}</span><strong>{esc(value)}</strong></div>"
 
 
 def render_learnings_and_pivots(report: dict[str, Any]) -> str:
@@ -1202,8 +1209,11 @@ def card(label: str, value: str) -> str:
 def render_table(title: str, values: dict[str, int]) -> str:
     if not values:
         return f"<h3>{esc(title)}</h3><p class='warn'>No disponible</p>"
-    rows = "".join(f"<tr><td>{esc(name)}</td><td>{count}</td></tr>" for name, count in sorted(values.items(), key=lambda item: item[1], reverse=True)[:10])
-    return f"<h3>{esc(title)}</h3><div class='table-wrap'><table><thead><tr><th>Nombre</th><th>Conteo</th></tr></thead><tbody>{rows}</tbody></table></div>"
+    rows = "".join(
+        f"<div class='rank-row'><span class='rank-name'>{esc(name)}</span><span class='rank-count'>{count}</span></div>"
+        for name, count in sorted(values.items(), key=lambda item: item[1], reverse=True)[:10]
+    )
+    return f"<h3>{esc(title)}</h3><div class='rank-list'>{rows}</div>"
 
 
 def render_pairs(values: list[tuple[str, int]]) -> str:
