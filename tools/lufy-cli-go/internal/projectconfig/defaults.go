@@ -45,10 +45,10 @@ func DefaultArchitectureProfile(surfaceType string) ArchitectureProfile {
 		}
 	case "fullstack":
 		return ArchitectureProfile{
-			Preferred:      "controller_service_repository",
-			Options:        []string{"controller_service_repository", "clean_architecture", "hexagonal"},
+			Preferred:      "feature_driven_frontend",
+			Options:        []string{"feature_driven_frontend"},
 			ReviewRequired: true,
-			Notes:          "Frontend feature-driven y backend con controller/service/repository, clean architecture o hexagonal segun seleccion.",
+			Notes:          "Fullstack combina frontend feature-driven; la arquitectura backend se define en la surface backend conectada.",
 		}
 	default:
 		return ArchitectureProfile{}
