@@ -1,6 +1,6 @@
 # Result Contract Envelope V1
 
-Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. For successful proposal/specification readiness handoffs from any methodology or tool adapter, preserve the optional overview/render outcome in `evidence.static` as generated/offered/skipped/not_available, including the exact render command/path only when one exists.
+Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. For successful proposal/specification readiness handoffs from any methodology or tool adapter, preserve the optional overview/render outcome in `evidence.static` as `generated`, `offered_pending`, `skipped_by_user` or `not_available`, including the exact render command/path only when one exists. Use `skipped_by_user` only after an explicit user decline; do not use bare `skipped` except when normalizing legacy output.
 
 ```yaml
 schema_version: result-contract/v1
