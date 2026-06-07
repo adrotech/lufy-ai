@@ -426,11 +426,37 @@ func TestRunInitCreatesProjectConfig(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("init expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	if !bytes.Contains(out.Bytes(), []byte("project.yaml")) || !bytes.Contains(out.Bytes(), []byte("go (supported)")) {
+	if !bytes.Contains(out.Bytes(), []byte("project.yaml")) || !bytes.Contains(out.Bytes(), []byte("go (supported)")) || !bytes.Contains(out.Bytes(), []byte("Superficies detectadas")) {
 		t.Fatalf("init output unexpected: %s", out.String())
 	}
 	if _, err := os.Stat(filepath.Join(target, ".lufy", "project.yaml")); err != nil {
 		t.Fatalf("project config not written: %v", err)
+	}
+}
+
+func TestRunScanCreatesProjectProfileWithoutTTYPrompt(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "package.json"), []byte(`{"dependencies":{"react":"18.0.0","next":"14.0.0"},"devDependencies":{"typescript":"5.4.0"}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(target, "tsconfig.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"scan", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("scan expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	body, err := os.ReadFile(filepath.Join(target, ".lufy", "project.yaml"))
+	if err != nil {
+		t.Fatalf("project config not written: %v", err)
+	}
+	if !bytes.Contains(body, []byte("project_profile:")) || !bytes.Contains(body, []byte("type: frontend")) {
+		t.Fatalf("scan project profile unexpected:\n%s", string(body))
+	}
+	if !bytes.Contains(out.Bytes(), []byte("project_profile: modo no interactivo")) {
+		t.Fatalf("scan did not report non-interactive profile fallback: %s", out.String())
 	}
 }
 

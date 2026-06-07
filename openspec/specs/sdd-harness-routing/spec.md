@@ -260,6 +260,17 @@ The router and orchestrator SHALL expose workflow-limit-driven decisions as stru
 - **WHEN** `sdd-router` evaluates a non-trivial request with `.lufy/project.yaml` available
 - **THEN** it reports the `workflow_limits` paths considered, estimated workload inputs, tier decision, confidence, and whether `workload_decision_needed` is true
 
+### Requirement: Surface-aware routing context
+The router and orchestrator SHALL use `.lufy/project.yaml` `project_profile.surfaces` when available to propagate the correct agent lens for frontend, backend, fullstack, mobile, CLI, infra or library work.
+
+#### Scenario: Router carries affected surface lens
+- **WHEN** a request affects files that match a configured `project_profile.surfaces[*].roots` entry
+- **THEN** `sdd-router` includes the surface `type`, `roots` and `agent_lens` in the context slice for downstream agents
+
+#### Scenario: Missing surface profile is explicit
+- **WHEN** `.lufy/project.yaml` is missing or lacks `project_profile.surfaces`
+- **THEN** routing reports surface context as `not_available` and does not invent frontend/backend/mobile/CLI/infra assumptions
+
 #### Scenario: Router proposes review slices from configured slicing limits
 - **WHEN** estimated scope, file count, risk or configured routing limits require splitting before implementation or review
 - **THEN** `sdd-router` uses `workflow_limits.proposal_slicing_strategy` to propose `review_slices` with objective, expected files, acceptance criteria, validation, risk and PR guidance

@@ -136,7 +136,7 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 | T2 SDD Lite | Cambio funcional acotado, bug relevante, agente/skill o refactor controlado. | `openspec/lite`, `lufy-sdd/lite` o mini-spec. | Criterios `WHEN`/`THEN`, handoff recuperable, optional overview/render y review enfocada. |
 | T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
 
-La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3.
+La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
 
 Ejemplos:
 
@@ -152,7 +152,8 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable. |
+| `lufy-ai scan` | Reescanea stacks y superficies de producto preservando overrides. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |

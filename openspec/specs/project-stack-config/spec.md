@@ -3,11 +3,26 @@ Definir `.lufy/project.yaml` como configuración project-local editable para sta
 
 ## Requirements
 ### Requirement: Project stack configuration file
-`lufy-ai init` SHALL create `.lufy/project.yaml` as the editable project-local configuration file for detected stacks and operational rules.
+`lufy-ai init` SHALL create `.lufy/project.yaml` as the editable project-local configuration file for detected stacks, project surfaces and operational rules.
 
 #### Scenario: Project config created for empty target config
 - **WHEN** the user runs `lufy-ai init --target <dir>` and `<dir>/.lufy/project.yaml` does not exist
-- **THEN** the CLI creates `.lufy/project.yaml` with `schema_version`, `detected_at`, `stacks`, `ci`, `tdd` and `workflow_limits`
+- **THEN** the CLI creates `.lufy/project.yaml` with `schema_version`, `detected_at`, `project_profile`, `stacks`, `ci`, `tdd` and `workflow_limits`
+
+### Requirement: Project surface profile
+`.lufy/project.yaml` SHALL include a project surface profile that tells agents what product lens to apply independently from the technical stack.
+
+#### Scenario: Surface profile is generated from detectable evidence
+- **WHEN** `lufy-ai init --target <dir>` detects frontend, backend, mobile, CLI, infra, library or fullstack evidence
+- **THEN** `.lufy/project.yaml` includes `project_profile.surfaces` entries with `id`, `type`, `roots`, `stacks`, `frameworks` and `agent_lens`
+
+#### Scenario: Surface profile can be adjusted interactively
+- **WHEN** the user runs `lufy-ai init --target <dir> --interactive` or `lufy-ai scan --target <dir>` in an interactive terminal
+- **THEN** the CLI prompts for the primary project surface and writes the selected `agent_lens`
+
+#### Scenario: Surface profile is automation-safe
+- **WHEN** the CLI runs in a non-interactive environment
+- **THEN** it preserves the automatically detected surface profile and does not block waiting for input
 - **THEN** the CLI MUST NOT create top-level `loc_budget` or top-level `delivery_strategy`
 
 #### Scenario: Existing project config is not overwritten by default
@@ -107,7 +122,7 @@ The installed harness SHALL provide a local format-dispatch hook that uses `.luf
 - **THEN** it exits with code 0 without formatting that file
 
 ### Requirement: Rescan preserves user overrides
-`lufy-ai init --rescan` SHALL merge newly detected stack evidence into an existing `.lufy/project.yaml` without discarding user-managed preferences.
+`lufy-ai init --rescan` SHALL merge newly detected stack and surface evidence into an existing `.lufy/project.yaml` without discarding user-managed preferences.
 
 #### Scenario: Coverage override preserved
 - **WHEN** `.lufy/project.yaml` contains `coverage_threshold: 70` for stack `go` and the user runs `lufy-ai init --rescan`
@@ -116,6 +131,10 @@ The installed harness SHALL provide a local format-dispatch hook that uses `.luf
 #### Scenario: Workflow limits override preserved
 - **WHEN** `.lufy/project.yaml` contains user-managed overrides under `workflow_limits` and the user runs `lufy-ai init --rescan`
 - **THEN** the resulting config preserves those `workflow_limits` overrides while refreshing detected stack, tooling or CI evidence as applicable
+
+#### Scenario: Surface overrides are preserved
+- **WHEN** `.lufy/project.yaml` contains user-managed `project_profile.surfaces` entries and the user runs `lufy-ai init --rescan`
+- **THEN** the resulting config preserves existing surface entries and adds newly detected surface entries without overwriting manual `agent_lens` choices
 
 #### Scenario: New stack added on rescan
 - **WHEN** an existing config contains only stack `go` and the target later gains `package.json` and `tsconfig.json`
