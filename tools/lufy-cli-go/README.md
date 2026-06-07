@@ -105,6 +105,30 @@ Reglas actuales:
 
 `verify --tool opencode`, `status --json` y `verify --json` exponen `tool`, `schemaVersion` y `methodologyByTier`.
 
+## Project profile
+
+`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Cada superficie puede incluir `architecture` con `detected`, `preferred`, `options` y `review_required`.
+
+Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el `agent_lens` incluye reglas para estructura feature-driven:
+
+- colocation por funcionalidad en `src/features/<feature>/`;
+- `components/`, `hooks/`, `services/` y `types.ts` dentro de cada feature cuando son exclusivos de esa funcionalidad;
+- `index.ts` como barril público y frontera de acoplamiento de la feature;
+- `src/pages/` solo para routing/layouts;
+- `src/components`, `src/hooks`, `src/services` y `src/utils` reservados para piezas globales compartidas.
+
+Esto permite que implementers, reviewers y test-writers traten frontend/fullstack con una mentalidad distinta a backend o CLI.
+
+Para `backend`, las opciones de arquitectura son:
+
+- `controller_service_repository`: default mínimo con controllers/handlers delgados, servicios para reglas de negocio y repositories para persistencia/adapters;
+- `clean_architecture`: capas de dominio/casos de uso/infraestructura cuando el proyecto ya lo usa o el usuario lo elige;
+- `hexagonal`: ports/adapters alrededor del dominio cuando el proyecto ya lo usa o el usuario lo elige.
+
+El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/project.yaml`.
+
+En `fullstack`, la surface de flujo mantiene frontend feature-driven; la arquitectura clean/hexagonal/controller-service-repository aplica solo al backend y se lee desde la surface backend conectada.
+
 ## OpenSpec helpers
 
 `opsx render` es un helper opcional, tool-agnostic y no bloqueante. Toma artifacts OpenSpec ya generados y produce un HTML autocontenido/offline para revisión humana:

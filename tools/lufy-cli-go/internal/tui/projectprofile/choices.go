@@ -9,9 +9,9 @@ type SurfaceChoice struct {
 }
 
 var SurfaceChoices = []SurfaceChoice{
-	{Type: "frontend", Label: "Frontend web", Description: "UI, accesibilidad, responsive, estados y consumo de APIs"},
+	{Type: "frontend", Label: "Frontend web", Description: "UI, accesibilidad, responsive y estructura feature-driven"},
 	{Type: "backend", Label: "Backend/API", Description: "Contratos, dominio, persistencia, auth, idempotencia y observabilidad"},
-	{Type: "fullstack", Label: "Fullstack", Description: "Contrato front/back, errores entre capas, E2E y rollout"},
+	{Type: "fullstack", Label: "Fullstack", Description: "Contrato front/back, E2E y feature-driven en la capa frontend"},
 	{Type: "mobile", Label: "Mobile", Description: "Navegación, estados offline/red, dispositivos y release channels"},
 	{Type: "cli", Label: "CLI/tooling", Description: "Flags, exit codes, filesystem safety, idempotencia y scriptability"},
 	{Type: "infra", Label: "Infra/DevOps", Description: "Drift, secrets, permisos, rollback, entornos y supply chain"},
@@ -30,6 +30,29 @@ func choiceIndex(surfaceType string) int {
 func applySurfaceType(surface projectconfig.ProjectSurface, surfaceType string) projectconfig.ProjectSurface {
 	surface.Type = surfaceType
 	surface.AgentLens = projectconfig.DefaultAgentLens(surfaceType)
+	surface.Architecture = projectconfig.DefaultArchitectureProfile(surfaceType)
+	return surface
+}
+
+func cycleArchitecture(surface projectconfig.ProjectSurface, delta int) projectconfig.ProjectSurface {
+	options := surface.Architecture.Options
+	if len(options) == 0 {
+		options = projectconfig.DefaultArchitectureProfile(surface.Type).Options
+	}
+	if len(options) == 0 {
+		return surface
+	}
+	current := 0
+	for i, option := range options {
+		if option == surface.Architecture.Preferred {
+			current = i
+			break
+		}
+	}
+	next := (current + delta + len(options)) % len(options)
+	surface.Architecture.Options = options
+	surface.Architecture.Preferred = options[next]
+	surface.Architecture.ReviewRequired = true
 	return surface
 }
 

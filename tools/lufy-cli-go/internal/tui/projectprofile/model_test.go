@@ -25,6 +25,25 @@ func TestModelChangesSelectedSurfaceTypeAndLens(t *testing.T) {
 	if !contains(result.Surfaces[0].AgentLens.PrimaryConcerns, "domain_invariants") {
 		t.Fatalf("backend lens not applied: %#v", result.Surfaces[0].AgentLens)
 	}
+	if result.Surfaces[0].Architecture.Preferred != "controller_service_repository" {
+		t.Fatalf("backend architecture not applied: %#v", result.Surfaces[0].Architecture)
+	}
+}
+
+func TestModelCyclesSelectedArchitecture(t *testing.T) {
+	model := NewModel(projectconfig.ProjectConfig{
+		ProjectProfile: projectconfig.ProjectProfile{Surfaces: []projectconfig.ProjectSurface{{ID: "api", Type: "backend", Roots: []string{"api"}, Stacks: []string{"go"}}}},
+	})
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ = updated.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	result, err := updated.(Model).Result()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Surfaces[0].Architecture.Preferred != "clean_architecture" {
+		t.Fatalf("architecture preferred = %#v", result.Surfaces[0].Architecture)
+	}
 }
 
 func TestModelNavigatesMultipleSurfaces(t *testing.T) {
