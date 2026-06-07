@@ -64,6 +64,7 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 	}
 	surface := requireSurface(t, cfg, "web-app")
 	if surface.Type != "frontend" ||
+		surface.Architecture.Preferred != "feature_driven" ||
 		!contains(surface.AgentLens.PrimaryConcerns, "accessibility") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_structure") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
@@ -127,6 +128,9 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
 	writeFile(t, root, "api/openapi.yaml", "openapi: 3.0.0\n")
+	writeFile(t, root, "internal/controllers/users.go", "package controllers\n")
+	writeFile(t, root, "internal/services/users.go", "package services\n")
+	writeFile(t, root, "internal/repositories/users.go", "package repositories\n")
 	writeFile(t, root, "package.json", `{"dependencies":{"react":"18.0.0","next":"14.0.0"},"devDependencies":{"typescript":"5.4.0"}}`)
 	writeFile(t, root, "tsconfig.json", "{}")
 	writeFile(t, root, "main.tf", "terraform {}\n")
@@ -135,7 +139,10 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if surface := requireSurface(t, cfg, "api"); surface.Type != "backend" || !contains(surface.AgentLens.PrimaryConcerns, "api_contracts") {
+	if surface := requireSurface(t, cfg, "api"); surface.Type != "backend" ||
+		surface.Architecture.Preferred != "controller_service_repository" ||
+		!contains(surface.Architecture.Detected, "controller_service_repository") ||
+		!contains(surface.AgentLens.PrimaryConcerns, "api_contracts") {
 		t.Fatalf("unexpected backend surface: %#v", surface)
 	}
 	if surface := requireSurface(t, cfg, "web-app"); surface.Type != "frontend" {
@@ -147,6 +154,7 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	if surface := requireSurface(t, cfg, "fullstack-flow"); surface.Type != "fullstack" ||
 		!contains(surface.Connects, "api") ||
 		!contains(surface.Connects, "web-app") ||
+		surface.Architecture.Preferred != "controller_service_repository" ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_frontend_structure") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||
@@ -526,6 +534,9 @@ workflow_limits:
 	custom := requireSurface(t, cfg, "custom-product")
 	if custom.Type != "backend" || !contains(custom.AgentLens.PrimaryConcerns, "custom-domain") {
 		t.Fatalf("manual surface not preserved: %#v", custom)
+	}
+	if custom.Architecture.Preferred != "controller_service_repository" || !custom.Architecture.ReviewRequired {
+		t.Fatalf("manual backend surface did not receive architecture defaults: %#v", custom.Architecture)
 	}
 	if surface := requireSurface(t, cfg, "cli"); surface.Type != "cli" {
 		t.Fatalf("detected CLI surface not added: %#v", cfg.ProjectProfile.Surfaces)

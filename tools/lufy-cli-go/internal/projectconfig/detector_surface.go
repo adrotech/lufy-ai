@@ -9,11 +9,11 @@ import (
 func detectProjectProfile(root string, stacks []Stack) ProjectProfile {
 	surfaces := detectStackSurfaces(root, stacks)
 	if hasInfraEvidence(root) {
-		surfaces = append(surfaces, ProjectSurface{ID: "infra", Type: "infra", Roots: existingRoots(root, []string{"infra", "terraform", "deployments", "k8s", "."}), Stacks: []string{}, Frameworks: []string{}, AgentLens: DefaultAgentLens("infra")})
+		surfaces = append(surfaces, ProjectSurface{ID: "infra", Type: "infra", Roots: existingRoots(root, []string{"infra", "terraform", "deployments", "k8s", "."}), Stacks: []string{}, Frameworks: []string{}, Architecture: detectArchitecture(root, "infra"), AgentLens: DefaultAgentLens("infra")})
 	}
 	surfaces = compactSurfaces(surfaces)
 	if hasSurfaceType(surfaces, "frontend") && hasSurfaceType(surfaces, "backend") {
-		surfaces = append(surfaces, ProjectSurface{ID: "fullstack-flow", Type: "fullstack", Roots: []string{"."}, Stacks: surfaceStackIDs(surfaces), Frameworks: surfaceFrameworks(surfaces), Connects: surfaceIDs(surfaces), AgentLens: DefaultAgentLens("fullstack")})
+		surfaces = append(surfaces, ProjectSurface{ID: "fullstack-flow", Type: "fullstack", Roots: []string{"."}, Stacks: surfaceStackIDs(surfaces), Frameworks: surfaceFrameworks(surfaces), Connects: surfaceIDs(surfaces), Architecture: detectArchitecture(root, "fullstack"), AgentLens: DefaultAgentLens("fullstack")})
 	}
 	sort.SliceStable(surfaces, func(i, j int) bool { return surfaces[i].ID < surfaces[j].ID })
 	return ProjectProfile{Surfaces: surfaces}
@@ -22,29 +22,29 @@ func detectProjectProfile(root string, stacks []Stack) ProjectProfile {
 func detectJSSurface(root string, stack Stack) ProjectSurface {
 	pkg := readPackageJSON(root)
 	if hasDep(pkg, "expo") || hasDep(pkg, "react-native") {
-		return ProjectSurface{ID: "mobile-app", Type: "mobile", Roots: existingRoots(root, []string{"app", "src", "mobile", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("mobile")}
+		return ProjectSurface{ID: "mobile-app", Type: "mobile", Roots: existingRoots(root, []string{"app", "src", "mobile", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "mobile"), AgentLens: DefaultAgentLens("mobile")}
 	}
 	if hasAny(stack.Frameworks, []string{"react", "next", "remix", "vue", "svelte"}) {
-		return ProjectSurface{ID: "web-app", Type: "frontend", Roots: existingRoots(root, []string{"app", "src", "components", "pages", "frontend", "web", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("frontend")}
+		return ProjectSurface{ID: "web-app", Type: "frontend", Roots: existingRoots(root, []string{"app", "src", "components", "pages", "frontend", "web", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "frontend"), AgentLens: DefaultAgentLens("frontend")}
 	}
-	return ProjectSurface{ID: stack.ID + "-package", Type: "library", Roots: existingRoots(root, []string{"src", "packages", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+	return ProjectSurface{ID: stack.ID + "-package", Type: "library", Roots: existingRoots(root, []string{"src", "packages", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "library"), AgentLens: DefaultAgentLens("library")}
 }
 
 func detectGoSurface(root string, stack Stack) ProjectSurface {
 	if existsAny(root, "api", "internal/api", "internal/server") {
-		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "internal", "cmd", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("backend")}
+		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "internal", "cmd", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "backend"), AgentLens: DefaultAgentLens("backend")}
 	}
 	if exists(root, "cmd") {
-		return ProjectSurface{ID: "cli", Type: "cli", Roots: existingRoots(root, []string{"cmd", "internal", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("cli")}
+		return ProjectSurface{ID: "cli", Type: "cli", Roots: existingRoots(root, []string{"cmd", "internal", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "cli"), AgentLens: DefaultAgentLens("cli")}
 	}
-	return ProjectSurface{ID: "go-library", Type: "library", Roots: existingRoots(root, []string{"internal", "pkg", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+	return ProjectSurface{ID: "go-library", Type: "library", Roots: existingRoots(root, []string{"internal", "pkg", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "library"), AgentLens: DefaultAgentLens("library")}
 }
 
 func detectServerSurface(fallbackID, root string, stack Stack) ProjectSurface {
 	if hasAny(stack.Frameworks, []string{"fastapi", "django", "flask", "spring-boot"}) || existsAny(root, "api", "server", "src/main") {
-		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "server", "src", "src/main", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("backend")}
+		return ProjectSurface{ID: "api", Type: "backend", Roots: existingRoots(root, []string{"api", "server", "src", "src/main", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "backend"), AgentLens: DefaultAgentLens("backend")}
 	}
-	return ProjectSurface{ID: fallbackID, Type: "library", Roots: existingRoots(root, []string{"src", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, AgentLens: DefaultAgentLens("library")}
+	return ProjectSurface{ID: fallbackID, Type: "library", Roots: existingRoots(root, []string{"src", "."}), Stacks: []string{stack.ID}, Frameworks: stack.Frameworks, Architecture: detectArchitecture(root, "library"), AgentLens: DefaultAgentLens("library")}
 }
 
 func hasSurfaceType(surfaces []ProjectSurface, surfaceType string) bool {

@@ -31,14 +31,27 @@ type ProjectProfile struct {
 }
 
 type ProjectSurface struct {
-	ID         string         `yaml:"id"`
-	Type       string         `yaml:"type"`
-	Roots      []string       `yaml:"roots"`
-	Stacks     []string       `yaml:"stacks"`
-	Frameworks []string       `yaml:"frameworks"`
-	Connects   []string       `yaml:"connects,omitempty"`
-	AgentLens  AgentLens      `yaml:"agent_lens"`
-	Extra      map[string]any `yaml:",inline,omitempty"`
+	ID           string              `yaml:"id"`
+	Type         string              `yaml:"type"`
+	Roots        []string            `yaml:"roots"`
+	Stacks       []string            `yaml:"stacks"`
+	Frameworks   []string            `yaml:"frameworks"`
+	Connects     []string            `yaml:"connects,omitempty"`
+	Architecture ArchitectureProfile `yaml:"architecture,omitempty"`
+	AgentLens    AgentLens           `yaml:"agent_lens"`
+	Extra        map[string]any      `yaml:",inline,omitempty"`
+}
+
+type ArchitectureProfile struct {
+	Detected       []string `yaml:"detected,omitempty"`
+	Preferred      string   `yaml:"preferred,omitempty"`
+	Options        []string `yaml:"options,omitempty"`
+	ReviewRequired bool     `yaml:"review_required,omitempty"`
+	Notes          string   `yaml:"notes,omitempty"`
+}
+
+func (a ArchitectureProfile) IsZero() bool {
+	return isZeroArchitecture(a)
 }
 
 type AgentLens struct {

@@ -143,6 +143,8 @@ La metodología es elegible por tier, no global. Eso permite que un proyecto use
 
 Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services/`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas.
 
+Para `backend` y `fullstack`, `project_profile.surfaces[*].architecture` registra arquitectura detectada/preferida. El mínimo recomendado es `controller_service_repository`; desde la interfaz Bubble Tea el usuario puede cambiar a `clean_architecture` o `hexagonal` si el proyecto ya usa esa arquitectura o si decide adoptarla. Los agentes deben revisar primero la arquitectura existente antes de introducir capas nuevas.
+
 Ejemplos:
 
 ```bash

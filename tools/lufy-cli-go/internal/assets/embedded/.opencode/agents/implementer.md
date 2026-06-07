@@ -80,6 +80,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Prefer validación agrupada at the end of the current block/proposal, including tests/coverage only when real commands exist; do not run tests constantly unless blocked, risky, or diagnosing a failure.
 - Inherit project-local validation permissions from `.lufy/project.yaml` when `validation.allowed_commands.implementer` is present; those commands are scoped to grouped validation and must still match the detected toolchain.
 - When `.lufy/project.yaml` provides `project_profile.surfaces`, apply the affected surface's `agent_lens`: frontend changes must account for UX states, accessibility, responsive behavior and feature-driven structure with feature colocation plus `index.ts` public barrels; backend changes for contracts, domain invariants, persistence/auth and observability; fullstack changes for cross-layer contracts, rollout/rollback and the same feature-driven frontend boundaries; mobile, CLI, infra and library changes for their declared concerns.
+- When a surface provides `architecture`, inspect whether the repository already follows `architecture.detected` before introducing new layers. For backend/fullstack, default to `controller_service_repository` as the minimum if no stronger architecture exists, and only introduce `clean_architecture` or `hexagonal` when `architecture.preferred` says so or the user explicitly selects it.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
 ## Boundaries

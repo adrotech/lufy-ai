@@ -26,3 +26,49 @@ func DefaultAgentLens(surfaceType string) AgentLens {
 		return AgentLens{PrimaryConcerns: []string{"public_contracts", "api_shape", "compatibility", "maintainability", "consumer_usage"}, ValidationExpectations: []string{"unit_tests", "static_analysis", "build_or_package_check"}}
 	}
 }
+
+func DefaultArchitectureProfile(surfaceType string) ArchitectureProfile {
+	switch surfaceType {
+	case "frontend":
+		return ArchitectureProfile{
+			Preferred:      "feature_driven",
+			Options:        []string{"feature_driven"},
+			ReviewRequired: true,
+			Notes:          "Usar src/features/<feature> con colocation y index.ts como frontera publica; pages queda para routing/layouts.",
+		}
+	case "backend":
+		return ArchitectureProfile{
+			Preferred:      "controller_service_repository",
+			Options:        []string{"controller_service_repository", "clean_architecture", "hexagonal"},
+			ReviewRequired: true,
+			Notes:          "Revisar arquitectura existente antes de crear capas nuevas; minimo controller/service/repository.",
+		}
+	case "fullstack":
+		return ArchitectureProfile{
+			Preferred:      "controller_service_repository",
+			Options:        []string{"controller_service_repository", "clean_architecture", "hexagonal"},
+			ReviewRequired: true,
+			Notes:          "Frontend feature-driven y backend con controller/service/repository, clean architecture o hexagonal segun seleccion.",
+		}
+	default:
+		return ArchitectureProfile{}
+	}
+}
+
+func ApplySurfaceDefaults(surface ProjectSurface) ProjectSurface {
+	if len(surface.AgentLens.PrimaryConcerns) == 0 && len(surface.AgentLens.ValidationExpectations) == 0 {
+		surface.AgentLens = DefaultAgentLens(surface.Type)
+	}
+	if isZeroArchitecture(surface.Architecture) {
+		surface.Architecture = DefaultArchitectureProfile(surface.Type)
+	}
+	return surface
+}
+
+func isZeroArchitecture(profile ArchitectureProfile) bool {
+	return len(profile.Detected) == 0 &&
+		profile.Preferred == "" &&
+		len(profile.Options) == 0 &&
+		!profile.ReviewRequired &&
+		profile.Notes == ""
+}
