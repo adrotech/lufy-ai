@@ -30,6 +30,29 @@ func choiceIndex(surfaceType string) int {
 func applySurfaceType(surface projectconfig.ProjectSurface, surfaceType string) projectconfig.ProjectSurface {
 	surface.Type = surfaceType
 	surface.AgentLens = projectconfig.DefaultAgentLens(surfaceType)
+	surface.Architecture = projectconfig.DefaultArchitectureProfile(surfaceType)
+	return surface
+}
+
+func cycleArchitecture(surface projectconfig.ProjectSurface, delta int) projectconfig.ProjectSurface {
+	options := surface.Architecture.Options
+	if len(options) == 0 {
+		options = projectconfig.DefaultArchitectureProfile(surface.Type).Options
+	}
+	if len(options) == 0 {
+		return surface
+	}
+	current := 0
+	for i, option := range options {
+		if option == surface.Architecture.Preferred {
+			current = i
+			break
+		}
+	}
+	next := (current + delta + len(options)) % len(options)
+	surface.Architecture.Options = options
+	surface.Architecture.Preferred = options[next]
+	surface.Architecture.ReviewRequired = true
 	return surface
 }
 

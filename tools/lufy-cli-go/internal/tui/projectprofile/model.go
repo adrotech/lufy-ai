@@ -31,6 +31,7 @@ type keyMap struct {
 	Down    key.Binding
 	Prev    key.Binding
 	Next    key.Binding
+	Arch    key.Binding
 	Toggle  key.Binding
 	Confirm key.Binding
 	Cancel  key.Binding
@@ -42,6 +43,7 @@ func defaultKeyMap() keyMap {
 		Down:    key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "bajar")),
 		Prev:    key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "tipo anterior")),
 		Next:    key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "tipo siguiente")),
+		Arch:    key.NewBinding(key.WithKeys("a"), key.WithHelp("a", "arquitectura")),
 		Toggle:  key.NewBinding(key.WithKeys(" "), key.WithHelp("espacio", "activar/desactivar")),
 		Confirm: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "confirmar")),
 		Cancel:  key.NewBinding(key.WithKeys("esc", "ctrl+c", "q"), key.WithHelp("esc/q", "cancelar")),
@@ -52,12 +54,13 @@ func NewModel(cfg projectconfig.ProjectConfig) Model {
 	surfaces := copySurfaces(cfg)
 	if len(surfaces) == 0 {
 		surfaces = []projectconfig.ProjectSurface{{
-			ID:         "main",
-			Type:       "frontend",
-			Roots:      []string{"."},
-			Stacks:     stackIDs(cfg.Stacks),
-			Frameworks: stackFrameworks(cfg.Stacks),
-			AgentLens:  projectconfig.DefaultAgentLens("frontend"),
+			ID:           "main",
+			Type:         "frontend",
+			Roots:        []string{"."},
+			Stacks:       stackIDs(cfg.Stacks),
+			Frameworks:   stackFrameworks(cfg.Stacks),
+			Architecture: projectconfig.DefaultArchitectureProfile("frontend"),
+			AgentLens:    projectconfig.DefaultAgentLens("frontend"),
 		}}
 	}
 	active := make([]bool, len(surfaces))
@@ -66,6 +69,7 @@ func NewModel(cfg projectconfig.ProjectConfig) Model {
 		if surfaces[i].Type == "" {
 			surfaces[i] = applySurfaceType(surfaces[i], "frontend")
 		}
+		surfaces[i] = projectconfig.ApplySurfaceDefaults(surfaces[i])
 	}
 	return Model{cfg: cfg, surfaces: surfaces, active: active, keys: defaultKeyMap()}
 }
@@ -78,6 +82,8 @@ func copySurfaces(cfg projectconfig.ProjectConfig) []projectconfig.ProjectSurfac
 		surfaces[i].Stacks = append([]string{}, surfaces[i].Stacks...)
 		surfaces[i].Frameworks = append([]string{}, surfaces[i].Frameworks...)
 		surfaces[i].Connects = append([]string{}, surfaces[i].Connects...)
+		surfaces[i].Architecture.Detected = append([]string{}, surfaces[i].Architecture.Detected...)
+		surfaces[i].Architecture.Options = append([]string{}, surfaces[i].Architecture.Options...)
 		surfaces[i].AgentLens.PrimaryConcerns = append([]string{}, surfaces[i].AgentLens.PrimaryConcerns...)
 		surfaces[i].AgentLens.ValidationExpectations = append([]string{}, surfaces[i].AgentLens.ValidationExpectations...)
 	}
@@ -112,6 +118,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.changeSelectedType(-1)
 	case key.Matches(keyMsg, m.keys.Next):
 		m.changeSelectedType(1)
+	case key.Matches(keyMsg, m.keys.Arch):
+		m.changeSelectedArchitecture(1)
 	case key.Matches(keyMsg, m.keys.Toggle):
 		if len(m.active) > 0 {
 			m.active[m.cursor] = !m.active[m.cursor]
@@ -133,6 +141,13 @@ func (m *Model) changeSelectedType(delta int) {
 	if len(m.surfaces[m.cursor].Frameworks) == 0 {
 		m.surfaces[m.cursor].Frameworks = stackFrameworks(m.cfg.Stacks)
 	}
+}
+
+func (m *Model) changeSelectedArchitecture(delta int) {
+	if len(m.surfaces) == 0 {
+		return
+	}
+	m.surfaces[m.cursor] = cycleArchitecture(m.surfaces[m.cursor], delta)
 }
 
 func (m Model) Result() (projectconfig.ProjectProfile, error) {
@@ -178,10 +193,13 @@ func (m Model) View() string {
 	}
 	if len(m.surfaces) > 0 {
 		selected := m.surfaces[m.cursor]
+		if selected.Architecture.Preferred != "" {
+			fmt.Fprintf(&b, "\nArquitectura: preferred=%s detected=%s options=%s\n", selected.Architecture.Preferred, strings.Join(selected.Architecture.Detected, ","), strings.Join(selected.Architecture.Options, ","))
+		}
 		fmt.Fprintf(&b, "\nLens: %s\n", strings.Join(selected.AgentLens.PrimaryConcerns, ", "))
 		fmt.Fprintf(&b, "Validación: %s\n", strings.Join(selected.AgentLens.ValidationExpectations, ", "))
 	}
-	fmt.Fprintf(&b, "\n%s · %s · %s · %s\n", m.keys.Up.Help().Key, m.keys.Next.Help().Key, m.keys.Toggle.Help().Key, m.keys.Confirm.Help().Key)
+	fmt.Fprintf(&b, "\n%s · %s · %s · %s · %s\n", m.keys.Up.Help().Key, m.keys.Next.Help().Key, m.keys.Arch.Help().Key, m.keys.Toggle.Help().Key, m.keys.Confirm.Help().Key)
 	fmt.Fprintln(&b, "esc/q cancela sin escribir cambios")
 	return b.String()
 }

@@ -96,6 +96,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Read test commands from the relevant stack entry in `.lufy/project.yaml`.
 - Read `project_profile.surfaces[*].agent_lens.validation_expectations` when available and align tests with the surface: browser/UI checks for frontend when UI changes, feature boundary review when frontend/fullstack structure changes, contract/integration checks for backend API changes, E2E or contract checks for fullstack flows, command smokes for CLI, and plan/policy checks for infra.
+- Read `project_profile.surfaces[*].architecture` when available: backend/fullstack tests should align with the selected architecture boundaries, for example service tests around business rules, repository tests around persistence adapters, and contract/integration tests when controllers or ports change.
 - Read coverage thresholds from the stack configuration or the repo's documented validation policy.
 - Read anti-patterns from the stack configuration when present and report any missing guidance as `not_available`.
 - If multiple stacks are affected, separate evidence by stack and avoid using one stack's command as proof for another.

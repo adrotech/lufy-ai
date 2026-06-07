@@ -56,6 +56,7 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/project.yaml` for stack 
 
 - Identify relevant files, modules, packages, endpoints, migrations, tests, and OpenSpec artifacts.
 - Use `project_profile.surfaces` when available to choose the right discovery lens: UI flows, accessibility and feature-driven boundaries for frontend, contracts/persistence/auth for backend, contracts across layers plus frontend feature boundaries for fullstack, device/release constraints for mobile, command contracts for CLI, and plan/secrets/rollback for infra.
+- Read `project_profile.surfaces[*].architecture` when available and report whether the repo already appears to use the detected/preferred architecture before recommending controller/service/repository, clean architecture, hexagonal, or feature-driven frontend structure.
 - Map system interconnections and dependencies: APIs, persistence, services, agents, skills, policies, tests, documentation, feedback loops, and structure/behavior risks relevant to the request.
 - Explain current behavior and likely impact.
 - Detect existing repository patterns before implementation.
