@@ -279,6 +279,29 @@ The router and orchestrator SHALL use `.lufy/project.yaml` `project_profile.surf
 - **WHEN** orchestrator delegates to another agent after routing
 - **THEN** the handoff includes the workflow decision fields needed by that role and does not require the receiving agent to rediscover the same limits from conversation history
 
+### Requirement: Structural acceptance is a validation gate
+The harness SHALL treat explicit user-requested folder structures, layer structures and file placement conventions as mandatory acceptance criteria.
+
+#### Scenario: Router extracts requested folder structure
+- **WHEN** the user request names directories or conventions such as `components/`, `pages/`, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts`, `index.ts`, `controllers`, `repositories`, `domain`, `usecase`, `ports` or `adapters`
+- **THEN** `sdd-router` records them in `context_slice.structural_acceptance`
+- **AND** downstream implementer, validator and reviewer receive the criteria without needing the full conversation transcript
+
+#### Scenario: Feature-driven frontend structure blocks approval when incomplete
+- **WHEN** a frontend or fullstack task requests feature-driven structure with pages or hooks under dedicated per-feature directories
+- **AND** an affected feature keeps pages or hooks in the feature root contrary to that requested structure
+- **THEN** validation and review SHALL report `blocked` or `needs_revision`
+- **AND** the workflow SHALL NOT report `approved`, `validated`, `delivery_pending`, `delivered`, `closed` or delivery-ready without explicit user confirmation that the missing structure is a follow-up
+
+#### Scenario: Backend architecture structure follows selected profile
+- **WHEN** `.lufy/project.yaml` contains a backend surface with `architecture.preferred`
+- **THEN** implementer, validator and reviewer SHALL audit backend file placement against that selected architecture and `architecture.structural_expectations`
+- **AND** `controller_service_repository`, `clean_architecture` and `hexagonal` are treated as distinct structures with different acceptance checks
+
+#### Scenario: Final result lists structural compliance
+- **WHEN** a structural task reports implementation, validation, review or delivery readiness
+- **THEN** the result lists each affected feature or surface, expected directories or layers, missing items, forbidden root files found and any explicit user follow-up confirmation
+
 ### Requirement: Planning-only fast path
 The routing harness SHALL distinguish a broad program tier from the tier of the next micro-slice and SHALL allow a lightweight path for bounded planning-only or OpenSpec/docs-only work.
 

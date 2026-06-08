@@ -58,7 +58,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
 5. **Verify Completeness**
 
-    **Task Completion**:
+   **Task Completion**:
    - If tasks.md exists in contextFiles, read it
    - Parse checkboxes: `- [ ]` (incomplete) vs `- [x]` (complete)
    - Count complete vs total tasks
@@ -79,6 +79,13 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
      - If requirements appear unimplemented:
        - Add CRITICAL issue: "Requirement not found: <requirement name>"
        - Recommendation: "Implement requirement X: <description>"
+
+   **Structural Acceptance**:
+   - Extract folder/layer expectations from the user request, proposal, design, tasks and specs.
+   - For frontend/fullstack feature-driven changes, verify each affected feature has the requested directories such as `components/`, `pages/` or normalized route directory, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts` and `index.ts` when requested or profile-required.
+   - Search for pages, hooks, utilities or constants left in the feature root when the requested structure requires subdirectories.
+   - For backend changes, read `.lufy/project.yaml` when available and audit the affected backend surface against `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations`.
+   - If required directories/layers are missing, or forbidden root files remain, add a CRITICAL issue and set the gate state to `blocked` or `needs_revision` unless the artifacts include explicit user confirmation that the missing structure is an accepted follow-up.
 
 6. **Verify Correctness**
 
@@ -120,10 +127,11 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
        - Recommendation: "Update implementation or revise design.md to match reality"
    - If no design.md: Skip design adherence check, note "No design.md to verify against"
 
-    **Code Pattern Consistency**:
+   **Code Pattern Consistency**:
     - Review new code for consistency with project patterns
     - Check file naming, directory structure, coding style
     - Review changed/affected old files or diffs for coherence with initial analysis, dependencies, feedback paths, and expected structure/behavior
+    - Verify carried structural acceptance criteria before treating code pattern consistency as satisfied
     - If significant deviations found:
       - Add SUGGESTION: "Code pattern deviation: <details>"
       - Recommendation: "Consider following project pattern: <example>"
@@ -148,6 +156,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    1. **CRITICAL** (Must fix before archive):
       - Incomplete tasks
       - Missing requirement implementations
+      - Missing mandatory structural acceptance or forbidden root files contradicting the requested structure
       - Each with specific, actionable recommendation
 
    2. **WARNING** (Should fix):
@@ -162,6 +171,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
 
     **Final Assessment**:
     - If CRITICAL issues: "X critical issue(s) found. Fix before archiving."
+    - If structural acceptance is missing: "State: `blocked`; complete requested structure or get explicit user confirmation for follow-up."
     - If only warnings and delivery/sync remains: "No critical issues. State: `validated`; next: `delivery_pending`/`sync_pending`."
     - If all validation checks pass but delivery is not authorized/completed: "State: `validated`; next: `delivery_pending` or `blocked` for explicit delivery authorization."
     - If all validation, delivery, sync, and closure gates pass: "State: `closed`; archive may proceed."

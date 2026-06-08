@@ -84,8 +84,10 @@ func copySurfaces(cfg projectconfig.ProjectConfig) []projectconfig.ProjectSurfac
 		surfaces[i].Connects = append([]string{}, surfaces[i].Connects...)
 		surfaces[i].Architecture.Detected = append([]string{}, surfaces[i].Architecture.Detected...)
 		surfaces[i].Architecture.Options = append([]string{}, surfaces[i].Architecture.Options...)
+		surfaces[i].Architecture.StructuralExpectations = append([]string{}, surfaces[i].Architecture.StructuralExpectations...)
 		surfaces[i].AgentLens.PrimaryConcerns = append([]string{}, surfaces[i].AgentLens.PrimaryConcerns...)
 		surfaces[i].AgentLens.ValidationExpectations = append([]string{}, surfaces[i].AgentLens.ValidationExpectations...)
+		surfaces[i].AgentLens.StructuralExpectations = append([]string{}, surfaces[i].AgentLens.StructuralExpectations...)
 	}
 	return surfaces
 }
@@ -195,9 +197,11 @@ func (m Model) View() string {
 		selected := m.surfaces[m.cursor]
 		if selected.Architecture.Preferred != "" {
 			fmt.Fprintf(&b, "\nArquitectura: preferred=%s detected=%s options=%s\n", selected.Architecture.Preferred, strings.Join(selected.Architecture.Detected, ","), strings.Join(selected.Architecture.Options, ","))
+			fmt.Fprintf(&b, "Estructura arquitectura: %s\n", strings.Join(selected.Architecture.StructuralExpectations, ", "))
 		}
 		fmt.Fprintf(&b, "\nLens: %s\n", strings.Join(selected.AgentLens.PrimaryConcerns, ", "))
 		fmt.Fprintf(&b, "Validación: %s\n", strings.Join(selected.AgentLens.ValidationExpectations, ", "))
+		fmt.Fprintf(&b, "Estructura requerida: %s\n", strings.Join(selected.AgentLens.StructuralExpectations, ", "))
 	}
 	fmt.Fprintf(&b, "\n%s · %s · %s · %s · %s\n", m.keys.Up.Help().Key, m.keys.Next.Help().Key, m.keys.Arch.Help().Key, m.keys.Toggle.Help().Key, m.keys.Confirm.Help().Key)
 	fmt.Fprintln(&b, "esc/q cancela sin escribir cambios")

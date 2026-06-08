@@ -15,10 +15,21 @@ Definir `.lufy/project.yaml` como configuración project-local editable para sta
 #### Scenario: Surface profile is generated from detectable evidence
 - **WHEN** `lufy-ai init --target <dir>` detects frontend, backend, mobile, CLI, infra, library or fullstack evidence
 - **THEN** `.lufy/project.yaml` includes `project_profile.surfaces` entries with `id`, `type`, `roots`, `stacks`, `frameworks` and `agent_lens`
+- **AND** `agent_lens` includes `structural_expectations` when the surface has expected folder, layer or boundary conventions
 
 #### Scenario: Surface profile can be adjusted interactively
 - **WHEN** the user runs `lufy-ai init --target <dir> --interactive` or `lufy-ai scan --target <dir>` in an interactive terminal
 - **THEN** the CLI prompts for the primary project surface and writes the selected `agent_lens`
+- **AND** when the selected surface is `backend`, the CLI writes `architecture.preferred`, `architecture.options` and `architecture.structural_expectations` for the selected backend architecture
+
+#### Scenario: Frontend profile records feature-driven structure
+- **WHEN** `lufy-ai init` or `lufy-ai scan` writes a `frontend` or frontend side of a `fullstack` surface
+- **THEN** the surface records structural expectations for feature-driven colocation such as `src/features/<feature>/components`, `hooks`, `services`, `types.ts`, `index.ts` public barrels and routing/layout pages outside feature internals
+
+#### Scenario: Backend profile records selected architecture structure
+- **WHEN** `lufy-ai init` or `lufy-ai scan` writes a `backend` surface
+- **THEN** the surface records the selected backend architecture as `controller_service_repository`, `clean_architecture` or `hexagonal`
+- **AND** `architecture.structural_expectations` records the concrete layer or boundary checks that implementer, validator and reviewer must audit before approval
 
 #### Scenario: Surface profile is automation-safe
 - **WHEN** the CLI runs in a non-interactive environment

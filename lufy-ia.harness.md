@@ -12,6 +12,7 @@ Operational guide for coding agents working in this repository.
 - **Tool adapter**: Default installed adapter is `opencode`; future adapters such as Codex or Claude Code must not change the core workflow contract
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/sdd/` when selected
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks, with methodology chosen by tier
+- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/project.yaml` `project_profile` structural expectations are acceptance criteria, not optional style guidance
 
 ## Source Layout
 
@@ -54,6 +55,8 @@ Run from repository root.
 3. Keep persistence entities out of HTTP contracts
 4. Use constructor injection
 5. Keep transactional scopes narrow
+6. When backend `project_profile` selects `controller_service_repository`, preserve controller/service/repository separation; when it selects `clean_architecture` or `hexagonal`, follow that selected layer/ports/adapters structure instead of mixing patterns
+7. When frontend/fullstack work requests feature-driven structure, keep feature-only pages, components, hooks, utils/constants, services, types and public `index.ts` barrels inside the feature directories requested by the user/profile
 
 ## Testing Expectations
 
@@ -95,6 +98,7 @@ Methodology is tier-aware:
 - Make focused, minimal changes
 - Do not revert unrelated local modifications
 - Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
+- Before reporting `validated`, `approved`, `delivery_pending`, `delivered` or `closed`, audit structural acceptance for affected features/surfaces and block if mandatory folders/layers are missing without explicit user confirmation
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
 - Pass only minimal role-scoped context to subagents and ask for a result contract: objective, actions, evidence, risks, state, and next action

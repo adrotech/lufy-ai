@@ -25,6 +25,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
 - When `.lufy/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
+- Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
 - When `.lufy/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
 - Produce Result Contract envelope v1 with execution mode, context slice, required permissions, skill status, workflow-limit decisions, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
@@ -87,6 +88,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Include only the user intent, tier reason, relevant constraints, likely files or questions, acceptance criteria draft when useful, and exact next action.
 - Include the applicable `project_profile.surfaces` entry when available so downstream agents know whether to apply frontend, backend, fullstack, mobile, CLI, infra or library reasoning, and which architecture is detected/preferred for that surface.
+- Include `structural_acceptance` whenever the user names expected directories or conventions such as `components/`, `pages/`, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts`, `index.ts`, `controllers`, `services`, `repositories`, `domain`, `usecase`, `ports` or `adapters`.
+- If the user names both `page/` and `pages/`, or another ambiguous singular/plural structure, set `structural_acceptance.normalization` to the chosen normalized directory only when it is explicit in the prompt or profile. Otherwise route to clarification before implementation.
+- Treat `project_profile.surfaces[*].agent_lens.structural_expectations` and `project_profile.surfaces[*].architecture.structural_expectations` as default structural acceptance for the affected surface. For backend surfaces, `controller_service_repository` is the minimum default unless the profile selects `clean_architecture` or `hexagonal`. User-requested structure overrides or extends those defaults for the current task.
 - For fast-path planning slices, include `program_tier`, `slice_tier`, `fast_path_allowed: true`, the exact 1-2 target files, and the lightweight validation expected; do not request `explorer` only to repackage already sufficient context.
 - Do not pass unrelated conversation history, broad repository dumps, or delivery authority unless it is relevant and explicit.
 - Treat `context_slice` as the source for the next agent, not as a full transcript.
@@ -207,6 +211,16 @@ context_slice:
     - <constraint>
   likely_files:
     - <path or unknown>
+  structural_acceptance:
+    source: user_prompt | project_profile | spec | mixed | not_available
+    expected_directories:
+      - <directory or not_applicable>
+    expected_architecture:
+      - <architecture/layer convention or not_applicable>
+    forbidden_root_patterns:
+      - <root file pattern that would violate requested structure or not_applicable>
+    normalization: <chosen singular/plural directory normalization or not_applicable>
+    status: pending_audit | not_applicable
   acceptance_criteria:
     - WHEN <observable trigger> THEN <observable outcome>
 skill_status:

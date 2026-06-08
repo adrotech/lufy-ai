@@ -19,6 +19,19 @@ evidence:
       notes: <key output or reason>
   static:
     - <manual/static evidence or not_applicable>
+structural_acceptance:
+  source: user_prompt | project_profile | spec | mixed | not_available
+  expected_directories:
+    - <directory/layer or not_applicable>
+  expected_architecture:
+    - <architecture convention or not_applicable>
+  forbidden_root_patterns:
+    - <pattern or not_applicable>
+  normalization: <page/pages or other directory normalization, or not_applicable>
+  audit:
+    - feature_or_surface: <name or not_applicable>
+      status: satisfied | missing | blocked | not_applicable
+      notes: <present/missing dirs, root files, or explicit user follow-up confirmation>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
   program_tier: T1 | T2 | T3 | not_applicable
