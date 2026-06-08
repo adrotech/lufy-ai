@@ -70,8 +70,11 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "pages_as_routing_only") ||
+		!contains(surface.AgentLens.StructuralExpectations, "src/features/<feature>/hooks") ||
+		!contains(surface.Architecture.StructuralExpectations, "src/features/<feature>/index.ts_public_barrel") ||
 		!contains(surface.AgentLens.ValidationExpectations, "browser_check_when_ui_changes") ||
-		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") {
+		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") ||
+		!contains(surface.AgentLens.ValidationExpectations, "structural_acceptance_audit") {
 		t.Fatalf("unexpected frontend surface: %#v", surface)
 	}
 }
@@ -142,7 +145,9 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 	if surface := requireSurface(t, cfg, "api"); surface.Type != "backend" ||
 		surface.Architecture.Preferred != "controller_service_repository" ||
 		!contains(surface.Architecture.Detected, "controller_service_repository") ||
-		!contains(surface.AgentLens.PrimaryConcerns, "api_contracts") {
+		!contains(surface.AgentLens.PrimaryConcerns, "api_contracts") ||
+		!contains(surface.AgentLens.StructuralExpectations, "follow_project_profile_surface_architecture") ||
+		!contains(surface.Architecture.StructuralExpectations, "services_own_business_rules") {
 		t.Fatalf("unexpected backend surface: %#v", surface)
 	}
 	if surface := requireSurface(t, cfg, "web-app"); surface.Type != "frontend" {
@@ -158,6 +163,8 @@ func TestScanDetectsBackendCLIInfraAndFullstackSurfaces(t *testing.T) {
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_driven_frontend_structure") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_colocation") ||
 		!contains(surface.AgentLens.PrimaryConcerns, "feature_public_barrels_index_ts") ||
+		!contains(surface.AgentLens.StructuralExpectations, "backend_structure_from_connected_backend_surface") ||
+		!contains(surface.Architecture.StructuralExpectations, "frontend_feature_dirs_under_src_features") ||
 		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") {
 		t.Fatalf("unexpected fullstack surface: %#v", surface)
 	}
@@ -240,6 +247,39 @@ func TestServiceRunPromptErrorDoesNotWriteProjectConfig(t *testing.T) {
 	}
 	if _, statErr := os.Stat(filepath.Join(root, ProjectConfigPath)); !os.IsNotExist(statErr) {
 		t.Fatalf("project config should not be written after prompt error, stat=%v", statErr)
+	}
+}
+
+func TestRescanNoDriftStillRunsProfilePromptWhenConfigured(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	svc := Service{Now: fixedTime}
+	if err := svc.Run(Options{Target: root}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+
+	var out strings.Builder
+	prompt := func(cfg ProjectConfig) (ProjectProfile, error) {
+		profile := cfg.ProjectProfile
+		profile.Surfaces = []ProjectSurface{{
+			ID:           "manual-backend",
+			Type:         "backend",
+			Roots:        []string{"."},
+			Stacks:       []string{"go"},
+			Architecture: DefaultArchitectureProfile("backend"),
+			AgentLens:    DefaultAgentLens("backend"),
+		}}
+		return profile, nil
+	}
+	if err := svc.Run(Options{Target: root, Rescan: true, ProfilePrompt: prompt}, &out); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if surface := requireSurface(t, cfg, "manual-backend"); surface.Type != "backend" {
+		t.Fatalf("profile prompt was not persisted after no-drift rescan: %#v", cfg.ProjectProfile.Surfaces)
 	}
 }
 
@@ -537,6 +577,10 @@ workflow_limits:
 	}
 	if custom.Architecture.Preferred != "controller_service_repository" || !custom.Architecture.ReviewRequired {
 		t.Fatalf("manual backend surface did not receive architecture defaults: %#v", custom.Architecture)
+	}
+	if !contains(custom.AgentLens.StructuralExpectations, "follow_project_profile_surface_architecture") ||
+		!contains(custom.Architecture.StructuralExpectations, "repositories_isolate_persistence") {
+		t.Fatalf("manual backend surface did not receive structural defaults: %#v", custom)
 	}
 	if surface := requireSurface(t, cfg, "cli"); surface.Type != "cli" {
 		t.Fatalf("detected CLI surface not added: %#v", cfg.ProjectProfile.Surfaces)

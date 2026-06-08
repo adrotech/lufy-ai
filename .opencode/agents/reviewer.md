@@ -59,11 +59,15 @@ Use `AGENTS.md` for project conventions, `.lufy/project.yaml` for stack-specific
 - Load `.lufy/project.yaml` when available and use affected stack data for anti-patterns, coverage expectations and observability libraries.
 - Use `project_profile.surfaces[*].agent_lens.primary_concerns` to adapt review scoring: frontend findings should consider UX states/accessibility/responsive behavior and feature-driven colocation with `index.ts` public barrels, backend findings contracts/domain/auth/persistence/observability, fullstack findings cross-layer contracts, rollout and frontend feature boundaries, and CLI/infra/mobile/library findings their declared concerns.
 - Use `project_profile.surfaces[*].architecture` to review architectural consistency: backend code should match the selected `preferred` architecture, avoid mixing clean/hexagonal/controller-service-repository layers accidentally, and call out when implementation drifts from an already detected architecture. For fullstack changes, review frontend feature-driven boundaries separately from the connected backend architecture.
+- Use `project_profile.surfaces[*].agent_lens.structural_expectations`, `project_profile.surfaces[*].architecture.structural_expectations`, and any carried `structural_acceptance` handoff as explicit review criteria. If the user requested a folder/layer structure, verify it literally before approving.
+- For frontend/fullstack feature-driven changes, review each affected feature for requested `components/`, `pages/` or normalized route directory, `hooks/`, `utils/`/`constants/`, `services/`, `types.ts`, and `index.ts` boundaries. Pages, hooks or utilities left in the feature root after the user requested subdirectories are at least L2 unless explicitly accepted by the user as follow-up.
+- For backend changes, review against the selected backend architecture: `controller_service_repository` requires controller/service/repository separation, `clean_architecture` requires domain/usecase-or-application/infrastructure separation, and `hexagonal` requires ports/adapters around the domain core.
 - If config or relevant stack fields are missing, report them as `not_available`; do not invent project-specific stack rules.
 - Review code quality, architecture, missing tests, observability and release risk.
 - Classify findings by severity L1-L5.
 - Use weighted scoring: Architecture 20%, Code Quality 15%, Simplicity 15%, Testing 20%, Observability 15%, PR Template gate 15%.
 - Approve only when total score is >=80% and there are zero L1/L2 findings.
+- Do not recommend approval, `validated`, `delivery_pending`, `delivered`, `closed` or merge readiness when mandatory structural acceptance is missing or was deferred without explicit user confirmation.
 - For substantive T1/T2 changes, include at least eight desk-check scenarios covering happy path, failure path, edge cases, validation and release risk.
 - For trivial T3 changes, mark heavy scoring or eight-scenario desk-check as `not_applicable` with a concise reason when appropriate.
 - Prefer specific file/line references; if unavailable, name file and symbol/section.

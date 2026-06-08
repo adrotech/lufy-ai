@@ -61,11 +61,11 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
 
 ```bash
 lufy-ai version
-lufy-ai scan --target /ruta/a/tu/proyecto --interactive=false
+lufy-ai init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
-`scan` crea o actualiza `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva puedes omitir `--interactive=false` para revisar con Bubble Tea si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
+`init` crea `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
 
 ### 3. Instalar y verificar
 
@@ -141,9 +141,9 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 
 La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
 
-Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services/`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas.
+Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven y ahora persiste `structural_expectations`: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas. Si un prompt pide carpetas concretas, el harness las trata como criterios de aceptación obligatorios y bloquea validación/aprobación si páginas, hooks o utilidades quedan en la raíz de la feature sin confirmación explícita del usuario.
 
-Para `backend`, `project_profile.surfaces[*].architecture` registra arquitectura detectada/preferida. El mínimo recomendado es `controller_service_repository`; desde la interfaz Bubble Tea el usuario puede cambiar a `clean_architecture` o `hexagonal` si el proyecto ya usa esa arquitectura o si decide adoptarla. En `fullstack`, el frontend sigue feature-driven y la arquitectura backend se toma de la surface backend conectada. Los agentes deben revisar primero la arquitectura existente antes de introducir capas nuevas.
+Para `backend`, `project_profile.surfaces[*].architecture` registra arquitectura detectada/preferida y `architecture.structural_expectations`. El mínimo recomendado es `controller_service_repository`; desde la interfaz Bubble Tea el usuario puede cambiar a `clean_architecture` o `hexagonal` si el proyecto ya usa esa arquitectura o si decide adoptarla. En `fullstack`, el frontend sigue feature-driven y la arquitectura backend se toma de la surface backend conectada. Los agentes deben revisar primero la arquitectura existente antes de introducir capas nuevas y validar contra la arquitectura seleccionada antes de reportar readiness.
 
 Ejemplos:
 
@@ -159,8 +159,8 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; puede abrir selector Bubble Tea con `--interactive`. |
-| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y puede abrir selector Bubble Tea. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
+| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |

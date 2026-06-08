@@ -62,6 +62,9 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Evaluate the coherent task/block/review-slice gate, not every micro-checkbox, and report whether the next state is `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state.
 - Build a matrix: static checks, compile/typecheck, targeted tests, full tests, lint/format, functional/manual evidence.
 - For final block/proposal gates, run the grouped validation available for the real scope, including tests and coverage when commands exist.
+- For any task with `structural_acceptance`, run a read-only structural audit before reporting `validated`, `delivery_pending` or equivalent readiness. Verify the requested directories/layers exist for each affected feature/surface, and search for files that remain in forbidden root locations when the user requested `pages/`, `hooks/`, `components/`, `utils/`, `constants/`, `services/`, `types.ts`, `index.ts`, `controllers`, `repositories`, `domain`, `usecase`, `ports` or `adapters`.
+- For frontend/fullstack feature-driven work, fail the gate if affected features keep pages or hooks in the feature root after the user requested dedicated `pages/` or `hooks/` directories, unless the result includes explicit user confirmation that the remainder is a follow-up.
+- For backend work, compare changed files against `.lufy/project.yaml` `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations` when available. `controller_service_repository`, `clean_architecture` and `hexagonal` must be audited as different structures.
 - For OpenSpec/docs-only slices with no runtime/app changes, default to the lightweight gate: `openspec validate "<change>" --strict` when a change ID exists plus static review of the affected files/checklists. Do not require Git read-only evidence solely to prove absence of runtime work unless delivery is requested or the provided scope suggests mixed changes.
 - For T1/T2 changes where tests were required, verify that TDD evidence from `test-writer` or equivalent carried-forward evidence includes RED, GREEN, TRIANGULATE and REFACTOR statuses, or explicit `not_applicable` reasons.
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` as the grouped local validation command because it includes the PR-aware whitespace gate before Go tests/build.
@@ -76,6 +79,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not report `closed` based on validation alone; if Git/GH delivery or sync remains, report `delivery_pending`, `sync_pending`, or `blocked`.
 - Do not claim validation passed without command evidence.
+- Do not report `validated`, `approved`, `delivery_pending`, `delivered`, `closed` or approval-ready if mandatory structural acceptance is missing, ambiguous, or only proposed as follow-up without explicit user confirmation. Use `blocked` or `escalated` and cite the missing directories/layers.
 - Do not report `validated` for a T1/T2 change that required TDD evidence when RED/GREEN/TRIANGULATE/REFACTOR evidence is absent, incomplete, or lacks explicit `not_applicable` reasons; report `blocked` or `escalated` with the missing evidence and next owner.
 - Prefer grouped block/proposal gates unless final delivery requires heavier gates or diagnosis requires focused checks.
 - Do not reread broad old-file context during validation unless it was modified/affected, conflicts with evidence, or is needed to diagnose a failure; prefer diffs and changed-file review for final coherence.
@@ -88,6 +92,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - If a command is unavailable, report `blocked` for that matrix cell with the missing tool/config.
 - If tests or coverage do not exist for the scope, report the limitation explicitly instead of implying success.
 - For required TDD evidence, report whether each phase is `passed`, `failed`, `blocked`, `not_available`, or `not_applicable`, and cite the source result contract or files reviewed.
+- For structural acceptance evidence, report per feature/surface: expected directories/layers, present/missing status, forbidden root files found, and any documented normalization such as `page/` versus `pages/`.
 - Root-cause diagnosis must separate observed failure from hypothesis.
 - For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.

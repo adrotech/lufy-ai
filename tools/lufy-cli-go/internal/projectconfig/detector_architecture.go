@@ -9,6 +9,7 @@ func detectArchitecture(root, surfaceType string) ArchitectureProfile {
 	profile.Detected = detected
 	profile.Preferred = detected[0]
 	profile.ReviewRequired = true
+	profile.StructuralExpectations = defaultArchitectureStructuralExpectations(surfaceType, profile.Preferred)
 	return profile
 }
 

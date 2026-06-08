@@ -57,7 +57,7 @@ scripts/validate.sh
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. | `--target`, `--force`, `--rescan` |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
@@ -107,7 +107,7 @@ Reglas actuales:
 
 ## Project profile
 
-`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Cada superficie puede incluir `architecture` con `detected`, `preferred`, `options` y `review_required`.
+`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Ambos abren el selector Bubble Tea por default cuando hay TTY; usa `--interactive=false` para conservar solo la detección automática. Cada superficie puede incluir `architecture` con `detected`, `preferred`, `options`, `review_required` y `structural_expectations`.
 
 Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el `agent_lens` incluye reglas para estructura feature-driven:
 
@@ -117,7 +117,7 @@ Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el 
 - `src/pages/` solo para routing/layouts;
 - `src/components`, `src/hooks`, `src/services` y `src/utils` reservados para piezas globales compartidas.
 
-Esto permite que implementers, reviewers y test-writers traten frontend/fullstack con una mentalidad distinta a backend o CLI.
+Esto queda persistido en `agent_lens.structural_expectations` para que implementers, validators y reviewers traten la estructura solicitada como aceptación obligatoria. Si el usuario pide carpetas concretas, el harness debe auditar por feature y bloquear `validated`/readiness cuando páginas, hooks o utilidades quedan en la raíz de la feature sin confirmación explícita del usuario.
 
 Para `backend`, las opciones de arquitectura son:
 
@@ -125,7 +125,7 @@ Para `backend`, las opciones de arquitectura son:
 - `clean_architecture`: capas de dominio/casos de uso/infraestructura cuando el proyecto ya lo usa o el usuario lo elige;
 - `hexagonal`: ports/adapters alrededor del dominio cuando el proyecto ya lo usa o el usuario lo elige.
 
-El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/project.yaml`.
+El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/project.yaml`. La arquitectura elegida persiste `architecture.structural_expectations`: controller/service/repository exige handlers delgados, servicios con reglas de negocio y repositorios aislando persistencia; clean architecture exige capas domain/usecase-or-application/infrastructure; hexagonal exige dominio, ports y adapters.
 
 En `fullstack`, la surface de flujo mantiene frontend feature-driven; la arquitectura clean/hexagonal/controller-service-repository aplica solo al backend y se lee desde la surface backend conectada.
 
@@ -253,6 +253,7 @@ Comportamiento:
 - si existe, falla sin `--force`;
 - `--force` reemplaza;
 - `--rescan` preserva overrides y agrega evidencia nueva;
+- `--interactive=false` desactiva el selector Bubble Tea;
 - `workflow_limits` es la fuente canónica de límites.
 
 Stacks v1: Go, JavaScript/TypeScript, React, Next, Remix, Vue, Svelte, Python, Java/Kotlin. Stacks no soportados se reportan como `supported: false`.

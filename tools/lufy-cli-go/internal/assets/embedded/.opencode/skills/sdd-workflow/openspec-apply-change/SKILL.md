@@ -63,6 +63,12 @@ Implement tasks from an OpenSpec change.
 
    Added and modified requirements must include scenarios with `WHEN` and `THEN`; `GIVEN` is optional.
 
+   Extract any explicit structural acceptance from the user request and artifacts before editing:
+   - frontend/fullstack feature-driven directories such as `components/`, `pages/` or `page/`, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts` and `index.ts`;
+   - backend layers such as `controllers`, `services`, `repositories`, `domain`, `usecase`/`application`, `ports` and `adapters`;
+   - placement rules such as "pages must not remain in feature root" or "repositories isolate persistence".
+   Treat those as acceptance criteria, not optional style preferences.
+
 5. **Show current progress**
 
    Display:
@@ -80,9 +86,11 @@ Implement tasks from an OpenSpec change.
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
+   - Satisfy structural acceptance literally. For feature-driven frontend work, do not leave pages, hooks, utilities or constants in the feature root when the requested structure requires subdirectories. For backend work, follow the selected architecture from `.lufy/project.yaml` when available.
    - Mark task complete in the tasks file: `- [ ]` → `- [x]` only when the coherent implementation task/block is actually done
    - Continue to next task
    - If implementation changes requirement behavior, update the change delta spec rather than editing main specs directly; use `/opsx-sync` after validation to apply deltas.
+   - If a structural item must be deferred, stop and ask the user to confirm the follow-up before marking the task/block implemented.
 
    Validation preference:
    - Use systemic workflow: analyze old files, dependencies, interconnections, feedback paths, and structure/behavior risks at the beginning of the coherent block/proposal.
@@ -106,6 +114,7 @@ Implement tasks from an OpenSpec change.
    - Tasks completed this session
    - Overall progress: "N/M task checkboxes complete"
    - If all done: report `implemented` or validation-pending state and recommend `/opsx-verify`; suggest archive only after validation, sync, and delivery gates are resolved
+   - Include a structural acceptance summary listing each affected feature/surface, required directories/layers, satisfied items, missing items and forbidden root files found.
    - If paused: explain why and wait for guidance
 
 **Output During Implementation**
