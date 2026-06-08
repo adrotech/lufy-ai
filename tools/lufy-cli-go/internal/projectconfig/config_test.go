@@ -243,6 +243,39 @@ func TestServiceRunPromptErrorDoesNotWriteProjectConfig(t *testing.T) {
 	}
 }
 
+func TestRescanNoDriftStillRunsProfilePromptWhenConfigured(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	svc := Service{Now: fixedTime}
+	if err := svc.Run(Options{Target: root}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+
+	var out strings.Builder
+	prompt := func(cfg ProjectConfig) (ProjectProfile, error) {
+		profile := cfg.ProjectProfile
+		profile.Surfaces = []ProjectSurface{{
+			ID:           "manual-backend",
+			Type:         "backend",
+			Roots:        []string{"."},
+			Stacks:       []string{"go"},
+			Architecture: DefaultArchitectureProfile("backend"),
+			AgentLens:    DefaultAgentLens("backend"),
+		}}
+		return profile, nil
+	}
+	if err := svc.Run(Options{Target: root, Rescan: true, ProfilePrompt: prompt}, &out); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if surface := requireSurface(t, cfg, "manual-backend"); surface.Type != "backend" {
+		t.Fatalf("profile prompt was not persisted after no-drift rescan: %#v", cfg.ProjectProfile.Surfaces)
+	}
+}
+
 func TestServiceEnsureCreatesProjectConfigWhenMissing(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")

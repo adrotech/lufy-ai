@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
@@ -90,7 +91,7 @@ func (s Service) Run(opts Options, out io.Writer) error {
 		plan := s.merger.Build(current, detected)
 		report = &plan
 		finalConfig = plan.Merged
-		if !plan.HasChanges {
+		if !plan.HasChanges && opts.ProfilePrompt == nil {
 			printRescanReport(out, plan)
 			return nil
 		}
@@ -102,6 +103,16 @@ func (s Service) Run(opts Options, out io.Writer) error {
 		}
 		finalConfig.ProjectProfile = profile
 	}
+	if report != nil && !report.HasChanges {
+		current, err := s.store.Load(configPath)
+		if err != nil {
+			return fmt.Errorf("leer config existente tras profile prompt: %w", err)
+		}
+		if !profileChanged(current.ProjectProfile, finalConfig.ProjectProfile) {
+			printRescanReport(out, *report)
+			return nil
+		}
+	}
 	if err := s.store.Write(configPath, finalConfig); err != nil {
 		return err
 	}
@@ -112,6 +123,10 @@ func (s Service) Run(opts Options, out io.Writer) error {
 		printRescanReport(out, *report)
 	}
 	return nil
+}
+
+func profileChanged(current, next ProjectProfile) bool {
+	return !reflect.DeepEqual(current, next)
 }
 
 func (s Service) Ensure(target string) (bool, error) {

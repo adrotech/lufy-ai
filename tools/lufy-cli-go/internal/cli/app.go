@@ -150,9 +150,9 @@ func runInit(args []string, deps Dependencies) int {
 	target := fs.String("target", ".", "Directorio destino")
 	force := fs.Bool("force", false, "Reemplazar .lufy/project.yaml existente")
 	rescan := fs.Bool("rescan", false, "Refrescar evidencia de stacks, preservar overrides y reportar drift sin cleanup destructivo")
-	interactive := fs.Bool("interactive", false, "Abrir selector interactivo para project_profile.surfaces")
+	interactive := fs.Bool("interactive", true, "Abrir selector interactivo para project_profile.surfaces cuando haya TTY")
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan] [--interactive]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan] [--interactive=false]")
 		fmt.Fprintln(deps.Stderr, "Genera .lufy/project.yaml con reglas stack-aware y surface-aware editables.")
 		fmt.Fprintln(deps.Stderr, "--rescan compara evidencia actual, preserva overrides de usuario y reporta drift sin borrar stacks ni archivos.")
 	}

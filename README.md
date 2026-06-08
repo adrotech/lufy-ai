@@ -61,11 +61,11 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
 
 ```bash
 lufy-ai version
-lufy-ai scan --target /ruta/a/tu/proyecto --interactive=false
+lufy-ai init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
-`scan` crea o actualiza `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva puedes omitir `--interactive=false` para revisar con Bubble Tea si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
+`init` crea `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
 
 ### 3. Instalar y verificar
 
@@ -159,8 +159,8 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; puede abrir selector Bubble Tea con `--interactive`. |
-| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y puede abrir selector Bubble Tea. |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
+| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
