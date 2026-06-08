@@ -57,7 +57,7 @@ scripts/validate.sh
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware y editable. | `--target`, `--force`, `--rescan` |
+| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
@@ -107,7 +107,7 @@ Reglas actuales:
 
 ## Project profile
 
-`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Cada superficie puede incluir `architecture` con `detected`, `preferred`, `options` y `review_required`.
+`init` y `scan` escriben `project_profile.surfaces` para separar stack técnico de superficie de producto. Ambos abren el selector Bubble Tea por default cuando hay TTY; usa `--interactive=false` para conservar solo la detección automática. Cada superficie puede incluir `architecture` con `detected`, `preferred`, `options` y `review_required`.
 
 Cuando una superficie se detecta o selecciona como `frontend` o `fullstack`, el `agent_lens` incluye reglas para estructura feature-driven:
 
@@ -253,6 +253,7 @@ Comportamiento:
 - si existe, falla sin `--force`;
 - `--force` reemplaza;
 - `--rescan` preserva overrides y agrega evidencia nueva;
+- `--interactive=false` desactiva el selector Bubble Tea;
 - `workflow_limits` es la fuente canónica de límites.
 
 Stacks v1: Go, JavaScript/TypeScript, React, Next, Remix, Vue, Svelte, Python, Java/Kotlin. Stacks no soportados se reportan como `supported: false`.

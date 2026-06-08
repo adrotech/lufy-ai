@@ -429,8 +429,24 @@ func TestRunInitCreatesProjectConfig(t *testing.T) {
 	if !bytes.Contains(out.Bytes(), []byte("project.yaml")) || !bytes.Contains(out.Bytes(), []byte("go (supported)")) || !bytes.Contains(out.Bytes(), []byte("Superficies detectadas")) {
 		t.Fatalf("init output unexpected: %s", out.String())
 	}
+	if !bytes.Contains(out.Bytes(), []byte("project_profile: modo no interactivo")) {
+		t.Fatalf("init did not attempt interactive profile fallback: %s", out.String())
+	}
 	if _, err := os.Stat(filepath.Join(target, ".lufy", "project.yaml")); err != nil {
 		t.Fatalf("project config not written: %v", err)
+	}
+}
+
+func TestRunInitCanDisableInteractiveProfilePrompt(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"init", "--target", target, "--interactive=false"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("init expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if bytes.Contains(out.Bytes(), []byte("project_profile: modo no interactivo")) {
+		t.Fatalf("init should not run profile prompt when disabled: %s", out.String())
 	}
 }
 
