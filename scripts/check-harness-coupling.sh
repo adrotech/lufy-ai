@@ -9,6 +9,13 @@ STATUS=0
 PATTERN='OpenCode|\.opencode|opencode\.json|OpenSpec|openspec/|/opsx|\.claude|\.codex|CLAUDE\.md'
 HTML_OVERVIEW_COMMAND='lufy-ai opsx render --change <change> --format html --theme notion-dark'
 HTML_OVERVIEW_CTA='¿Quieres que genere ahora el reporte HTML offline de los artifacts con tema Notion dark?'
+STRUCTURAL_ACCEPTANCE_TERMS=(
+  "structural_acceptance"
+)
+STRUCTURAL_PROFILE_TERMS=(
+  "structural_expectations"
+  "controller_service_repository"
+)
 
 NEUTRAL_PATHS=(
   "tools/lufy-cli-go/internal/core"
@@ -31,6 +38,36 @@ HTML_OVERVIEW_CONTRACT_PATHS=(
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/commands/opsx-propose.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/skills/sdd-workflow/openspec-propose/SKILL.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/orchestrator.md"
+)
+
+STRUCTURAL_ACCEPTANCE_CONTRACT_PATHS=(
+  ".opencode/agents/sdd-router.md"
+  ".opencode/agents/orchestrator.md"
+  ".opencode/agents/implementer.md"
+  ".opencode/agents/validator.md"
+  ".opencode/agents/reviewer.md"
+  ".opencode/templates/sdd-lite.md"
+  ".opencode/templates/result-contract.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/sdd-router.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/orchestrator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/implementer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/validator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/reviewer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/sdd-lite.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/result-contract.md"
+)
+
+STRUCTURAL_PROFILE_CONTRACT_PATHS=(
+  ".opencode/agents/sdd-router.md"
+  ".opencode/agents/orchestrator.md"
+  ".opencode/agents/implementer.md"
+  ".opencode/agents/validator.md"
+  ".opencode/agents/reviewer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/sdd-router.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/orchestrator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/implementer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/validator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/reviewer.md"
 )
 
 check_neutral_path() {
@@ -86,6 +123,46 @@ check_html_overview_contract() {
   fi
 }
 
+check_structural_acceptance_contract() {
+  local rel="$1"
+  local path="$ROOT/$rel"
+  local required
+  local missing=0
+
+  [ -f "$path" ] || return 0
+
+  for required in "${STRUCTURAL_ACCEPTANCE_TERMS[@]}"; do
+    if ! rg -F -q -- "$required" "$path"; then
+      printf 'Error: contrato structural_acceptance incompleto en %s; falta: %s\n' "$rel" "$required" >&2
+      missing=1
+    fi
+  done
+
+  if [ "$missing" -ne 0 ]; then
+    STATUS=1
+  fi
+}
+
+check_structural_profile_contract() {
+  local rel="$1"
+  local path="$ROOT/$rel"
+  local required
+  local missing=0
+
+  [ -f "$path" ] || return 0
+
+  for required in "${STRUCTURAL_PROFILE_TERMS[@]}"; do
+    if ! rg -F -q -- "$required" "$path"; then
+      printf 'Error: contrato project_profile estructural incompleto en %s; falta: %s\n' "$rel" "$required" >&2
+      missing=1
+    fi
+  done
+
+  if [ "$missing" -ne 0 ]; then
+    STATUS=1
+  fi
+}
+
 print_current_inventory() {
   local scope="$1"
 
@@ -106,6 +183,14 @@ done
 
 for rel in "${HTML_OVERVIEW_CONTRACT_PATHS[@]}"; do
   check_html_overview_contract "$rel"
+done
+
+for rel in "${STRUCTURAL_ACCEPTANCE_CONTRACT_PATHS[@]}"; do
+  check_structural_acceptance_contract "$rel"
+done
+
+for rel in "${STRUCTURAL_PROFILE_CONTRACT_PATHS[@]}"; do
+  check_structural_profile_contract "$rel"
 done
 
 print_current_inventory ".opencode/agents"

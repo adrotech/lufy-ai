@@ -53,6 +53,7 @@ func cycleArchitecture(surface projectconfig.ProjectSurface, delta int) projectc
 	surface.Architecture.Options = options
 	surface.Architecture.Preferred = options[next]
 	surface.Architecture.ReviewRequired = true
+	surface.Architecture.StructuralExpectations = projectconfig.DefaultArchitectureStructuralExpectations(surface.Type, options[next])
 	return surface
 }
 

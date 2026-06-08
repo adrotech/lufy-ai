@@ -43,11 +43,12 @@ type ProjectSurface struct {
 }
 
 type ArchitectureProfile struct {
-	Detected       []string `yaml:"detected,omitempty"`
-	Preferred      string   `yaml:"preferred,omitempty"`
-	Options        []string `yaml:"options,omitempty"`
-	ReviewRequired bool     `yaml:"review_required,omitempty"`
-	Notes          string   `yaml:"notes,omitempty"`
+	Detected               []string `yaml:"detected,omitempty"`
+	Preferred              string   `yaml:"preferred,omitempty"`
+	Options                []string `yaml:"options,omitempty"`
+	ReviewRequired         bool     `yaml:"review_required,omitempty"`
+	StructuralExpectations []string `yaml:"structural_expectations,omitempty"`
+	Notes                  string   `yaml:"notes,omitempty"`
 }
 
 func (a ArchitectureProfile) IsZero() bool {
@@ -57,6 +58,7 @@ func (a ArchitectureProfile) IsZero() bool {
 type AgentLens struct {
 	PrimaryConcerns        []string `yaml:"primary_concerns"`
 	ValidationExpectations []string `yaml:"validation_expectations"`
+	StructuralExpectations []string `yaml:"structural_expectations,omitempty"`
 }
 
 type Stack struct {

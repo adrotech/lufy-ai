@@ -14,6 +14,7 @@ Operational guide for coding agents working in this repository.
 - **Workflow limits**: Use `.lufy/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
+- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
 
 ## Source Layout
 
@@ -58,6 +59,8 @@ Run from repository root.
 3. Keep persistence entities out of HTTP contracts
 4. Use constructor injection
 5. Keep transactional scopes narrow
+6. When backend `project_profile` selects `controller_service_repository`, preserve controller/service/repository separation; when it selects `clean_architecture` or `hexagonal`, follow that selected layer/ports/adapters structure instead of mixing patterns
+7. When frontend/fullstack work requests feature-driven structure, keep feature-only pages, components, hooks, utils/constants, services, types and public `index.ts` barrels inside the feature directories requested by the user/profile
 
 ## Testing Expectations
 
@@ -68,8 +71,7 @@ Run from repository root.
 
 ## OpenSpec Workflow
 
-Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive` for spec-driven development. Use `lufy.close` for cross-workflow finalization with validation, delivery, PR, and branch cleanup gates.
-Use `lufy.pr-review` to generate Spanish, read-only HTML reviews for existing Pull Requests.
+Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
 
 ## Optional Engram Memory Workflow
 
@@ -116,6 +118,16 @@ evidence:
       notes: <key output or reason>
   static:
     - <manual/static evidence or not_applicable>
+structural_acceptance:
+  source: user_prompt | project_profile | spec | mixed | not_available
+  expected_directories:
+    - <directory/layer or not_applicable>
+  forbidden_root_patterns:
+    - <pattern or not_applicable>
+  audit:
+    - feature_or_surface: <name or not_applicable>
+      status: satisfied | missing | blocked | not_applicable
+      notes: <present/missing dirs, root files, or explicit user follow-up confirmation>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
   program_tier: T1 | T2 | T3 | not_applicable
@@ -158,6 +170,7 @@ skill_resolution:
 - Make focused, minimal changes
 - Do not revert unrelated local modifications
 - Run relevant validation before finalizing; batch validation at the end of a block/proposal unless blocked, risky, or diagnosing
+- Before reporting `validated`, `approved`, `delivery_pending`, `delivered` or `closed`, audit structural acceptance for affected features/surfaces and block if mandatory folders/layers are missing without explicit user confirmation
 - Do not treat `tasks.md` checkboxes or micro-checkboxes as `closed`/archive-ready without the task/block gate evidence
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting

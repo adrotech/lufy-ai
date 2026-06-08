@@ -28,6 +28,9 @@ func TestModelChangesSelectedSurfaceTypeAndLens(t *testing.T) {
 	if result.Surfaces[0].Architecture.Preferred != "controller_service_repository" {
 		t.Fatalf("backend architecture not applied: %#v", result.Surfaces[0].Architecture)
 	}
+	if !contains(result.Surfaces[0].Architecture.StructuralExpectations, "services_own_business_rules") {
+		t.Fatalf("backend structural expectations not applied: %#v", result.Surfaces[0].Architecture)
+	}
 }
 
 func TestModelCyclesSelectedArchitecture(t *testing.T) {
@@ -43,6 +46,9 @@ func TestModelCyclesSelectedArchitecture(t *testing.T) {
 	}
 	if result.Surfaces[0].Architecture.Preferred != "clean_architecture" {
 		t.Fatalf("architecture preferred = %#v", result.Surfaces[0].Architecture)
+	}
+	if !contains(result.Surfaces[0].Architecture.StructuralExpectations, "application_or_usecase_layer_has_business_flows") {
+		t.Fatalf("architecture structural expectations not cycled = %#v", result.Surfaces[0].Architecture)
 	}
 }
 
