@@ -217,6 +217,10 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			continue
 		}
 		prev, managed := previousAssets[asset.TargetRel]
+		if managed && prev.Pinned {
+			plan.Actions = append(plan.Actions, Action{Kind: ActionPinnedSkip, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: "asset pinned; sync no lo modifica", SourceHash: asset.SourceSHA256, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+			continue
+		}
 		info, err := os.Lstat(targetPath)
 		if os.IsNotExist(err) {
 			if managed {
@@ -285,6 +289,10 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	}
 	for _, prev := range previous.Assets {
 		if prev.TargetRel == agentsref.AgentsFile {
+			if prev.Pinned {
+				plan.Actions = append(plan.Actions, Action{Kind: ActionPinnedSkip, Target: prev.TargetRel, Reason: "asset legacy pinned; sync no lo modifica", RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+				continue
+			}
 			exists, hasReference, err := agentsref.Status(target)
 			if err != nil {
 				plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: err.Error(), RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
@@ -304,6 +312,10 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			continue
 		}
 		if catalogTargets[prev.TargetRel] {
+			continue
+		}
+		if prev.Pinned {
+			plan.Actions = append(plan.Actions, Action{Kind: ActionPinnedSkip, Target: prev.TargetRel, Reason: "asset retirado pinned; sync lo preserva en manifest", RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 			continue
 		}
 		targetPath, err := platform.SafeJoin(target, prev.TargetRel)
@@ -438,7 +450,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
-		case ActionBackup, ActionRetired, ActionWarnAgentsReference, ActionSkip:
+		case ActionBackup, ActionRetired, ActionWarnAgentsReference, ActionPinnedSkip, ActionSkip:
 			continue
 		default:
 			err := fmt.Errorf("acción sync no soportada: %s", action.Kind)
@@ -487,6 +499,10 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if !managed && !updated[asset.TargetRel] {
 			continue
 		}
+		if managed && prev.Pinned {
+			out = append(out, prev)
+			continue
+		}
 		targetPath, err := platform.SafeJoin(plan.TargetRoot, asset.TargetRel)
 		if err != nil {
 			return nil, err
@@ -508,7 +524,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if updated[asset.TargetRel] {
 			lastAction = "sync-update-managed"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: installedAt, LastAction: lastAction}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: installedAt, LastAction: lastAction}
 		if asset.Policy.SupportsAncestor() && updated[asset.TargetRel] {
 			ancestorRel, err := state.AncestorRel(asset.TargetRel)
 			if err != nil {
@@ -527,9 +543,16 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 	}
 	for _, prev := range plan.Previous.Assets {
 		if prev.TargetRel == agentsref.AgentsFile {
+			if prev.Pinned {
+				out = append(out, prev)
+			}
 			continue
 		}
 		if catalogTargets[prev.TargetRel] {
+			continue
+		}
+		if prev.Pinned {
+			out = append(out, prev)
 			continue
 		}
 		targetPath, err := platform.SafeJoin(plan.TargetRoot, prev.TargetRel)
@@ -543,7 +566,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Methodology: prev.Methodology, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, InstalledAt: prev.InstalledAt, LastAction: "retired"})
+		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Methodology: prev.Methodology, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: prev.InstalledAt, LastAction: "retired"})
 	}
 	return out, nil
 }

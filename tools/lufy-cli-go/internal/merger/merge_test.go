@@ -258,30 +258,41 @@ func TestRunAcceptTheirsUsesDefaultAncestorRelWhenStateOmitsIt(t *testing.T) {
 	}
 }
 
-func TestRunConfiguredToolSuccessLeavesFilesForManualReconciliation(t *testing.T) {
+func TestRunConfiguredToolSuccessFinalizesResolution(t *testing.T) {
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
 	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	ancestorHash := hash(t, filepath.Join(target, ancestorRel))
-	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: ancestorRel, AncestorHash: ancestorHash}}, "test")); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: ancestorRel, AncestorHash: ancestorHash, TargetSHA256: hash(t, filepath.Join(target, "tui.json"))}}, "test")); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("LUFY_MERGE_TOOL", "true")
+	toolPath := filepath.Join(t.TempDir(), "merge-tool.sh")
+	if err := os.WriteFile(toolPath, []byte("#!/bin/sh\nprintf 'merged\\n' > \"$2\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LUFY_MERGE_TOOL", toolPath)
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, Path: "tui.json"}, &out); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := string(read(t, filepath.Join(target, "tui.json"))); got != "user\n" {
-		t.Fatalf("target changed after external tool success: %q", got)
+	if got := string(read(t, filepath.Join(target, "tui.json"))); got != "merged\n" {
+		t.Fatalf("target not finalized from external tool: %q", got)
 	}
-	if got := string(read(t, filepath.Join(target, "tui.json.lufy-new"))); got != "new\n" {
-		t.Fatalf("sidecar changed after external tool success: %q", got)
+	if got := string(read(t, filepath.Join(target, ancestorRel))); got != "merged\n" {
+		t.Fatalf("ancestor not finalized from external tool: %q", got)
 	}
-	if !strings.Contains(out.String(), "Merge tool completado") {
+	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
+		t.Fatalf("sidecar still exists or unexpected stat error: %v", err)
+	}
+	after := loadState(t, target).AssetMap()["tui.json"]
+	if after.SourceSHA256 != hashBytes([]byte("new\n")) || after.TargetSHA256 != hashBytes([]byte("merged\n")) || after.AncestorHash != after.TargetSHA256 || after.LastAction != "merge-tool" {
+		t.Fatalf("state not finalized from external tool: %#v", after)
+	}
+	if !strings.Contains(out.String(), "Merge tool aplicado") {
 		t.Fatalf("tool success output unexpected: %s", out.String())
 	}
 }

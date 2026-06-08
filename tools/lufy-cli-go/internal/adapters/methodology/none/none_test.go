@@ -8,7 +8,14 @@ import (
 )
 
 func TestRenderWorkflowReturnsNoArtifacts(t *testing.T) {
-	assets, err := New().RenderWorkflow(ports.WorkflowModel{
+	adapter := New()
+	if adapter.ID() != domain.MethodologyNone {
+		t.Fatalf("ID = %s", adapter.ID())
+	}
+	if modes := adapter.SupportedModes(); len(modes) != 1 || modes[0] != domain.MethodologyModeNone {
+		t.Fatalf("SupportedModes = %#v", modes)
+	}
+	assets, err := adapter.RenderWorkflow(ports.WorkflowModel{
 		Tier:      domain.TierT3,
 		Selection: domain.MethodologySelection{ID: domain.MethodologyNone, Mode: domain.MethodologyModeNone},
 	})
@@ -17,5 +24,12 @@ func TestRenderWorkflowReturnsNoArtifacts(t *testing.T) {
 	}
 	if len(assets) != 0 {
 		t.Fatalf("none methodology assets = %d, want 0", len(assets))
+	}
+	checks, err := adapter.VerifyWorkflow(ports.Target{}, domain.TierT3)
+	if err != nil {
+		t.Fatalf("verify workflow: %v", err)
+	}
+	if len(checks) != 1 || checks[0].Level != "info" {
+		t.Fatalf("checks = %#v", checks)
 	}
 }

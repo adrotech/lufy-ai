@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión estable objetivo: `v0.6.4`.
+Versión estable objetivo: `v0.6.10`.
 
 ## Requisitos
 
@@ -25,9 +25,9 @@ El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario 
 Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.10/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.4 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.10 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap:
@@ -41,8 +41,8 @@ El bootstrap:
 Atajo directo, solo si ya revisaste el script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.4 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.10/scripts/bootstrap.sh \
+  | bash -s -- --version v0.6.10 --install-dir "$HOME/.local/bin"
 ```
 
 ## PATH por shell
@@ -69,12 +69,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo
 
-1. Descarga `lufy-ai_v0.6.4_windows_amd64.zip` o `lufy-ai_v0.6.4_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.4_checksums.txt`.
+1. Descarga `lufy-ai_v0.6.10_windows_amd64.zip` o `lufy-ai_v0.6.10_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.6.10_checksums.txt`.
 3. Verifica el hash:
 
    ```powershell
-   Get-FileHash .\lufy-ai_v0.6.4_windows_amd64.zip -Algorithm SHA256
+   Get-FileHash .\lufy-ai_v0.6.10_windows_amd64.zip -Algorithm SHA256
    ```
 
 4. Extrae `lufy-ai.exe` en un directorio de usuario.
@@ -106,6 +106,8 @@ Verifica:
 ```bash
 lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
+lufy-ai info --target /ruta/a/tu/proyecto
+lufy-ai doctor --target /ruta/a/tu/proyecto
 ```
 
 ## Selección de tool y metodología
@@ -192,13 +194,24 @@ Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean bac
 
 ## Sync
 
-`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local.
+`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local y preserva assets frozen con `pin`.
 
 ```bash
 lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 lufy-ai sync --target /ruta/a/tu/proyecto --yes --no-engram
 lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 ```
+
+Si necesitas conservar un override local sobre un asset gestionado mientras actualizas el resto del kit:
+
+```bash
+lufy-ai pin --target /ruta/a/tu/proyecto --reason "override local" lufy-ia.harness.md
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai status --target /ruta/a/tu/proyecto --verbose
+lufy-ai unpin --target /ruta/a/tu/proyecto lufy-ia.harness.md
+```
+
+Mientras el asset esté pinned/frozen, `sync` lo reporta como `pinned-skip` y no avanza sus hashes registrados.
 
 Si un asset no reemplazable tiene drift local, la CLI preserva el archivo y puede generar `<archivo>.lufy-new`.
 
@@ -207,7 +220,11 @@ Para resolver:
 ```bash
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto <path>
+lufy-ai merge --target /ruta/a/tu/proyecto --accept-theirs <path>
+lufy-ai merge --target /ruta/a/tu/proyecto --accept-ours <path>
 ```
+
+Después de resolver, `merge` actualiza el manifest, refresca el ancestor seguro y remueve `<archivo>.lufy-new`. `doctor` falla si todavía quedan conflictos pendientes para evitar cerrar un estado parcialmente reconciliado.
 
 ## Uninstall y reinstall
 
@@ -272,8 +289,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 `upgrade` requiere versión fija.
 
 ```bash
-lufy-ai upgrade --to v0.6.4 --dry-run
-lufy-ai upgrade --to v0.6.4
+lufy-ai upgrade --to v0.6.10 --dry-run
+lufy-ai upgrade --to v0.6.10
 ```
 
 Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.
@@ -340,6 +357,7 @@ Eso es intencional. Significa que un asset gestionado fue modificado localmente.
 
 ```bash
 lufy-ai status --target <dir> --verbose
+lufy-ai doctor --target <dir>
 ```
 
 Luego decide si conservar el cambio, restaurar desde backup o reinstalar sobre un estado limpio.

@@ -23,9 +23,12 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `install` idempotente con catálogo, SHA-256, manifest schema v2 y backups.
 - `uninstall` gestionado con dry-run, backup, drift guard, preservación de `opencode.json` y remoción mínima de referencia en `AGENTS.md`.
 - `verify` estructural con salida humana, `--json`, `--quiet`, `--verbose` y `--deep`.
-- `status` humano/JSON con drift y detalles por asset.
+- `status` humano/JSON con drift, frozen assets, `.lufy-new` pendiente y detalles por asset.
+- `info` humano/JSON con catálogo efectivo, manifest, stacks, surfaces y conteos operativos.
+- `doctor` humano/JSON para diagnóstico read-only de `.lufy/project.yaml`, manifest, drift y conflictos pendientes.
+- `pin`/`unpin` para congelar assets gestionados desde el manifest sin editar el archivo target.
 - `sync` conservador para assets gestionados sin drift.
-- `merge` para reconciliar `.lufy-new` con ancestor seguro.
+- `merge` para reconciliar `.lufy-new` con ancestor seguro y cerrar estado/sidecar.
 - `backup` y `restore` con manifest, targetRoot y validación de paths/hashes.
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
@@ -60,7 +63,6 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Lufy SDD full como alternativa completa a OpenSpec.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
-- CLI governance adicional: `pin`, `unpin`, `doctor`, `info`.
 - Planner 8-state completo.
 - Reconciliation hook opt-in.
 - Autocomplete/help avanzado mediante Cobra u otro framework.
