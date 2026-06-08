@@ -38,6 +38,8 @@ type Report struct {
 	Assets                int           `json:"assets"`
 	Missing               int           `json:"missing"`
 	Drifted               int           `json:"drifted"`
+	Pinned                int           `json:"pinned"`
+	ConflictsPending      int           `json:"conflictsPending"`
 	Errors                int           `json:"errors"`
 	AssetDetails          []AssetDetail `json:"assetDetails,omitempty"`
 }
@@ -53,6 +55,8 @@ type AssetDetail struct {
 	Expected          string `json:"expected,omitempty"`
 	Actual            string `json:"actual,omitempty"`
 	LufyNew           string `json:"lufyNew,omitempty"`
+	Pinned            bool   `json:"pinned,omitempty"`
+	PinnedReason      string `json:"pinnedReason,omitempty"`
 	RecommendedAction string `json:"recommendedAction,omitempty"`
 	Error             string `json:"error,omitempty"`
 }
@@ -90,6 +94,8 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	fmt.Fprintf(stdout, "Assets gestionados: %d\n", report.Assets)
 	fmt.Fprintf(stdout, "Drift local: %d\n", report.Drifted)
 	fmt.Fprintf(stdout, "Faltantes: %d\n", report.Missing)
+	fmt.Fprintf(stdout, "Pinned/frozen: %d\n", report.Pinned)
+	fmt.Fprintf(stdout, "Conflictos pendientes: %d\n", report.ConflictsPending)
 	fmt.Fprintf(stdout, "Errores: %d\n", report.Errors)
 	fmt.Fprintf(stdout, "Última actualización: %s\n", report.UpdatedAt)
 	if opts.Verbose {
@@ -147,7 +153,10 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	report.UpdatedAt = st.UpdatedAt
 	report.Assets = len(st.Assets)
 	for _, asset := range st.Assets {
-		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Tool: asset.Tool, Methodology: asset.Methodology, Component: asset.Component, Expected: asset.TargetSHA256}
+		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Tool: asset.Tool, Methodology: asset.Methodology, Component: asset.Component, Expected: asset.TargetSHA256, Pinned: asset.Pinned, PinnedReason: asset.PinnedReason}
+		if asset.Pinned {
+			report.Pinned++
+		}
 		path, err := platform.SafeJoin(resolved, asset.TargetRel)
 		if err != nil {
 			report.Errors++
@@ -182,6 +191,7 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 				detail.Status = "lufy-new"
 				detail.LufyNew = asset.TargetRel + ".lufy-new"
 				detail.RecommendedAction = "review-lufy-new"
+				report.ConflictsPending++
 				if verbose {
 					report.AssetDetails = append(report.AssetDetails, detail)
 				}

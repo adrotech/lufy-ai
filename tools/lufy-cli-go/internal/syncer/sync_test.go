@@ -87,6 +87,50 @@ func TestPlanBuilderBuildsSyncPlanWithoutRewritingState(t *testing.T) {
 	}
 }
 
+func TestRunSkipsPinnedAssetWithoutAdvancingManifest(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := st.AssetMap()["lufy-ia.harness.md"]
+	before.Pinned = true
+	before.PinnedReason = "local override"
+	for i := range st.Assets {
+		if st.Assets[i].TargetRel == before.TargetRel {
+			st.Assets[i] = before
+			break
+		}
+	}
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed while pinned\n")
+	targetBefore := readFile(t, filepath.Join(target, "lufy-ia.harness.md"))
+
+	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	if err != nil {
+		t.Fatalf("BuildPlan() error = %v", err)
+	}
+	if !hasSyncAction(plan.Actions, "pinned-skip", "lufy-ia.harness.md") || hasSyncAction(plan.Actions, "update-managed", "lufy-ia.harness.md") {
+		t.Fatalf("expected pinned skip without update: actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+	}
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+		t.Fatalf("Run(sync pinned) error = %v, output=%s", err, out.String())
+	}
+	if got := readFile(t, filepath.Join(target, "lufy-ia.harness.md")); !bytes.Equal(got, targetBefore) {
+		t.Fatalf("pinned target was mutated: before=%q after=%q", targetBefore, got)
+	}
+	after := stateMustLoad(t, target).AssetMap()["lufy-ia.harness.md"]
+	if !after.Pinned || after.SourceSHA256 != before.SourceSHA256 || after.TargetSHA256 != before.TargetSHA256 || after.PinnedReason != "local override" {
+		t.Fatalf("pinned manifest state advanced unexpectedly: before=%#v after=%#v", before, after)
+	}
+}
+
 func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -824,4 +868,16 @@ func readOpenCodeForSyncTest(t *testing.T, target string) map[string]any {
 		t.Fatal(err)
 	}
 	return decoded
+}
+
+func stateMustLoad(t *testing.T, target string) *state.InstallState {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("missing install-state")
+	}
+	return st
 }

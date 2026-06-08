@@ -46,6 +46,9 @@ main() {
   log "Action pinning"
   "$REPO_ROOT/scripts/check-actions-pinned.sh"
 
+  log "Doc release version"
+  "$REPO_ROOT/scripts/check-doc-release-version.sh"
+
   log "Workflow YAML"
   (cd "$CLI_ROOT" && go run ./cmd/check-workflows-yaml --root "$REPO_ROOT")
 

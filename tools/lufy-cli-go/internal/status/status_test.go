@@ -85,8 +85,33 @@ func TestStatusReportsLufyNewForNoReplaceDrift(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
-	if !report.OK || report.Drifted != 0 || len(report.AssetDetails) != 1 || report.AssetDetails[0].Status != "lufy-new" {
+	if !report.OK || report.Drifted != 0 || report.ConflictsPending != 1 || len(report.AssetDetails) != 1 || report.AssetDetails[0].Status != "lufy-new" {
 		t.Fatalf("unexpected report: %#v", report)
+	}
+}
+
+func TestStatusReportsPinnedAssets(t *testing.T) {
+	target := t.TempDir()
+	writeStatusFile(t, filepath.Join(target, "lufy-ia.harness.md"), "local\n")
+	hash := hashStatusFile(t, filepath.Join(target, "lufy-ia.harness.md"))
+	st := state.New(target, nil, []state.AssetState{{ID: "harness", TargetRel: "lufy-ia.harness.md", TargetSHA256: hash, Pinned: true, PinnedReason: "manual edits"}}, "test-fingerprint")
+	if err := state.WriteAtomic(target, st); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := NewService().Build(target, true, "")
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	if !report.OK || report.Pinned != 1 || len(report.AssetDetails) != 1 || !report.AssetDetails[0].Pinned || report.AssetDetails[0].PinnedReason != "manual edits" {
+		t.Fatalf("unexpected pinned report: %#v", report)
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target}, &out); err != nil {
+		t.Fatalf("Run() error = %v", err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Pinned/frozen: 1")) || !bytes.Contains(out.Bytes(), []byte("Conflictos pendientes: 0")) {
+		t.Fatalf("human pinned output unexpected: %s", out.String())
 	}
 }
 

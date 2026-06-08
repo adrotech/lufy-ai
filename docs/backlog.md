@@ -20,7 +20,7 @@ Capacidades ya existentes que afectan la planificación:
 
 | Área | Estado actual | Impacto sobre backlog |
 | --- | --- | --- |
-| CLI Go | Existe en `tools/lufy-cli-go` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `merge`, `upgrade` y `version`. | Los items de CLI deben extender lo existente, no rediseñarlo desde cero. |
+| CLI Go | Existe en `tools/lufy-cli-go` con `install`, `verify`, `backup`, `restore`, `sync`, `status`, `info`, `doctor`, `pin`, `unpin`, `merge`, `upgrade` y `version`. | Los items de CLI deben extender lo existente, no rediseñarlo desde cero. |
 | Drift Resolution | Ya incluye policies por asset, `.lufy-new`, ancestors, `merge-block`, `--scope`, restore por ID/listado. | `LUFY-8`, `LUFY-9` y `LUFY-10` se implementan como refinamiento de planner/governance. |
 | OpenSpec core v2 | Ya incluye config action-based, deltas, scenarios, `/opsx-sync`, `UPSTREAM.json` y resolver PATH/cache/embedded. | `LUFY-12` debe ser documental y de naming para comandos nuevos, no renombre de `/opsx-*`. |
 | Result contracts | Ya hay templates y reglas base. | `LUFY-15` es normalización/enforcement, no introducción desde cero. |
@@ -178,23 +178,25 @@ Effort estimado:
 
 ### LUFY-8 - CLI `merge` 3-way refinado
 
-**Estado:** ya existe `lufy-ai merge` y Drift Resolution con `.lufy-new`/ancestors.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #76.
 
 **Issue:** #76 - https://github.com/adrotech/lufy-ai/issues/76
 
-**Alcance restante:** consolidar motor text 3-way, UX no interactiva (`--accept-theirs`, `--accept-ours`) y decidir si se adopta TUI con dependencia explícita o se mantiene zero-deps.
+**Alcance cubierto:** `merge` mantiene UX no interactiva zero-deps (`--accept-theirs`, `--accept-ours`) y ahora también cierra la resolución de `LUFY_MERGE_TOOL` actualizando manifest, ancestor y removiendo `.lufy-new`.
 
-**Acceptance:** conflicto entre asset local y catalog crea sidecar seguro; `merge --accept-theirs` resuelve sin TUI y registra estado coherente.
+**Alcance futuro opcional:** consolidar un motor text 3-way más avanzado o adoptar TUI con dependencia explícita si la UX lo justifica.
+
+**Acceptance:** conflicto entre asset local y catalog crea sidecar seguro; `merge --accept-theirs`, `merge --accept-ours` y `LUFY_MERGE_TOOL` resuelven sin TUI y registran estado coherente.
 
 **Effort:** M-L según decisión de TUI.
 
 ### LUFY-9 - CLI governance: `pin`, `unpin`, `doctor`, `info`, `status`
 
-**Estado:** `status` ya existe; `uninstall` también cubre la remoción segura de assets gestionados.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #77.
 
 **Issue:** #77 - https://github.com/adrotech/lufy-ai/issues/77
 
-**Alcance restante:** agregar `pin`, `unpin`, `doctor` e `info`; extender `status` para stacks, drift, conflicts pending y frozen assets.
+**Alcance cubierto:** `pin`/`unpin` congelan assets desde el manifest; `sync` preserva frozen assets con `pinned-skip`; `status`/`info` exponen frozen assets y conflicts pending; `doctor` falla ante `.lufy-new` pendiente y reporta frozen assets como información.
 
 **Acceptance:** asset pinned no es tocado por `sync`; `doctor` valida preflight, manifest y `project.yaml`; `info` muestra catalog version, assets y stacks.
 
@@ -216,7 +218,7 @@ Effort estimado:
 
 ### LUFY-11 - Lessons learned versionado
 
-**Estado:** pendiente; trazado en #79.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #79.
 
 **Issue:** #79 - https://github.com/adrotech/lufy-ai/issues/79
 
@@ -240,7 +242,7 @@ Effort estimado:
 
 ### LUFY-13 - README walkthrough end-to-end
 
-**Estado:** pendiente; trazado en #81.
+**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #81.
 
 **Issue:** #81 - https://github.com/adrotech/lufy-ai/issues/81
 

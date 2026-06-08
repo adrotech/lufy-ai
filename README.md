@@ -47,14 +47,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable actual: `v0.6.8`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable actual: `v0.6.10`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.8/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.10/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.10 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
@@ -86,6 +86,31 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 ```
 
 `uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva `opencode.json` y remueve solo la referencia `@lufy-ia.harness.md` de `AGENTS.md`.
+
+## Walkthrough end-to-end
+
+Este flujo lleva un repo nuevo desde instalación hasta una primera demo T3 sin delivery:
+
+```bash
+lufy-ai version
+lufy-ai init --target /ruta/a/tu/proyecto
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
+```
+
+Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
+
+```text
+/lufy.onboard --demo --dry-run
+```
+
+El onboarding lee `.lufy/project.yaml`, valida estáticamente la instalación y propone un T3 dummy adaptado al stack detectado sin mutar archivos. Si aceptas aplicar una demo real, el flujo correcto es derivar a `implementer` con alcance T3, ejecutar validación proporcional y mantener commit/push/PR como delivery separado y explícitamente autorizado.
+
+Para cerrar la sesión con trazabilidad local:
+
+```text
+/lufy.timereport
+```
 
 ## Lo que instala hoy
 
@@ -124,7 +149,7 @@ flowchart TD
     Meth --> NN["none: permitido solo donde la policy lo acepta"]
 
     Assets --> Target[".opencode / openspec / .lufy / lufy-ia.harness.md"]
-    Target --> Verify["verify / status / sync / uninstall"]
+    Target --> Verify["verify / status / info / doctor / sync / uninstall"]
 ```
 
 El dominio no debería saber de paths específicos de OpenCode, `CLAUDE.md` o `AGENTS.md`. Ese conocimiento pertenece a adapters. Esta separación evita duplicar tiers, agentes, contracts y policies cuando se agreguen tools nuevas.
@@ -165,6 +190,10 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
 | `lufy-ai status` | Resume estado instalado, drift, faltantes y detalles por asset. |
+| `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks y surfaces sin mutar. |
+| `lufy-ai doctor` | Diagnostica `.lufy/project.yaml`, manifest y drift de forma read-only. |
+| `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. |
+| `lufy-ai unpin` | Remueve el freeze de un asset gestionado y permite `sync` normal. |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/`. |
@@ -209,8 +238,10 @@ Lifecycle recomendado:
 flowchart LR
     I["install --dry-run"] --> A["install --yes"]
     A --> V["verify"]
-    V --> S["status"]
-    S --> Y["sync --dry-run / sync --yes"]
+    V --> S["status / doctor"]
+    S --> P["pin / unpin opcional"]
+    P --> Y["sync --dry-run / sync --yes"]
+    S --> Y
     S --> U["uninstall --dry-run / uninstall --yes"]
     U --> R["install --yes"]
     R --> V
@@ -265,7 +296,7 @@ Disponible e instalable:
 - OpenSpec como metodología principal.
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
-- CLI Go con install, uninstall, verify, status, sync, merge, backup, restore, upgrade y version.
+- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, upgrade y version.
 - `init` y `scan` con `.lufy/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.
@@ -289,6 +320,7 @@ No disponible como feature escribible todavía:
 | [`docs/status.md`](docs/status.md) | Estado implementado vs pendiente. |
 | [`docs/backlog.md`](docs/backlog.md) | Backlog estratégico y prioridades. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Evolución futura y límites de roadmap. |
+| [`docs/lessons/lufy-ai.md`](docs/lessons/lufy-ai.md) | Aprendizajes operativos versionados. |
 | [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md) | Detalle técnico de la CLI Go. |
 | [`openspec/README.md`](openspec/README.md) | Workflow OpenSpec instalado. |
 
