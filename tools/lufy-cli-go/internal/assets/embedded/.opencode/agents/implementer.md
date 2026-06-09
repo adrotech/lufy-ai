@@ -59,11 +59,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Existing handoff from `explorer` when scope is broad.
 - Validation expectations or known unavailable toolchain.
 
-## Optional Engram Memory
+## Obsidian Memory
 
-- If an Engram MCP/tool is available and no memory context was carried forward for non-trivial T1/T2 work, use it as a compact index before editing: current project, recent context only if useful, short searches for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns, and expand only 1-3 relevant hits.
-- If Engram is unavailable, skip memory work and continue with repository evidence; do not block implementation for memory alone.
-- Carry Engram findings as compact `memory_hints` (id, title, relevance), not full dumps. After significant implementation, save only durable learnings through Engram when available: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian` and no memory context was carried forward for non-trivial T1/T2 work, use Obsidian first as a compact index before editing: short searches for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns.
+- If Engram MCP/tool is available, use it only as optional supplementary hints.
+- If memory is unavailable, skip memory work and continue with repository evidence; do not block implementation for memory alone.
+- Carry compact `memory_hints` (path or id, line when available, status, relevance), not full dumps. After significant implementation, save only durable learnings in Obsidian: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
 
 ## Workflow
 

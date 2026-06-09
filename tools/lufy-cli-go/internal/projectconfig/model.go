@@ -22,6 +22,8 @@ type ProjectConfig struct {
 	TDD               TDDConfig                `yaml:"tdd"`
 	Validation        ValidationConfig         `yaml:"validation"`
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
+	Memory            MemoryConfig             `yaml:"memory"`
+	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
 
@@ -128,4 +130,24 @@ type WorkflowSizing struct {
 type WorkflowRouting struct {
 	Strategy string         `yaml:"strategy"`
 	Extra    map[string]any `yaml:",inline,omitempty"`
+}
+
+type MemoryConfig struct {
+	Provider       string         `yaml:"provider"`
+	Root           string         `yaml:"root"`
+	GitPolicy      string         `yaml:"git_policy"`
+	SchemaVersion  int            `yaml:"schema_version"`
+	Search         string         `yaml:"search"`
+	BacklinksIndex string         `yaml:"backlinks_index"`
+	Extra          map[string]any `yaml:",inline,omitempty"`
+}
+
+type ParallelExecutionConfig struct {
+	Enabled                  bool           `yaml:"enabled"`
+	Strategy                 string         `yaml:"strategy"`
+	MaxParallelAgents        int            `yaml:"max_parallel_agents"`
+	RequiresIndependentFiles bool           `yaml:"requires_independent_files"`
+	RequiresMergePlan        bool           `yaml:"requires_merge_plan"`
+	ValidationMode           string         `yaml:"validation_mode"`
+	Extra                    map[string]any `yaml:",inline,omitempty"`
 }

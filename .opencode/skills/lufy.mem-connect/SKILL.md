@@ -1,0 +1,27 @@
+---
+name: lufy.mem-connect
+description: Conecta notas Obsidian existentes con backlinks seguros y evita enlaces rotos.
+license: MIT
+compatibility: OpenCode skill autocontenido; usa lufy-ai memory search/validate.
+metadata:
+  author: lufy-ai
+  version: "1.0"
+---
+
+# Skill: lufy.mem-connect
+
+Usar para enlazar conocimiento existente. El objetivo es mejorar navegación, no crear una red de enlaces decorativa.
+
+## Flujo
+
+1. Confirmar que `.lufy/memory` existe con `lufy-ai memory status --target <repo>`.
+2. Buscar notas candidatas con `lufy-ai memory search`.
+3. Elegir enlaces que representen dependencia real, decisión relacionada, regla base o lesson aplicable.
+4. Editar solo las notas necesarias.
+5. Validar con `lufy-ai memory validate --target <repo>`.
+
+## Criterios
+
+- No crear backlinks a slugs inexistentes.
+- No enlazar notas `deprecated` salvo que el objetivo sea explicar historia o migración.
+- Si una nota está `superseded`, preferir su reemplazo activo.

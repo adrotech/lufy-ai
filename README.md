@@ -62,10 +62,13 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.10 --install-dir "$HOME/.local/bin"
 ```bash
 lufy-ai version
 lufy-ai init --target /ruta/a/tu/proyecto
+lufy-ai memory init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
 `init` crea `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
+
+`memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. El contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter, backlinks y búsqueda con `lufy-ai memory validate|search`.
 
 ### 3. Instalar y verificar
 
@@ -75,7 +78,7 @@ lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 ```
 
-Engram es opcional. Si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados consultan/guardan memoria solo cuando el MCP/tool está disponible y omiten el workflow cuando no lo está.
+Obsidian es la memoria canónica portable. Engram es opcional: si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados pueden usarlo solo como hints adicionales cuando el MCP/tool está disponible y omiten ese apoyo cuando no lo está.
 
 ### 4. Desinstalar o reinstalar si hace falta
 
@@ -94,8 +97,9 @@ Este flujo lleva un repo nuevo desde instalación hasta una primera demo T3 sin 
 ```bash
 lufy-ai version
 lufy-ai init --target /ruta/a/tu/proyecto
+lufy-ai memory init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --deep
 ```
 
 Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
@@ -119,14 +123,17 @@ Para cerrar la sesión con trazabilidad local:
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. |
 | Comandos OpenSpec | `.opencode/commands/opsx-*.md` | Ciclo OpenSpec: explore, propose, apply, verify, sync, archive y version. |
 | Comandos Lufy | `.opencode/commands/lufy.*.md` | Extras propios del kit: `/lufy.close`, `/lufy.pr-review`, `/lufy.timereport` y `/lufy.onboard`. |
-| Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding y reportes instalables. |
-| Templates | `.opencode/templates/` | `sdd-lite.md` y `result-contract.md` para T2 y handoffs recuperables. |
+| Memoria Obsidian | `.opencode/commands/lufy.mem-*.md`, `.opencode/skills/lufy.mem-*`, `.opencode/hooks/memory-*.sh` | Captura, documenta, conecta y busca memoria portable en `.lufy/memory`. |
+| Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding, memoria y reportes instalables. |
+| Templates | `.opencode/templates/` | `sdd-lite.md`, `result-contract.md` y `memory-note.md` para T2, handoffs y notas validables. |
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
 | Lufy SDD | `.lufy/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas que se referencian desde `AGENTS.md`. |
 | Estado local | `.lufy-ai/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
+
+`.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks y templates de memoria, pero no toca notas privadas.
 
 `AGENTS.md` es user-owned: la CLI solo crea o mantiene la referencia `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
 
@@ -165,6 +172,8 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 | T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
 
 La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
+
+`init` también escribe `parallel_execution`, que permite paralelismo gobernado solo cuando `sdd-router` detecta `review_slices` independientes, archivos no compartidos, plan de merge claro y validación agrupada tras el join. No se paraleliza delivery, migraciones de schema/db, contratos públicos no cerrados ni cambios sobre los mismos archivos.
 
 Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven y ahora persiste `structural_expectations`: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas. Si un prompt pide carpetas concretas, el harness las trata como criterios de aceptación obligatorios y bloquea validación/aprobación si páginas, hooks o utilidades quedan en la raíz de la feature sin confirmación explícita del usuario.
 

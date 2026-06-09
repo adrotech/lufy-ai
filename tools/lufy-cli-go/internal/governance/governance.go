@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -231,6 +232,7 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 	} else {
 		emit("ok", projectconfig.ProjectConfigPath, fmt.Sprintf("project config parseable; stacks=%d surfaces=%d", len(cfg.Stacks), len(cfg.ProjectProfile.Surfaces)))
 	}
+	reportMemoryDoctor(target, emit)
 	if st == nil {
 		emit("fail", state.Path(target), "falta manifest de instalación")
 		return report, nil
@@ -257,6 +259,33 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		emit("fail", "", fmt.Sprintf("conflictos pendientes .lufy-new=%d; ejecuta lufy-ai merge", statusReport.ConflictsPending))
 	}
 	return report, nil
+}
+
+func reportMemoryDoctor(target string, emit func(level, path, message string)) {
+	report, err := memory.NewService().BuildStatus(memory.Options{Target: target})
+	if err != nil {
+		emit("warn", projectconfig.ProjectConfigPath, fmt.Sprintf("memoria no evaluable: %s", err.Error()))
+		return
+	}
+	if !report.Status.Initialized {
+		emit("info", report.Root, "memoria Obsidian no inicializada; ejecuta lufy-ai memory init")
+		return
+	}
+	if report.Status.BrokenBacklinks > 0 {
+		emit("warn", report.Root, fmt.Sprintf("memoria con backlinks rotos=%d", report.Status.BrokenBacklinks))
+	}
+	if report.Status.Drafts > 0 {
+		emit("info", report.Root, fmt.Sprintf("drafts pendientes=%d", report.Status.Drafts))
+	}
+	for _, check := range report.Checks {
+		if check.Level == "fail" || check.Level == "warn" {
+			level := "warn"
+			emit(level, check.Path, "memoria: "+check.Message)
+		}
+	}
+	if report.Status.BrokenBacklinks == 0 {
+		emit("ok", report.Root, fmt.Sprintf("memoria Obsidian ok notas=%d drafts=%d", report.Status.Notes, report.Status.Drafts))
+	}
 }
 
 func loadMutableAsset(targetValue, pathValue string) (string, string, *state.InstallState, func(), error) {

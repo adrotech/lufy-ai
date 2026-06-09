@@ -57,6 +57,88 @@ func TestRunUnknownCommand(t *testing.T) {
 	}
 }
 
+func TestRunMemoryCommands(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"memory", "init", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory init expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Memoria Obsidian inicializada")) {
+		t.Fatalf("memory init output unexpected: %s", out.String())
+	}
+	writeCLITestFile(t, filepath.Join(target, ".lufy/memory/knowledge/searchable.md"), `---
+name: searchable
+description: Nota activa para buscar memoria.
+type: rule
+status: active
+---
+
+Lufy busca contexto durable.
+`)
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "validate", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory validate expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "search", "--target", target, "durable"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory search expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("[active] knowledge/searchable.md")) {
+		t.Fatalf("memory search output unexpected: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "status", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory status expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Inicializada: sí")) {
+		t.Fatalf("memory status output unexpected: %s", out.String())
+	}
+}
+
+func TestRunMemoryHelpAndUsageErrors(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"memory", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK || !bytes.Contains(out.Bytes(), []byte("Subcomandos")) {
+		t.Fatalf("memory help unexpected code=%d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr || !bytes.Contains(errOut.Bytes(), []byte("Uso: lufy-ai memory")) {
+		t.Fatalf("memory without subcommand unexpected code=%d stderr=%s", code, errOut.String())
+	}
+
+	errOut.Reset()
+	code = Run([]string{"memory", "unknown"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr || !bytes.Contains(errOut.Bytes(), []byte("Subcomando memory desconocido")) {
+		t.Fatalf("memory unknown unexpected code=%d stderr=%s", code, errOut.String())
+	}
+
+	errOut.Reset()
+	code = Run([]string{"memory", "search"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("memory search without query expected usage, got %d", code)
+	}
+}
+
 func TestRunVersionOutputAndRejectsArgs(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer

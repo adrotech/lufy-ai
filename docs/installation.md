@@ -110,6 +110,17 @@ lufy-ai info --target /ruta/a/tu/proyecto
 lufy-ai doctor --target /ruta/a/tu/proyecto
 ```
 
+Inicializa memoria Obsidian portable cuando quieras que los agentes conserven decisiones, reglas, flows y lessons durables en el repo destino:
+
+```bash
+lufy-ai memory init --target /ruta/a/tu/proyecto
+lufy-ai memory status --target /ruta/a/tu/proyecto
+lufy-ai memory validate --target /ruta/a/tu/proyecto
+lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
+```
+
+`memory init` crea `.lufy/memory` con `MEMORY.md`, `inbox/`, `knowledge/`, `maps/_app-profile.md`, `index/backlinks.json` y `.gitignore`. Por default las notas privadas quedan ignoradas por Git; `install` y `sync` solo gestionan comandos, skills, hooks y templates de memoria, no el contenido de `inbox/` ni `knowledge/`.
+
 ## Selección de tool y metodología
 
 El único tool adapter escribible actual es `opencode`.
@@ -168,9 +179,32 @@ En scope `project`, la CLI gestiona:
 
 ### Engram opcional
 
-Engram no es requisito para instalar Lufy. Usa `--no-engram` para omitir cualquier integración.
+Obsidian es la memoria canónica portable para Lufy. Engram no es requisito para instalar Lufy. Usa `--no-engram` para omitir cualquier integración.
 
-Si no pasas `--no-engram` y `engram` existe en `PATH`, Lufy mergea en `opencode.json` un MCP local con `engram mcp --tools=agent --project <nombre-del-repo>`. Los agentes instalados usan ese MCP solo cuando la sesión expone herramientas Engram disponibles: consultan memoria antes de trabajos no triviales, usan hallazgos como contexto y guardan únicamente aprendizajes durables. Si Engram no está disponible, omiten ese workflow sin bloquear la tarea.
+Si no pasas `--no-engram` y `engram` existe en `PATH`, Lufy mergea en `opencode.json` un MCP local con `engram mcp --tools=agent --project <nombre-del-repo>`. Los agentes instalados usan ese MCP solo como hints adicionales cuando la sesión expone herramientas Engram disponibles. Si Engram no está disponible, omiten ese apoyo sin bloquear la tarea.
+
+## Defaults de `project.yaml`
+
+`lufy-ai init` y `lufy-ai scan --rescan` escriben o preservan estos bloques:
+
+```yaml
+memory:
+  provider: obsidian
+  root: .lufy/memory
+  git_policy: ignored
+  schema_version: 1
+  search: rg
+  backlinks_index: .lufy/memory/index/backlinks.json
+parallel_execution:
+  enabled: true
+  strategy: independent_review_slices
+  max_parallel_agents: 3
+  requires_independent_files: true
+  requires_merge_plan: true
+  validation_mode: grouped_after_join
+```
+
+El paralelismo no es un pipeline fijo: `sdd-router` lo recomienda solo para `review_slices` independientes con archivos separados y plan de merge. Delivery, migraciones, contratos públicos no cerrados y archivos compartidos quedan en ejecución secuencial.
 
 ## Manifest y backups
 

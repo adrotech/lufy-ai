@@ -50,6 +50,22 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	} else {
 		items = append(items, DriftItem{Category: "workflow_limits", Severity: "info", Path: "workflow_limits", Status: "applied", SuggestedAction: "Se agregó workflow_limits como fuente canónica única para sizing, slicing, delivery, stop rules y preflight."})
 	}
+	if !isZeroMemoryConfig(current.Memory) {
+		merged.Memory = mergeMemoryConfig(current.Memory, detected.Memory)
+		if !reflect.DeepEqual(current.Memory, merged.Memory) {
+			items = append(items, DriftItem{Category: "memory", Severity: "info", Path: "memory", Status: "applied", SuggestedAction: "Se completaron defaults de memoria Obsidian preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "memory", Severity: "info", Path: "memory", Status: "applied", SuggestedAction: "Se agregó memoria Obsidian portable como provider canónico del proyecto."})
+	}
+	if !isZeroParallelExecutionConfig(current.ParallelExecution) {
+		merged.ParallelExecution = mergeParallelExecutionConfig(current.ParallelExecution, detected.ParallelExecution)
+		if !reflect.DeepEqual(current.ParallelExecution, merged.ParallelExecution) {
+			items = append(items, DriftItem{Category: "parallel_execution", Severity: "info", Path: "parallel_execution", Status: "applied", SuggestedAction: "Se completaron defaults de paralelismo gobernado preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "parallel_execution", Severity: "info", Path: "parallel_execution", Status: "applied", SuggestedAction: "Se agregó estrategia de paralelismo gobernada por review_slices independientes."})
+	}
 	if len(current.TDD.EdgeCaseCategories) > 0 || current.TDD.Strict || current.TDD.TriangulateRequired {
 		merged.TDD = current.TDD
 	}
@@ -246,6 +262,64 @@ func mergeWorkflowRouting(current, defaults WorkflowRouting) WorkflowRouting {
 	merged := defaults
 	if current.Strategy != "" {
 		merged.Strategy = current.Strategy
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroMemoryConfig(config MemoryConfig) bool {
+	return reflect.DeepEqual(config, MemoryConfig{})
+}
+
+func mergeMemoryConfig(current, defaults MemoryConfig) MemoryConfig {
+	merged := defaults
+	if current.Provider != "" {
+		merged.Provider = current.Provider
+	}
+	if current.Root != "" {
+		merged.Root = current.Root
+	}
+	if current.GitPolicy != "" {
+		merged.GitPolicy = current.GitPolicy
+	}
+	if current.SchemaVersion != 0 {
+		merged.SchemaVersion = current.SchemaVersion
+	}
+	if current.Search != "" {
+		merged.Search = current.Search
+	}
+	if current.BacklinksIndex != "" {
+		merged.BacklinksIndex = current.BacklinksIndex
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroParallelExecutionConfig(config ParallelExecutionConfig) bool {
+	return reflect.DeepEqual(config, ParallelExecutionConfig{})
+}
+
+func mergeParallelExecutionConfig(current, defaults ParallelExecutionConfig) ParallelExecutionConfig {
+	merged := defaults
+	merged.Enabled = current.Enabled
+	if current.Strategy != "" {
+		merged.Strategy = current.Strategy
+	}
+	if current.MaxParallelAgents != 0 {
+		merged.MaxParallelAgents = current.MaxParallelAgents
+	}
+	if current.RequiresIndependentFiles {
+		merged.RequiresIndependentFiles = true
+	}
+	if current.RequiresMergePlan {
+		merged.RequiresMergePlan = true
+	}
+	if current.ValidationMode != "" {
+		merged.ValidationMode = current.ValidationMode
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

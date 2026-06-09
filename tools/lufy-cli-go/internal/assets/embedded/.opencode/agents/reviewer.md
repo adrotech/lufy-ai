@@ -47,11 +47,12 @@ Use `AGENTS.md` for project conventions, `.lufy/project.yaml` for stack-specific
 - Diff or branch context, change objective, validation evidence, and any known acceptance criteria.
 - Relevant `.lufy/project.yaml` context when available: affected stacks, `project_profile.surfaces`, coverage thresholds, anti-patterns, observability libraries and workflow limits.
 
-## Optional Engram Memory
+## Obsidian Memory
 
-- If an Engram MCP/tool is available, use it as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective, and expand only 1-3 relevant hits.
-- If Engram is unavailable, skip memory lookup and continue the review without penalty.
-- Return findings as compact `memory_hints` (id, title, relevance), not full memory dumps.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- If Engram MCP/tool is available, use it only as optional supplementary hints.
+- If memory is unavailable, skip memory lookup and continue the review without penalty.
+- Return compact `memory_hints` (path or id, line when available, status, relevance), not full memory dumps.
 - Treat memory as review context only; findings still need current diff/file/evidence references.
 
 ## Workflow
