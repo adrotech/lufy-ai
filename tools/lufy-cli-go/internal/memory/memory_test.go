@@ -269,6 +269,11 @@ Texto durable.
 	if len(results) != 1 || results[0].Status != "active" || results[0].Line != 8 {
 		t.Fatalf("parseRGOutput() unexpected: %#v", results)
 	}
+	windowsLine := `C:\repo\.lufy\memory\knowledge\active-note.md:8:Texto durable.` + "\n"
+	path, line, text, ok := parseRGLine(strings.TrimSpace(windowsLine))
+	if !ok || path != `C:\repo\.lufy\memory\knowledge\active-note.md` || line != 8 || text != "Texto durable." {
+		t.Fatalf("parseRGLine() windows unexpected path=%q line=%d text=%q ok=%v", path, line, text, ok)
+	}
 	links := wikiLinks("[[Decision One|label]] y [[flow two]]")
 	if len(links) != 2 || links[0] != "Decision One" || slugify(links[1]) != "flow-two" {
 		t.Fatalf("wiki helper unexpected links=%#v slug=%s", links, slugify(links[1]))

@@ -457,17 +457,32 @@ func parseRGOutput(root, output string) []SearchResult {
 	results := []SearchResult{}
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
-		parts := strings.SplitN(scanner.Text(), ":", 3)
-		if len(parts) != 3 {
+		path, line, text, ok := parseRGLine(scanner.Text())
+		if !ok {
 			continue
 		}
-		line := 0
-		_, _ = fmt.Sscanf(parts[1], "%d", &line)
-		rel, _ := filepath.Rel(root, parts[0])
-		results = append(results, SearchResult{Status: noteStatus(parts[0]), Path: filepath.ToSlash(rel), Line: line, Text: strings.TrimSpace(parts[2])})
+		rel, _ := filepath.Rel(root, path)
+		results = append(results, SearchResult{Status: noteStatus(path), Path: filepath.ToSlash(rel), Line: line, Text: strings.TrimSpace(text)})
 	}
 	sortSearchResults(results)
 	return results
+}
+
+func parseRGLine(lineText string) (string, int, string, bool) {
+	textColon := strings.LastIndex(lineText, ":")
+	if textColon < 0 {
+		return "", 0, "", false
+	}
+	beforeText := lineText[:textColon]
+	lineColon := strings.LastIndex(beforeText, ":")
+	if lineColon < 0 {
+		return "", 0, "", false
+	}
+	line := 0
+	if _, err := fmt.Sscanf(beforeText[lineColon+1:], "%d", &line); err != nil || line <= 0 {
+		return "", 0, "", false
+	}
+	return beforeText[:lineColon], line, lineText[textColon+1:], true
 }
 
 func searchMemoryFallback(root string, roots []string, query string) ([]SearchResult, error) {

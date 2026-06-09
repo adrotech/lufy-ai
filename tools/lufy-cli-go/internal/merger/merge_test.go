@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -259,6 +260,9 @@ func TestRunAcceptTheirsUsesDefaultAncestorRelWhenStateOmitsIt(t *testing.T) {
 }
 
 func TestRunConfiguredToolSuccessFinalizesResolution(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("este smoke usa un script POSIX como LUFY_MERGE_TOOL")
+	}
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
