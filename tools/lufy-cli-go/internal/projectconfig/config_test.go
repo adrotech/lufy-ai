@@ -352,6 +352,12 @@ func TestScanGeneratesCanonicalWorkflowLimits(t *testing.T) {
 	if len(cfg.WorkflowLimits.StopRules) == 0 || len(cfg.WorkflowLimits.Preflight) == 0 {
 		t.Fatalf("missing workflow gates: %#v", cfg.WorkflowLimits)
 	}
+	if cfg.Memory.Provider != "obsidian" || cfg.Memory.Root != ".lufy/memory" || cfg.Memory.Search != "rg" || cfg.Memory.SchemaVersion != 1 {
+		t.Fatalf("missing memory defaults: %#v", cfg.Memory)
+	}
+	if !cfg.ParallelExecution.Enabled || cfg.ParallelExecution.Strategy != "independent_review_slices" || cfg.ParallelExecution.MaxParallelAgents != 3 || cfg.ParallelExecution.ValidationMode != "grouped_after_join" {
+		t.Fatalf("missing parallel execution defaults: %#v", cfg.ParallelExecution)
+	}
 	data, err := Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -512,6 +518,48 @@ workflow_limits:
 	}
 	if len(merged.WorkflowLimits.StopRules) == 0 || len(merged.WorkflowLimits.Preflight) == 0 {
 		t.Fatalf("rescan did not fill missing workflow gates: %#v", merged.WorkflowLimits)
+	}
+}
+
+func TestRescanMergesMemoryAndParallelExecutionDefaults(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
+	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+detected_at: 2026-05-20T14:00:00Z
+stacks: []
+ci:
+  detected: false
+  workflows: []
+tdd:
+  strict: true
+  triangulate_required: true
+  edge_case_categories: [boundary]
+workflow_limits:
+  sizing:
+    loc_budget: 400
+memory:
+  root: .private/lufy-memory
+parallel_execution:
+  enabled: true
+  max_parallel_agents: 2
+`)
+
+	var out strings.Builder
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "category=memory") || !strings.Contains(out.String(), "category=parallel_execution") {
+		t.Fatalf("rescan did not report memory/parallel defaults: %s", out.String())
+	}
+	merged, err := Load(filepath.Join(root, ProjectConfigPath))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.Memory.Root != ".private/lufy-memory" || merged.Memory.Provider != "obsidian" || merged.Memory.Search != "rg" {
+		t.Fatalf("memory defaults not merged/preserved: %#v", merged.Memory)
+	}
+	if merged.ParallelExecution.MaxParallelAgents != 2 || merged.ParallelExecution.Strategy != "independent_review_slices" || merged.ParallelExecution.ValidationMode == "" {
+		t.Fatalf("parallel defaults not merged/preserved: %#v", merged.ParallelExecution)
 	}
 }
 

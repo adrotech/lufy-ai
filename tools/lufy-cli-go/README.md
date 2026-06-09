@@ -27,6 +27,7 @@ tools/lufy-cli-go/
   internal/status/           # estado humano/JSON y drift
   internal/governance/       # info/doctor/pin/unpin operativo
   internal/verify/           # verify estructural y deep checks
+  internal/memory/           # memoria Obsidian init/status/validate/search
   internal/backup/           # backup/restore multiasset
   internal/config/           # merge conservador de opencode.json
   internal/projectconfig/    # init/rescan de .lufy/project.yaml
@@ -62,6 +63,10 @@ scripts/validate.sh
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
+| `lufy-ai memory init` | Crea `.lufy/memory` y completa defaults de memoria/paralelismo en `.lufy/project.yaml`. | `--target`, `--json` |
+| `lufy-ai memory status` | Resume estructura, notas, drafts y backlinks rotos. | `--target`, `--json` |
+| `lufy-ai memory validate` | Valida schema de notas Obsidian, decisiones y backlinks. | `--target`, `--json` |
+| `lufy-ai memory search` | Busca en `knowledge/` y `maps/` con `rg` cuando está disponible. | `--target`, `--json`, `<query>` |
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks, surfaces y conteos operativos sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai doctor` | Diagnostica `.lufy/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
@@ -134,6 +139,50 @@ El scanner detecta señales existentes como `controllers` + `services` + `reposi
 
 En `fullstack`, la surface de flujo mantiene frontend feature-driven; la arquitectura clean/hexagonal/controller-service-repository aplica solo al backend y se lee desde la surface backend conectada.
 
+## Memoria Obsidian
+
+`init` y `scan` escriben defaults de memoria en `.lufy/project.yaml`:
+
+```yaml
+memory:
+  provider: obsidian
+  root: .lufy/memory
+  git_policy: ignored
+  schema_version: 1
+  search: rg
+  backlinks_index: .lufy/memory/index/backlinks.json
+```
+
+`lufy-ai memory init` crea una estructura idempotente:
+
+```text
+.lufy/memory/
+  MEMORY.md
+  inbox/
+  knowledge/
+  maps/_app-profile.md
+  index/backlinks.json
+  .gitignore
+```
+
+`doctor` reporta memoria faltante, drafts y backlinks rotos sin bloquear instalación normal. `verify --deep` valida memoria cuando existe. `sync` gestiona los comandos, skills, hooks y templates de memoria, pero no registra ni sobrescribe contenido privado dentro de `.lufy/memory/inbox` o `.lufy/memory/knowledge`.
+
+## Paralelismo gobernado
+
+`init` y `scan` también escriben:
+
+```yaml
+parallel_execution:
+  enabled: true
+  strategy: independent_review_slices
+  max_parallel_agents: 3
+  requires_independent_files: true
+  requires_merge_plan: true
+  validation_mode: grouped_after_join
+```
+
+El CLI solo persiste la política. La decisión operacional queda en `sdd-router`: recomienda paralelismo únicamente para `review_slices` independientes con archivos separados y plan de merge; bloquea delivery, migraciones, contratos compartidos o cambios sobre los mismos archivos.
+
 ## OpenSpec helpers
 
 `opsx render` es un helper opcional, tool-agnostic y no bloqueante. Toma artifacts OpenSpec ya generados y produce un HTML autocontenido/offline para revisión humana:
@@ -172,6 +221,7 @@ Assets user-owned o merge-managed:
 - `AGENTS.md`: solo referencia `@lufy-ia.harness.md`;
 - `opencode.json`: merge conservador;
 - `.lufy/project.yaml`: creado por `init`, no sincronizado por hash.
+- `.lufy/memory`: creado por `memory init`; notas privadas user-owned, no sincronizadas por hash.
 
 `.lufy-ai/install-state.json` schema v2 registra:
 
@@ -296,7 +346,7 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.10 --install-dir "$HOME/.local/bin"
 
 El bootstrap instala solo el binario. No toca repositorios destino.
 
-Engram es opcional: si `install`/`sync` corre sin `--no-engram` y `engram` está en `PATH`, la config OpenCode merge-managed registra `engram mcp --tools=agent --project <target>`. Los agentes instalados usan memoria activa solo cuando el MCP/tool está disponible y omiten el workflow sin bloquear cuando no lo está.
+Obsidian es la memoria canónica portable. Engram es opcional: si `install`/`sync` corre sin `--no-engram` y `engram` está en `PATH`, la config OpenCode merge-managed registra `engram mcp --tools=agent --project <target>`. Los agentes instalados pueden usar Engram solo como hints adicionales cuando el MCP/tool está disponible y omiten ese apoyo sin bloquear cuando no lo está.
 
 ## Wrapper Bash
 

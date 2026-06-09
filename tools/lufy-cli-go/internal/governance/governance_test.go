@@ -9,6 +9,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -96,6 +97,46 @@ func TestPinAndUnpinManagedAsset(t *testing.T) {
 	unpinned := stateMustLoadForGovernance(t, target).AssetMap()["lufy-ia.harness.md"]
 	if unpinned.Pinned || unpinned.PinnedAt != "" || unpinned.PinnedReason != "" || unpinned.LastAction != "unpin" {
 		t.Fatalf("asset not unpinned: %#v", unpinned)
+	}
+}
+
+func TestDoctorReportsInitializedMemoryDrafts(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("install fixture: %v", err)
+	}
+	if err := memory.NewService().Init(memory.Options{Target: target}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("memory init fixture: %v", err)
+	}
+	writeGovernanceFile(t, filepath.Join(target, ".lufy/memory/knowledge/draft.md"), `---
+name: draft
+description: Draft pendiente para doctor.
+type: lesson
+status: draft
+---
+
+Pendiente de consolidar.
+`)
+
+	report, err := NewService().BuildDoctor(Options{Target: target, Scope: assets.ScopeProject})
+	if err != nil {
+		t.Fatalf("BuildDoctor() error = %v", err)
+	}
+	if !report.OK || !hasDoctorCheck(report.Checks, "info", "drafts pendientes=1") || !hasDoctorCheck(report.Checks, "ok", "memoria Obsidian ok") {
+		t.Fatalf("doctor should report memory draft without failing: %#v", report)
+	}
+}
+
+func writeGovernanceFile(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 

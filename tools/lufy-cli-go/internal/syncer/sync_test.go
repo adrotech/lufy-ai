@@ -87,6 +87,25 @@ func TestPlanBuilderBuildsSyncPlanWithoutRewritingState(t *testing.T) {
 	}
 }
 
+func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	notePath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
+	writeFile(t, notePath, "private memory\n")
+
+	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(sync) error = %v", err)
+	}
+	if got := string(readFile(t, notePath)); got != "private memory\n" {
+		t.Fatalf("sync rewrote user-owned memory note: %q", got)
+	}
+	st := stateMustLoadForSyncTest(t, target)
+	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "memory")) {
+		t.Fatalf("sync manifest should not register memory notes: %#v", st.Assets)
+	}
+}
+
 func TestRunSkipsPinnedAssetWithoutAdvancingManifest(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
@@ -748,6 +767,18 @@ func installedTarget(t *testing.T) string {
 		t.Fatalf("install fixture error = %v", err)
 	}
 	return target
+}
+
+func stateMustLoadForSyncTest(t *testing.T, target string) *state.InstallState {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("missing install-state")
+	}
+	return st
 }
 
 func hasSyncAction(actions []Action, kind ActionKind, target string) bool {

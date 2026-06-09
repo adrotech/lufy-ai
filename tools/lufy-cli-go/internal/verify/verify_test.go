@@ -10,6 +10,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -463,6 +464,30 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "plugin contiene entrada no string") || !strings.Contains(out.String(), "plugin referenciado no existe") {
 		t.Fatalf("deep bad entries output unexpected: %s", out.String())
+	}
+}
+
+func TestVerifyDeepValidatesInitializedMemory(t *testing.T) {
+	target := validVerifyTarget(t)
+	if err := memory.NewService().Init(memory.Options{Target: target}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("memory init fixture: %v", err)
+	}
+	writeVerifyFile(t, filepath.Join(target, ".lufy/memory/knowledge/valid.md"), `---
+name: valid
+description: Nota valida para verify deep.
+type: lesson
+status: active
+---
+
+Aprendizaje durable.
+`)
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err != nil {
+		t.Fatalf("Run(deep memory valid) error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "memoria Obsidian schema=1 notas=1") {
+		t.Fatalf("deep memory output unexpected: %s", out.String())
 	}
 }
 

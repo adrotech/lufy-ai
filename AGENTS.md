@@ -75,6 +75,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
 - Para sizing/routing/slicing, leer `workflow_limits.sizing`, `workflow_limits.routing` y `workflow_limits.proposal_slicing_strategy`; no confundirlo con `workflow_limits.delivery_batch_strategy`.
+- Para paralelismo, leer `parallel_execution`; recomendar agentes paralelos solo para `review_slices` independientes, archivos independientes, plan de merge y validación agrupada después del join. No paralelizar delivery, migraciones schema/db, contratos públicos compartidos, decisiones API no cerradas ni slices que tocan los mismos archivos.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
 - Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
 
@@ -161,14 +162,13 @@ skill_resolution:
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
 
-## Workflow opcional de memoria Engram
+## Workflow de memoria Obsidian
 
-- Engram es opcional y condicional: usarlo solo cuando la sesión actual expone un MCP/tool Engram disponible. Si Engram no está configurado, está deshabilitado o no está disponible, omitir este workflow y reportar la evidencia de memoria como `not_available` u omitida; no bloquear trabajo normal solo por Engram.
-- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, usar Engram como índice compacto antes de actuar: identificar el proyecto actual, cargar contexto reciente solo si aporta, buscar con consultas cortas por issue/spec/ruta/concepto y expandir con `mem_get_observation` solo 1-3 hits relevantes.
-- Durante exploración, validación, review y delivery, resumir hallazgos de Engram como `memory_hints` compactos (id, título, relevancia) para reducir redescubrimiento; no pasar dumps completos ni tratarlos como evidencia más fuerte que archivos, comandos o instrucciones explícitas.
-- Después de trabajo significativo, guardar solo aprendizajes durables: decisiones de arquitectura, bugfixes, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
-- Para temas evolutivos o trazabilidad OpenSpec, guardar/actualizar observaciones con `topic_key` estable solo cuando Engram esté disponible; si no está disponible, reportar `not_available` y continuar sin bloquear.
-- Nunca afirmar trazabilidad Engram, consulta de memoria o contexto guardado sin que haya corrido la herramienta Engram correspondiente o exista evidencia explícita.
+- Obsidian es la memoria canónica portable cuando `.lufy/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
+- Engram es opcional y condicional: usarlo solo como hints adicionales cuando la sesión actual expone un MCP/tool Engram disponible. Si Engram no está configurado, está deshabilitado o no está disponible, omitir ese apoyo y reportar `not_available` u omitido; no bloquear trabajo normal solo por Engram.
+- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, buscar en Obsidian con consultas cortas por issue/spec/ruta/concepto y resumir hallazgos como `memory_hints` compactos (path, línea, status, relevancia); no pasar dumps completos.
+- Después de trabajo significativo, guardar en Obsidian solo aprendizajes durables: decisiones de arquitectura, reglas, flows, lessons, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
+- Nunca tratar memoria como evidencia más fuerte que archivos, comandos o instrucciones explícitas. Nunca afirmar trazabilidad Engram sin que haya corrido la herramienta Engram correspondiente o exista evidencia explícita.
 
 ## Política de delivery
 

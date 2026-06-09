@@ -1,0 +1,37 @@
+---
+name: lufy.mem-capture
+description: Captura aprendizajes durables en .lufy/memory/knowledge usando Obsidian como memoria canónica portable.
+license: MIT
+compatibility: OpenCode skill autocontenido; requiere lufy-ai memory para validar estructura.
+metadata:
+  author: lufy-ai
+  version: "1.0"
+---
+
+# Skill: lufy.mem-capture
+
+Captura únicamente memoria durable: decisiones, reglas, flows, lessons o conceptos que reducen redescubrimiento futuro. No guardar ruido rutinario, estados temporales, logs, resultados obvios de comandos ni duplicados.
+
+## Flujo
+
+1. Leer `.lufy/project.yaml` y confirmar `memory.provider: obsidian`.
+2. Si falta estructura, recomendar `lufy-ai memory init --target <repo>` y detener mutaciones.
+3. Buscar primero notas cercanas con `lufy-ai memory search --target <repo> <query>`.
+4. Si existe una nota activa suficiente, actualizarla con el menor cambio posible.
+5. Si hace falta una nota nueva, crearla bajo `.lufy/memory/knowledge/<slug>.md` con frontmatter:
+
+```yaml
+---
+name: <short-name>
+description: <contexto concreto, no igual al name>
+type: decision | rule | flow | lesson | concept
+status: active
+---
+```
+
+6. Para `type: decision`, incluir una sección `**Why:**`.
+7. Ejecutar o recomendar `lufy-ai memory validate --target <repo>`.
+
+## Engram
+
+Engram puede aportar hints solo si existe una herramienta MCP disponible. Obsidian sigue siendo canónico y no se duplica memoria rutinaria.

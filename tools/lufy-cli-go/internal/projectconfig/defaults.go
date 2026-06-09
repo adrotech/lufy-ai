@@ -8,6 +8,28 @@ func defaultWorkflowLimits() WorkflowLimits {
 	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
 
+func DefaultMemoryConfig() MemoryConfig {
+	return MemoryConfig{
+		Provider:       "obsidian",
+		Root:           ".lufy/memory",
+		GitPolicy:      "ignored",
+		SchemaVersion:  1,
+		Search:         "rg",
+		BacklinksIndex: ".lufy/memory/index/backlinks.json",
+	}
+}
+
+func DefaultParallelExecutionConfig() ParallelExecutionConfig {
+	return ParallelExecutionConfig{
+		Enabled:                  true,
+		Strategy:                 "independent_review_slices",
+		MaxParallelAgents:        3,
+		RequiresIndependentFiles: true,
+		RequiresMergePlan:        true,
+		ValidationMode:           "grouped_after_join",
+	}
+}
+
 func DefaultAgentLens(surfaceType string) AgentLens {
 	switch surfaceType {
 	case "frontend":

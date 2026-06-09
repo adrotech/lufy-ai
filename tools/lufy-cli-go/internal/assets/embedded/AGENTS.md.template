@@ -73,14 +73,13 @@ Run from repository root.
 
 Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
 
-## Optional Engram Memory Workflow
+## Obsidian Memory Workflow
 
-- Engram is optional and conditional: use it only when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip this workflow and report memory evidence as `not_available` or omitted; do not block normal work for Engram alone.
-- For non-trivial T1/T2 work, and for T3 work with likely historical context, use Engram as a compact index before acting: identify the current project, load recent context only when useful, search with short queries by issue/spec/path/concept, and expand with `mem_get_observation` only for 1-3 relevant hits.
-- During exploration, validation, review, and delivery, pass Engram findings as compact `memory_hints` (id, title, relevance) to reduce repeated discovery; do not pass full memory dumps or treat memory as stronger evidence than repository files, commands, or explicit user instructions.
-- After significant work, save only durable learnings: architectural decisions, bug fixes, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
-- For evolving topics or OpenSpec traceability, save/update observations with a stable `topic_key` only when Engram is available; if it is unavailable, report `not_available` and continue without blocking.
-- Never claim Engram traceability, memory lookup, or saved context unless the relevant Engram tool actually ran or explicit evidence was provided.
+- Obsidian is the canonical portable memory when `.lufy/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate` and the local `lufy.mem-*` skills when memory context matters.
+- Engram is optional and conditional: use it only as additional hints when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip that support and report it as `not_available` or omitted; do not block normal work for Engram alone.
+- For non-trivial T1/T2 work, and for T3 work with likely historical context, search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance). Do not pass full memory dumps.
+- After significant work, save only durable learnings in Obsidian: architectural decisions, rules, flows, lessons, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
+- Never treat memory as stronger evidence than repository files, commands, or explicit user instructions. Never claim Engram traceability unless the relevant Engram tool actually ran or explicit evidence was provided.
 
 ## Proportional SDD Routing
 
@@ -92,6 +91,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
 - For sizing/routing/slicing, read `workflow_limits.sizing`, `workflow_limits.routing`, and `workflow_limits.proposal_slicing_strategy`; do not confuse these with `workflow_limits.delivery_batch_strategy`.
+- For parallelism, read `parallel_execution`. Recommend parallel agents only for independent review slices with independent files, a merge plan, and grouped validation after join. Do not parallelize delivery, schema/db migrations, shared public contracts, unresolved API decisions, or slices touching the same files.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - When `delivery` creates a PR, it must consult or wait for remote checks with command evidence such as `gh pr checks <PR>` or `gh pr view ... statusCheckRollup/mergeStateStatus`; failed, cancelled, timed out, action-required, undocumented, or tooling-missing checks are `blocked`, while existing pending checks are `delivery_pending`; neither state may be reported as `delivered`/`closed`.
