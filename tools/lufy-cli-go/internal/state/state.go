@@ -46,6 +46,9 @@ type AssetState struct {
 	Component    string `json:"component,omitempty"`
 	AncestorRel  string `json:"ancestorRel,omitempty"`
 	AncestorHash string `json:"ancestorSHA256,omitempty"`
+	Pinned       bool   `json:"pinned,omitempty"`
+	PinnedAt     string `json:"pinnedAt,omitempty"`
+	PinnedReason string `json:"pinnedReason,omitempty"`
 	InstalledAt  string `json:"installedAt"`
 	LastAction   string `json:"lastAction"`
 }

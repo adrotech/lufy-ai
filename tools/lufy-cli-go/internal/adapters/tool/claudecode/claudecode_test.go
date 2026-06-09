@@ -10,6 +10,9 @@ import (
 )
 
 func TestAdapterCapabilitiesAreDryRunOnly(t *testing.T) {
+	if New().ID() != domain.ToolClaudeCode {
+		t.Fatalf("unexpected adapter id: %s", New().ID())
+	}
 	caps := New().Capabilities()
 	if !caps.DryRunOnly || !caps.ProjectConfig || !caps.SystemPrompt {
 		t.Fatalf("expected claude-code dry-run project/system capabilities: %+v", caps)

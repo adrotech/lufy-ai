@@ -47,14 +47,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable actual: `v0.6.8`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión estable actual: `v0.6.11`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.8/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan sobre tu repo
@@ -62,10 +62,13 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.8 --install-dir "$HOME/.local/bin"
 ```bash
 lufy-ai version
 lufy-ai init --target /ruta/a/tu/proyecto
+lufy-ai memory init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
 ```
 
 `init` crea `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
+
+`memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. El contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter, backlinks y búsqueda con `lufy-ai memory validate|search`.
 
 ### 3. Instalar y verificar
 
@@ -75,7 +78,7 @@ lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 ```
 
-Engram es opcional. Si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados consultan/guardan memoria solo cuando el MCP/tool está disponible y omiten el workflow cuando no lo está.
+Obsidian es la memoria canónica portable. Engram es opcional: si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados pueden usarlo solo como hints adicionales cuando el MCP/tool está disponible y omiten ese apoyo cuando no lo está.
 
 ### 4. Desinstalar o reinstalar si hace falta
 
@@ -87,6 +90,32 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 
 `uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva `opencode.json` y remueve solo la referencia `@lufy-ia.harness.md` de `AGENTS.md`.
 
+## Walkthrough end-to-end
+
+Este flujo lleva un repo nuevo desde instalación hasta una primera demo T3 sin delivery:
+
+```bash
+lufy-ai version
+lufy-ai init --target /ruta/a/tu/proyecto
+lufy-ai memory init --target /ruta/a/tu/proyecto
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --deep
+```
+
+Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
+
+```text
+/lufy.onboard --demo --dry-run
+```
+
+El onboarding lee `.lufy/project.yaml`, valida estáticamente la instalación y propone un T3 dummy adaptado al stack detectado sin mutar archivos. Si aceptas aplicar una demo real, el flujo correcto es derivar a `implementer` con alcance T3, ejecutar validación proporcional y mantener commit/push/PR como delivery separado y explícitamente autorizado.
+
+Para cerrar la sesión con trazabilidad local:
+
+```text
+/lufy.timereport
+```
+
 ## Lo que instala hoy
 
 | Área | Ruta | Propósito |
@@ -94,14 +123,17 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. |
 | Comandos OpenSpec | `.opencode/commands/opsx-*.md` | Ciclo OpenSpec: explore, propose, apply, verify, sync, archive y version. |
 | Comandos Lufy | `.opencode/commands/lufy.*.md` | Extras propios del kit: `/lufy.close`, `/lufy.pr-review`, `/lufy.timereport` y `/lufy.onboard`. |
-| Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding y reportes instalables. |
-| Templates | `.opencode/templates/` | `sdd-lite.md` y `result-contract.md` para T2 y handoffs recuperables. |
+| Memoria Obsidian | `.opencode/commands/lufy.mem-*.md`, `.opencode/skills/lufy.mem-*`, `.opencode/hooks/memory-*.sh` | Captura, documenta, conecta y busca memoria portable en `.lufy/memory`. |
+| Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding, memoria y reportes instalables. |
+| Templates | `.opencode/templates/` | `sdd-lite.md`, `result-contract.md` y `memory-note.md` para T2, handoffs y notas validables. |
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
 | Lufy SDD | `.lufy/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas que se referencian desde `AGENTS.md`. |
 | Estado local | `.lufy-ai/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
+
+`.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks y templates de memoria, pero no toca notas privadas.
 
 `AGENTS.md` es user-owned: la CLI solo crea o mantiene la referencia `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
 
@@ -124,7 +156,7 @@ flowchart TD
     Meth --> NN["none: permitido solo donde la policy lo acepta"]
 
     Assets --> Target[".opencode / openspec / .lufy / lufy-ia.harness.md"]
-    Target --> Verify["verify / status / sync / uninstall"]
+    Target --> Verify["verify / status / info / doctor / sync / uninstall"]
 ```
 
 El dominio no debería saber de paths específicos de OpenCode, `CLAUDE.md` o `AGENTS.md`. Ese conocimiento pertenece a adapters. Esta separación evita duplicar tiers, agentes, contracts y policies cuando se agreguen tools nuevas.
@@ -140,6 +172,8 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 | T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
 
 La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
+
+`init` también escribe `parallel_execution`, que permite paralelismo gobernado solo cuando `sdd-router` detecta `review_slices` independientes, archivos no compartidos, plan de merge claro y validación agrupada tras el join. No se paraleliza delivery, migraciones de schema/db, contratos públicos no cerrados ni cambios sobre los mismos archivos.
 
 Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven y ahora persiste `structural_expectations`: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas. Si un prompt pide carpetas concretas, el harness las trata como criterios de aceptación obligatorios y bloquea validación/aprobación si páginas, hooks o utilidades quedan en la raíz de la feature sin confirmación explícita del usuario.
 
@@ -165,6 +199,10 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
 | `lufy-ai status` | Resume estado instalado, drift, faltantes y detalles por asset. |
+| `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks y surfaces sin mutar. |
+| `lufy-ai doctor` | Diagnostica `.lufy/project.yaml`, manifest y drift de forma read-only. |
+| `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. |
+| `lufy-ai unpin` | Remueve el freeze de un asset gestionado y permite `sync` normal. |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/`. |
@@ -209,8 +247,10 @@ Lifecycle recomendado:
 flowchart LR
     I["install --dry-run"] --> A["install --yes"]
     A --> V["verify"]
-    V --> S["status"]
-    S --> Y["sync --dry-run / sync --yes"]
+    V --> S["status / doctor"]
+    S --> P["pin / unpin opcional"]
+    P --> Y["sync --dry-run / sync --yes"]
+    S --> Y
     S --> U["uninstall --dry-run / uninstall --yes"]
     U --> R["install --yes"]
     R --> V
@@ -265,7 +305,7 @@ Disponible e instalable:
 - OpenSpec como metodología principal.
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
-- CLI Go con install, uninstall, verify, status, sync, merge, backup, restore, upgrade y version.
+- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, upgrade y version.
 - `init` y `scan` con `.lufy/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.
@@ -289,6 +329,7 @@ No disponible como feature escribible todavía:
 | [`docs/status.md`](docs/status.md) | Estado implementado vs pendiente. |
 | [`docs/backlog.md`](docs/backlog.md) | Backlog estratégico y prioridades. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Evolución futura y límites de roadmap. |
+| [`docs/lessons/lufy-ai.md`](docs/lessons/lufy-ai.md) | Aprendizajes operativos versionados. |
 | [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md) | Detalle técnico de la CLI Go. |
 | [`openspec/README.md`](openspec/README.md) | Workflow OpenSpec instalado. |
 

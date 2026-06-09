@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -207,6 +208,7 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	}
 	if opts.Deep {
 		runDeepVerify(st.Tool, target, recorder.emit)
+		runDeepMemoryVerify(target, recorder.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
@@ -476,6 +478,26 @@ func runDeepVerify(tool domain.ToolID, target string, emit func(level, path, for
 	}
 	for _, rel := range files {
 		validatePluginConfig(target, rel, emit)
+	}
+}
+
+func runDeepMemoryVerify(target string, emit func(level, path, format string, args ...any)) {
+	report, err := memory.NewService().BuildValidate(memory.Options{Target: target})
+	if err != nil {
+		emit("fail", projectconfig.ProjectConfigPath, "memoria no evaluable: %s", err.Error())
+		return
+	}
+	if !report.Status.Initialized {
+		emit("warn", report.Root, "memoria Obsidian no inicializada")
+		return
+	}
+	for _, check := range report.Checks {
+		if check.Level == "fail" || check.Level == "warn" {
+			emit(check.Level, check.Path, "memoria: %s", check.Message)
+		}
+	}
+	if report.OK {
+		emit("ok", report.Root, "memoria Obsidian schema=%d notas=%d", report.Status.SchemaVersion, report.Status.Notes)
 	}
 }
 

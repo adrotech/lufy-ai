@@ -14,11 +14,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
 const defaultBaseURL = "https://github.com/adrotech/lufy-ai/releases/download"
+const defaultFetchAttempts = 3
+
+var defaultHTTPClient = &http.Client{Timeout: 120 * time.Second}
 
 type Options struct {
 	To       string
@@ -102,18 +106,51 @@ func artifactName(version, goos, goarch string) string {
 }
 
 func fetchURL(rawURL string) ([]byte, error) {
+	return fetchURLWithClient(rawURL, defaultHTTPClient, defaultFetchAttempts)
+}
+
+func fetchURLWithClient(rawURL string, client *http.Client, attempts int) ([]byte, error) {
 	if strings.HasPrefix(rawURL, "file://") {
 		return os.ReadFile(strings.TrimPrefix(rawURL, "file://"))
 	}
-	resp, err := http.Get(rawURL)
-	if err != nil {
-		return nil, err
+	if client == nil {
+		client = defaultHTTPClient
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("descarga falló %s: HTTP %d", rawURL, resp.StatusCode)
+	if attempts < 1 {
+		attempts = 1
 	}
-	return io.ReadAll(resp.Body)
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		resp, err := client.Get(rawURL)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			lastErr = fmt.Errorf("descarga falló %s: HTTP %d", rawURL, resp.StatusCode)
+			_ = resp.Body.Close()
+			if !retryableHTTPStatus(resp.StatusCode) {
+				break
+			}
+			continue
+		}
+		body, readErr := io.ReadAll(resp.Body)
+		closeErr := resp.Body.Close()
+		if readErr != nil {
+			lastErr = readErr
+			continue
+		}
+		if closeErr != nil {
+			lastErr = closeErr
+			continue
+		}
+		return body, nil
+	}
+	return nil, lastErr
+}
+
+func retryableHTTPStatus(status int) bool {
+	return status == http.StatusRequestTimeout || status == http.StatusTooManyRequests || status >= 500
 }
 
 func verifyChecksum(artifact string, artifactBody, checksumsBody []byte) error {

@@ -8,7 +8,9 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
@@ -43,10 +45,20 @@ func Run(args []string, deps Dependencies) int {
 		return runRestore(args[1:], deps)
 	case "merge":
 		return runMerge(args[1:], deps)
+	case "memory":
+		return runMemory(args[1:], deps)
 	case "sync":
 		return runSync(args[1:], deps)
 	case "status":
 		return runStatus(args[1:], deps)
+	case "info":
+		return runInfo(args[1:], deps)
+	case "doctor":
+		return runDoctor(args[1:], deps)
+	case "pin":
+		return runPin(args[1:], deps)
+	case "unpin":
+		return runUnpin(args[1:], deps)
 	case "upgrade":
 		return runUpgrade(args[1:], deps)
 	case "opsx":
@@ -111,6 +123,121 @@ func runOpsxRender(args []string, deps Dependencies) int {
 		return ExitRuntimeErr
 	}
 	fmt.Fprintf(deps.Stdout, "HTML OpenSpec generado: %s\n", res.OutputPath)
+	return ExitOK
+}
+
+func runMemory(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printMemoryHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "init":
+		return runMemoryInit(args[1:], deps)
+	case "status":
+		return runMemoryStatus(args[1:], deps)
+	case "validate":
+		return runMemoryValidate(args[1:], deps)
+	case "search":
+		return runMemorySearch(args[1:], deps)
+	case "-h", "--help", "help":
+		printMemoryHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando memory desconocido: %s\n\n", args[0])
+		printMemoryHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func runMemoryInit(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory init", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory init [--target <dir>] [--json]")
+		fmt.Fprintln(deps.Stderr, "Crea .lufy/memory con política Git ignored e integra defaults en project.yaml.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "memory init no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if err := memory.NewService().Init(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemoryStatus(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory status", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "memory status no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if err := memory.NewService().Status(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemoryValidate(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory validate", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "memory validate no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if err := memory.NewService().Validate(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemorySearch(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory search", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory search [--target <dir>] [--json] <query>")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := memory.NewService().Search(memory.Options{Target: *target, Query: fs.Args()[0], JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	return ExitOK
 }
 
@@ -287,6 +414,109 @@ func runStatus(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	if err := status.NewService().Run(status.Options{Target: *target, JSON: *jsonOutput, Verbose: *verbose, Scope: scope}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runInfo(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("info", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "info no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := governance.NewService().Info(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runDoctor(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "doctor no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := governance.NewService().Doctor(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runPin(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("pin", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	reason := fs.String("reason", "", "Motivo opcional del freeze")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai pin [--target <dir>] [--reason <texto>] <path>")
+		fmt.Fprintln(deps.Stderr, "Congela un asset gestionado para que sync lo preserve sin modificar.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := governance.NewService().Pin(governance.PinOptions{Target: *target, Path: fs.Args()[0], Reason: *reason}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runUnpin(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("unpin", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai unpin [--target <dir>] <path>")
+		fmt.Fprintln(deps.Stderr, "Remueve el freeze de un asset gestionado para permitir sync normal.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := governance.NewService().Unpin(governance.PinOptions{Target: *target, Path: fs.Args()[0]}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -509,8 +739,13 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
+	fmt.Fprintln(out, "  memory    Inicializa, valida y busca memoria Obsidian portable")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
+	fmt.Fprintln(out, "  info      Muestra catálogo efectivo, manifest, stacks y surfaces")
+	fmt.Fprintln(out, "  doctor    Diagnostica project.yaml, manifest y drift sin mutar")
+	fmt.Fprintln(out, "  pin       Congela un asset gestionado para preservar edits locales")
+	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
@@ -520,4 +755,13 @@ func printOpsxHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai opsx <subcomando> [flags]")
 	fmt.Fprintln(out, "Subcomandos:")
 	fmt.Fprintln(out, "  render    Renderiza un change OpenSpec a HTML offline")
+}
+
+func printMemoryHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai memory <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  init      Crea .lufy/memory y defaults en project.yaml")
+	fmt.Fprintln(out, "  status    Resume notas, drafts y backlinks")
+	fmt.Fprintln(out, "  validate  Valida schema de notas y backlinks")
+	fmt.Fprintln(out, "  search    Busca en knowledge/maps con rg cuando está disponible")
 }

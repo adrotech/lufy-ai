@@ -10,6 +10,8 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Result Contract envelope v1 para handoffs, evidencia, riesgos y siguiente acción.
 - Review Workload Harness con `review_slices` para T1/T2 con varios riesgos.
 - Skill resolution local-first con AutoSkills solo como bootstrap opcional y autorizado.
+- Memoria Obsidian portable como fuente canónica cuando `.lufy/project.yaml` declara `memory.provider: obsidian`.
+- Paralelismo gobernado para `review_slices` independientes con plan de merge y validación agrupada.
 - Core neutral con separación inicial de tool adapters y methodology adapters.
 - Registry de adapters con `opencode` como adapter escribible actual.
 - Adapters dry-run para `codex` y `claude-code`, sin escritura real.
@@ -23,19 +25,24 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `install` idempotente con catálogo, SHA-256, manifest schema v2 y backups.
 - `uninstall` gestionado con dry-run, backup, drift guard, preservación de `opencode.json` y remoción mínima de referencia en `AGENTS.md`.
 - `verify` estructural con salida humana, `--json`, `--quiet`, `--verbose` y `--deep`.
-- `status` humano/JSON con drift y detalles por asset.
+- `status` humano/JSON con drift, frozen assets, `.lufy-new` pendiente y detalles por asset.
+- `info` humano/JSON con catálogo efectivo, manifest, stacks, surfaces y conteos operativos.
+- `doctor` humano/JSON para diagnóstico read-only de `.lufy/project.yaml`, manifest, drift y conflictos pendientes.
+- `pin`/`unpin` para congelar assets gestionados desde el manifest sin editar el archivo target.
 - `sync` conservador para assets gestionados sin drift.
-- `merge` para reconciliar `.lufy-new` con ancestor seguro.
+- `merge` para reconciliar `.lufy-new` con ancestor seguro y cerrar estado/sidecar.
 - `backup` y `restore` con manifest, targetRoot y validación de paths/hashes.
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
 - `init` y `--rescan` para `.lufy/project.yaml` stack-aware.
+- `memory init/status/validate/search` para crear, diagnosticar, validar y buscar memoria Obsidian en repos destino.
 
 ### Assets instalables
 
 - Agentes OpenCode: `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`.
 - Skills OpenSpec `sdd-workflow`.
 - Templates `sdd-lite.md` y `result-contract.md`.
+- Comandos, skills, hooks y template de memoria Obsidian: `/lufy.mem-*`, `lufy.mem-*`, `memory-*.sh` y `memory-note.md`.
 - Policy de delivery.
 - Comandos `/opsx-*`.
 - Comandos `/lufy.*` instalables según catálogo.
@@ -60,7 +67,6 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Lufy SDD full como alternativa completa a OpenSpec.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
-- CLI governance adicional: `pin`, `unpin`, `doctor`, `info`.
 - Planner 8-state completo.
 - Reconciliation hook opt-in.
 - Autocomplete/help avanzado mediante Cobra u otro framework.

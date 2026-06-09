@@ -51,11 +51,20 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Delivery authorization status when the request mentions Git/GH operations.
 - Relevant local rules already discovered by the orchestrator.
 
-## Optional Engram Memory Context
+## Memory Context
 
-- Do not call Engram tools yourself; this role is read-only/no-shell and uses only context already provided.
-- If the orchestrator provides Engram findings, include only compact `memory_hints` in `context_slice` using id, title, and relevance; mark them as memory context, not repository evidence.
-- If Engram is unavailable or not provided, do not require it for routing and leave memory context as `not_available` or omitted.
+- Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
+- If the orchestrator also provides Engram findings, include only compact hints and label them as optional MCP hints. Engram absence must not block routing.
+- If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
+
+## Governed Parallelism
+
+- Read `parallel_execution` from `.lufy/project.yaml` when present.
+- Recommend parallelism only when `enabled: true`, the task has independent `review_slices`, each slice touches independent files, the merge plan is clear, and validation can run grouped after join.
+- Block parallelism for delivery, schema/database migrations, shared generated files, shared public contracts, unresolved API decisions, security-sensitive changes, or slices that touch the same files.
+- When recommending parallelism, include `parallel_execution.recommended: true`, `max_parallel_agents`, slice ownership, merge plan and `validation_mode: grouped_after_join` in the handoff.
+- When blocked, include the exact reason and route as sequential execution.
 
 ## Tier Rules
 

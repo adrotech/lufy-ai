@@ -88,15 +88,10 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("merge tool falló; archivos preservados: %w", err)
 	}
-	fmt.Fprintf(stdout, "Merge tool completado para %s\n", targetRel)
-	return nil
+	return finalizeResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath, st, "merge-tool", stdout)
 }
 
 func acceptResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath string, acceptTheirs bool, st *state.InstallState, stdout io.Writer) error {
-	lufyNewHash, err := assets.FileSHA256(lufyNewPath)
-	if err != nil {
-		return err
-	}
 	resolvedPath := targetPath
 	action := "merge-accept-ours"
 	if acceptTheirs {
@@ -112,6 +107,18 @@ func acceptResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPa
 		if err := platform.WriteFileAtomic(targetPath, body, perm); err != nil {
 			return err
 		}
+	}
+	return finalizeResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath, st, action, stdout)
+}
+
+func finalizeResolution(targetRoot, targetRel, targetPath, ancestorPath, lufyNewPath string, st *state.InstallState, action string, stdout io.Writer) error {
+	lufyNewHash, err := assets.FileSHA256(lufyNewPath)
+	if err != nil {
+		return err
+	}
+	body, err := os.ReadFile(targetPath)
+	if err != nil {
+		return err
 	}
 	if err := platform.WriteFileAtomic(ancestorPath, body, filePerm(ancestorPath, 0o644)); err != nil {
 		return err

@@ -47,11 +47,12 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - Change summary, relevant diff/files, expected validation tier, and any known toolchain constraints.
 - Specific commands requested by the user when applicable.
 
-## Optional Engram Memory
+## Obsidian Memory
 
-- If an Engram MCP/tool is available, use it as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures, and expand only 1-3 relevant hits.
-- If Engram is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
-- Return findings as compact `memory_hints` (id, title, relevance). Save a memory only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
+- If Engram MCP/tool is available, use it only as optional supplementary hints.
+- If memory is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
+- Return compact `memory_hints` (path or id, line when available, status, relevance). Save a memory in Obsidian only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
 
 ## Workflow
 

@@ -264,6 +264,19 @@ func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, ".opencode", "agents", "orchestrator.md")); err != nil {
 		t.Fatalf("default install should keep opencode assets: %v", err)
 	}
+	for _, rel := range []string{
+		filepath.Join(".opencode", "commands", "lufy.mem-search.md"),
+		filepath.Join(".opencode", "skills", "lufy.mem-search", "SKILL.md"),
+		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
+		filepath.Join(".opencode", "templates", "memory-note.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
+			t.Fatalf("default install should include memory asset %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "memory")); !os.IsNotExist(err) {
+		t.Fatalf("default install should not create user-owned .lufy/memory, stat err=%v", err)
+	}
 
 	st := stateMustLoadForTest(t, target)
 	if st.Tool != domain.ToolInitialDefault {
@@ -779,33 +792,37 @@ func minimalInstallerSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
-		"lufy-ia.harness.md":                                           "harness template\n",
-		"tui.json":                                                     "{}\n",
-		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
-		filepath.Join(".opencode", "README.md"):                        "readme\n",
-		filepath.Join(".opencode", "package.json"):                     "{}\n",
-		filepath.Join(".opencode", "package-lock.json"):                "{}\n",
-		filepath.Join(".opencode", "agents", "orchestrator.md"):        "orchestrator\n",
-		filepath.Join(".opencode", "commands", "opsx-apply.md"):        "apply\n",
-		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):      "hook\n",
-		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):   "skill\n",
-		filepath.Join(".opencode", "templates", "sdd-lite.md"):         "lite\n",
-		filepath.Join(".opencode", "templates", "result-contract.md"):  "result\n",
-		filepath.Join(".opencode", "policies", "delivery.md"):          "delivery\n",
-		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"): "plugin\n",
-		filepath.Join(".opencode", "agent-observatory", "state.ts"):    "state\n",
-		filepath.Join("openspec", "config.yaml"):                       "config\n",
-		filepath.Join("openspec", "UPSTREAM.json"):                     "{}\n",
-		filepath.Join("openspec", "README.md"):                         "openspec\n",
-		filepath.Join("openspec", "specs", ".gitkeep"):                 "",
-		filepath.Join(".lufy", "sdd", "README.md"):                     "lufy-sdd\n",
-		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):           "",
-		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):         "",
-		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):             "",
-		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):      "",
-		filepath.Join("tools", "lufy-cli-go", "go.mod"):                "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
+		"AGENTS.md":                                                         "agents root\n",
+		"AGENTS.md.template":                                                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
+		"lufy-ia.harness.md":                                                "harness template\n",
+		"tui.json":                                                          "{}\n",
+		filepath.Join(".opencode", ".gitignore"):                            "node_modules\n",
+		filepath.Join(".opencode", "README.md"):                             "readme\n",
+		filepath.Join(".opencode", "package.json"):                          "{}\n",
+		filepath.Join(".opencode", "package-lock.json"):                     "{}\n",
+		filepath.Join(".opencode", "agents", "orchestrator.md"):             "orchestrator\n",
+		filepath.Join(".opencode", "commands", "opsx-apply.md"):             "apply\n",
+		filepath.Join(".opencode", "commands", "lufy.mem-search.md"):        "memory search\n",
+		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):           "hook\n",
+		filepath.Join(".opencode", "hooks", "memory-validate.sh"):           "memory hook\n",
+		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):        "skill\n",
+		filepath.Join(".opencode", "skills", "lufy.mem-search", "SKILL.md"): "memory skill\n",
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):              "lite\n",
+		filepath.Join(".opencode", "templates", "result-contract.md"):       "result\n",
+		filepath.Join(".opencode", "templates", "memory-note.md"):           "memory note\n",
+		filepath.Join(".opencode", "policies", "delivery.md"):               "delivery\n",
+		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):      "plugin\n",
+		filepath.Join(".opencode", "agent-observatory", "state.ts"):         "state\n",
+		filepath.Join("openspec", "config.yaml"):                            "config\n",
+		filepath.Join("openspec", "UPSTREAM.json"):                          "{}\n",
+		filepath.Join("openspec", "README.md"):                              "openspec\n",
+		filepath.Join("openspec", "specs", ".gitkeep"):                      "",
+		filepath.Join(".lufy", "sdd", "README.md"):                          "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):              "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                  "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):           "",
+		filepath.Join("tools", "lufy-cli-go", "go.mod"):                     "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

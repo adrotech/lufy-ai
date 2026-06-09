@@ -36,6 +36,9 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
 			t.Fatalf("catalog included openspec changes asset: %s", asset.TargetRel)
 		}
+		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/memory/") {
+			t.Fatalf("catalog included user-owned memory asset: %s", asset.TargetRel)
+		}
 		if _, ok := want[asset.TargetRel]; ok {
 			want[asset.TargetRel] = true
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
@@ -98,6 +101,9 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
 			t.Fatalf("embedded catalog included openspec changes asset: %s", asset.TargetRel)
+		}
+		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/memory/") {
+			t.Fatalf("embedded catalog included user-owned memory asset: %s", asset.TargetRel)
 		}
 		if _, ok := want[asset.TargetRel]; ok {
 			want[asset.TargetRel] = true
@@ -229,6 +235,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                            "",
 		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                                "",
 		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):                         "",
+		filepath.Join(".lufy", "memory", "knowledge", "private.md"):                       "private\n",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                                   "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 		filepath.Join("openspec", "changes", "active", "proposal.md"):                     "must not copy\n",
 	}

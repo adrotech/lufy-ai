@@ -70,11 +70,12 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 - Explicit delivery authorization, desired operation, change summary, validation evidence, issue/spec IDs, and target base branch if not `develop`.
 
-## Optional Engram Memory
+## Obsidian Memory
 
-- If an Engram MCP/tool is available, use it as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change, and expand only 1-3 relevant hits.
-- If Engram is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
-- Return findings as compact `memory_hints` (id, title, relevance). After authorized delivery or a significant blocker, save a concise durable memory with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
+- If Engram MCP/tool is available, use it only as optional supplementary hints.
+- If memory is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
+- Return compact `memory_hints` (path or id, line when available, status, relevance). After authorized delivery or a significant blocker, save a concise durable memory in Obsidian with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
 
 ## Workflow
 

@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión estable objetivo: `v0.6.4`.
+Versión estable objetivo: `v0.6.11`.
 
 ## Requisitos
 
@@ -25,9 +25,9 @@ El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario 
 Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.4 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap:
@@ -41,8 +41,8 @@ El bootstrap:
 Atajo directo, solo si ya revisaste el script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.4/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.4 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh \
+  | bash -s -- --version v0.6.11 --install-dir "$HOME/.local/bin"
 ```
 
 ## PATH por shell
@@ -69,12 +69,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo
 
-1. Descarga `lufy-ai_v0.6.4_windows_amd64.zip` o `lufy-ai_v0.6.4_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.4_checksums.txt`.
+1. Descarga `lufy-ai_v0.6.11_windows_amd64.zip` o `lufy-ai_v0.6.11_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.6.11_checksums.txt`.
 3. Verifica el hash:
 
    ```powershell
-   Get-FileHash .\lufy-ai_v0.6.4_windows_amd64.zip -Algorithm SHA256
+   Get-FileHash .\lufy-ai_v0.6.11_windows_amd64.zip -Algorithm SHA256
    ```
 
 4. Extrae `lufy-ai.exe` en un directorio de usuario.
@@ -106,7 +106,20 @@ Verifica:
 ```bash
 lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode --no-engram
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
+lufy-ai info --target /ruta/a/tu/proyecto
+lufy-ai doctor --target /ruta/a/tu/proyecto
 ```
+
+Inicializa memoria Obsidian portable cuando quieras que los agentes conserven decisiones, reglas, flows y lessons durables en el repo destino:
+
+```bash
+lufy-ai memory init --target /ruta/a/tu/proyecto
+lufy-ai memory status --target /ruta/a/tu/proyecto
+lufy-ai memory validate --target /ruta/a/tu/proyecto
+lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
+```
+
+`memory init` crea `.lufy/memory` con `MEMORY.md`, `inbox/`, `knowledge/`, `maps/_app-profile.md`, `index/backlinks.json` y `.gitignore`. Por default las notas privadas quedan ignoradas por Git; `install` y `sync` solo gestionan comandos, skills, hooks y templates de memoria, no el contenido de `inbox/` ni `knowledge/`.
 
 ## Selección de tool y metodología
 
@@ -166,9 +179,32 @@ En scope `project`, la CLI gestiona:
 
 ### Engram opcional
 
-Engram no es requisito para instalar Lufy. Usa `--no-engram` para omitir cualquier integración.
+Obsidian es la memoria canónica portable para Lufy. Engram no es requisito para instalar Lufy. Usa `--no-engram` para omitir cualquier integración.
 
-Si no pasas `--no-engram` y `engram` existe en `PATH`, Lufy mergea en `opencode.json` un MCP local con `engram mcp --tools=agent --project <nombre-del-repo>`. Los agentes instalados usan ese MCP solo cuando la sesión expone herramientas Engram disponibles: consultan memoria antes de trabajos no triviales, usan hallazgos como contexto y guardan únicamente aprendizajes durables. Si Engram no está disponible, omiten ese workflow sin bloquear la tarea.
+Si no pasas `--no-engram` y `engram` existe en `PATH`, Lufy mergea en `opencode.json` un MCP local con `engram mcp --tools=agent --project <nombre-del-repo>`. Los agentes instalados usan ese MCP solo como hints adicionales cuando la sesión expone herramientas Engram disponibles. Si Engram no está disponible, omiten ese apoyo sin bloquear la tarea.
+
+## Defaults de `project.yaml`
+
+`lufy-ai init` y `lufy-ai scan --rescan` escriben o preservan estos bloques:
+
+```yaml
+memory:
+  provider: obsidian
+  root: .lufy/memory
+  git_policy: ignored
+  schema_version: 1
+  search: rg
+  backlinks_index: .lufy/memory/index/backlinks.json
+parallel_execution:
+  enabled: true
+  strategy: independent_review_slices
+  max_parallel_agents: 3
+  requires_independent_files: true
+  requires_merge_plan: true
+  validation_mode: grouped_after_join
+```
+
+El paralelismo no es un pipeline fijo: `sdd-router` lo recomienda solo para `review_slices` independientes con archivos separados y plan de merge. Delivery, migraciones, contratos públicos no cerrados y archivos compartidos quedan en ejecución secuencial.
 
 ## Manifest y backups
 
@@ -192,13 +228,24 @@ Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean bac
 
 ## Sync
 
-`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local.
+`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local y preserva assets frozen con `pin`.
 
 ```bash
 lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
 lufy-ai sync --target /ruta/a/tu/proyecto --yes --no-engram
 lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
 ```
+
+Si necesitas conservar un override local sobre un asset gestionado mientras actualizas el resto del kit:
+
+```bash
+lufy-ai pin --target /ruta/a/tu/proyecto --reason "override local" lufy-ia.harness.md
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai status --target /ruta/a/tu/proyecto --verbose
+lufy-ai unpin --target /ruta/a/tu/proyecto lufy-ia.harness.md
+```
+
+Mientras el asset esté pinned/frozen, `sync` lo reporta como `pinned-skip` y no avanza sus hashes registrados.
 
 Si un asset no reemplazable tiene drift local, la CLI preserva el archivo y puede generar `<archivo>.lufy-new`.
 
@@ -207,7 +254,11 @@ Para resolver:
 ```bash
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto <path>
+lufy-ai merge --target /ruta/a/tu/proyecto --accept-theirs <path>
+lufy-ai merge --target /ruta/a/tu/proyecto --accept-ours <path>
 ```
+
+Después de resolver, `merge` actualiza el manifest, refresca el ancestor seguro y remueve `<archivo>.lufy-new`. `doctor` falla si todavía quedan conflictos pendientes para evitar cerrar un estado parcialmente reconciliado.
 
 ## Uninstall y reinstall
 
@@ -272,8 +323,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 `upgrade` requiere versión fija.
 
 ```bash
-lufy-ai upgrade --to v0.6.4 --dry-run
-lufy-ai upgrade --to v0.6.4
+lufy-ai upgrade --to v0.6.11 --dry-run
+lufy-ai upgrade --to v0.6.11
 ```
 
 Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.
@@ -340,6 +391,7 @@ Eso es intencional. Significa que un asset gestionado fue modificado localmente.
 
 ```bash
 lufy-ai status --target <dir> --verbose
+lufy-ai doctor --target <dir>
 ```
 
 Luego decide si conservar el cambio, restaurar desde backup o reinstalar sobre un estado limpio.

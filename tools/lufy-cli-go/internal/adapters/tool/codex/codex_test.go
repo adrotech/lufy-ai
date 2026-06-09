@@ -10,6 +10,9 @@ import (
 )
 
 func TestAdapterCapabilitiesAreDryRunOnly(t *testing.T) {
+	if New().ID() != domain.ToolCodex {
+		t.Fatalf("unexpected adapter id: %s", New().ID())
+	}
 	caps := New().Capabilities()
 	if !caps.DryRunOnly || !caps.ProjectConfig || !caps.SystemPrompt {
 		t.Fatalf("expected codex dry-run project/system capabilities: %+v", caps)

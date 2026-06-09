@@ -46,11 +46,12 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/project.yaml` for stack 
 - User objective, suspected area, linked OpenSpec change/issue, and requested thoroughness if known.
 - Optional thoroughness levels: `quick` (few targeted reads), `medium` (default, enough to plan), `deep` (broader impact/risk map).
 
-## Optional Engram Memory
+## Obsidian Memory
 
-- If an Engram MCP/tool is available, use it as a compact index before broad repository exploration: identify the current project, load recent context only if useful, search with short queries by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers, and expand only 1-3 relevant hits.
-- If Engram is unavailable, skip memory lookup and report it only when relevant as `not_available`; do not block exploration.
-- Return Engram findings as compact `memory_hints` (id, title, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
+- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the first memory index before broad exploration when historical context is likely: short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
+- If Engram MCP/tool is also available, use it only as optional supplementary hints.
+- If memory is unavailable, report it only when relevant as `not_available`; do not block exploration.
+- Return compact `memory_hints` (path or id, line when available, status, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
 
 ## Workflow
 

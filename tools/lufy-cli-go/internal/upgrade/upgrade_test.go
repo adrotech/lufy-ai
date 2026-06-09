@@ -107,6 +107,39 @@ func TestFetchURLReadsFileAndRejectsHTTPError(t *testing.T) {
 	}
 }
 
+func TestFetchURLRetriesServerFailures(t *testing.T) {
+	attempts := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts == 1 {
+			http.Error(w, "temporal", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprint(w, "ok")
+	}))
+	t.Cleanup(server.Close)
+
+	body, err := fetchURLWithClient(server.URL, server.Client(), 3)
+	if err != nil {
+		t.Fatalf("fetchURLWithClient() error = %v", err)
+	}
+	if string(body) != "ok" || attempts != 2 {
+		t.Fatalf("retry body=%q attempts=%d", string(body), attempts)
+	}
+}
+
+func TestFetchURLClientDefaults(t *testing.T) {
+	if defaultHTTPClient.Timeout <= 0 {
+		t.Fatalf("defaultHTTPClient timeout should be configured")
+	}
+	if !retryableHTTPStatus(http.StatusTooManyRequests) || !retryableHTTPStatus(http.StatusServiceUnavailable) {
+		t.Fatalf("expected retryable status")
+	}
+	if retryableHTTPStatus(http.StatusBadRequest) {
+		t.Fatalf("400 should not be retryable")
+	}
+}
+
 func TestVerifyChecksumErrors(t *testing.T) {
 	artifact := "lufy-ai_v1_test.tar.gz"
 	if err := verifyChecksum(artifact, []byte("body"), []byte("")); err == nil || !strings.Contains(err.Error(), "no contiene entrada") {

@@ -57,6 +57,88 @@ func TestRunUnknownCommand(t *testing.T) {
 	}
 }
 
+func TestRunMemoryCommands(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"memory", "init", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory init expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Memoria Obsidian inicializada")) {
+		t.Fatalf("memory init output unexpected: %s", out.String())
+	}
+	writeCLITestFile(t, filepath.Join(target, ".lufy/memory/knowledge/searchable.md"), `---
+name: searchable
+description: Nota activa para buscar memoria.
+type: rule
+status: active
+---
+
+Lufy busca contexto durable.
+`)
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "validate", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory validate expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "search", "--target", target, "durable"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory search expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("[active] knowledge/searchable.md")) {
+		t.Fatalf("memory search output unexpected: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "status", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory status expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Inicializada: sí")) {
+		t.Fatalf("memory status output unexpected: %s", out.String())
+	}
+}
+
+func TestRunMemoryHelpAndUsageErrors(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"memory", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK || !bytes.Contains(out.Bytes(), []byte("Subcomandos")) {
+		t.Fatalf("memory help unexpected code=%d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr || !bytes.Contains(errOut.Bytes(), []byte("Uso: lufy-ai memory")) {
+		t.Fatalf("memory without subcommand unexpected code=%d stderr=%s", code, errOut.String())
+	}
+
+	errOut.Reset()
+	code = Run([]string{"memory", "unknown"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr || !bytes.Contains(errOut.Bytes(), []byte("Subcomando memory desconocido")) {
+		t.Fatalf("memory unknown unexpected code=%d stderr=%s", code, errOut.String())
+	}
+
+	errOut.Reset()
+	code = Run([]string{"memory", "search"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("memory search without query expected usage, got %d", code)
+	}
+}
+
 func TestRunVersionOutputAndRejectsArgs(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
@@ -195,7 +277,7 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	if code := Run([]string{"help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("help expected ExitOK, got %d", code)
 	}
-	if !bytes.Contains(out.Bytes(), []byte("init")) || !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) || !bytes.Contains(out.Bytes(), []byte("status")) || !bytes.Contains(out.Bytes(), []byte("upgrade")) {
+	if !bytes.Contains(out.Bytes(), []byte("init")) || !bytes.Contains(out.Bytes(), []byte("install")) || !bytes.Contains(out.Bytes(), []byte("restore")) || !bytes.Contains(out.Bytes(), []byte("sync")) || !bytes.Contains(out.Bytes(), []byte("status")) || !bytes.Contains(out.Bytes(), []byte("info")) || !bytes.Contains(out.Bytes(), []byte("doctor")) || !bytes.Contains(out.Bytes(), []byte("pin")) || !bytes.Contains(out.Bytes(), []byte("unpin")) || !bytes.Contains(out.Bytes(), []byte("upgrade")) {
 		t.Fatalf("help output missing commands: %s", out.String())
 	}
 
@@ -206,6 +288,94 @@ func TestRunHelpCommandsAndRestoreRequiresBackup(t *testing.T) {
 	}
 	if !bytes.Contains(errOut.Bytes(), []byte("restore requiere --backup")) {
 		t.Fatalf("restore missing backup output unexpected: %s", errOut.String())
+	}
+}
+
+func TestRunInfoAndDoctor(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"info", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("info expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte(`"installed": true`)) || !bytes.Contains(out.Bytes(), []byte(`"catalogAssets"`)) || !bytes.Contains(out.Bytes(), []byte(`"stacks"`)) {
+		t.Fatalf("info json unexpected: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"doctor", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("doctor expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Doctor OK")) {
+		t.Fatalf("doctor output unexpected: %s", out.String())
+	}
+}
+
+func TestRunPinAndUnpin(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"pin", "--target", target, "--reason", "local override", "lufy-ia.harness.md"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("pin expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	pinned := stateMustLoadForCLITest(t, target).AssetMap()["lufy-ia.harness.md"]
+	if !pinned.Pinned || pinned.PinnedReason != "local override" || pinned.LastAction != "pin" {
+		t.Fatalf("pin did not update state: %#v", pinned)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"unpin", "--target", target, "lufy-ia.harness.md"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("unpin expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	unpinned := stateMustLoadForCLITest(t, target).AssetMap()["lufy-ia.harness.md"]
+	if unpinned.Pinned || unpinned.PinnedReason != "" || unpinned.LastAction != "unpin" {
+		t.Fatalf("unpin did not update state: %#v", unpinned)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"pin", "--target", target, "missing.md"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr || !bytes.Contains(errOut.Bytes(), []byte("asset no gestionado")) {
+		t.Fatalf("pin missing asset expected runtime error, got code=%d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+}
+
+func TestRunDoctorReportsMissingManifest(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"doctor", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("doctor missing manifest expected ExitRuntimeErr, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte(`"ok": false`)) || !bytes.Contains(out.Bytes(), []byte("falta manifest")) {
+		t.Fatalf("doctor missing manifest json unexpected: %s", out.String())
 	}
 }
 
@@ -729,4 +899,16 @@ func hashCLITestFile(t *testing.T, path string) string {
 	t.Helper()
 	h := sha256.Sum256(readCLITestFile(t, path))
 	return hex.EncodeToString(h[:])
+}
+
+func stateMustLoadForCLITest(t *testing.T, target string) *state.InstallState {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("missing install-state")
+	}
+	return st
 }
