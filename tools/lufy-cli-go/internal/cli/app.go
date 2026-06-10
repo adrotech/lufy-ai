@@ -103,7 +103,7 @@ func runOpsxRender(args []string, deps Dependencies) int {
 	output := fs.String("output", "", "Ruta de salida opcional")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai opsx render --change <name> [--target <dir>] [--format html] [--theme notion-dark] [--output <path>]")
-		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/plan/tasks/specs en un HTML offline opcional.")
+		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/tasks/specs en un HTML offline opcional.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()

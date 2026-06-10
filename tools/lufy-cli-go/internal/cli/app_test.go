@@ -827,12 +827,12 @@ func TestRunOpsxRenderGeneratesHTML(t *testing.T) {
 		t.Fatalf("unexpected stdout: %s", out.String())
 	}
 	body := readCLITestFile(t, filepath.Join(changeDir, "change-overview.html"))
-	for _, want := range [][]byte{[]byte("Proposal"), []byte("Design"), []byte("Plan"), []byte("Tasks"), []byte(`class="tabs"`)} {
+	for _, want := range [][]byte{[]byte("Proposal"), []byte("Design"), []byte("Tasks"), []byte(`class="tabs"`)} {
 		if !bytes.Contains(body, want) {
 			t.Fatalf("generated html missing %q", want)
 		}
 	}
-	for _, unwanted := range [][]byte{[]byte("Notion dark"), []byte("Offline HTML"), []byte("Artifacts disponibles:"), []byte("Sin recursos remotos")} {
+	for _, unwanted := range [][]byte{[]byte("Plan"), []byte("plan.md"), []byte("Notion dark"), []byte("Offline HTML"), []byte("Artifacts disponibles:"), []byte("Sin recursos remotos")} {
 		if bytes.Contains(body, unwanted) {
 			t.Fatalf("generated html should not include %q", unwanted)
 		}
