@@ -13,8 +13,7 @@ La evolución debe priorizar primero la seguridad del instalador y la confianza 
 - **Instalación segura por defecto**: ningún archivo crítico debe sobrescribirse sin backup, estrategia explícita o confirmación.
 - **Idempotencia verificable**: ejecutar el instalador o sync más de una vez debe producir un estado estable y auditable.
 - **Compatibilidad con repositorios existentes**: respetar `.opencode/`, `AGENTS.md`, `tui.json`, `opencode.json` y `openspec/` cuando ya existan.
-- **Flags predecibles para automatización**: `--dry-run`, `--yes`, `--no-engram` y `--target` deben funcionar sin prompts inesperados.
-- **Detección portable**: usar `command -v engram` para resolver Engram, evitando paths hardcodeados como `/opt/homebrew/bin/engram`.
+- **Flags predecibles para automatización**: `--dry-run`, `--yes`, y `--target` deben funcionar sin prompts inesperados.
 - **Validación simple antes de crecer**: ejecutar checks básicos de shell cuando estén disponibles, JSON e instalación en temp dir con `lufy-ai verify` antes de introducir features mayores.
 - **Documentación honesta**: documentar solo templates y assets que realmente se instalan.
 - **Evolución incremental**: productizar como CLI queda para una fase futura, no como prioridad inmediata.
@@ -96,9 +95,8 @@ Las fases siguientes se conservan como trazabilidad del roadmap original. Varias
 
 Objetivo: hacer que `scripts/install.sh` sea seguro, auditable e idempotente para uso local y CI.
 
-- `RM-001`: Añadir flags `--dry-run`, `--yes`, `--no-engram` y `--target` robusto.
+- `RM-001`: Añadir flags `--dry-run`, `--yes`, y `--target` robusto.
 - `RM-002`: Implementar backup/rollback mínimo antes de tocar `.opencode/`, `AGENTS.md`, `tui.json`, `opencode.json` y `openspec/`.
-- `RM-003`: Resolver Engram con `command -v engram` y escribir ese path en `opencode.json` solo cuando aplique.
 - `RM-004`: Formalizar `lufy-ai verify` como verificador canónico para validar estructura instalada, manifest, hashes SHA-256 y JSON parseable.
 - `RM-005`: Mejorar merge/idempotencia para no sobrescribir configs existentes; detectar bloques gestionados o pedir estrategia.
 
@@ -150,7 +148,6 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - Soportar `--target <dir>` y mantener compatibilidad con el argumento posicional actual cuando no haya flag.
 - `--dry-run` debe listar acciones planeadas sin escribir archivos ni clonar/cambiar estado persistente salvo temporales limpiables.
 - `--yes` debe aceptar prompts seguros, pero no debe ocultar conflictos destructivos sin backup.
-- `--no-engram` debe saltar detección, prompts y cambios MCP de Engram.
 - Flags desconocidos deben fallar con ayuda breve y código distinto de cero.
 
 ### `RM-002` — Backup/rollback mínimo
@@ -164,17 +161,6 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - Registrar un manifest con paths respaldados, acciones realizadas y timestamp.
 - Si una acción falla, intentar rollback de paths tocados en esa ejecución y reportar el estado final.
 - No borrar backups automáticamente en la primera iteración.
-
-### `RM-003` — Engram portable
-
-**Propuesta**: resolver Engram con `command -v engram` al momento de instalar.
-
-**Design**:
-
-- Si `--no-engram`, no consultar ni escribir integración Engram.
-- Si Engram existe y el usuario acepta integración, escribir el path resuelto en `opencode.json`.
-- Si no existe, dejar MCP deshabilitado sin path hardcodeado o con una recomendación explícita de instalación.
-- Evitar depender de `/opt/homebrew/bin/engram`, porque rompe Linux, macOS no-Homebrew y entornos CI.
 
 ### `RM-004` — `lufy-ai verify` canónico
 
@@ -210,7 +196,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 
 - `shellcheck scripts/install.sh` cuando esté disponible y smoke con `lufy-ai verify`.
 - Validar JSON de `tui.json`, `.opencode/package.json`, `.opencode/package-lock.json` y archivos JSON relevantes.
-- Ejecutar instalación en un temp dir y luego `lufy-ai verify --target <temp> --no-engram`.
+- Ejecutar instalación en un temp dir y luego `lufy-ai verify --target <temp>`.
 - No agregar pipelines de build/test de producto inexistente.
 
 ### `RM-007` — Verificación local documentada e integrada
@@ -291,8 +277,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 **Design por fases**:
 
 1. Mantener Bash como wrapper estricto que delega en la CLI Go; si no hay binario local o en `PATH`, falla con instrucciones de build local.
-2. Crear una CLI Go mínima con comandos base: `lufy-ai install --target . --dry-run --yes --no-engram`, `lufy-ai verify --target .`, `lufy-ai backup` y `lufy-ai restore`.
-3. Mover al binario la detección de entorno, Engram portable, backup/rollback, merge/idempotencia y `verify`.
+2. Crear una CLI Go mínima con comandos base: `lufy-ai install --target . --dry-run --yes`, `lufy-ai verify --target .`, `lufy-ai backup` y `lufy-ai restore`.
 4. Agregar `sync`/`update` después de estabilizar instalación, verificación y rollback.
 5. Evaluar una TUI Go como opción futura; no es prioridad inicial.
 
@@ -301,7 +286,6 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - ✅ Scaffolding Go en carpeta dedicada `tools/lufy-cli-go/` con `go.mod` propio.
 - ✅ Comandos base cableados (`install`, `verify`, `backup`, `restore`) en slice mínimo funcional.
 - ✅ Wrapper `scripts/install.sh` delega exclusivamente a `lufy-ai install`, usando `tools/lufy-cli-go/bin/lufy-ai` o `lufy-ai` en `PATH`, sin fallback legacy.
-- ✅ Resolución Engram portable por `PATH` sin hardcode nuevo en la ruta de migración.
 - ✅ Smoke E2E reproducible validado en temp dir para install real + verify + idempotencia básica (2da ejecución con `skip`) + backup/restore (dry-run y real) sobre conflicto controlado de `AGENTS.md`.
 - ✅ Install real copia assets gestionados del catálogo, escribe `.lufy/managed-state/install-state.json` con SHA-256 y evita sobrescribir drift local.
 - ✅ `backup`/`restore` usan `manifest.json`, hashes, `targetRoot` y backup de recovery antes de restauraciones reales.
@@ -376,10 +360,8 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 
 | ID | Criterios de aceptación |
 | --- | --- |
-| `RM-001` | `scripts/install.sh --dry-run --target <dir>` no escribe en el target; `--yes` no requiere prompts seguros; `--no-engram` omite Engram; flags inválidos fallan con ayuda. |
 | `RM-002` | Antes de modificar paths sensibles se crea backup; ante fallo se intenta rollback; queda manifest de la ejecución. |
-| `RM-003` | `opencode.json` no contiene `/opt/homebrew/bin/engram` hardcodeado cuando la integración se genera; usa el resultado de `command -v engram` o queda deshabilitada. |
-| `RM-004` | `lufy-ai verify --target <dir> --no-engram` valida estructura, JSON parseable, manifest, hashes y presencia de commands/skills/plugin. |
+| `RM-004` | `lufy-ai verify --target <dir>` valida estructura, JSON parseable, manifest, hashes y presencia de commands/skills/plugin. |
 | `RM-005` | Reinstalar sobre un target existente no sobrescribe configs sin estrategia; `opencode.json` se mergea de forma conservadora y los conflictos/JSON inválido se reportan de forma accionable. |
 | `RM-006` | Existe workflow en `.github/workflows/` con tests/build Go, smoke de instalación en temp dir, wrapper smoke y checks estáticos disponibles; `shellcheck` queda como mejora opcional si se incorpora al runner. |
 | `RM-007` | La verificación local está documentada y CI ejecuta `lufy-ai verify` o checks equivalentes. |
@@ -416,7 +398,6 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - `install-safety`
 - `idempotency`
 - `backup-rollback`
-- `engram`
 - `ci`
 - `verify-install`
 - `sync`

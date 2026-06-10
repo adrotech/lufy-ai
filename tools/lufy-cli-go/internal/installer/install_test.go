@@ -26,7 +26,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	svc := NewService()
 	target := t.TempDir()
 
-	copyPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	copyPlan, err := svc.BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan(copy) error = %v", err)
 	}
@@ -34,10 +34,10 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 		t.Fatalf("copy plan missing expected actions: %#v", copyPlan.Actions)
 	}
 
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
-	skipPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	skipPlan, err := svc.BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan(skip) error = %v", err)
 	}
@@ -48,7 +48,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte("local drift\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	conflictPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	conflictPlan, err := svc.BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan(conflict) error = %v", err)
 	}
@@ -57,13 +57,13 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	}
 
 	updatedTarget := t.TempDir()
-	if err := svc.Run(Options{Target: updatedTarget, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: updatedTarget, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(updated initial) error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(source, "lufy-ia.harness.md"), []byte("upstream changed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget, NoEngram: true})
+	updatePlan, err := svc.BuildPlan(Options{Target: updatedTarget})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
@@ -77,7 +77,7 @@ func TestPlanBuilderBuildsPlanWithoutApplyingMutations(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 
-	plan, err := PlanBuilder{}.Build(Options{Target: target, NoEngram: true})
+	plan, err := PlanBuilder{}.Build(Options{Target: target})
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
@@ -118,7 +118,7 @@ validation:
 `)
 
 	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	body, err := os.ReadFile(filepath.Join(target, ".opencode", "agents", "implementer.md"))
@@ -130,7 +130,7 @@ validation:
 			t.Fatalf("missing rendered permission %q in:\n%s", want, body)
 		}
 	}
-	skipPlan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	skipPlan, err := svc.BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan(skip) error = %v", err)
 	}
@@ -144,20 +144,20 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
 	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
 
-	plan, err := svc.BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := svc.BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
 	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
 		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
 	}
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(lufy-new) error = %v", err)
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
@@ -172,12 +172,12 @@ func TestRunLufyNewCanBeConsumedByMergeAcceptTheirs(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
 	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(lufy-new) error = %v", err)
 	}
 
@@ -203,7 +203,7 @@ func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 	customAgents := "# AGENTS.md\n\nCustom project guide\n"
 	writeInstallerFile(t, filepath.Join(target, "AGENTS.md"), customAgents)
 
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -211,7 +211,7 @@ func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 		t.Fatalf("expected agents reference insertion without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
 	}
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents+"\n@lufy-ia.harness.md\n" {
@@ -230,7 +230,7 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	st, err := state.Load(target)
@@ -251,7 +251,7 @@ func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(default install) error = %v", err)
 	}
 
@@ -335,7 +335,7 @@ func TestRunLufyNewDoesNotBackupOrRefreshAncestor(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	before, err := state.Load(target)
@@ -345,7 +345,7 @@ func TestRunLufyNewDoesNotBackupOrRefreshAncestor(t *testing.T) {
 	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
 	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(lufy-new) error = %v", err)
 	}
 	if strings.Contains(out.String(), "- [backup]") {
@@ -365,7 +365,7 @@ func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	before, err := os.ReadFile(state.Path(target))
@@ -376,7 +376,7 @@ func TestRunIsIdempotentAndDoesNotRewriteState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(second) error = %v", err)
 	}
 	after, err := os.ReadFile(state.Path(target))
@@ -399,7 +399,7 @@ func TestRunRequiresYesForRealMutation(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
 		t.Fatalf("expected --yes error, got %v", err)
 	}
@@ -417,7 +417,7 @@ func TestRunCreatesProjectConfigAfterConfirmation(t *testing.T) {
 	target := t.TempDir()
 	var out bytes.Buffer
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(confirmed install) error = %v, output=%s", err, out.String())
 	}
 
@@ -439,7 +439,7 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(target, projectconfig.ProjectConfigPath)); !os.IsNotExist(err) {
@@ -453,7 +453,6 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 		"- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea referencia mínima al harness)",
 		"- [copy] lufy-ia.harness.md (archivo gestionado ausente)",
 		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
-		"Engram: omitido por --no-engram",
 		"Modo dry-run: sin mutaciones en filesystem",
 	} {
 		if !strings.Contains(out.String(), want) {
@@ -468,7 +467,7 @@ func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *
 	target := t.TempDir()
 	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true},"provider":{"local":{"models":{"keep-me":{}}}}}`)
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(install) error = %v", err)
 	}
 	decoded := readOpenCodeForTest(t, target)
@@ -489,7 +488,7 @@ func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *
 		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
 	}
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(reinstall) error = %v", err)
 	}
 	decoded = readOpenCodeForTest(t, target)
@@ -504,7 +503,7 @@ func TestInstallRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
 	target := t.TempDir()
 	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
 
-	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
 		t.Fatalf("expected invalid opencode.json error, got %v", err)
 	}
@@ -526,7 +525,7 @@ func TestInstallRejectsUnsafeOpenCodePath(t *testing.T) {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
 
-	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
 	if err == nil || !unsafeOpenCodeInstallError(err) {
 		t.Fatalf("expected unsafe opencode.json error, got %v", err)
 	}
@@ -541,7 +540,7 @@ func TestInstallRejectsInvalidOpenCodeManagedKeyTypes(t *testing.T) {
 	target := t.TempDir()
 	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"$schema":false,"plugin":{}}`)
 
-	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
 		t.Fatalf("expected managed key type error, got %v", err)
 	}
@@ -562,11 +561,11 @@ func TestBackupFlagCreatesExplicitBackupOnInstalledTarget(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(initial) error = %v", err)
 	}
 	var out bytes.Buffer
-	if err := svc.Run(Options{Target: target, Yes: true, NoEngram: true, Backup: true}, &out); err != nil {
+	if err := svc.Run(Options{Target: target, Yes: true, Backup: true}, &out); err != nil {
 		t.Fatalf("Run(backup) error = %v", err)
 	}
 	if !strings.Contains(out.String(), "- [backup]") {
@@ -600,7 +599,7 @@ func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(target, ".opencode")); err != nil {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -619,7 +618,7 @@ func TestRunRejectsCorruptState(t *testing.T) {
 	if err := os.WriteFile(state.Path(target), []byte("{not-json"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "install-state.json inválido") {
 		t.Fatalf("expected corrupt state error, got %v", err)
 	}
@@ -661,11 +660,11 @@ func TestInstallAndVerifyIntegration(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install error = %v", err)
 	}
 	var out bytes.Buffer
-	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true}, &out); err != nil {
+	if err := verify.NewService().Run(verify.Options{Target: target}, &out); err != nil {
 		t.Fatalf("verify error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "ok: verify estructural completo") {

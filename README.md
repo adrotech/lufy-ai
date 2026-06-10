@@ -63,7 +63,7 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
 lufy-ai version
 lufy-ai init --target /ruta/a/tu/proyecto
 lufy-ai memory init --target /ruta/a/tu/proyecto
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes
 ```
 
 `init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
@@ -73,19 +73,19 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --n
 ### 3. Instalar y verificar
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 ```
 
-Obsidian es la memoria canónica portable. Engram es opcional: si omites `--no-engram` y el binario `engram` está en `PATH`, Lufy mergea un MCP local de Engram en `opencode.json` con `--tools=agent --project <repo>`; los agentes instalados pueden usarlo solo como hints adicionales cuando el MCP/tool está disponible y omiten ese apoyo cuando no lo está.
+Obsidian es la única memoria canónica portable. Lufy no instala ni verifica MCPs externos de memoria.
 
 ### 4. Desinstalar o reinstalar si hace falta
 
 ```bash
 lufy-ai uninstall --target /ruta/a/tu/proyecto --dry-run
 lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
 ```
 
 `uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva `opencode.json` y remueve solo la referencia `@lufy-ia.harness.md` de `AGENTS.md`.
@@ -98,8 +98,8 @@ Este flujo lleva un repo nuevo desde instalación hasta una primera demo T3 sin 
 lufy-ai version
 lufy-ai init --target /ruta/a/tu/proyecto
 lufy-ai memory init --target /ruta/a/tu/proyecto
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --deep
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --deep
 ```
 
 Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
@@ -182,9 +182,9 @@ Para `backend`, `project_profile.surfaces[*].architecture` registra arquitectura
 Ejemplos:
 
 ```bash
-lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T3:none --yes
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
 ```
 
 Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool codex` y `--tool claude-code` hasta que existan adapters escribibles con validación.
@@ -268,9 +268,9 @@ go build -o bin/lufy-ai ./cmd/lufy-ai
 Probar contra un target:
 
 ```bash
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto
 ```
 
 `scripts/install.sh` es solo un wrapper estricto hacia `lufy-ai install`; no tiene fallback legacy.

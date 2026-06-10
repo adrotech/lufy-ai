@@ -24,9 +24,9 @@ Por ahora solo `opencode` escribe archivos. `codex` y `claude-code` son previews
 
 ```bash
 lufy-ai version
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes --no-engram
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode
 ```
 
 Después de instalar:
@@ -78,19 +78,19 @@ Default actual: OpenCode + OpenSpec.
 Para dejar T3 sin metodología:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T3:none --yes
 ```
 
 Para usar Lufy SDD Lite en T2:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:lufy-sdd/lite --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
 Para combinar OpenSpec Lite en T2 y T3 Express sin spec:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
 ```
 
 Los comandos mutantes bloquean combinaciones inseguras como `T1:none`, `T2:none`, `--tool codex` y `--tool claude-code`.
@@ -153,9 +153,9 @@ lufy-ai status --target /ruta/a/tu/proyecto --json --verbose
 ### Sincronizar assets de Lufy
 
 ```bash
-lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
-lufy-ai sync --target /ruta/a/tu/proyecto --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes
+lufy-ai sync --target /ruta/a/tu/proyecto --yes
+lufy-ai verify --target /ruta/a/tu/proyecto
 ```
 
 ### Resolver drift
@@ -179,8 +179,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id> --yes
 ```bash
 lufy-ai uninstall --target /ruta/a/tu/proyecto --dry-run
 lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --quiet
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
 ```
 
 `uninstall` preserva `opencode.json`, preserva `AGENTS.md` y elimina solo la referencia `@lufy-ia.harness.md`. Si encuentra drift en assets gestionados, bloquea antes de mutar.
@@ -239,7 +239,7 @@ No hay `npm test`, `npm run typecheck` ni `tsc` global en la raíz.
 1. Reinicia OpenCode.
 2. Verifica `.opencode/agents/`.
 3. Verifica que `AGENTS.md` tenga `@lufy-ia.harness.md`.
-4. Corre `lufy-ai verify --target <repo> --no-engram`.
+4. Corre `lufy-ai verify --target <repo>`.
 
 ### El plugin TUI no aparece
 

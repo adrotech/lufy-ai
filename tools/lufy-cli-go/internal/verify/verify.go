@@ -22,7 +22,6 @@ import (
 
 type Options struct {
 	Target                string
-	NoEngram              bool
 	JSON                  bool
 	Quiet                 bool
 	Verbose               bool
@@ -301,13 +300,6 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	}
 	reportExtraManagedDirFiles(target, requiredDirs, assetMap, recorder.emit)
 
-	if opts.NoEngram {
-		recorder.emit("warn", "", "chequeo de Engram omitido por --no-engram")
-	} else if path, ok := platform.ResolveEngram(false, platform.OSResolver{}); ok {
-		recorder.emit("ok", "", "engram detectado en PATH (%s)", path)
-	} else {
-		recorder.emit("warn", "", "engram no encontrado en PATH")
-	}
 	return nil
 }
 

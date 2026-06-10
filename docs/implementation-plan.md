@@ -197,7 +197,6 @@ Comandos minimos antes de PR:
 Temas fuera de `v0.2.0` y `v0.3.0`:
 
 - Soporte multi-tool fuera de OpenCode.
-- Integracion profunda con Engram/gentle-ai.
 - Plugin system para skills custom.
 - Homebrew/Scoop antes de estabilizar releases GitHub.
 - Convertir agentes a skills como estrategia general.

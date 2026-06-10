@@ -31,7 +31,3 @@ status: active
 
 6. Para `type: decision`, incluir una sección `**Why:**`.
 7. Ejecutar o recomendar `lufy-ai memory validate --target <repo>`.
-
-## Engram
-
-Engram puede aportar hints solo si existe una herramienta MCP disponible. Obsidian sigue siendo canónico y no se duplica memoria rutinaria.

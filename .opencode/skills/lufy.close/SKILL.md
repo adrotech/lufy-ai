@@ -46,7 +46,6 @@ Finaliza un cambio activo del workflow LUFY o respaldado por OpenSpec después d
    git log --oneline @{u}..HEAD
    ```
 
-   Si Engram MCP está habilitado y disponible, buscar/guardar/actualizar el outcome durable de cierre para `<name>` con `topic_key` estable. Si no está disponible, reportar `not_available` y continuar.
 
 3. **Verificar tasks y artifacts**
 

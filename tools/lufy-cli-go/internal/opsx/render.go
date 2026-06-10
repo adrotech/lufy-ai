@@ -334,7 +334,8 @@ func renderInline(text string) string {
 	for len(text) > 0 {
 		codeStart := strings.Index(text, "`")
 		linkStart := strings.Index(text, "[")
-		next := firstInlineToken(codeStart, linkStart)
+		boldStart := strings.Index(text, "**")
+		next := firstInlineToken(codeStart, linkStart, boldStart)
 		if next < 0 {
 			out.WriteString(html.EscapeString(text))
 			break
@@ -351,6 +352,17 @@ func renderInline(text string) string {
 			code := text[1 : end+1]
 			fmt.Fprintf(&out, "<code>%s</code>", html.EscapeString(code))
 			text = text[end+2:]
+			continue
+		}
+		if strings.HasPrefix(text, "**") {
+			end := strings.Index(text[2:], "**")
+			if end < 0 {
+				out.WriteString(html.EscapeString(text))
+				break
+			}
+			content := text[2 : end+2]
+			fmt.Fprintf(&out, "<strong>%s</strong>", renderInline(content))
+			text = text[end+4:]
 			continue
 		}
 		linkHTML, consumed, ok := renderMarkdownLink(text)

@@ -637,11 +637,10 @@ func runSync(args []string, deps Dependencies) int {
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
-	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 	harnessFlags := addToolFlag(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode] [--dry-run] [--yes] [--no-engram]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode] [--dry-run] [--yes]")
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -673,7 +672,7 @@ func runSync(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
-	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, NoEngram: *noEngram, Scope: scope, Harness: harness}, deps.Stdout)
+	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, Scope: scope, Harness: harness}, deps.Stdout)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -686,7 +685,6 @@ func runVerify(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
-	noEngram := fs.Bool("no-engram", false, "Omitir chequeo Engram")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	quiet := fs.Bool("quiet", false, "Omitir salida humana si no hay errores")
 	verbose := fs.Bool("verbose", false, "Mostrar diagnóstico adicional")
@@ -712,7 +710,7 @@ func runVerify(args []string, deps Dependencies) int {
 			return ExitRuntimeErr
 		}
 	}
-	if err := svc.Run(verify.Options{Target: *target, NoEngram: *noEngram, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
+	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -784,12 +782,11 @@ func runInstall(args []string, deps Dependencies) int {
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
-	noEngram := fs.Bool("no-engram", false, "Omitir integración Engram")
 	backup := fs.Bool("backup", false, "Forzar backup cuando aplique")
 	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--no-engram] [--backup]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]")
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -822,13 +819,12 @@ func runInstall(args []string, deps Dependencies) int {
 		return ExitRuntimeErr
 	}
 	err = service.Run(installer.Options{
-		Target:   *target,
-		DryRun:   *dryRun,
-		Yes:      *yes,
-		NoEngram: *noEngram,
-		Backup:   *backup,
-		Scope:    scope,
-		Harness:  harness,
+		Target:  *target,
+		DryRun:  *dryRun,
+		Yes:     *yes,
+		Backup:  *backup,
+		Scope:   scope,
+		Harness: harness,
 	}, deps.Stdout)
 	if err != nil {
 		var actionable ActionableError

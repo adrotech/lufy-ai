@@ -26,7 +26,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	svc := NewService()
 
 	skipTarget := installedTarget(t)
-	skipPlan, err := svc.BuildPlan(Options{Target: skipTarget, NoEngram: true})
+	skipPlan, err := svc.BuildPlan(Options{Target: skipTarget})
 	if err != nil {
 		t.Fatalf("BuildPlan(skip) error = %v", err)
 	}
@@ -36,7 +36,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 
 	updateTarget := installedTarget(t)
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
-	updatePlan, err := svc.BuildPlan(Options{Target: updateTarget, NoEngram: true})
+	updatePlan, err := svc.BuildPlan(Options{Target: updateTarget})
 	if err != nil {
 		t.Fatalf("BuildPlan(update) error = %v", err)
 	}
@@ -46,7 +46,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 
 	driftTarget := installedTarget(t)
 	writeFile(t, filepath.Join(driftTarget, "AGENTS.md"), "local drift\n")
-	driftPlan, err := svc.BuildPlan(Options{Target: driftTarget, NoEngram: true})
+	driftPlan, err := svc.BuildPlan(Options{Target: driftTarget})
 	if err != nil {
 		t.Fatalf("BuildPlan(drift) error = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestBuildPlanClassifiesSkipUpdateDriftAndUntracked(t *testing.T) {
 	if err := state.WriteAtomic(untrackedTarget, state.New(untrackedTarget, nil, nil, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
-	untrackedPlan, err := svc.BuildPlan(Options{Target: untrackedTarget, NoEngram: true})
+	untrackedPlan, err := svc.BuildPlan(Options{Target: untrackedTarget})
 	if err != nil {
 		t.Fatalf("BuildPlan(untracked) error = %v", err)
 	}
@@ -74,7 +74,7 @@ func TestPlanBuilderBuildsSyncPlanWithoutRewritingState(t *testing.T) {
 	target := installedTarget(t)
 	before := readFile(t, state.Path(target))
 
-	plan, err := PlanBuilder{}.Build(Options{Target: target, NoEngram: true})
+	plan, err := PlanBuilder{}.Build(Options{Target: target})
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
@@ -94,7 +94,7 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	notePath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
 	writeFile(t, notePath, "private memory\n")
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
 	}
 	if got := string(readFile(t, notePath)); got != "private memory\n" {
@@ -129,7 +129,7 @@ func TestRunSkipsPinnedAssetWithoutAdvancingManifest(t *testing.T) {
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed while pinned\n")
 	targetBefore := readFile(t, filepath.Join(target, "lufy-ia.harness.md"))
 
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -138,7 +138,7 @@ func TestRunSkipsPinnedAssetWithoutAdvancingManifest(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync pinned) error = %v, output=%s", err, out.String())
 	}
 	if got := readFile(t, filepath.Join(target, "lufy-ia.harness.md")); !bytes.Equal(got, targetBefore) {
@@ -157,14 +157,14 @@ func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
 	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
 	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
 
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
 	if len(plan.Conflicts) != 0 || !hasSyncAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
 		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
 	}
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(lufy-new) error = %v", err)
 	}
 	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
@@ -182,7 +182,7 @@ func TestRunLufyNewCanBeResolvedByMergerAcceptTheirs(t *testing.T) {
 	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
 	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync lufy-new) error = %v", err)
 	}
 	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
@@ -215,7 +215,7 @@ func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
 	}
 	st, err := state.Load(target)
@@ -281,7 +281,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	stateBefore := readFile(t, state.Path(target))
 	targetBefore := readFile(t, filepath.Join(target, "AGENTS.md"))
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, DryRun: true, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(dry-run) error = %v", err)
 	}
 	if !strings.Contains(out.String(), "Modo dry-run") || !strings.Contains(out.String(), "update-managed") {
@@ -311,7 +311,7 @@ func TestRunRequiresYesBeforeCreatingMissingProjectConfig(t *testing.T) {
 	}
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
-	err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{})
+	err := NewService().Run(Options{Target: target}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "requiere --yes") {
 		t.Fatalf("expected --yes error, got %v", err)
 	}
@@ -330,7 +330,7 @@ func TestRunCreatesMissingProjectConfigAfterConfirmation(t *testing.T) {
 	}
 	var out bytes.Buffer
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
 	}
 
@@ -351,7 +351,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "[backup]") || !strings.Contains(out.String(), "[verify]") {
@@ -399,7 +399,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(second sync) error = %v", err)
 	}
 	infoAfter, err := os.Stat(filepath.Join(target, "AGENTS.md"))
@@ -420,7 +420,7 @@ func TestSyncWarnsWhenAgentsReferenceMissingWithoutMutatingAgents(t *testing.T) 
 	before := readFile(t, agentsPath)
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync missing reference) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "warn-agents-reference") || !strings.Contains(out.String(), "@lufy-ia.harness.md") {
@@ -452,7 +452,7 @@ func TestSyncMigratesLegacyManagedAgentsStateNonDestructively(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync legacy) error = %v, output=%s", err, out.String())
 	}
 	if got := readFile(t, agentsPath); !bytes.Equal(got, legacyAgents) {
@@ -493,7 +493,7 @@ func TestSyncBlocksLegacyManagedAgentsDriftWithoutMutations(t *testing.T) {
 	writeFile(t, agentsPath, "legacy managed AGENTS\nlocal drift\n")
 	agentsBefore := readFile(t, agentsPath)
 
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -502,7 +502,7 @@ func TestSyncBlocksLegacyManagedAgentsDriftWithoutMutations(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	err = NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out)
+	err = NewService().Run(Options{Target: target, Yes: true}, &out)
 	if err == nil || !strings.Contains(err.Error(), "sync bloqueado") {
 		t.Fatalf("Run(sync legacy drift) expected blocked conflict, err=%v output=%s", err, out.String())
 	}
@@ -561,7 +561,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "[retired] "+obsoleteRel) {
@@ -591,7 +591,7 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	writeFile(t, filepath.Join(source, newRel), "new command\n")
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
 	}
 	st, err := state.Load(target)
@@ -617,7 +617,7 @@ func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing
 	writeFile(t, filepath.Join(source, ".lufy", "sdd", "README.md"), "new lufy-sdd should stay unselected\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(default upgrade sync) error = %v, output=%s", err, out.String())
 	}
 	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
@@ -642,7 +642,7 @@ func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing
 	}
 
 	var verifyOut bytes.Buffer
-	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true}, &verifyOut); err != nil {
+	if err := verify.NewService().Run(verify.Options{Target: target}, &verifyOut); err != nil {
 		t.Fatalf("verify after default sync error = %v, output=%s", err, verifyOut.String())
 	}
 	if !strings.Contains(verifyOut.String(), "ok: verify estructural completo") {
@@ -656,7 +656,7 @@ func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *test
 	target := installedTarget(t)
 	writeFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true}}`)
 
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -665,7 +665,7 @@ func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *test
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
 	}
 	decoded := readOpenCodeForSyncTest(t, target)
@@ -688,7 +688,7 @@ func TestBuildPlanRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
 	stateBefore := readFile(t, state.Path(target))
 	writeFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
 
-	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	_, err := NewService().BuildPlan(Options{Target: target})
 	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
 		t.Fatalf("expected invalid opencode.json error, got %v", err)
 	}
@@ -708,7 +708,7 @@ func TestBuildPlanRejectsInvalidOpenCodeManagedKeyTypesWithoutAssetUpdates(t *te
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed but must not apply\n")
 	writeFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":{}}`)
 
-	_, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	_, err := NewService().BuildPlan(Options{Target: target})
 	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
 		t.Fatalf("expected managed key type error, got %v", err)
 	}
@@ -732,7 +732,7 @@ func TestBuildPlanRejectsTargetSymlinkEscape(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(target, "AGENTS.md")); err != nil {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
-	plan, err := NewService().BuildPlan(Options{Target: target, NoEngram: true})
+	plan, err := NewService().BuildPlan(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
@@ -744,7 +744,7 @@ func TestBuildPlanRejectsTargetSymlinkEscape(t *testing.T) {
 func TestRunRejectsMissingOrCorruptState(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
-	missingErr := NewService().Run(Options{Target: t.TempDir(), Yes: true, NoEngram: true}, &bytes.Buffer{})
+	missingErr := NewService().Run(Options{Target: t.TempDir(), Yes: true}, &bytes.Buffer{})
 	if missingErr == nil || !strings.Contains(missingErr.Error(), "sync requiere") {
 		t.Fatalf("expected missing state error, got %v", missingErr)
 	}
@@ -754,7 +754,7 @@ func TestRunRejectsMissingOrCorruptState(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeFile(t, state.Path(target), "{not-json")
-	corruptErr := NewService().Run(Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{})
+	corruptErr := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
 	if corruptErr == nil || !strings.Contains(corruptErr.Error(), "install-state.json inválido") {
 		t.Fatalf("expected corrupt state error, got %v", corruptErr)
 	}
@@ -763,7 +763,7 @@ func TestRunRejectsMissingOrCorruptState(t *testing.T) {
 func installedTarget(t *testing.T) string {
 	t.Helper()
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture error = %v", err)
 	}
 	return target

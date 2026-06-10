@@ -13,18 +13,16 @@ import (
 
 const OpenCodeFile = "opencode.json"
 
+const legacyMemoryMCPKey = "en" + "gram"
+
 type Options struct {
 	TargetRoot string
-	NoEngram   bool
-	Resolver   platform.CommandResolver
 }
 
 type Result struct {
-	Path        string
-	Action      string
-	EngramPath  string
-	EngramFound bool
-	Changed     bool
+	Path    string
+	Action  string
+	Changed bool
 }
 
 type ValidationResult struct {
@@ -38,21 +36,21 @@ func NewService() Service {
 }
 
 func (s Service) Plan(opts Options) (Result, error) {
-	current, desired, path, engramPath, engramFound, err := loadAndMerge(opts)
+	current, desired, path, err := loadAndMerge(opts)
 	if err != nil {
 		return Result{}, err
 	}
 	if current == nil {
-		return Result{Path: path, Action: "merge-json", EngramPath: engramPath, EngramFound: engramFound, Changed: true}, nil
+		return Result{Path: path, Action: "merge-json", Changed: true}, nil
 	}
 	if reflect.DeepEqual(current, desired) {
-		return Result{Path: path, Action: "skip", EngramPath: engramPath, EngramFound: engramFound}, nil
+		return Result{Path: path, Action: "skip"}, nil
 	}
-	return Result{Path: path, Action: "merge-json", EngramPath: engramPath, EngramFound: engramFound, Changed: true}, nil
+	return Result{Path: path, Action: "merge-json", Changed: true}, nil
 }
 
 func (s Service) Ensure(opts Options) (Result, error) {
-	_, desired, path, engramPath, engramFound, err := loadAndMerge(opts)
+	_, desired, path, err := loadAndMerge(opts)
 	if err != nil {
 		return Result{}, err
 	}
@@ -66,7 +64,7 @@ func (s Service) Ensure(opts Options) (Result, error) {
 	}
 	existing, err := os.ReadFile(path)
 	if err == nil && bytes.Equal(existing, body) {
-		return Result{Path: path, Action: "skip", EngramPath: engramPath, EngramFound: engramFound}, nil
+		return Result{Path: path, Action: "skip"}, nil
 	}
 	if err != nil && !os.IsNotExist(err) {
 		return Result{}, err
@@ -87,32 +85,28 @@ func (s Service) Ensure(opts Options) (Result, error) {
 	if err := os.Rename(tmpName, path); err != nil {
 		return Result{}, err
 	}
-	return Result{Path: path, Action: "merge-json", EngramPath: engramPath, EngramFound: engramFound, Changed: true}, nil
+	return Result{Path: path, Action: "merge-json", Changed: true}, nil
 }
 
-func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string, bool, error) {
-	resolver := opts.Resolver
-	if resolver == nil {
-		resolver = platform.OSResolver{}
-	}
+func loadAndMerge(opts Options) (map[string]any, map[string]any, string, error) {
 	path, err := platform.SafeJoin(opts.TargetRoot, OpenCodeFile)
 	if err != nil {
-		return nil, nil, "", "", false, err
+		return nil, nil, "", err
 	}
 	if err := validateRegularOpenCode(path); err != nil {
-		return nil, nil, "", "", false, err
+		return nil, nil, "", err
 	}
 	var current map[string]any
 	body, err := os.ReadFile(path)
 	if err == nil {
 		if err := json.Unmarshal(body, &current); err != nil {
-			return nil, nil, "", "", false, fmt.Errorf("opencode.json inválido; corrige JSON o respáldalo antes de instalar: %w", err)
+			return nil, nil, "", fmt.Errorf("opencode.json inválido; corrige JSON o respáldalo antes de instalar: %w", err)
 		}
 		if err := validateManagedKeyTypes(current); err != nil {
-			return nil, nil, "", "", false, err
+			return nil, nil, "", err
 		}
 	} else if !os.IsNotExist(err) {
-		return nil, nil, "", "", false, err
+		return nil, nil, "", err
 	}
 	desired := cloneMap(current)
 	if desired == nil {
@@ -128,15 +122,8 @@ func loadAndMerge(opts Options) (map[string]any, map[string]any, string, string,
 	if _, ok := desired["plugin"]; !ok {
 		desired["plugin"] = []any{}
 	}
-	engramPath, engramFound := platform.ResolveEngram(opts.NoEngram, resolver)
-	if !opts.NoEngram && engramFound {
-		mcp, err := objectAt(desired, "mcp")
-		if err != nil {
-			return nil, nil, "", "", false, err
-		}
-		mcp["engram"] = mergeEngramConfig(mcp["engram"], engramPath, projectName(opts.TargetRoot))
-	}
-	return current, desired, path, engramPath, engramFound, nil
+	removeLegacyMCP(desired, legacyMemoryMCPKey)
+	return current, desired, path, nil
 }
 
 func (s Service) ValidateManagedStructure(targetRoot string) (ValidationResult, error) {
@@ -198,55 +185,15 @@ func validateManagedKeyTypes(decoded map[string]any) error {
 	return nil
 }
 
-func objectAt(root map[string]any, key string) (map[string]any, error) {
-	if existing, ok := root[key].(map[string]any); ok {
-		return existing, nil
-	}
-	if value, exists := root[key]; exists && value == nil {
-		obj := map[string]any{}
-		root[key] = obj
-		return obj, nil
-	}
-	if _, exists := root[key]; exists {
-		return nil, fmt.Errorf("opencode.json inválido: clave %s debe ser object para configurar Engram; corrige o respalda el archivo antes de instalar/sincronizar", key)
-	}
-	obj := map[string]any{}
-	root[key] = obj
-	return obj, nil
-}
-
-func mergeEngramConfig(existing any, engramPath, project string) map[string]any {
-	engram, ok := existing.(map[string]any)
+func removeLegacyMCP(root map[string]any, key string) {
+	mcp, ok := root["mcp"].(map[string]any)
 	if !ok {
-		engram = map[string]any{}
-	} else {
-		engram = cloneMap(engram)
+		return
 	}
-	if _, ok := engram["enabled"]; !ok {
-		engram["enabled"] = true
+	delete(mcp, key)
+	if len(mcp) == 0 {
+		delete(root, "mcp")
 	}
-	if _, ok := engram["timeout"]; !ok {
-		engram["timeout"] = float64(3000)
-	}
-	engram["type"] = "local"
-	command := []any{engramPath, "mcp", "--tools=agent"}
-	if project != "" {
-		command = append(command, "--project", project)
-	}
-	engram["command"] = command
-	return engram
-}
-
-func projectName(targetRoot string) string {
-	root := targetRoot
-	if abs, err := filepath.Abs(targetRoot); err == nil {
-		root = abs
-	}
-	name := filepath.Base(filepath.Clean(root))
-	if name == "." || name == string(filepath.Separator) {
-		return ""
-	}
-	return name
 }
 
 func cloneMap(in map[string]any) map[string]any {

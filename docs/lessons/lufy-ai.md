@@ -22,8 +22,8 @@ Registro vivo de aprendizajes operativos que no ameritan ADR completa, pero sí 
 - **Aprendizaje:** instrucciones de estructura del usuario y `project_profile.surfaces[*]` deben convertirse en checklist de aceptación.
 - **Aplicación:** router, implementer, validator y reviewer preservan `structural_acceptance` y bloquean readiness si falta estructura obligatoria.
 
-### Engram debe ser opcional y evidenciable
+
+### Memoria debe ser evidenciable
 
 - **Contexto:** la memoria puede no estar instalada o no exponerse en una sesión local.
 - **Aprendizaje:** no se debe bloquear trabajo normal ni afirmar trazabilidad de memoria sin herramienta disponible.
-- **Aplicación:** agentes tratan Engram como índice opcional y reportan `not_available` cuando no existe evidencia.

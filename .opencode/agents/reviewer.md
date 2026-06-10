@@ -50,7 +50,6 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 ## Obsidian Memory
 
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
-- If Engram MCP/tool is available, use it only as optional supplementary hints.
 - If memory is unavailable, skip memory lookup and continue the review without penalty.
 - Return compact `memory_hints` (path or id, line when available, status, relevance), not full memory dumps.
 - Treat memory as review context only; findings still need current diff/file/evidence references.

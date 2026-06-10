@@ -195,17 +195,6 @@ El comando `verify` SHALL validar estructura, estado y hashes de una instalació
 - **WHEN** se inspecciona `scripts/install.sh`
 - **THEN** no contiene lógica propia para copiar `.opencode`, `openspec`, `AGENTS.md`, `tui.json`, backups o hash/idempotencia
 
-### Requirement: Seguridad y Engram portable
-La CLI MUST mantener la instalación confinada y MUST NOT hardcodear rutas locales de Engram.
-
-#### Scenario: Ausencia de Engram
-- **WHEN** Engram no existe en `PATH`
-- **THEN** la instalación base de assets gestionados continúa o reporta nota no bloqueante según flags, pero MUST NOT fallar por una ruta hardcodeada
-
-#### Scenario: Ruta hardcodeada prohibida
-- **WHEN** la CLI genera configuración o verifica assets
-- **THEN** el contenido generado por este slice MUST NOT contener `/opt/homebrew/bin/engram`
-
 #### Scenario: Mutaciones confinadas
 - **WHEN** install, backup, restore o verify operan con `--target <dir>`
 - **THEN** cualquier escritura se limita al target y a `.lufy/managed-state/` dentro del target
@@ -440,5 +429,5 @@ La CLI SHALL proveer un comando `uninstall` que remueva de forma segura los asse
 
 #### Scenario: Reinstall posterior funciona
 - **WHEN** un target fue desinstalado exitosamente
-- **AND** el usuario ejecuta `lufy-ai install --target <dir> --yes --no-engram`
+- **AND** el usuario ejecuta `lufy-ai install --target <dir> --yes`
 - **THEN** la instalación SHALL reconstruir los assets gestionados y `verify` SHALL pasar

@@ -6,7 +6,7 @@ La revision estatica detecto que los casos de uso principales siguen mezclando r
 
 - `internal/installer`: planificacion, locks, filesystem, backup, render, manifest, verify y salida humana.
 - `internal/syncer`: logica similar a installer con duplicacion operacional.
-- `internal/verify`: construccion de reporte, lectura de estado, filesystem, hashes, JSON, Engram y validacion de assets.
+- `internal/verify`: construccion de reporte, lectura de estado, filesystem, hashes, JSON, memoria Obsidian y validacion de assets.
 - `internal/projectconfig`: scanning, merge, YAML y escritura.
 
 Esto limita SOLID, especialmente SRP y DIP, y hace que los patrones existentes funcionen bien en adapters pero no todavia en todos los use cases. El objetivo es convertir la intencion hexagonal actual en boundaries aplicables, testeables y revisables sin romper el preset `opencode` + `openspec`.

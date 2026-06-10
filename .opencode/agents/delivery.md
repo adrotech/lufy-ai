@@ -73,7 +73,6 @@ You handle safe delivery operations only. This file is the operational runbook f
 ## Obsidian Memory
 
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
-- If Engram MCP/tool is available, use it only as optional supplementary hints.
 - If memory is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). After authorized delivery or a significant blocker, save a concise durable memory in Obsidian with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
 

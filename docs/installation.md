@@ -16,7 +16,6 @@ Versión estable objetivo: `v0.6.11`.
 - Acceso a una GitHub Release publicada con artifacts y checksums.
 - Un repositorio destino donde instalar el harness.
 - OpenCode si vas a usar el adapter escribible actual.
-- Engram opcional; usa `--no-engram` si no quieres integrarlo.
 
 El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario publicado para Windows si la release lo incluye.
 
@@ -92,19 +91,19 @@ lufy-ai version
 Luego revisa el plan sin mutar:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --dry-run --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --dry-run --yes
 ```
 
 Aplica:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --yes --no-engram
+lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --yes
 ```
 
 Verifica:
 
 ```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode --no-engram
+lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 lufy-ai info --target /ruta/a/tu/proyecto
 lufy-ai doctor --target /ruta/a/tu/proyecto
@@ -126,7 +125,7 @@ lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
 El único tool adapter escribible actual es `opencode`.
 
 ```bash
-lufy-ai install --target <repo> --tool opencode --yes --no-engram
+lufy-ai install --target <repo> --tool opencode --yes
 ```
 
 Sin `--tool`, el default efectivo sigue siendo `opencode`.
@@ -140,9 +139,9 @@ Las metodologías soportadas por configuración son:
 Se seleccionan por tier:
 
 ```bash
-lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T3:none --yes
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
 Restricciones actuales:
@@ -177,11 +176,8 @@ En scope `project`, la CLI gestiona:
 
 `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
 
-### Engram opcional
 
-Obsidian es la memoria canónica portable para Lufy. Engram no es requisito para instalar Lufy. Usa `--no-engram` para omitir cualquier integración.
 
-Si no pasas `--no-engram` y `engram` existe en `PATH`, Lufy mergea en `opencode.json` un MCP local con `engram mcp --tools=agent --project <nombre-del-repo>`. Los agentes instalados usan ese MCP solo como hints adicionales cuando la sesión expone herramientas Engram disponibles. Si Engram no está disponible, omiten ese apoyo sin bloquear la tarea.
 
 ## Defaults de `project.yaml`
 
@@ -231,16 +227,16 @@ Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean bac
 `sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local y preserva assets frozen con `pin`.
 
 ```bash
-lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
-lufy-ai sync --target /ruta/a/tu/proyecto --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes
+lufy-ai sync --target /ruta/a/tu/proyecto --yes
+lufy-ai verify --target /ruta/a/tu/proyecto
 ```
 
 Si necesitas conservar un override local sobre un asset gestionado mientras actualizas el resto del kit:
 
 ```bash
 lufy-ai pin --target /ruta/a/tu/proyecto --reason "override local" lufy-ia.harness.md
-lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
+lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes
 lufy-ai status --target /ruta/a/tu/proyecto --verbose
 lufy-ai unpin --target /ruta/a/tu/proyecto lufy-ia.harness.md
 ```
@@ -290,8 +286,8 @@ Comportamiento:
 Reinstalar:
 
 ```bash
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --quiet
+lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
 ```
 
 `--keep-state` existe para diagnóstico: conserva `.lufy/managed-state/install-state.json` aunque remueva assets. No es el flujo normal.
@@ -341,15 +337,15 @@ go build -o bin/lufy-ai ./cmd/lufy-ai
 Usar el binario local:
 
 ```bash
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes --no-engram
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes --no-engram
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto --no-engram
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes
+/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto
 ```
 
 El wrapper:
 
 ```bash
-/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes --no-engram
+/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes
 ```
 
 resuelve primero `tools/lufy-cli-go/bin/lufy-ai` y luego `lufy-ai` en `PATH`. No descarga releases ni usa fallback legacy.
@@ -380,7 +376,7 @@ Revisa el error exacto. `verify` valida:
 Si falta la referencia en `AGENTS.md`, ejecuta:
 
 ```bash
-lufy-ai install --target <dir> --yes --no-engram
+lufy-ai install --target <dir> --yes
 ```
 
 o agrégala manualmente.

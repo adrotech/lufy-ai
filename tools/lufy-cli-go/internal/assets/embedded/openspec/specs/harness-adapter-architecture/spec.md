@@ -61,7 +61,7 @@ Los paths concretos de configuración SHALL pertenecer al adapter de tool, no al
 El preset inicial `tool=opencode` y `methodology=openspec` SHALL conservar el comportamiento observable actual de `lufy-ai install`, `sync`, `verify` y `status` salvo cambios documentados por la propuesta.
 
 #### Scenario: Existing default install
-- **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes --no-engram` sin flags nuevos
+- **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes` sin flags nuevos
 - **THEN** la instalación SHALL producir el preset OpenCode/OpenSpec compatible con versiones anteriores
 - **AND** el manifest SHALL registrar `tool: opencode`
 - **AND** los assets efectivos SHALL provenir de los adapters registrados para OpenCode y OpenSpec
@@ -72,17 +72,17 @@ El preset inicial `tool=opencode` y `methodology=openspec` SHALL conservar el co
 - **AND** SHALL fallar explicitamente si el adapter requerido no existe
 
 #### Scenario: Default install does not opt into Lufy SDD
-- **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes --no-engram` sin flags de metodología
+- **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes` sin flags de metodología
 - **THEN** el target SHALL contener los assets OpenCode/OpenSpec actuales
 - **AND** SHALL NOT contener assets `.lufy/workflows/sdd`
 - **AND** el manifest SHALL registrar `methodologyByTier` default con `openspec`
 
 #### Scenario: Existing default install syncs after adapter routing
 - **GIVEN** un target instalado con el preset default OpenCode/OpenSpec
-- **WHEN** el usuario ejecuta `lufy-ai sync --target <repo> --yes --no-engram` sin flags nuevos
+- **WHEN** el usuario ejecuta `lufy-ai sync --target <repo> --yes` sin flags nuevos
 - **THEN** sync SHALL actualizar assets gestionados cuyo source cambio sin introducir `.lufy/workflows/sdd`
 - **AND** SHALL preservar `tool: opencode` y `methodologyByTier` OpenSpec en el manifest
-- **AND** `lufy-ai verify --target <repo> --no-engram` SHALL reportar una instalación válida
+- **AND** `lufy-ai verify --target <repo>` SHALL reportar una instalación válida
 
 ### Requirement: Manifest identifies adapter ownership
 El manifest de instalación SHALL evolucionar para registrar tool, metodología, componente y scope de cada asset sin impedir leer manifests legacy.
@@ -100,8 +100,8 @@ El manifest de instalación SHALL evolucionar para registrar tool, metodología,
 La CLI SHALL permitir seleccionar explicitamente el tool adapter efectivo para comandos que instalan, sincronizan, verifican o reportan assets gestionados.
 
 #### Scenario: Explicit OpenCode tool matches default
-- **WHEN** el usuario ejecuta `lufy-ai install --tool opencode --target <repo> --yes --no-engram`
-- **THEN** el sistema SHALL producir el mismo preset compatible que `lufy-ai install --target <repo> --yes --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai install --tool opencode --target <repo> --yes`
+- **THEN** el sistema SHALL producir el mismo preset compatible que `lufy-ai install --target <repo> --yes`
 - **AND** el manifest SHALL registrar `tool: opencode`
 
 #### Scenario: Unsupported write tool is rejected

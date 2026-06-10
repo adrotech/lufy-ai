@@ -72,7 +72,7 @@ scripts/validate.sh
 | `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. | `--target`, `--reason` |
 | `lufy-ai unpin` | Remueve el freeze de un asset gestionado. | `--target` |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, `--no-engram` |
+| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target`, `--accept-theirs`, `--accept-ours` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy/managed-state/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
@@ -85,8 +85,8 @@ scripts/validate.sh
 El adapter escribible actual es `opencode`.
 
 ```bash
-lufy-ai install --target <repo> --yes --no-engram
-lufy-ai install --target <repo> --tool opencode --yes --no-engram
+lufy-ai install --target <repo> --yes
+lufy-ai install --target <repo> --tool opencode --yes
 ```
 
 Adapters no escribibles todavía:
@@ -101,9 +101,9 @@ Ambos existen como dry-run/preview para modelar capabilities y superficies futur
 `install` acepta overrides repetibles:
 
 ```bash
-lufy-ai install --target <repo> --methodology-tier T3:none --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes --no-engram
-lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-engram
+lufy-ai install --target <repo> --methodology-tier T3:none --yes
+lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
+lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
 Reglas actuales:
@@ -196,7 +196,7 @@ La salida default es `openspec/changes/<name>/change-overview.html`; con `--outp
 
 El HTML usa diseño dark con tabs y no carga recursos remotos. No muestra los badges/textos removidos `Notion dark`, `Offline HTML`, `Artifacts disponibles` ni `Sin recursos remotos`.
 
-El parser Markdown local soporta headings, listas, checkboxes deshabilitados/checked, fenced code, inline code y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados y no se convierten en anchors. Si un artifact falta o está vacío, se marca como `No disponible` y muestra `Este artefacto no existe o está vacío.`
+El parser Markdown local soporta headings, listas, checkboxes deshabilitados/checked, fenced code, inline code, bold con `**texto**` y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados y no se convierten en anchors. Si un artifact falta o está vacío, se marca como `No disponible` y muestra `Este artefacto no existe o está vacío.`
 
 ## Managed assets
 
@@ -268,8 +268,8 @@ Ejemplo:
 ```bash
 lufy-ai uninstall --target <repo> --dry-run
 lufy-ai uninstall --target <repo> --yes
-lufy-ai install --target <repo> --yes --no-engram
-lufy-ai verify --target <repo> --no-engram --quiet
+lufy-ai install --target <repo> --yes
+lufy-ai verify --target <repo> --quiet
 ```
 
 ## Sync
@@ -305,7 +305,7 @@ lufy-ai verify --target <repo> --no-engram --quiet
 
 ```bash
 lufy-ai pin --target <repo> --reason "override local" lufy-ia.harness.md
-lufy-ai sync --target <repo> --dry-run --yes --no-engram
+lufy-ai sync --target <repo> --dry-run --yes
 lufy-ai unpin --target <repo> lufy-ia.harness.md
 ```
 
@@ -346,7 +346,6 @@ bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
 
 El bootstrap instala solo el binario. No toca repositorios destino.
 
-Obsidian es la memoria canónica portable. Engram es opcional: si `install`/`sync` corre sin `--no-engram` y `engram` está en `PATH`, la config OpenCode merge-managed registra `engram mcp --tools=agent --project <target>`. Los agentes instalados pueden usar Engram solo como hints adicionales cuando el MCP/tool está disponible y omiten ese apoyo sin bloquear cuando no lo está.
 
 ## Wrapper Bash
 
@@ -367,7 +366,7 @@ cd tools/lufy-cli-go
 mkdir -p bin
 go build -o bin/lufy-ai ./cmd/lufy-ai
 cd ../..
-./scripts/install.sh --target "$(mktemp -d)" --dry-run --yes --no-engram
+./scripts/install.sh --target "$(mktemp -d)" --dry-run --yes
 ```
 
 ## Validación esperada
