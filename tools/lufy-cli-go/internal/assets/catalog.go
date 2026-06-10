@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -126,7 +127,8 @@ type entry struct {
 }
 
 var allowedEntries = []entry{
-	{sourceRel: ".lufy/sdd", targetRel: ".lufy/sdd", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: lufypaths.Readme, targetRel: lufypaths.Readme, kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".lufy/sdd", targetRel: lufypaths.LufySDD, kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/hooks", targetRel: ".opencode/hooks", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
@@ -243,7 +245,7 @@ func withOwnership(asset Asset) Asset {
 	asset.Methodology = domain.MethodologyNone
 	asset.Component = "harness-core"
 	switch {
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/sdd/") || filepath.ToSlash(asset.TargetRel) == ".lufy/sdd":
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), lufypaths.LufySDD+"/") || filepath.ToSlash(asset.TargetRel) == lufypaths.LufySDD:
 		asset.Methodology = domain.MethodologyLufyWorkflow
 		asset.Component = "methodology-surface"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") || filepath.ToSlash(asset.TargetRel) == "openspec":

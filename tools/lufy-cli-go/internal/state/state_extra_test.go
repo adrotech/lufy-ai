@@ -12,7 +12,7 @@ func TestAncestorPathAndAssetMap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rel != ".lufy-ai/ancestors/.opencode/agents/test-writer.md" {
+	if rel != ".lufy/managed-state/ancestors/.opencode/agents/test-writer.md" {
 		t.Fatalf("unexpected ancestor rel: %s", rel)
 	}
 	path, err := AncestorPath(target, ".opencode/agents/test-writer.md")
@@ -36,7 +36,7 @@ func TestLoadMissingAndInvalidState(t *testing.T) {
 	}
 
 	target := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(target, ".lufy", "managed-state"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(Path(target), []byte("{bad"), 0o644); err != nil {

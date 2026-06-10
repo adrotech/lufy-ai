@@ -17,7 +17,7 @@ func TestInitCreatesStructureAndProjectConfigDefaults(t *testing.T) {
 		t.Fatalf("Init() error = %v", err)
 	}
 	for _, rel := range []string{
-		".lufy/project.yaml",
+		".lufy/config/project.yaml",
 		".lufy/memory/MEMORY.md",
 		".lufy/memory/maps/_app-profile.md",
 		".lufy/memory/index/backlinks.json",
@@ -27,7 +27,7 @@ func TestInitCreatesStructureAndProjectConfigDefaults(t *testing.T) {
 			t.Fatalf("missing %s: %v", rel, err)
 		}
 	}
-	project := readFile(t, filepath.Join(target, ".lufy/project.yaml"))
+	project := readFile(t, filepath.Join(target, ".lufy/config/project.yaml"))
 	for _, want := range []string{"memory:", "provider: obsidian", "parallel_execution:", "strategy: independent_review_slices"} {
 		if !strings.Contains(project, want) {
 			t.Fatalf("project config missing %q:\n%s", want, project)
@@ -133,7 +133,7 @@ func TestStatusAndValidateReportMissingMemory(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(target, ".lufy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, target, ".lufy/project.yaml", `schema_version: 1
+	writeFile(t, target, ".lufy/config/project.yaml", `schema_version: 1
 detected_at: 2026-05-20T14:00:00Z
 tool: opencode
 methodology_by_tier: {}
@@ -235,7 +235,7 @@ Relacionada con [[missing-note]].
 
 func TestUnsupportedProviderAndSearchErrors(t *testing.T) {
 	target := initializedTarget(t)
-	path := filepath.Join(target, ".lufy/project.yaml")
+	path := filepath.Join(target, ".lufy/config/project.yaml")
 	body := strings.ReplaceAll(readFile(t, path), "provider: obsidian", "provider: other")
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)

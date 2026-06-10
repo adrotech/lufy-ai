@@ -20,7 +20,7 @@ tools/lufy-cli-go/
   internal/adapters/         # adapters de tool y metodología
   internal/instructions/     # role contracts, skills y render neutral
   internal/assets/           # catálogo, go:embed, policies y SHA-256
-  internal/state/            # .lufy-ai/install-state.json schema v1/v2
+  internal/state/            # .lufy/managed-state/install-state.json schema v1/v2
   internal/installer/        # install planner/apply idempotente
   internal/uninstaller/      # uninstall planner/apply con backup y drift guard
   internal/syncer/           # sync conservador por manifest/hash
@@ -30,7 +30,7 @@ tools/lufy-cli-go/
   internal/memory/           # memoria Obsidian init/status/validate/search
   internal/backup/           # backup/restore multiasset
   internal/config/           # merge conservador de opencode.json
-  internal/projectconfig/    # init/rescan de .lufy/project.yaml
+  internal/projectconfig/    # init/rescan de .lufy/config/project.yaml
   internal/opsx/             # resolución OpenSpec PATH/cache/embedded
   internal/platform/         # path safety, locks y resolución portable
   internal/version/          # metadata de release
@@ -59,22 +59,22 @@ scripts/validate.sh
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
+| `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
-| `lufy-ai memory init` | Crea `.lufy/memory` y completa defaults de memoria/paralelismo en `.lufy/project.yaml`. | `--target`, `--json` |
+| `lufy-ai memory init` | Crea `.lufy/memory` y completa defaults de memoria/paralelismo en `.lufy/config/project.yaml`. | `--target`, `--json` |
 | `lufy-ai memory status` | Resume estructura, notas, drafts y backlinks rotos. | `--target`, `--json` |
 | `lufy-ai memory validate` | Valida schema de notas Obsidian, decisiones y backlinks. | `--target`, `--json` |
 | `lufy-ai memory search` | Busca en `knowledge/` y `maps/` con `rg` cuando está disponible. | `--target`, `--json`, `<query>` |
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks, surfaces y conteos operativos sin mutar. | `--target`, `--scope`, `--json` |
-| `lufy-ai doctor` | Diagnostica `.lufy/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
+| `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. | `--target`, `--reason` |
 | `lufy-ai unpin` | Remueve el freeze de un asset gestionado. | `--target` |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, `--no-engram` |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target`, `--accept-theirs`, `--accept-ours` |
-| `lufy-ai backup` | Captura assets gestionados en `.lufy-ai/backups/<timestamp>/manifest.json`. | `--target` |
+| `lufy-ai backup` | Captura assets gestionados en `.lufy/managed-state/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
 | `lufy-ai opsx render` | Renderiza un change OpenSpec a HTML offline/autocontenido para revisión humana. | `--target`, `--change`, `--format`, `--theme`, `--output` |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. | `--to`, `--dry-run` |
@@ -109,7 +109,7 @@ lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes --no-e
 Reglas actuales:
 
 - `openspec` puede instalar superficie full/lite;
-- `lufy-sdd` instala `.lufy/sdd/` como superficie inicial;
+- `lufy-sdd` instala `.lufy/workflows/sdd/` como superficie inicial;
 - `none` se permite donde la policy lo habilita;
 - `T1:none` y `T2:none` están bloqueados en comandos mutantes.
 
@@ -135,13 +135,13 @@ Para `backend`, las opciones de arquitectura son:
 - `clean_architecture`: capas de dominio/casos de uso/infraestructura cuando el proyecto ya lo usa o el usuario lo elige;
 - `hexagonal`: ports/adapters alrededor del dominio cuando el proyecto ya lo usa o el usuario lo elige.
 
-El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/project.yaml`. La arquitectura elegida persiste `architecture.structural_expectations`: controller/service/repository exige handlers delgados, servicios con reglas de negocio y repositorios aislando persistencia; clean architecture exige capas domain/usecase-or-application/infrastructure; hexagonal exige dominio, ports y adapters.
+El scanner detecta señales existentes como `controllers` + `services` + `repositories`, `domain` + `usecase/application` + `infrastructure`, o `ports` + `adapters`. En modo interactivo, Bubble Tea permite cambiar la arquitectura preferida antes de escribir `.lufy/config/project.yaml`. La arquitectura elegida persiste `architecture.structural_expectations`: controller/service/repository exige handlers delgados, servicios con reglas de negocio y repositorios aislando persistencia; clean architecture exige capas domain/usecase-or-application/infrastructure; hexagonal exige dominio, ports y adapters.
 
 En `fullstack`, la surface de flujo mantiene frontend feature-driven; la arquitectura clean/hexagonal/controller-service-repository aplica solo al backend y se lee desde la surface backend conectada.
 
 ## Memoria Obsidian
 
-`init` y `scan` escriben defaults de memoria en `.lufy/project.yaml`:
+`init` y `scan` escriben defaults de memoria en `.lufy/config/project.yaml`:
 
 ```yaml
 memory:
@@ -214,16 +214,16 @@ Assets completos típicos:
 - `lufy-ia.harness.md`;
 - `tui.json`;
 - `openspec/`;
-- `.lufy/sdd/` cuando aplica.
+- `.lufy/workflows/sdd/` cuando aplica.
 
 Assets user-owned o merge-managed:
 
 - `AGENTS.md`: solo referencia `@lufy-ia.harness.md`;
 - `opencode.json`: merge conservador;
-- `.lufy/project.yaml`: creado por `init`, no sincronizado por hash.
+- `.lufy/config/project.yaml`: creado por `init`, no sincronizado por hash.
 - `.lufy/memory`: creado por `memory init`; notas privadas user-owned, no sincronizadas por hash.
 
-`.lufy-ai/install-state.json` schema v2 registra:
+`.lufy/managed-state/install-state.json` schema v2 registra:
 
 - `tool`;
 - `methodologyByTier`;
@@ -244,7 +244,7 @@ Assets user-owned o merge-managed:
 5. copia o actualiza assets gestionados sin drift;
 6. mergea `opencode.json`;
 7. inserta referencia en `AGENTS.md`;
-8. escribe `.lufy-ai/install-state.json`;
+8. escribe `.lufy/managed-state/install-state.json`;
 9. ejecuta verify estructural posterior.
 
 Si hay drift bloqueante, no sobrescribe aunque `--yes` esté presente.
@@ -253,7 +253,7 @@ Si hay drift bloqueante, no sobrescribe aunque `--yes` esté presente.
 
 `uninstall`:
 
-1. lee `.lufy-ai/install-state.json`;
+1. lee `.lufy/managed-state/install-state.json`;
 2. planifica remoción de assets gestionados;
 3. bloquea si algún asset tiene drift local;
 4. crea backup previo;
@@ -309,15 +309,15 @@ lufy-ai sync --target <repo> --dry-run --yes --no-engram
 lufy-ai unpin --target <repo> lufy-ia.harness.md
 ```
 
-Un asset pinned/frozen queda registrado con `pinned`, `pinnedAt` y `pinnedReason` en `.lufy-ai/install-state.json`. Mientras siga frozen, `sync` lo preserva aunque el catálogo cambie.
+Un asset pinned/frozen queda registrado con `pinned`, `pinnedAt` y `pinnedReason` en `.lufy/managed-state/install-state.json`. Mientras siga frozen, `sync` lo preserva aunque el catálogo cambie.
 
-## `.lufy/project.yaml`
+## `.lufy/config/project.yaml`
 
 `lufy-ai init` crea configuración stack-aware user-managed.
 
 Comportamiento:
 
-- si no existe, crea `.lufy/project.yaml`;
+- si no existe, crea `.lufy/config/project.yaml`;
 - si existe, falla sin `--force`;
 - `--force` reemplaza;
 - `--rescan` preserva overrides y agrega evidencia nueva;

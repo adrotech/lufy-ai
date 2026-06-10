@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -113,7 +114,7 @@ func cacheVersionDir(target, version string) (string, error) {
 	if strings.ContainsAny(version, `/\\`) {
 		return "", fmt.Errorf("versión cache insegura: %q", version)
 	}
-	root, err := platform.SafeJoin(target, DefaultCacheRoot)
+	root, err := platform.SafeJoin(target, lufypaths.OpenSpecCache)
 	if err != nil {
 		return "", err
 	}

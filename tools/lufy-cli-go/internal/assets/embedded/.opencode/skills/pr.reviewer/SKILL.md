@@ -51,7 +51,7 @@ Revisa un Pull Request existente y genera un reporte HTML autocontenido en espa√
 
 3. Leer contexto cuando exista:
    - `AGENTS.md`
-   - `.lufy/project.yaml`
+   - `.lufy/config/project.yaml`
    - README o docs relevantes cercanos a los archivos modificados
    - `.github/PULL_REQUEST_TEMPLATE*`
    - pol√≠ticas locales de delivery/review

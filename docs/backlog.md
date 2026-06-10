@@ -2,7 +2,7 @@
 
 Este backlog consolida el archivo externo `/Users/adrianrojas/Downloads/lufy-ai-backlog.md` con el estado actual del repositorio. La dirección de producto queda explícita: `lufy-ai` debe seguir siendo un harness generalista para repositorios existentes, no un harness hardcodeado a Go.
 
-El foundation técnico del próximo ciclo es un scanner inicial (`lufy-ai init`) que detecta el stack del proyecto destino y genera `.lufy/project.yaml`. Agentes, skills, hooks, review y telemetría deben leer ese archivo en vez de asumir comandos fijos como `go test`, `gofmt` o `golangci-lint`.
+El foundation técnico del próximo ciclo es un scanner inicial (`lufy-ai init`) que detecta el stack del proyecto destino y genera `.lufy/config/project.yaml`. Agentes, skills, hooks, review y telemetría deben leer ese archivo en vez de asumir comandos fijos como `go test`, `gofmt` o `golangci-lint`.
 
 ## Decisiones de alcance
 
@@ -47,9 +47,9 @@ Effort estimado:
 
 ## P0 - Foundation stack-aware
 
-### LUFY-0 - `lufy-ai init` y `.lufy/project.yaml`
+### LUFY-0 - `lufy-ai init` y `.lufy/config/project.yaml`
 
-**Estado:** cubierto en repo; `init` genera `.lufy/project.yaml` stack-aware y `workflow_limits` es la fuente canónica de límites de workflow.
+**Estado:** cubierto en repo; `init` genera `.lufy/config/project.yaml` stack-aware y `workflow_limits` es la fuente canónica de límites de workflow.
 
 **Problema:** la disciplina operativa del harness no puede depender de Go. El repo destino debe declarar reglas detectadas y editables para test, lint, format, coverage, observabilidad y anti-patrones.
 
@@ -59,7 +59,7 @@ Effort estimado:
 - Detectar stacks por archivos raíz: `go.mod`, `package.json`, `tsconfig.json`, `pyproject.toml`, `requirements.txt`, `setup.py`, `pom.xml`, `build.gradle`, `build.gradle.kts` y equivalentes conocidos.
 - Detectar frameworks TS/JS: React, Next.js, Remix, Vue y Svelte; Vue/Svelte pueden quedar como placeholders si no hay reglas completas.
 - Detectar test runners, linters, formatters, static analysis, CI y librerías de observabilidad.
-- Generar `.lufy/project.yaml` con `schema_version`, `detected_at`, `stacks`, `ci`, `tdd` y `workflow_limits`.
+- Generar `.lufy/config/project.yaml` con `schema_version`, `detected_at`, `stacks`, `ci`, `tdd` y `workflow_limits`.
 - No sobrescribir un archivo existente sin `--force`.
 - `--rescan` debe preservar overrides manuales y agregar stacks nuevos sin borrar configuración previa.
 
@@ -83,7 +83,7 @@ Effort estimado:
 
 - Crear `.opencode/agents/test-writer.md`.
 - Definir ciclo RED -> GREEN -> TRIANGULATE -> REFACTOR.
-- Cargar comandos y anti-patrones desde `.lufy/project.yaml`.
+- Cargar comandos y anti-patrones desde `.lufy/config/project.yaml`.
 - Modificar `implementer.md` para delegar tests sustantivos a `test-writer` en T1/T2.
 - Modificar `validator.md` para bloquear T1/T2 si falta evidencia de triangulación cuando aplica.
 - Registrar evidencia TDD en `apply-progress.md` o result contract del bloque.
@@ -109,7 +109,7 @@ Effort estimado:
 - Pesos base: Architecture 20%, Code Quality 15%, Simplicity 15%, Testing 20%, Observability 15% y PR Template gate.
 - Aprobar solo con score >=80% y cero hallazgos L1/L2.
 - Exigir desk-check de al menos 8 escenarios para cambios T1/T2 relevantes.
-- Cargar anti-patrones, coverage y observability libs desde `.lufy/project.yaml`.
+- Cargar anti-patrones, coverage y observability libs desde `.lufy/config/project.yaml`.
 - Crear skill opcional `.opencode/skills/lufy.pr.review/` para HTML autocontenido en `/tmp/pr-review-<id>.html`.
 
 **Acceptance:**
@@ -126,7 +126,7 @@ Effort estimado:
 
 **Estado:** entregado por PR #66; spec sincronizada y change archivado post-merge el 2026-05-24.
 
-**Alcance:** crear skill `.opencode/skills/lufy.timereport/SKILL.md` que lea sesiones JSONL de OpenCode, `git log` y `.lufy/project.yaml` para generar KPIs de ROI y timeline de trabajo.
+**Alcance:** crear skill `.opencode/skills/lufy.timereport/SKILL.md` que lea sesiones JSONL de OpenCode, `git log` y `.lufy/config/project.yaml` para generar KPIs de ROI y timeline de trabajo.
 
 **Acceptance:** HTML offline con wall-clock, AI working time, tiempo humano activo, LOC neto, commits, tool calls, top tools, subagents, skills, fases y stack detectado.
 
@@ -158,7 +158,7 @@ Effort estimado:
 
 **Estado:** completado, archivado y delivered local/remoto mediante `add-numeric-stop-rules-workload-guard`.
 
-**Alcance:** extender `sdd-router.md` y `orchestrator.md` para leer `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, `workflow_limits.stop_rules` y `chain_strategy` desde `.lufy/project.yaml`.
+**Alcance:** extender `sdd-router.md` y `orchestrator.md` para leer `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, `workflow_limits.stop_rules` y `chain_strategy` desde `.lufy/config/project.yaml`.
 
 **Acceptance:** si `estimated_loc > workflow_limits.sizing.loc_budget`, el router emite `workload_decision_needed: true` y propone `review_slices` según `workflow_limits.proposal_slicing_strategy`; delivery agrupa con `workflow_limits.delivery_batch_strategy`; con `auto-chain`, propaga estrategia sin preguntar salvo riesgo alto.
 
@@ -170,7 +170,7 @@ Effort estimado:
 
 **Issue:** #75 - https://github.com/adrotech/lufy-ai/issues/75
 
-**Alcance:** crear `.opencode/hooks/format-dispatch.sh` que lea `.lufy/project.yaml`, matchee extensión editada y ejecute formatter/linter auto-fix del stack.
+**Alcance:** crear `.opencode/hooks/format-dispatch.sh` que lea `.lufy/config/project.yaml`, matchee extensión editada y ejecute formatter/linter auto-fix del stack.
 
 **Acceptance:** formatea `.go`, `.ts/.tsx` y `.py` según configuración; archivos desconocidos salen con código 0 sin ruido.
 
@@ -292,7 +292,7 @@ Effort estimado:
 
 **Issue:** #83 - https://github.com/adrotech/lufy-ai/issues/83
 
-**Alcance:** paquetes opcionales activables por `.lufy/project.yaml` para Go, TS/Next, Python/FastAPI, Java/Spring y Rust.
+**Alcance:** paquetes opcionales activables por `.lufy/config/project.yaml` para Go, TS/Next, Python/FastAPI, Java/Spring y Rust.
 
 **Acceptance:** cada paquete incluye assets reales, categoría en manifest, validación y activación condicional por stack.
 
@@ -409,7 +409,7 @@ Objetivo: sumar valor especializado una vez estable el foundation genérico.
 
 | Pregunta | Recomendación inicial |
 | --- | --- |
-| Nombre del archivo de config | Usar `.lufy/project.yaml` para scope OpenCode; evitar `lufy.config.yaml` salvo necesidad externa. |
+| Nombre del archivo de config | Usar `.lufy/config/project.yaml` para scope OpenCode; evitar `lufy.config.yaml` salvo necesidad externa. |
 | Parser YAML en Go | Evaluar dependencia mínima o formato JSON. Si se mantiene YAML, justificar dependencia y validarla en supply chain. |
 | TUI para merge | Mantener zero-deps inicialmente; adoptar Bubble Tea solo si la UX interactiva lo justifica. |
 | Thresholds default | Go 85%, TS/Python/Java 80% como defaults editables. |

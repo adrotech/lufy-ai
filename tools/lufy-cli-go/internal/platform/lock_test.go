@@ -13,7 +13,7 @@ func TestAcquireLockRejectsConcurrentLockAndReleases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AcquireLock() error = %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy-ai", ".lock")); err != nil {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", ".lock")); err != nil {
 		t.Fatalf("lock file missing: %v", err)
 	}
 
@@ -29,17 +29,20 @@ func TestAcquireLockRejectsConcurrentLockAndReleases(t *testing.T) {
 	if err := lock.Release(); err != nil {
 		t.Fatalf("Release() error = %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy-ai", ".lock")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", ".lock")); !os.IsNotExist(err) {
 		t.Fatalf("lock file not removed, err=%v", err)
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy-ai")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state")); !os.IsNotExist(err) {
 		t.Fatalf("empty lock dir created by lock not removed, err=%v", err)
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy")); !os.IsNotExist(err) {
+		t.Fatalf("empty .lufy root created by lock not removed, err=%v", err)
 	}
 }
 
 func TestReleasePreservesExistingLockDir(t *testing.T) {
 	target := t.TempDir()
-	lockDir := filepath.Join(target, ".lufy-ai")
+	lockDir := filepath.Join(target, ".lufy", "managed-state")
 	if err := os.MkdirAll(lockDir, 0o755); err != nil {
 		t.Fatal(err)
 	}

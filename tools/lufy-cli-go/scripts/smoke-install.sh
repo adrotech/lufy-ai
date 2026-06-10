@@ -100,7 +100,7 @@ main() {
     log "Verify posterior a install"
     "$BIN" verify --target "$target" --no-engram
 
-    local state_file="$target/.lufy-ai/install-state.json"
+    local state_file="$target/.lufy/managed-state/install-state.json"
     local asset_file="$target/AGENTS.md"
     [ -f "$state_file" ] || fail "no existe $state_file"
     [ -f "$asset_file" ] || fail "no existe $asset_file"

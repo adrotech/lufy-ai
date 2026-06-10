@@ -16,7 +16,7 @@
       "cache",
       "embedded"
     ],
-    "cacheRoot": ".lufy-ai/openspec-cache",
+    "cacheRoot": ".lufy/cache/openspec",
     "manifestName": "manifest.json",
     "offlineFallback": "embedded",
     "pathCommand": "openspec",

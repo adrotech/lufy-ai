@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -237,14 +236,14 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		emit("fail", state.Path(target), "falta manifest de instalación")
 		return report, nil
 	}
-	emit("ok", ".lufy-ai/install-state.json", fmt.Sprintf("manifest schema=%d assets=%d", st.SchemaVersion, len(st.Assets)))
+	emit("ok", ".lufy/managed-state/install-state.json", fmt.Sprintf("manifest schema=%d assets=%d", st.SchemaVersion, len(st.Assets)))
 	statusReport, err := status.NewService().Build(target, false, opts.Scope)
 	if err != nil {
-		emit("fail", ".lufy-ai/install-state.json", err.Error())
+		emit("fail", ".lufy/managed-state/install-state.json", err.Error())
 		return report, nil
 	}
 	if !statusReport.Installed {
-		emit("fail", ".lufy-ai/install-state.json", "target no instalado")
+		emit("fail", ".lufy/managed-state/install-state.json", "target no instalado")
 		return report, nil
 	}
 	if statusReport.Missing > 0 || statusReport.Drifted > 0 || statusReport.Errors > 0 {
@@ -323,7 +322,10 @@ func loadContext(target string) (string, *projectconfig.ProjectConfig, string, *
 	if err != nil {
 		return "", nil, "", nil, err
 	}
-	cfgPath := filepath.Join(resolved, projectconfig.ProjectConfigPath)
+	cfgPath, err := projectconfig.ExistingPath(resolved)
+	if err != nil {
+		return "", nil, "", nil, err
+	}
 	var cfg *projectconfig.ProjectConfig
 	cfgStatus := "missing"
 	loaded, err := projectconfig.Load(cfgPath)

@@ -7,7 +7,7 @@ La instalación SHALL mantener el contenido de instrucciones gestionado por Lufy
 
 #### Scenario: Target vacío instala harness y AGENTS mínimo
 - **WHEN** el usuario ejecuta `lufy-ai install --target <dir>` sobre un target sin instalación previa, sin `AGENTS.md` y sin assets Lufy
-- **THEN** la CLI instala `lufy-ia.harness.md` como asset gestionado, crea un `AGENTS.md` mínimo con una única referencia `@lufy-ia.harness.md`, instala los assets restantes permitidos y escribe `.lufy-ai/install-state.json` con el harness registrado por SHA-256
+- **THEN** la CLI instala `lufy-ia.harness.md` como asset gestionado, crea un `AGENTS.md` mínimo con una única referencia `@lufy-ia.harness.md`, instala los assets restantes permitidos y escribe `.lufy/managed-state/install-state.json` con el harness registrado por SHA-256
 
 #### Scenario: AGENTS propio recibe solo referencia
 - **WHEN** el target ya contiene un `AGENTS.md` user-owned sin referencia al harness y el usuario confirma la mutación o pasa `--yes`
@@ -21,7 +21,7 @@ La instalación SHALL mantener el contenido de instrucciones gestionado por Lufy
 El comando `sync` SHALL actualizar `lufy-ia.harness.md` mediante las reglas de manifest, SHA-256, backup e idempotencia de assets gestionados, y MUST NOT modificar `AGENTS.md` durante sync salvo que una acción explícita futura lo autorice.
 
 #### Scenario: Sync actualiza harness y preserva AGENTS
-- **WHEN** `.lufy-ai/install-state.json` registra `lufy-ia.harness.md`, el target no tiene drift local en el harness, el source hash del harness cambió y `AGENTS.md` contiene contenido propio del usuario
+- **WHEN** `.lufy/managed-state/install-state.json` registra `lufy-ia.harness.md`, el target no tiene drift local en el harness, el source hash del harness cambió y `AGENTS.md` contiene contenido propio del usuario
 - **THEN** sync crea backup del harness si existe, actualiza `lufy-ia.harness.md`, actualiza su estado en el manifest y preserva `AGENTS.md` byte-for-byte
 
 #### Scenario: Sync reporta referencia ausente sin auto-fix
@@ -32,7 +32,7 @@ El comando `sync` SHALL actualizar `lufy-ia.harness.md` mediante las reglas de m
 La CLI SHALL detectar instalaciones legacy donde `AGENTS.md` fue registrado como asset gestionado y SHALL migrar hacia el modelo de harness sin sobrescribir ni borrar el `AGENTS.md` existente.
 
 #### Scenario: Manifest legacy conserva AGENTS
-- **WHEN** `.lufy-ai/install-state.json` registra `AGENTS.md` como asset completo gestionado legacy durante install, sync o migración de estado
+- **WHEN** `.lufy/managed-state/install-state.json` registra `AGENTS.md` como asset completo gestionado legacy durante install, sync o migración de estado
 - **THEN** la CLI preserva el `AGENTS.md` existente, instala `lufy-ia.harness.md`, retira o marca la entrada legacy de `AGENTS.md` de forma trazable cuando sea seguro y reporta cualquier bloque legado que requiera revisión manual
 
 #### Scenario: Legacy con drift local queda bloqueado accionable
@@ -55,7 +55,7 @@ La instalación SHALL preservar archivos OpenCode/OpenSpec propios del target fu
 
 #### Scenario: Verify valida harness y manifest
 - **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado con el nuevo modelo
-- **THEN** verify exige que `lufy-ia.harness.md` exista, sea archivo seguro, esté registrado en `.lufy-ai/install-state.json` y coincida con el SHA-256 registrado
+- **THEN** verify exige que `lufy-ia.harness.md` exista, sea archivo seguro, esté registrado en `.lufy/managed-state/install-state.json` y coincida con el SHA-256 registrado
 
 #### Scenario: Verify valida referencia sin hash completo
 - **WHEN** el target contiene `AGENTS.md` con contenido propio y una referencia `@lufy-ia.harness.md`

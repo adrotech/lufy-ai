@@ -13,7 +13,7 @@ Ejecuta `/lufy.mem-capture` delegando en el skill local `lufy.mem-capture`.
 
 ## Comportamiento
 
-1. Verifica `.lufy/project.yaml` y `memory.provider=obsidian`.
+1. Verifica `.lufy/config/project.yaml` y `memory.provider=obsidian`.
 2. Si falta estructura, recomienda `lufy-ai memory init --target <repo>`.
 3. Crea o propone una nota bajo `.lufy/memory/knowledge/` usando el template gestionado.
 4. Evita duplicar memoria rutinaria o transitoria.

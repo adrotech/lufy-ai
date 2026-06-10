@@ -28,10 +28,10 @@ func TestRenderWorkflowFullIncludesSpecs(t *testing.T) {
 		t.Fatalf("render workflow: %v", err)
 	}
 
-	if !hasTarget(assets, ".lufy/sdd/specs") {
+	if !hasTarget(assets, ".lufy/workflows/sdd/specs") {
 		t.Fatalf("full lufy-sdd assets missing specs: %#v", assets)
 	}
-	for _, target := range []string{".lufy/sdd/README.md", ".lufy/sdd/changes", ".lufy/sdd/decisions", ".lufy/sdd/verification"} {
+	for _, target := range []string{".lufy/workflows/sdd/README.md", ".lufy/workflows/sdd/changes", ".lufy/workflows/sdd/decisions", ".lufy/workflows/sdd/verification"} {
 		if !hasTarget(assets, target) {
 			t.Fatalf("full lufy-sdd assets missing %s: %#v", target, assets)
 		}
@@ -52,10 +52,10 @@ func TestRenderWorkflowLiteOmitsSpecs(t *testing.T) {
 		t.Fatalf("render workflow: %v", err)
 	}
 
-	if hasTarget(assets, ".lufy/sdd/specs") {
+	if hasTarget(assets, ".lufy/workflows/sdd/specs") {
 		t.Fatalf("lite lufy-sdd assets include specs: %#v", assets)
 	}
-	if !hasTarget(assets, ".lufy/sdd/verification") {
+	if !hasTarget(assets, ".lufy/workflows/sdd/verification") {
 		t.Fatalf("lite lufy-sdd assets missing verification: %#v", assets)
 	}
 }

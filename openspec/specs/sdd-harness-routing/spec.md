@@ -254,21 +254,21 @@ The system SHALL define and use a canonical Result Contract envelope v1 for subs
 - **THEN** the orchestrator MAY normalize it into a minimal envelope with explicit `legacy_fallback: true` and any missing evidence marked as `not_available`
 
 ### Requirement: Workflow-limit decision output
-The router and orchestrator SHALL expose workflow-limit-driven decisions as structured output derived from `.lufy/project.yaml` top-level `workflow_limits` when that file is available.
+The router and orchestrator SHALL expose workflow-limit-driven decisions as structured output derived from `.lufy/config/project.yaml` top-level `workflow_limits` when that file is available.
 
 #### Scenario: Router reports workload decision inputs
-- **WHEN** `sdd-router` evaluates a non-trivial request with `.lufy/project.yaml` available
+- **WHEN** `sdd-router` evaluates a non-trivial request with `.lufy/config/project.yaml` available
 - **THEN** it reports the `workflow_limits` paths considered, estimated workload inputs, tier decision, confidence, and whether `workload_decision_needed` is true
 
 ### Requirement: Surface-aware routing context
-The router and orchestrator SHALL use `.lufy/project.yaml` `project_profile.surfaces` when available to propagate the correct agent lens for frontend, backend, fullstack, mobile, CLI, infra or library work.
+The router and orchestrator SHALL use `.lufy/config/project.yaml` `project_profile.surfaces` when available to propagate the correct agent lens for frontend, backend, fullstack, mobile, CLI, infra or library work.
 
 #### Scenario: Router carries affected surface lens
 - **WHEN** a request affects files that match a configured `project_profile.surfaces[*].roots` entry
 - **THEN** `sdd-router` includes the surface `type`, `roots` and `agent_lens` in the context slice for downstream agents
 
 #### Scenario: Missing surface profile is explicit
-- **WHEN** `.lufy/project.yaml` is missing or lacks `project_profile.surfaces`
+- **WHEN** `.lufy/config/project.yaml` is missing or lacks `project_profile.surfaces`
 - **THEN** routing reports surface context as `not_available` and does not invent frontend/backend/mobile/CLI/infra assumptions
 
 #### Scenario: Router proposes review slices from configured slicing limits
@@ -294,7 +294,7 @@ The harness SHALL treat explicit user-requested folder structures, layer structu
 - **AND** the workflow SHALL NOT report `approved`, `validated`, `delivery_pending`, `delivered`, `closed` or delivery-ready without explicit user confirmation that the missing structure is a follow-up
 
 #### Scenario: Backend architecture structure follows selected profile
-- **WHEN** `.lufy/project.yaml` contains a backend surface with `architecture.preferred`
+- **WHEN** `.lufy/config/project.yaml` contains a backend surface with `architecture.preferred`
 - **THEN** implementer, validator and reviewer SHALL audit backend file placement against that selected architecture and `architecture.structural_expectations`
 - **AND** `controller_service_repository`, `clean_architecture` and `hexagonal` are treated as distinct structures with different acceptance checks
 
@@ -333,13 +333,13 @@ The workflow SHALL report delivery batching guidance separately from delivery au
 
 #### Scenario: Delivery role receives batching context
 - **WHEN** delivery is explicitly authorized
-- **THEN** the delivery role receives the relevant batching, preflight and stop-rule context from the Result Contract envelope or current `.lufy/project.yaml`
+- **THEN** the delivery role receives the relevant batching, preflight and stop-rule context from the Result Contract envelope or current `.lufy/config/project.yaml`
 
 ### Requirement: Numeric workload guard
 The routing harness SHALL make workload decisions observable from estimated LOC and file count using canonical `workflow_limits` when available.
 
 #### Scenario: LOC budget requires workload decision
-- **GIVEN** `.lufy/project.yaml` exists and defines `workflow_limits.sizing.loc_budget`
+- **GIVEN** `.lufy/config/project.yaml` exists and defines `workflow_limits.sizing.loc_budget`
 - **WHEN** `sdd-router` estimates `estimated_loc` greater than `workflow_limits.sizing.loc_budget`
 - **THEN** it SHALL emit `workload_decision_needed: true` and recommend a workload decision before implementation continues
 
@@ -348,12 +348,12 @@ The routing harness SHALL make workload decisions observable from estimated LOC 
 - **THEN** it SHALL either escalate the tier or propose bounded slices appropriate to the risk and scope
 
 #### Scenario: Missing sizing config is not invented
-- **GIVEN** `.lufy/project.yaml` is missing or `workflow_limits.sizing.loc_budget` is not available
+- **GIVEN** `.lufy/config/project.yaml` is missing or `workflow_limits.sizing.loc_budget` is not available
 - **WHEN** `sdd-router` evaluates estimated workload
 - **THEN** it SHALL report the sizing source as `not_available` and SHALL NOT use legacy top-level `loc_budget` or invented defaults
 
 ### Requirement: Canonical workflow limits propagation
-The router and orchestrator SHALL read and propagate workflow-limit decisions from `.lufy/project.yaml` top-level `workflow_limits` paths when available, and SHALL report unavailable paths explicitly.
+The router and orchestrator SHALL read and propagate workflow-limit decisions from `.lufy/config/project.yaml` top-level `workflow_limits` paths when available, and SHALL report unavailable paths explicitly.
 
 #### Scenario: Router reports all relevant workflow limit paths
 - **WHEN** `sdd-router` evaluates a non-trivial request for a project
@@ -364,7 +364,7 @@ The router and orchestrator SHALL read and propagate workflow-limit decisions fr
 - **THEN** it SHALL propagate the workflow decision fields, source paths, workload decision, review slices, preflight status, stop-rule status, and delivery batching guidance needed by the receiving role
 
 #### Scenario: Legacy top-level fields are ignored
-- **GIVEN** `.lufy/project.yaml` contains top-level `loc_budget` or top-level `delivery_strategy`
+- **GIVEN** `.lufy/config/project.yaml` contains top-level `loc_budget` or top-level `delivery_strategy`
 - **WHEN** `sdd-router` or `orchestrator` computes workflow limits
 - **THEN** it SHALL NOT consume those fields as canonical sizing, routing, slicing, batching, preflight, stop-rule, authorization, or closure inputs
 
@@ -389,12 +389,12 @@ The routing harness SHALL derive `review_slices` from proposal/review slicing co
 The routing harness SHALL treat `chain_strategy` as optional routing metadata that can be propagated without requiring a CLI struct change in this slice.
 
 #### Scenario: Top-level auto-chain is propagated
-- **GIVEN** `.lufy/project.yaml` defines top-level `chain_strategy: auto-chain`
+- **GIVEN** `.lufy/config/project.yaml` defines top-level `chain_strategy: auto-chain`
 - **WHEN** `sdd-router` classifies a request and risk is not high
 - **THEN** it SHALL report the chain strategy and `orchestrator` SHALL propagate it to the next handoff without asking the user again
 
 #### Scenario: Routing nested chain strategy is propagated
-- **GIVEN** `.lufy/project.yaml` defines `workflow_limits.routing.chain_strategy: auto-chain`
+- **GIVEN** `.lufy/config/project.yaml` defines `workflow_limits.routing.chain_strategy: auto-chain`
 - **WHEN** top-level `chain_strategy` is absent and `sdd-router` classifies a request
 - **THEN** it SHALL report the nested chain strategy and `orchestrator` SHALL propagate it when no high-risk or authorization gate applies
 

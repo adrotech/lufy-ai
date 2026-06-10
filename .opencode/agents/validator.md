@@ -49,7 +49,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 ## Obsidian Memory
 
-- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
 - If Engram MCP/tool is available, use it only as optional supplementary hints.
 - If memory is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Save a memory in Obsidian only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
@@ -65,7 +65,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For final block/proposal gates, run the grouped validation available for the real scope, including tests and coverage when commands exist.
 - For any task with `structural_acceptance`, run a read-only structural audit before reporting `validated`, `delivery_pending` or equivalent readiness. Verify the requested directories/layers exist for each affected feature/surface, and search for files that remain in forbidden root locations when the user requested `pages/`, `hooks/`, `components/`, `utils/`, `constants/`, `services/`, `types.ts`, `index.ts`, `controllers`, `repositories`, `domain`, `usecase`, `ports` or `adapters`.
 - For frontend/fullstack feature-driven work, fail the gate if affected features keep pages or hooks in the feature root after the user requested dedicated `pages/` or `hooks/` directories, unless the result includes explicit user confirmation that the remainder is a follow-up.
-- For backend work, compare changed files against `.lufy/project.yaml` `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations` when available. `controller_service_repository`, `clean_architecture` and `hexagonal` must be audited as different structures.
+- For backend work, compare changed files against `.lufy/config/project.yaml` `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations` when available. `controller_service_repository`, `clean_architecture` and `hexagonal` must be audited as different structures.
 - For OpenSpec/docs-only slices with no runtime/app changes, default to the lightweight gate: `openspec validate "<change>" --strict` when a change ID exists plus static review of the affected files/checklists. Do not require Git read-only evidence solely to prove absence of runtime work unless delivery is requested or the provided scope suggests mixed changes.
 - For T1/T2 changes where tests were required, verify that TDD evidence from `test-writer` or equivalent carried-forward evidence includes RED, GREEN, TRIANGULATE and REFACTOR statuses, or explicit `not_applicable` reasons.
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` as the grouped local validation command because it includes the PR-aware whitespace gate before Go tests/build.

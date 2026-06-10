@@ -164,7 +164,7 @@ func TestRestoreRejectsCorruptBackupBeforeRecoveryBackup(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "hash de backup no coincide") {
 		t.Fatalf("expected hash mismatch error, got %v", err)
 	}
-	backupsRoot := filepath.Join(target, ".lufy-ai", "backups")
+	backupsRoot := filepath.Join(target, ".lufy", "managed-state", "backups")
 	entries, err := os.ReadDir(backupsRoot)
 	if err != nil {
 		t.Fatal(err)
@@ -224,7 +224,7 @@ func TestBackupPrunesOldBackups(t *testing.T) {
 	target := t.TempDir()
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "original\n")
 	stateWithFiles(t, target, []string{"AGENTS.md"})
-	backupsRoot := filepath.Join(target, ".lufy-ai", "backups")
+	backupsRoot := filepath.Join(target, ".lufy", "managed-state", "backups")
 	for i := 0; i < defaultBackupRetention; i++ {
 		path := filepath.Join(backupsRoot, "20000101T000000.00000000"+string(rune('0'+i))+"Z")
 		if err := os.MkdirAll(path, 0o755); err != nil {

@@ -14,7 +14,7 @@ Captura únicamente memoria durable: decisiones, reglas, flows, lessons o concep
 
 ## Flujo
 
-1. Leer `.lufy/project.yaml` y confirmar `memory.provider: obsidian`.
+1. Leer `.lufy/config/project.yaml` y confirmar `memory.provider: obsidian`.
 2. Si falta estructura, recomendar `lufy-ai memory init --target <repo>` y detener mutaciones.
 3. Buscar primero notas cercanas con `lufy-ai memory search --target <repo> <query>`.
 4. Si existe una nota activa suficiente, actualizarla con el menor cambio posible.

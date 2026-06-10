@@ -1,22 +1,22 @@
 ## MODIFIED Requirements
 
 ### Requirement: Project surface profile
-`.lufy/project.yaml` SHALL include a project surface profile that tells agents what product lens to apply independently from the technical stack.
+`.lufy/config/project.yaml` SHALL include a project surface profile that tells agents what product lens to apply independently from the technical stack.
 
 #### Scenario: Surface profile is generated from detectable evidence
 - **WHEN** `lufy-ai init --target <dir>` detects frontend, backend, mobile, CLI, infra, library or fullstack evidence
-- **THEN** `.lufy/project.yaml` includes `project_profile.surfaces` entries with `id`, `type`, `roots`, `stacks`, `frameworks` and `agent_lens`
+- **THEN** `.lufy/config/project.yaml` includes `project_profile.surfaces` entries with `id`, `type`, `roots`, `stacks`, `frameworks` and `agent_lens`
 
 #### Scenario: Surface profile can be adjusted with a TUI
 - **WHEN** the user runs `lufy-ai init --target <dir> --interactive` or `lufy-ai scan --target <dir>` in an interactive terminal
-- **THEN** the CLI opens a Bubble Tea/Charm TUI for reviewing detected surfaces before writing `.lufy/project.yaml`
+- **THEN** the CLI opens a Bubble Tea/Charm TUI for reviewing detected surfaces before writing `.lufy/config/project.yaml`
 - **THEN** the user can select a surface and adjust its `type` among supported surface types
 - **THEN** the written surface uses the selected `type` and matching `agent_lens`
 
 #### Scenario: TUI cancellation is non-mutating
 - **WHEN** the user cancels the project profile TUI before confirming
 - **THEN** the CLI exits non-zero with an actionable cancellation message
-- **THEN** the CLI MUST NOT write or partially rewrite `.lufy/project.yaml`
+- **THEN** the CLI MUST NOT write or partially rewrite `.lufy/config/project.yaml`
 
 #### Scenario: Surface profile is automation-safe
 - **WHEN** the CLI runs in a non-interactive environment

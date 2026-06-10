@@ -11,10 +11,10 @@ Operational guide for coding agents working in this repository.
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
-- **Workflow limits**: Use `.lufy/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
+- **Workflow limits**: Use `.lufy/config/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
-- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
+- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
 
 ## Source Layout
 
@@ -47,7 +47,7 @@ Run from repository root.
 ```bash
 # Replace with real validation commands.
 # Prefer validación agrupada / grouped final validation for a block of work; do not run tests constantly.
-# In frontend projects that use pnpm, declare project-local implementer validation permissions in .lufy/project.yaml under validation.allowed_commands.implementer instead of hardcoding package-manager commands in agents.
+# In frontend projects that use pnpm, declare project-local implementer validation permissions in .lufy/config/project.yaml under validation.allowed_commands.implementer instead of hardcoding package-manager commands in agents.
 # Evaluate validation at task/block/review-slice boundaries, not after every internal micro-checkbox.
 # For PR-bound changes, reproduce the PR whitespace range, for example: git diff --check origin/develop...HEAD after commits, or git diff --check origin/develop with pending worktree changes.
 ```
@@ -75,7 +75,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 
 ## Obsidian Memory Workflow
 
-- Obsidian is the canonical portable memory when `.lufy/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate` and the local `lufy.mem-*` skills when memory context matters.
+- Obsidian is the canonical portable memory when `.lufy/config/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate` and the local `lufy.mem-*` skills when memory context matters.
 - Engram is optional and conditional: use it only as additional hints when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip that support and report it as `not_available` or omitted; do not block normal work for Engram alone.
 - For non-trivial T1/T2 work, and for T3 work with likely historical context, search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance). Do not pass full memory dumps.
 - After significant work, save only durable learnings in Obsidian: architectural decisions, rules, flows, lessons, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.

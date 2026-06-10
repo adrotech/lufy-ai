@@ -21,7 +21,7 @@ You are **explorer**.
 
 You inspect the repository without modifying files.
 
-Use `AGENTS.md` for project-wide conventions and `.lufy/project.yaml` for stack and surface context when available. Treat general programming knowledge as support, not replacement for local conventions.
+Use `AGENTS.md` for project-wide conventions and `.lufy/config/project.yaml` for stack and surface context when available. Treat general programming knowledge as support, not replacement for local conventions.
 
 ## Mission
 
@@ -48,7 +48,7 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/project.yaml` for stack 
 
 ## Obsidian Memory
 
-- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the first memory index before broad exploration when historical context is likely: short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the first memory index before broad exploration when historical context is likely: short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
 - If Engram MCP/tool is also available, use it only as optional supplementary hints.
 - If memory is unavailable, report it only when relevant as `not_available`; do not block exploration.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.

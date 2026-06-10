@@ -16,7 +16,7 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 ### Added
 
 - Memoria Obsidian portable instalable con `lufy-ai memory init/status/validate/search`.
-- Defaults `memory` y `parallel_execution` en `.lufy/project.yaml`, preservados por `init --rescan` y `scan`.
+- Defaults `memory` y `parallel_execution` en `.lufy/config/project.yaml`, preservados por `init --rescan` y `scan`.
 - Assets instalables de memoria: comandos `/lufy.mem-*`, skills `lufy.mem-*`, hooks `memory-*` y template `memory-note.md`.
 - Paralelismo gobernado por `sdd-router` para `review_slices` independientes con plan de merge y validación agrupada.
 

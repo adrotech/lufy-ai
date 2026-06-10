@@ -166,8 +166,8 @@ En scope `project`, la CLI gestiona:
 - `lufy-ia.harness.md`;
 - `tui.json`;
 - `openspec/` cuando la metodología lo requiere;
-- `.lufy/sdd/` cuando se selecciona `lufy-sdd`;
-- `.lufy-ai/install-state.json`.
+- `.lufy/workflows/sdd/` cuando se selecciona `lufy-sdd`;
+- `.lufy/managed-state/install-state.json`.
 
 `AGENTS.md` es user-owned. `install` solo agrega la referencia:
 
@@ -208,7 +208,7 @@ El paralelismo no es un pipeline fijo: `sdd-router` lo recomienda solo para `rev
 
 ## Manifest y backups
 
-`.lufy-ai/install-state.json` usa schema v2 y registra:
+`.lufy/managed-state/install-state.json` usa schema v2 y registra:
 
 - `tool`;
 - `methodologyByTier`;
@@ -221,7 +221,7 @@ El paralelismo no es un pipeline fijo: `sdd-router` lo recomienda solo para `rev
 Backups se escriben en:
 
 ```text
-.lufy-ai/backups/<timestamp>/
+.lufy/managed-state/backups/<timestamp>/
 ```
 
 Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean backups cuando corresponde.
@@ -281,8 +281,8 @@ Comportamiento:
 - crea backup previo;
 - borra assets gestionados sin drift;
 - borra ancestors gestionados sin drift;
-- remueve `.lufy-ai/install-state.json`;
-- preserva `.lufy-ai/backups`;
+- remueve `.lufy/managed-state/install-state.json`;
+- preserva `.lufy/managed-state/backups`;
 - preserva `opencode.json`;
 - preserva `AGENTS.md` y remueve solo la línea `@lufy-ia.harness.md`;
 - limpia directorios gestionados que queden vacíos.
@@ -294,7 +294,7 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes --no-engram
 lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --no-engram --quiet
 ```
 
-`--keep-state` existe para diagnóstico: conserva `.lufy-ai/install-state.json` aunque remueva assets. No es el flujo normal.
+`--keep-state` existe para diagnóstico: conserva `.lufy/managed-state/install-state.json` aunque remueva assets. No es el flujo normal.
 
 ## Restore
 
@@ -370,7 +370,7 @@ Agrega `~/.local/bin` a tu `PATH`.
 
 Revisa el error exacto. `verify` valida:
 
-- `.lufy-ai/install-state.json`;
+- `.lufy/managed-state/install-state.json`;
 - estructura crítica;
 - hashes SHA-256;
 - JSON gestionado;

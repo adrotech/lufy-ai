@@ -450,7 +450,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 		if err := runPostInstallVerify(plan, stdout); err != nil {
 			return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 		}
-		fmt.Fprintf(stdout, "- [skip] %s sin cambios\n", filepath.Join(".lufy-ai", "install-state.json"))
+		fmt.Fprintf(stdout, "- [skip] %s sin cambios\n", filepath.ToSlash(filepath.Join(".lufy", "managed-state", "install-state.json")))
 		return nil
 	}
 	assetStates, err := buildAssetStates(plan)
@@ -465,7 +465,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 	}
-	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
+	fmt.Fprintf(stdout, "- [write] %s\n", filepath.ToSlash(filepath.Join(".lufy", "managed-state", "install-state.json")))
 	if err := runPostInstallVerify(plan, stdout); err != nil {
 		if rollbackErr := restoreStateAfterVerifyFailure(plan); rollbackErr != nil {
 			err = fmt.Errorf("%w; además falló restaurar install-state previo: %v", err, rollbackErr)

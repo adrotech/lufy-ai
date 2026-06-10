@@ -26,6 +26,150 @@ func TestRunInstallDryRun(t *testing.T) {
 	}
 }
 
+func TestRunMigrateLayoutDryRunDoesNotWrite(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"migrate-layout", "--target", target, "--dry-run"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("migrate-layout dry-run expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("[dry-run]")) {
+		t.Fatalf("expected dry-run plan, got %s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(err) {
+		t.Fatalf("dry-run wrote install-state: %v", err)
+	}
+}
+
+func TestRunMigrateLayoutRequiresYesForMutations(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"migrate-layout", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("migrate-layout without --yes expected ExitRuntimeErr, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("requiere --yes")) {
+		t.Fatalf("expected --yes error, got %s", errOut.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(err) {
+		t.Fatalf("run without --yes wrote install-state: %v", err)
+	}
+}
+
+func TestRunMigrateLayoutJSONAppliesWithoutHumanLogs(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"migrate-layout", "--target", target, "--yes", "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("migrate-layout json expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid json output %q: %v", out.String(), err)
+	}
+	if decoded["applied"] != true {
+		t.Fatalf("expected applied=true, got %#v", decoded)
+	}
+	if bytes.Contains(out.Bytes(), []byte("[migrate-layout]")) {
+		t.Fatalf("json output contains human log: %s", out.String())
+	}
+}
+
+func TestRunInstallDryRunShowsLayoutMigrationWithoutWriting(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy", "project.yaml"), "schema_version: 1\n")
+
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"install", "--target", target, "--dry-run", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install dry-run expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("[layout-migrate-copy] .lufy/project.yaml -> .lufy/config/project.yaml")) {
+		t.Fatalf("expected layout migration plan, got %s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "config", "project.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("install dry-run wrote project config: %v", err)
+	}
+}
+
+func TestEnsureLayoutForMutationBlocksLegacyWithoutAllowApply(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
+
+	var out bytes.Buffer
+	err := ensureLayoutForMutation(target, false, false, &out)
+	if err == nil || !bytes.Contains([]byte(err.Error()), []byte("--yes")) {
+		t.Fatalf("expected --yes layout error, got %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(statErr) {
+		t.Fatalf("preflight wrote canonical state: %v", statErr)
+	}
+}
+
+func TestEnsureLayoutForMutationWithoutAllowApplyIgnoresReadmeOnlyPlan(t *testing.T) {
+	target := t.TempDir()
+
+	var out bytes.Buffer
+	if err := ensureLayoutForMutation(target, false, false, &out); err != nil {
+		t.Fatal(err)
+	}
+	if _, statErr := os.Stat(filepath.Join(target, ".lufy", "README.md")); !os.IsNotExist(statErr) {
+		t.Fatalf("preflight wrote README without confirmation: %v", statErr)
+	}
+}
+
+func TestEnsureLayoutForMutationDryRunReportsConflicts(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy", "managed-state", "install-state.json"), "{\"new\":true}\n")
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{\"legacy\":true}\n")
+
+	var out bytes.Buffer
+	if err := ensureLayoutForMutation(target, true, false, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("[layout-conflict]")) {
+		t.Fatalf("expected layout conflict output, got %s", out.String())
+	}
+}
+
+func TestReportLegacyLayoutForReadOnly(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".lufy", "managed-state", "install-state.json"), "{\"new\":true}\n")
+	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{\"legacy\":true}\n")
+	writeCLITestFile(t, filepath.Join(target, ".lufy", "project.yaml"), "schema_version: 1\n")
+
+	var out bytes.Buffer
+	if err := reportLegacyLayoutForReadOnly(target, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(out.Bytes(), []byte("legacy layout detectado: .lufy/project.yaml, .lufy-ai/install-state.json")) {
+		t.Fatalf("expected legacy list, got %s", out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("legacy layout conflictivo")) {
+		t.Fatalf("expected conflict warning, got %s", out.String())
+	}
+}
+
+func TestReportLegacyLayoutForReadOnlyNoopWhenClean(t *testing.T) {
+	var out bytes.Buffer
+	if err := reportLegacyLayoutForReadOnly(t.TempDir(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("expected no output, got %s", out.String())
+	}
+}
+
 func TestRunUninstallRequiresConfirmation(t *testing.T) {
 	target := t.TempDir()
 	var out bytes.Buffer
@@ -54,6 +198,75 @@ func TestRunUnknownCommand(t *testing.T) {
 	code := Run([]string{"nope"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitUsageErr {
 		t.Fatalf("expected ExitUsageErr, got %d", code)
+	}
+}
+
+func TestRunHelpBranches(t *testing.T) {
+	tests := [][]string{
+		{"help"},
+		{"opsx", "--help"},
+		{"opsx", "render", "--help"},
+		{"memory", "--help"},
+		{"memory", "init", "--help"},
+		{"memory", "search", "--help"},
+		{"init", "--help"},
+		{"scan", "--help"},
+		{"migrate-layout", "--help"},
+		{"merge", "--help"},
+		{"pin", "--help"},
+		{"unpin", "--help"},
+		{"install", "--help"},
+		{"sync", "--help"},
+		{"uninstall", "--help"},
+	}
+	for _, args := range tests {
+		t.Run(args[0]+"/"+args[len(args)-1], func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitOK {
+				t.Fatalf("Run(%v) code=%d stdout=%s stderr=%s", args, code, out.String(), errOut.String())
+			}
+		})
+	}
+}
+
+func TestRunUsageBranches(t *testing.T) {
+	tests := [][]string{
+		{"opsx"},
+		{"opsx", "unknown"},
+		{"memory"},
+		{"memory", "unknown"},
+		{"memory", "status", "extra"},
+		{"memory", "validate", "extra"},
+		{"memory", "search"},
+		{"init", "extra"},
+		{"init", "--force", "--rescan"},
+		{"scan", "extra"},
+		{"migrate-layout", "extra"},
+		{"merge"},
+		{"merge", "--accept-theirs", "--accept-ours", "x"},
+		{"pin"},
+		{"unpin"},
+		{"sync", "extra"},
+		{"status", "extra"},
+		{"info", "extra"},
+		{"doctor", "extra"},
+		{"version", "extra"},
+		{"upgrade", "extra"},
+		{"install", "extra"},
+		{"uninstall", "extra"},
+		{"restore"},
+	}
+	for _, args := range tests {
+		t.Run(args[0]+"/usage", func(t *testing.T) {
+			var out bytes.Buffer
+			var errOut bytes.Buffer
+			code := Run(args, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitUsageErr {
+				t.Fatalf("Run(%v) code=%d stdout=%s stderr=%s", args, code, out.String(), errOut.String())
+			}
+		})
 	}
 }
 
@@ -227,10 +440,10 @@ func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
 	if got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeLite || !got.Required {
 		t.Fatalf("T2 methodology = %#v", got)
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "changes", ".gitkeep")); err != nil {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd", "changes", ".gitkeep")); err != nil {
 		t.Fatalf("expected lufy-sdd changes asset: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd", "specs", ".gitkeep")); err != nil {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd", "specs", ".gitkeep")); err != nil {
 		t.Fatalf("expected lufy-sdd specs asset for full mode: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); !os.IsNotExist(err) {
@@ -462,7 +675,7 @@ func TestRunMergeWithoutToolReturnsRuntimeErrorAfterDispatch(t *testing.T) {
 	target := t.TempDir()
 	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
 	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -484,7 +697,7 @@ func TestRunMergeAcceptTheirsResolvesWithoutMergeTool(t *testing.T) {
 	target := t.TempDir()
 	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
 	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -512,7 +725,7 @@ func TestRunMergeAcceptOursResolvesWithoutMergeTool(t *testing.T) {
 	target := t.TempDir()
 	writeCLITestFile(t, filepath.Join(target, "tui.json"), "user\n")
 	writeCLITestFile(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	writeCLITestFile(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hashCLITestFile(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -602,7 +815,7 @@ func TestRunInitCreatesProjectConfig(t *testing.T) {
 	if !bytes.Contains(out.Bytes(), []byte("project_profile: modo no interactivo")) {
 		t.Fatalf("init did not attempt interactive profile fallback: %s", out.String())
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "project.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "config", "project.yaml")); err != nil {
 		t.Fatalf("project config not written: %v", err)
 	}
 }
@@ -634,7 +847,7 @@ func TestRunScanCreatesProjectProfileWithoutTTYPrompt(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("scan expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	body, err := os.ReadFile(filepath.Join(target, ".lufy", "project.yaml"))
+	body, err := os.ReadFile(filepath.Join(target, ".lufy", "config", "project.yaml"))
 	if err != nil {
 		t.Fatalf("project config not written: %v", err)
 	}

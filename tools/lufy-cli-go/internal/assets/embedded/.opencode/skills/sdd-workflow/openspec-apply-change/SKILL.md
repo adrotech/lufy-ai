@@ -86,7 +86,7 @@ Implement tasks from an OpenSpec change.
    - Show which task is being worked on
    - Make the code changes required
    - Keep changes minimal and focused
-   - Satisfy structural acceptance literally. For feature-driven frontend work, do not leave pages, hooks, utilities or constants in the feature root when the requested structure requires subdirectories. For backend work, follow the selected architecture from `.lufy/project.yaml` when available.
+   - Satisfy structural acceptance literally. For feature-driven frontend work, do not leave pages, hooks, utilities or constants in the feature root when the requested structure requires subdirectories. For backend work, follow the selected architecture from `.lufy/config/project.yaml` when available.
    - Mark task complete in the tasks file: `- [ ]` → `- [x]` only when the coherent implementation task/block is actually done
    - Continue to next task
    - If implementation changes requirement behavior, update the change delta spec rather than editing main specs directly; use `/opsx-sync` after validation to apply deltas.

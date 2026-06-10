@@ -74,13 +74,13 @@ El preset inicial `tool=opencode` y `methodology=openspec` SHALL conservar el co
 #### Scenario: Default install does not opt into Lufy SDD
 - **WHEN** un usuario ejecuta `lufy-ai install --target <repo> --yes --no-engram` sin flags de metodología
 - **THEN** el target SHALL contener los assets OpenCode/OpenSpec actuales
-- **AND** SHALL NOT contener assets `.lufy/sdd`
+- **AND** SHALL NOT contener assets `.lufy/workflows/sdd`
 - **AND** el manifest SHALL registrar `methodologyByTier` default con `openspec`
 
 #### Scenario: Existing default install syncs after adapter routing
 - **GIVEN** un target instalado con el preset default OpenCode/OpenSpec
 - **WHEN** el usuario ejecuta `lufy-ai sync --target <repo> --yes --no-engram` sin flags nuevos
-- **THEN** sync SHALL actualizar assets gestionados cuyo source cambio sin introducir `.lufy/sdd`
+- **THEN** sync SHALL actualizar assets gestionados cuyo source cambio sin introducir `.lufy/workflows/sdd`
 - **AND** SHALL preservar `tool: opencode` y `methodologyByTier` OpenSpec en el manifest
 - **AND** `lufy-ai verify --target <repo> --no-engram` SHALL reportar una instalación válida
 
@@ -88,7 +88,7 @@ El preset inicial `tool=opencode` y `methodology=openspec` SHALL conservar el co
 El manifest de instalación SHALL evolucionar para registrar tool, metodología, componente y scope de cada asset sin impedir leer manifests legacy.
 
 #### Scenario: Legacy manifest remains readable
-- **GIVEN** un target contiene `.lufy-ai/install-state.json` de schema anterior
+- **GIVEN** un target contiene `.lufy/managed-state/install-state.json` de schema anterior
 - **WHEN** `lufy-ai verify` o `lufy-ai sync` se ejecuta
 - **THEN** el sistema SHALL leer el manifest legacy y reportar cualquier limitación de migración sin romper por ausencia de campos nuevos
 

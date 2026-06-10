@@ -36,7 +36,7 @@ Estado actual documentable:
 
 - CLI Go en `tools/lufy-cli-go/` con `init`, `install`, `uninstall`, `verify`, `status`, `sync`, `merge`, `backup`, `restore`, `upgrade` y `version`.
 - `uninstall` gestionado con dry-run, backup, drift guard, preservación de `opencode.json` y remoción mínima de la referencia Lufy en `AGENTS.md`.
-- Assets gestionados con estado `.lufy-ai/install-state.json`, hashes SHA-256, idempotencia y backups antes de actualizaciones gestionadas.
+- Assets gestionados con estado `.lufy/managed-state/install-state.json`, hashes SHA-256, idempotencia y backups antes de actualizaciones gestionadas.
 - Drift Resolution en rama: policies declarativas, `AGENTS.md` como `merge-block`, `tui.json` como `no-replace`, `.lufy-new`, ancestors, `--scope=project|global|both`, `lufy-ai merge <path>` y restore con `--list`/ID.
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
@@ -58,7 +58,7 @@ Flujo operativo de ramas/release:
 No son capacidades instalables actuales:
 
 - templates por stack como `frontend-react`, `frontend-nextjs`, `frontend-astro`, `mobile-expo` o `backend-spring`;
-- consumidores completos de `.lufy/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
+- consumidores completos de `.lufy/config/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
 - instalación real/escribible sobre Codex o Claude Code.
@@ -159,7 +159,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 
 **Design**:
 
-- Directorio sugerido: `.lufy-ai/backups/<timestamp>/` dentro del target o temp externo configurable.
+- Directorio sugerido: `.lufy/managed-state/backups/<timestamp>/` dentro del target o temp externo configurable.
 - Respaldar solo si existe el path destino y será modificado.
 - Registrar un manifest con paths respaldados, acciones realizadas y timestamp.
 - Si una acción falla, intentar rollback de paths tocados en esa ejecución y reportar el estado final.
@@ -183,7 +183,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 **Design**:
 
 - Aceptar `--target <dir>` y validar desde fuera del proyecto destino.
-- Confirmar presencia de `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies`, `.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml` y `.lufy-ai/install-state.json`.
+- Confirmar presencia de `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies`, `.opencode/plugins/agent-observatory.tsx`, `AGENTS.md`, `tui.json`, `openspec/config.yaml` y `.lufy/managed-state/install-state.json`.
 - Validar JSON parseable desde la CLI Go cuando aplique.
 - Validar que los archivos críticos gestionados estén registrados en manifest y que los hashes SHA-256 coincidan.
 - Fallar con mensajes accionables y código distinto de cero.
@@ -303,10 +303,10 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - ✅ Wrapper `scripts/install.sh` delega exclusivamente a `lufy-ai install`, usando `tools/lufy-cli-go/bin/lufy-ai` o `lufy-ai` en `PATH`, sin fallback legacy.
 - ✅ Resolución Engram portable por `PATH` sin hardcode nuevo en la ruta de migración.
 - ✅ Smoke E2E reproducible validado en temp dir para install real + verify + idempotencia básica (2da ejecución con `skip`) + backup/restore (dry-run y real) sobre conflicto controlado de `AGENTS.md`.
-- ✅ Install real copia assets gestionados del catálogo, escribe `.lufy-ai/install-state.json` con SHA-256 y evita sobrescribir drift local.
+- ✅ Install real copia assets gestionados del catálogo, escribe `.lufy/managed-state/install-state.json` con SHA-256 y evita sobrescribir drift local.
 - ✅ `backup`/`restore` usan `manifest.json`, hashes, `targetRoot` y backup de recovery antes de restauraciones reales.
 - ✅ `sync` reaplica assets gestionados con hash/idempotencia y backup previo, bloqueando drift local, estado ausente/corrupto y escapes por symlink/path inseguro.
-- ✅ `opencode.json` usa contrato `merge-json` especial en `install`, `sync` y `verify`: no se copia como asset completo ni se registra con SHA-256 en `.lufy-ai/install-state.json`.
+- ✅ `opencode.json` usa contrato `merge-json` especial en `install`, `sync` y `verify`: no se copia como asset completo ni se registra con SHA-256 en `.lufy/managed-state/install-state.json`.
 
 ### `RM-014` — Releases binarios versionados
 
@@ -345,7 +345,7 @@ Objetivo: permitir instalación sin obligar a clonar este repositorio, usando re
 - Estrategia incremental recomendada: usar `go:embed` primero para que el binario release sea autocontenido y el checksum cubra código + assets.
 - Considerar bundle zip/tar versionado si el tamaño o frecuencia de assets hace incómodo recompilar el binario por cambios de contenido.
 - Si se usa bundle, verificar checksum del bundle completo y manifest interno antes de usar assets.
-- Mantener los contratos existentes de idempotencia, manifest `.lufy-ai/install-state.json`, hashes SHA-256, backup/restore y `verify`.
+- Mantener los contratos existentes de idempotencia, manifest `.lufy/managed-state/install-state.json`, hashes SHA-256, backup/restore y `verify`.
 - No documentar instalación standalone real hasta que `lufy-ai install --target <dir>` funcione desde un binario distribuido sin leer el repo fuente.
 
 **Estado actual:** implementado en la rama mediante assets gestionados embebidos en el binario Go. Un binario release puede ejecutar `lufy-ai install --target <dir>` sin leer el checkout fuente, preservando idempotencia, manifest, hashes, backup/restore, sync y verify; el quickstart público requiere que exista una release `v*` publicada para descargar ese binario.

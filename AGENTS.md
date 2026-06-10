@@ -10,7 +10,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
-- **Workflow limits**: `.lufy/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
+- **Workflow limits**: `.lufy/config/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
 - **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
@@ -38,7 +38,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Validación agrupada local: `scripts/validate.sh` ejecuta el whitespace check con rango/base de PR y la validación Go disponible.
 - Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
 - No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
-- En proyectos frontend con `pnpm` configurado, declarar validaciones no mutantes en `.lufy/project.yaml` bajo `validation.allowed_commands.implementer` para que `implementer` las herede sin hardcodearlas en el agente; siguen sujetas a validación agrupada y a que el toolchain exista.
+- En proyectos frontend con `pnpm` configurado, declarar validaciones no mutantes en `.lufy/config/project.yaml` bajo `validation.allowed_commands.implementer` para que `implementer` las herede sin hardcodearlas en el agente; siguen sujetas a validación agrupada y a que el toolchain exista.
 - Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
 - Evaluar gates por task, bloque coherente o review slice; los micro-checkboxes internos no implican cierre, archive-ready ni delivery por sí solos.
 - Para cambios que terminarán en PR contra `develop`, el chequeo de whitespace debe reproducir el rango del PR: usar `git diff --check origin/develop...HEAD` sobre commits ya preparados y `git diff --check origin/develop` cuando haya cambios pendientes en worktree. No basta `git diff --check` local, porque puede omitir whitespace introducido en commits anteriores de la rama.
@@ -164,7 +164,7 @@ skill_resolution:
 
 ## Workflow de memoria Obsidian
 
-- Obsidian es la memoria canónica portable cuando `.lufy/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
+- Obsidian es la memoria canónica portable cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
 - Engram es opcional y condicional: usarlo solo como hints adicionales cuando la sesión actual expone un MCP/tool Engram disponible. Si Engram no está configurado, está deshabilitado o no está disponible, omitir ese apoyo y reportar `not_available` u omitido; no bloquear trabajo normal solo por Engram.
 - Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, buscar en Obsidian con consultas cortas por issue/spec/ruta/concepto y resumir hallazgos como `memory_hints` compactos (path, línea, status, relevancia); no pasar dumps completos.
 - Después de trabajo significativo, guardar en Obsidian solo aprendizajes durables: decisiones de arquitectura, reglas, flows, lessons, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
