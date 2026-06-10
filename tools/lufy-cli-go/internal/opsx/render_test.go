@@ -124,6 +124,57 @@ func TestRenderChangeRejectsMissingChangeAndUnknownTheme(t *testing.T) {
 	}
 }
 
+func TestRenderInlineRendersBoldSafely(t *testing.T) {
+	got := renderInline("Antes **fuerte** después")
+	want := "Antes <strong>fuerte</strong> después"
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+}
+
+func TestRenderInlineEscapesBoldContent(t *testing.T) {
+	got := renderInline("**<raw>**")
+	want := "<strong>&lt;raw&gt;</strong>"
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+}
+
+func TestRenderInlineCodeKeepsBoldMarkersLiteral(t *testing.T) {
+	got := renderInline("`**no bold**`")
+	want := "<code>**no bold**</code>"
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+}
+
+func TestRenderInlineSafeLinksAllowBoldLabels(t *testing.T) {
+	got := renderInline("[**Seguro**](https://example.com/ok) y **adyacente** [link](mailto:test@example.com)")
+	want := `<a href="https://example.com/ok" rel="noopener noreferrer"><strong>Seguro</strong></a> y <strong>adyacente</strong> <a href="mailto:test@example.com" rel="noopener noreferrer">link</a>`
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+}
+
+func TestRenderInlineUnsafeLinksStayEscapedText(t *testing.T) {
+	got := renderInline("[**Inseguro**](javascript:alert(1))")
+	want := `[**Inseguro**](javascript:alert(1))`
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+	if strings.Contains(got, "<a ") || strings.Contains(got, "href=") {
+		t.Fatalf("unsafe link should not become clickable: %q", got)
+	}
+}
+
+func TestRenderInlineUnclosedBoldStaysEscapedText(t *testing.T) {
+	got := renderInline("**sin cerrar <raw> [link](https://example.com)")
+	want := "**sin cerrar &lt;raw&gt; [link](https://example.com)"
+	if got != want {
+		t.Fatalf("renderInline() = %q, want %q", got, want)
+	}
+}
+
 func writeFile(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

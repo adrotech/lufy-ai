@@ -24,13 +24,12 @@ import (
 )
 
 type Options struct {
-	Target   string
-	DryRun   bool
-	Yes      bool
-	NoEngram bool
-	Backup   bool
-	Scope    assets.Scope
-	Harness  domain.HarnessConfig
+	Target  string
+	DryRun  bool
+	Yes     bool
+	Backup  bool
+	Scope   assets.Scope
+	Harness domain.HarnessConfig
 }
 
 type Action struct {
@@ -58,7 +57,6 @@ type Conflict struct {
 type Plan struct {
 	SourceRoot string
 	TargetRoot string
-	NoEngram   bool
 	Catalog    assets.Catalog
 	Previous   *state.InstallState
 	Scope      assets.Scope
@@ -116,7 +114,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return err
 	}
 
-	printPlan(plan, opts.NoEngram, stdout)
+	printPlan(plan, stdout)
 
 	if opts.DryRun {
 		fmt.Fprintln(stdout, "Modo dry-run: sin mutaciones en filesystem")
@@ -205,7 +203,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 		previousAssets = previous.AssetMap()
 	}
 
-	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, NoEngram: opts.NoEngram, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot, Harness: harness}
+	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot, Harness: harness}
 	seenDirs := map[string]bool{}
 	for _, asset := range catalog.Assets {
 		if asset.Kind == assets.KindDir {
@@ -342,7 +340,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			}
 		}
 	}
-	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target, opts.NoEngram)
+	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -428,7 +426,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
 		case ActionMergeJSON:
-			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot, plan.NoEngram); err != nil {
+			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot); err != nil {
 				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
 			}
 			applied++
@@ -487,7 +485,7 @@ func restoreStateAfterVerifyFailure(plan Plan) error {
 }
 
 func runPostInstallVerify(plan Plan, stdout io.Writer) error {
-	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, NoEngram: plan.NoEngram}, stdout); err != nil {
+	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot}, stdout); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "- [verify] %s\n", plan.TargetRoot)

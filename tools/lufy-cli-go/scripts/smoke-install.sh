@@ -83,22 +83,22 @@ main() {
     local dry_target="$work_root/dry-run-target"
     mkdir -p "$dry_target"
     log "Dry-run install sin mutaciones"
-    "$BIN" install --target "$dry_target" --dry-run --yes --no-engram
+    "$BIN" install --target "$dry_target" --dry-run --yes
     assert_empty_dir "$dry_target"
 
     local confirm_target="$work_root/install-needs-yes"
     mkdir -p "$confirm_target"
     log "Install real sin --yes falla de forma accionable"
-    expect_failure_contains "install requiere --yes" "$BIN" install --target "$confirm_target" --no-engram
+    expect_failure_contains "install requiere --yes" "$BIN" install --target "$confirm_target"
     assert_empty_dir "$confirm_target"
 
     local target="$work_root/install-target"
     mkdir -p "$target"
     log "Install real"
-    "$BIN" install --target "$target" --yes --no-engram
+    "$BIN" install --target "$target" --yes
 
     log "Verify posterior a install"
-    "$BIN" verify --target "$target" --no-engram
+    "$BIN" verify --target "$target"
 
     local state_file="$target/.lufy-ai/install-state.json"
     local asset_file="$target/AGENTS.md"
@@ -109,7 +109,7 @@ main() {
     asset_before="$(sha256_file "$asset_file")"
 
     log "Segundo install idempotente"
-    "$BIN" install --target "$target" --yes --no-engram
+    "$BIN" install --target "$target" --yes
     state_after="$(sha256_file "$state_file")"
     asset_after="$(sha256_file "$asset_file")"
     [ "$state_before" = "$state_after" ] || fail "install idempotente reescribió install-state.json"

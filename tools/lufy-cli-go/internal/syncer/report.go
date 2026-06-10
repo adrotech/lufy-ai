@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func printPlan(plan Plan, noEngram bool, stdout io.Writer) {
+func printPlan(plan Plan, stdout io.Writer) {
 	fmt.Fprintf(stdout, "Plan de sync para %s\n", plan.TargetRoot)
 	fmt.Fprintf(stdout, "Source root: %s\n", plan.SourceRoot)
 	fmt.Fprintf(stdout, "Scope: %s projectRoot=%s", plan.Scope, plan.TargetRoot)
@@ -31,8 +31,5 @@ func printPlan(plan Plan, noEngram bool, stdout io.Writer) {
 	}
 	for _, conflict := range plan.Conflicts {
 		fmt.Fprintf(stdout, "- [conflict] %s (%s) source=%s current=%s recordedSource=%s recordedTarget=%s\n", conflict.Path, conflict.Reason, shortHash(conflict.SourceHash), shortHash(conflict.CurrentHash), shortHash(conflict.RecordedSourceHash), shortHash(conflict.RecordedTargetHash))
-	}
-	if noEngram {
-		fmt.Fprintln(stdout, "Engram: omitido por --no-engram")
 	}
 }

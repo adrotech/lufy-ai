@@ -17,7 +17,7 @@ func TestRunInstallDryRun(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", ".", "--dry-run", "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"install", "--target", ".", "--dry-run", "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("expected ExitOK, got %d, stderr=%s", code, errOut.String())
 	}
@@ -31,7 +31,7 @@ func TestRunUninstallRequiresConfirmation(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"install", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
@@ -172,6 +172,13 @@ func TestRunInstallUnknownFlag(t *testing.T) {
 	if code != ExitUsageErr {
 		t.Fatalf("expected ExitUsageErr, got %d", code)
 	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"install", "--no-" + "en" + "gram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("removed flag expected ExitUsageErr, got %d", code)
+	}
 }
 
 func TestRunInstallPersistsHarnessSelection(t *testing.T) {
@@ -179,7 +186,7 @@ func TestRunInstallPersistsHarnessSelection(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", target, "--yes", "--no-engram", "--tool", "opencode", "--methodology-tier", "T3:openspec/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"install", "--target", target, "--yes", "--tool", "opencode", "--methodology-tier", "T3:openspec/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
@@ -208,7 +215,6 @@ func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
 		"install",
 		"--target", target,
 		"--yes",
-		"--no-engram",
 		"--methodology-tier", "T1:lufy-sdd/full",
 		"--methodology-tier", "T2:lufy-sdd/lite",
 		"--methodology-tier", "T3:none",
@@ -299,7 +305,7 @@ func TestRunInfoAndDoctor(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"install", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
@@ -330,7 +336,7 @@ func TestRunPinAndUnpin(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", target, "--yes", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"install", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
@@ -697,7 +703,7 @@ func TestRunStatusVerbose(t *testing.T) {
 func TestRunVerifyQuietMissingState(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
-	code := Run([]string{"verify", "--target", t.TempDir(), "--quiet", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"verify", "--target", t.TempDir(), "--quiet"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitRuntimeErr {
 		t.Fatalf("verify --quiet expected ExitRuntimeErr, got %d", code)
 	}
@@ -712,7 +718,7 @@ func TestRunVerifyQuietMissingState(t *testing.T) {
 func TestRunVerifyAcceptsDeepFlag(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
-	code := Run([]string{"verify", "--target", t.TempDir(), "--deep", "--no-engram"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{"verify", "--target", t.TempDir(), "--deep"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitRuntimeErr {
 		t.Fatalf("verify --deep expected runtime error for missing state, got %d", code)
 	}
@@ -740,7 +746,7 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 	if code := Run([]string{"sync", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
 		t.Fatalf("sync --help expected ExitOK, got %d stderr=%s", code, errOut.String())
 	}
-	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--tool")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) || !bytes.Contains(errOut.Bytes(), []byte("--no-engram")) {
+	if !bytes.Contains(errOut.Bytes(), []byte("lufy-ai sync")) || !bytes.Contains(errOut.Bytes(), []byte("--target")) || !bytes.Contains(errOut.Bytes(), []byte("--scope")) || !bytes.Contains(errOut.Bytes(), []byte("--tool")) || !bytes.Contains(errOut.Bytes(), []byte("--dry-run")) || !bytes.Contains(errOut.Bytes(), []byte("--yes")) {
 		t.Fatalf("sync help missing flags: %s", errOut.String())
 	}
 

@@ -16,12 +16,12 @@ El sistema SHALL proveer una CLI Go llamada `lufy-ai` como motor de instalación
 La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup`, `restore` y `sync` antes de añadir comandos posteriores como `update`.
 
 #### Scenario: Install con flags mínimos
-- **WHEN** el usuario ejecuta `lufy-ai install --target . --dry-run --yes --no-engram`
-- **THEN** la CLI construye un plan de instalación para el target actual, omite Engram y no escribe archivos por estar en dry-run
+- **WHEN** el usuario ejecuta `lufy-ai install --target . --dry-run --yes`
+- **THEN** la CLI construye un plan de instalación para el target actual y no escribe archivos por estar en dry-run
 
 #### Scenario: Verify de un target
 - **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>`
-- **THEN** la CLI valida estructura instalada, archivos esperados, JSON parseable cuando aplique, `.lufy-ai/install-state.json`, manifest de assets gestionados, hashes SHA-256 y estado de integración Engram según flags
+- **THEN** la CLI valida estructura instalada, archivos esperados, JSON parseable cuando aplique, `.lufy-ai/install-state.json`, manifest de assets gestionados y hashes SHA-256
 
 #### Scenario: Backup explícito
 - **WHEN** el usuario ejecuta `lufy-ai backup --target <dir>`
@@ -32,11 +32,11 @@ La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup`, `
 - **THEN** la CLI valida el manifest y restaura los archivos registrados de forma controlada
 
 #### Scenario: Sync de assets gestionados
-- **WHEN** el usuario ejecuta `lufy-ai sync --target <dir> --dry-run --yes --no-engram`
-- **THEN** la CLI construye un plan de sincronización de assets gestionados para el target actual, omite Engram y no escribe archivos por estar en dry-run
+- **WHEN** el usuario ejecuta `lufy-ai sync --target <dir> --dry-run --yes`
+- **THEN** la CLI construye un plan de sincronización de assets gestionados para el target actual y no escribe archivos por estar en dry-run
 
 ### Requirement: Flags y defaults seguros
-La CLI SHALL soportar `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backup` con defaults seguros que minimicen escrituras inesperadas y prompts ambiguos.
+La CLI SHALL soportar `--target`, `--dry-run`, `--yes`, y `--backup` con defaults seguros que minimicen escrituras inesperadas y prompts ambiguos.
 
 #### Scenario: Target por defecto
 - **WHEN** el usuario omite `--target`
@@ -50,16 +50,12 @@ La CLI SHALL soportar `--target`, `--dry-run`, `--yes`, `--no-engram` y `--backu
 - **WHEN** una acción puede sobrescribir o restaurar archivos y el usuario no pasa `--yes`
 - **THEN** la CLI solicita confirmación interactiva o falla de forma accionable si no hay TTY
 
-#### Scenario: Opt-out de Engram
-- **WHEN** el usuario pasa `--no-engram`
-- **THEN** la CLI omite detección, configuración y verificación obligatoria de Engram
-
 #### Scenario: Flag inválido
 - **WHEN** el usuario pasa un flag desconocido a cualquier comando
 - **THEN** la CLI falla con exit code distinto de cero y muestra ayuda breve del comando
 
 #### Scenario: Sync comparte flags seguros
-- **WHEN** el usuario ejecuta `lufy-ai sync` con `--target`, `--dry-run`, `--yes` o `--no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai sync` con `--target`, `--dry-run` o `--yes`
 - **THEN** la CLI aplica los mismos defaults seguros y semántica de flags definidos para comandos de instalación gestionada
 
 ### Requirement: Plan de instalación antes de escribir
@@ -130,21 +126,6 @@ La CLI SHALL crear o mergear `opencode.json` mediante JSON válido, preservando 
 - **WHEN** `install` o `sync` escriben `opencode.json` mediante `merge-json`
 - **THEN** `.lufy-ai/install-state.json` no contiene una entrada de asset completo para `opencode.json` ni requiere comparar su SHA-256 como asset gestionado
 
-### Requirement: Engram portable
-La CLI SHALL resolver Engram de forma portable con `exec.LookPath("engram")` o abstracción equivalente y MUST NOT hardcodear `/opt/homebrew/bin/engram`.
-
-#### Scenario: Engram encontrado en PATH
-- **WHEN** Engram existe en `PATH` y `--no-engram` no está activo
-- **THEN** la CLI usa la ruta resuelta o una invocación portable compatible con la configuración OpenCode
-
-#### Scenario: Engram ausente
-- **WHEN** Engram no existe en `PATH` y `--no-engram` no está activo
-- **THEN** la instalación base continúa sin fallar, dejando la integración deshabilitada o no configurada y reportando una nota accionable
-
-#### Scenario: Ruta hardcodeada prohibida
-- **WHEN** la CLI genera configuración relacionada con Engram
-- **THEN** el contenido generado no contiene `/opt/homebrew/bin/engram`
-
 ### Requirement: Wrapper Bash estricto
 `scripts/install.sh` SHALL permanecer como wrapper de compatibilidad que delega exclusivamente en `lufy-ai install` y MUST NOT conservar lógica legacy de instalación.
 
@@ -162,7 +143,7 @@ La CLI SHALL resolver Engram de forma portable con `exec.LookPath("engram")` o a
 
 #### Scenario: Sin lógica legacy
 - **WHEN** se inspecciona `scripts/install.sh`
-- **THEN** no contiene lógica legacy de copia, detección de stack, Engram, `copy_files`, generación de `opencode.json` ni prompts de instalación
+- **THEN** no contiene lógica legacy de copia, detección de stack, `copy_files`, generación de `opencode.json` ni prompts de instalación
 
 #### Scenario: Sin descarga remota insegura
 - **WHEN** el wrapper no encuentra binario Go
@@ -185,7 +166,7 @@ La implementación SHALL incluir validación incremental con comandos reales dis
 
 #### Scenario: Validación automática en CI
 - **WHEN** se ejecuta el workflow de CI mínima del instalador Go
-- **THEN** la validación incluye tests, build y smoke temporal de install/verify/idempotencia/backup/restore con `--no-engram`
+- **THEN** la validación incluye tests, build y smoke temporal de install/verify/idempotencia/backup/restore
 
 ### Requirement: Comando sync de CLI Go
 La CLI Go SHALL exponer `lufy-ai sync` como comando para sincronizar assets gestionados de forma segura en un target existente y aplicar merges seguros para assets `merge-json` explícitos, actualizando `lufy-ia.harness.md` como asset gestionado sin mutar `AGENTS.md` automáticamente.
@@ -233,11 +214,11 @@ La implementación SHALL incluir validación real del comando `sync` usando coma
 La CLI Go SHALL usar `lufy-ai verify` como verificador canónico de instalaciones y MUST NOT requerir ni introducir `scripts/verify-install.sh`; verify SHALL validate `lufy-ia.harness.md` as the managed agent-instructions asset and validate `AGENTS.md` as a user-owned reference integration.
 
 #### Scenario: Verificación estructural de categorías críticas
-- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado
 - **THEN** la CLI valida que `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins` y `.opencode/policies` existen como directorios seguros no symlink
 
 #### Scenario: Verificación de archivos críticos
-- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado
 - **THEN** la CLI valida que `.opencode/plugins/agent-observatory.tsx`, `lufy-ia.harness.md`, `tui.json`, `openspec/config.yaml` y `.lufy-ai/install-state.json` existen como archivos seguros no symlink, y valida `AGENTS.md` como archivo user-owned que referencia el harness cuando esté presente
 
 #### Scenario: Archivos críticos presentes en manifest
@@ -249,11 +230,11 @@ La CLI Go SHALL usar `lufy-ai verify` como verificador canónico de instalacione
 - **THEN** `lufy-ai verify` falla reportando drift con hashes abreviados expected/actual
 
 #### Scenario: Verificación de opencode merge-managed
-- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado
 - **THEN** la CLI valida que `opencode.json` sea JSON parseable y contenga la estructura mínima merge-managed sin requerir entrada de hash completo en el manifest
 
 #### Scenario: Verificación de referencia AGENTS
-- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram` sobre un target instalado
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado
 - **THEN** la CLI valida que `AGENTS.md` contenga `@lufy-ia.harness.md` como requisito o warning accionable sin comparar hash completo de `AGENTS.md`
 
 #### Scenario: No existe script verificador paralelo
@@ -283,7 +264,7 @@ The release-distributed `lufy-ai` binary SHALL preserve existing install, verify
 - **THEN** the second run reports unchanged managed assets without overwriting local drift or unmanaged user files
 
 #### Scenario: Distributed verify uses same structural checks
-- **WHEN** the user runs `lufy-ai verify --target <dir> --no-engram` from a release binary
+- **WHEN** the user runs `lufy-ai verify --target <dir>` from a release binary
 - **THEN** it validates structure, JSON, manifest and SHA-256 managed asset hashes with the same contract as the local build
 
 #### Scenario: Wrapper remains strict

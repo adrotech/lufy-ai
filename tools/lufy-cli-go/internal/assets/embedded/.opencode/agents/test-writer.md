@@ -69,7 +69,6 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Obsidian Memory
 
 - If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior stack/test commands, coverage blockers, test patterns, anti-patterns, and bug cases related to the behavior under test.
-- If Engram MCP/tool is available, use it only as optional supplementary hints.
 - If memory is unavailable, skip memory lookup and rely on `.lufy/project.yaml`, repository tests, and user-provided evidence.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Save memory in Obsidian only for durable test/toolchain gotchas or reusable coverage patterns, not routine TDD phase status.
 

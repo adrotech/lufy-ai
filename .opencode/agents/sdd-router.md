@@ -55,7 +55,6 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
 - If `.lufy/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
-- If the orchestrator also provides Engram findings, include only compact hints and label them as optional MCP hints. Engram absence must not block routing.
 - If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
 
 ## Governed Parallelism

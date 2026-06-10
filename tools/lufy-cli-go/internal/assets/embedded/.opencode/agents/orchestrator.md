@@ -54,10 +54,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Memory Gate
 
 - Treat Obsidian as the canonical portable memory when `.lufy/project.yaml` has `memory.provider: obsidian`; use `lufy-ai memory status`, `lufy-ai memory search`, and the `lufy.mem-*` skills before relying on any optional MCP memory.
-- Use Engram only as an optional hint source when an Engram MCP/tool is available in the current session. If it is unavailable, do not route extra memory work; carry `not_available`/omitted memory evidence and continue normally.
 - Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance).
 - For trivial T3 work with no historical dependency, do not force memory lookup.
-- Distinguish memory hints from repository/file/command evidence. Never claim Engram traceability unless an Engram tool actually ran; never treat memory as stronger evidence than current files and commands.
 - At closure or major handoff, capture only durable decisions, rules, flows, lessons, or significant outcomes in Obsidian via `lufy.mem-capture`/`lufy.mem-document`; do not save routine routing noise or duplicate notes.
 
 ## Workflow
@@ -84,7 +82,6 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
   - For generated change specs, verify delta markers and `#### Scenario:` blocks with `WHEN` and `THEN` by reading the files just written, not by trusting tool output.
   - For successful `/opsx-propose` or `openspec-propose` results, enforce the harness-level OpenSpec propose contract by preserving and surfacing the required `HTML overview opcional` outcome in the user-facing final response. Include `lufy-ai opsx render --change <change> --format html --theme notion-dark` and ask explicitly `¿Quieres que genere ahora el reporte HTML offline de los artifacts con tema Notion dark?` when offering it. Report `offered_pending` when the user has not answered yet, `generated` with the output path after generation, `skipped_by_user` only after explicit user decline, and `not_available` if rendering cannot run. Do not use `skipped` unless normalizing legacy output. If a subagent or methodology adapter omits this outcome and the proposal is not blocked, add it before summarizing or routing forward. This is adapter-neutral harness behavior, not an OpenCode-only convention.
   - For `/opsx-sync` or `openspec-sync`, map every delta spec to `openspec/specs/<capability>/spec.md`, read each affected target after sync, and verify that added/modified/removed requirement titles reflect the planned delta.
-  - If Obsidian memory is initialized, verify or save the expected durable change/delta note through `lufy.mem-document` or `lufy.mem-capture`; if Engram MCP is also available, it may add optional hints only.
   - If any expected file or synced requirement is missing, STOP with `status: blocked`, cite the missing path/requirement, and recommend the exact recovery action instead of continuing to apply, verify, archive, or delivery. Missing optional memory traceability alone must not block unless the user explicitly required it and the tool was available.
 - When routing rationale, handoff constraints, review slices or result contracts depend on project workflow limits, reference `.lufy/project.yaml` top-level `workflow_limits` as the source of truth.
 - When the user specifies a concrete folder structure, layer layout, file placement rule or architecture convention, preserve it as `structural_acceptance` in the handoff. Do not let downstream agents treat it as optional style guidance.

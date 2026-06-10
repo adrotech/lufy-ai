@@ -35,6 +35,6 @@ bin="$extract/lufy-ai_v0.0.0-smoke_$(go env GOOS)_$(go env GOARCH)/lufy-ai"
 
 outside="$(mktemp -d)"
 trap 'rm -rf "$DIST" "$TARGET" "$extract" "$outside"' EXIT
-(cd "$outside" && "$bin" install --target "$TARGET" --dry-run --yes --no-engram)
-(cd "$outside" && "$bin" install --target "$TARGET" --yes --no-engram)
-(cd "$outside" && "$bin" verify --target "$TARGET" --no-engram)
+(cd "$outside" && "$bin" install --target "$TARGET" --dry-run --yes)
+(cd "$outside" && "$bin" install --target "$TARGET" --yes)
+(cd "$outside" && "$bin" verify --target "$TARGET")

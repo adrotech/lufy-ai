@@ -12,7 +12,7 @@ import (
 func TestProjectConfigLifecycleUsesOpenCodeRuntime(t *testing.T) {
 	target := t.TempDir()
 
-	plan, err := PlanProjectConfig(domain.ToolInitialDefault, target, true)
+	plan, err := PlanProjectConfig(domain.ToolInitialDefault, target)
 	if err != nil {
 		t.Fatalf("PlanProjectConfig() error = %v", err)
 	}
@@ -20,7 +20,7 @@ func TestProjectConfigLifecycleUsesOpenCodeRuntime(t *testing.T) {
 		t.Fatalf("plan unexpected: %#v", plan)
 	}
 
-	ensure, err := EnsureProjectConfig(domain.ToolInitialDefault, target, true)
+	ensure, err := EnsureProjectConfig(domain.ToolInitialDefault, target)
 	if err != nil {
 		t.Fatalf("EnsureProjectConfig() error = %v", err)
 	}
@@ -45,7 +45,7 @@ func TestRuntimeRejectsNonWritableTools(t *testing.T) {
 		if _, err := ProjectConfigFile(tool); err == nil || !strings.Contains(err.Error(), "no soporta configuración escribible") {
 			t.Fatalf("ProjectConfigFile(%s) error = %v", tool, err)
 		}
-		if _, err := PlanProjectConfig(tool, t.TempDir(), true); err == nil || !strings.Contains(err.Error(), string(tool)) {
+		if _, err := PlanProjectConfig(tool, t.TempDir()); err == nil || !strings.Contains(err.Error(), string(tool)) {
 			t.Fatalf("PlanProjectConfig(%s) error = %v", tool, err)
 		}
 		if _, err := GlobalRoot(tool); err == nil || !strings.Contains(err.Error(), string(tool)) {

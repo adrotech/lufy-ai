@@ -2,18 +2,6 @@
   "$schema": "https://opencode.ai/config.json",
   "plugin": [],
   "mcp": {
-    "engram": {
-      "type": "local",
-      "command": [
-        "/opt/homebrew/bin/engram",
-        "mcp",
-        "--tools=agent",
-        "--project",
-        "lufy-ai"
-      ],
-      "enabled": true,
-      "timeout": 3000
-    },
     "pencil": {
       "enabled": false
     }

@@ -16,7 +16,7 @@ import (
 
 func TestRunDryRunAndRealUninstallThenReinstall(t *testing.T) {
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte("# Project\n\nKeep me\n\n"+agentsref.Reference+"\n"), 0o644); err != nil {
@@ -66,17 +66,17 @@ func TestRunDryRunAndRealUninstallThenReinstall(t *testing.T) {
 		t.Fatalf("expected uninstall backup manifest, matches=%v err=%v", matches, err)
 	}
 
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("reinstall after uninstall error = %v", err)
 	}
-	if err := verify.NewService().Run(verify.Options{Target: target, NoEngram: true, Quiet: true}, &bytes.Buffer{}); err != nil {
+	if err := verify.NewService().Run(verify.Options{Target: target, Quiet: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("verify after reinstall error = %v", err)
 	}
 }
 
 func TestRunBlocksOnManagedAssetDrift(t *testing.T) {
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture error = %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(target, agentsref.HarnessFile), []byte("local drift\n"), 0o644); err != nil {
@@ -97,7 +97,7 @@ func TestRunBlocksOnManagedAssetDrift(t *testing.T) {
 
 func TestRunKeepStatePreservesInstallState(t *testing.T) {
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture error = %v", err)
 	}
 

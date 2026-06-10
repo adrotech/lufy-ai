@@ -26,9 +26,9 @@ El sistema SHALL ejecutar una validación continua mínima para la CLI Go y el w
 - **WHEN** existe `tools/lufy-cli-go/bin/lufy-ai` construido durante el job
 - **THEN** el workflow ejecuta `scripts/install.sh` contra un target temporal y confirma que delega en la CLI Go sin usar fallback legacy
 
-#### Scenario: CI portable sin Engram obligatorio
+#### Scenario: CI portable sin memoria externa obligatoria
 - **WHEN** el workflow ejecuta smokes del instalador
-- **THEN** usa `--no-engram` para no depender de que `engram` exista en el runner
+- **THEN** no depende de binarios externos de memoria en el runner
 
 ### Requirement: Validación local reproducible
 El sistema SHALL documentar cómo ejecutar localmente la validación mínima equivalente a la CI.
@@ -61,7 +61,7 @@ The CI system SHALL validate release artifacts before they are published as inst
 
 #### Scenario: Install smoke from artifact
 - **WHEN** a release artifact is executable in CI
-- **THEN** CI runs at least `install --dry-run`, a temporary install and `verify --target <temp> --no-engram` using the packaged binary or unpacked release artifact
+- **THEN** CI runs at least `install --dry-run`, a temporary install and `verify --target <temp>` using the packaged binary or unpacked release artifact
 
 #### Scenario: Checksum smoke
 - **WHEN** release artifacts and checksum files are generated
