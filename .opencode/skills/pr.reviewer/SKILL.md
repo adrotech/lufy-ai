@@ -125,16 +125,40 @@ Veredicto:
 - `Pedir cambios`: score >= 50 o existe al menos un hallazgo crítico/alto corregible.
 - `Rechazar`: score < 50, riesgo sistémico, evidencia insuficiente para un cambio riesgoso o múltiples críticos.
 
+## Profundidad mínima del análisis
+
+El reporte no debe ser un resumen superficial del diff. Debe leer el PR como lo haría un reviewer humano senior y dejar evidencia accionable suficiente para decidir merge/no-merge.
+
+- Analiza el cambio por capas: entrada/adaptador, aplicación/caso de uso, dominio/reglas, persistencia/dependencias y salida/contrato.
+- Explica el flujo antes/después cuando el PR modifica comportamiento observable, contratos, permisos, persistencia, jobs, eventos o integraciones.
+- Evalúa el template/body del PR cuando exista: WHY, alcance, issue/ticket, test plan, evidencias, migraciones/configuración y stacked PRs/follow-ups. Si el repo usa otro template, registra `No aplica` en vez de inventar incumplimientos.
+- Revisa comentarios/reviews previos y clasifícalos como `resuelto`, `pendiente`, `no verificable` o `no aplica`, con una acción concreta.
+- Para cada hallazgo medio/alto/crítico, incluye evidencia, impacto, escenario de reproducción o razonamiento de fallo, recomendación y criterio de aceptación.
+- Incluye al menos una sección de `Buenas prácticas observadas` cuando el PR tenga decisiones correctas; no todo el reporte debe ser punitivo.
+- El desk check debe cubrir escenarios reales del dominio del PR. Usa 5 escenarios como mínimo cuando el cambio sea funcional; si el alcance es documental o mecánico, explica por qué aplica una simulación reducida.
+- El score debe estar justificado por dimensión. No basta un número global.
+
 ## Reporte HTML
 
 - Crear `pr_review/` si no existe.
 - Escribir el reporte en `pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html`.
 - Si el PR no tiene número, usar `pr_review/pr-review-<slug>-<yyyyMMdd-HHmm>.html`.
 - No sobrescribir archivos existentes; si colisiona, agrega sufijo `-2`, `-3`, etc.
-- Usar `templates/report.html` como estructura visual y adaptar contenido real.
+- Usar `templates/report.html` como estructura visual canónica y adaptar contenido real.
 - El HTML debe ser autocontenido: CSS inline, sin dependencias externas, sin JS requerido.
 - Incluir link al PR arriba cuando exista URL.
 - Todas las secciones deben estar dentro de cards/containers para evitar overflow.
+
+### Contrato visual obligatorio
+
+El reporte debe mantener la estética unificada del overview OpenSpec `notion-dark`:
+
+- Usar el hero navy/deep navy con título grande, contenedor central `1180px`, fondo `surface`, cards blancas con borde `hairline`, radio `12px`, sombras suaves y variables CSS compatibles con `templates/report.html`.
+- No generar una plantilla ad hoc gris/azul ni cards con radio mayor a `12px`.
+- No cambiar la escala visual principal salvo para responsive. En desktop, el título principal debe conservar la jerarquía de hero y el gauge debe aparecer dentro de una card destacada.
+- Mantener badges, tablas, `details`, código y findings con estilos de la plantilla base.
+- Si el reporte necesita secciones adicionales, agrégalas dentro de `.card`, `.issue`, `details` o contenedores equivalentes ya definidos por la plantilla.
+- Antes de escribir el HTML, verificar mentalmente que aparecen estos marcadores visuales: `--navy`, `--navy-deep`, `--surface`, `.gauge`, `.scoregrid`, `.issue`, `.final-summary`.
 
 Secciones obligatorias:
 
@@ -153,6 +177,27 @@ Secciones obligatorias:
 13. Comentarios previos no resueltos.
 14. Action items priorizados.
 15. Limitaciones del review.
+16. Resumen final y recomendación.
+
+### Secciones recomendadas para PRs funcionales
+
+Cuando haya cambios funcionales, contratos públicos, datos sensibles, seguridad, persistencia o integraciones, incluye además:
+
+- Validación del template/body del PR.
+- Puntos de revisiones anteriores.
+- Before/After del comportamiento.
+- Tabla de scoring por dimensión con peso, score y justificación.
+- Cierre ejecutivo final que diga explícitamente si conviene aprobar, pedir cambios o rechazar, y cuál es el próximo paso exacto.
+
+### Control de calidad antes de entregar
+
+Antes de responder al usuario, inspecciona el HTML generado y confirma:
+
+- Contiene `Resumen ejecutivo`, `Desk check`, `Action items`, `Limitaciones` y `Resumen final`.
+- Contiene la estética canónica (`--navy`, `--navy-deep`, `.gauge`, `.final-summary`).
+- Cada hallazgo alto/crítico tiene evidencia y recomendación concreta.
+- El cierre no contradice el veredicto ni el score.
+- No hay URLs remotas de assets, CDNs, scripts externos ni contenido en idioma distinto del español, salvo identificadores técnicos o citas del PR.
 
 ## Respuesta final al usuario
 
