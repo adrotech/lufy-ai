@@ -241,6 +241,60 @@ func TestBuildPlanMarksSameDirectoryAsAlreadyMigrated(t *testing.T) {
 	}
 }
 
+func TestBuildPlanTreatsCanonicalDirectorySupersetAsAlreadyMigrated(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, lufypaths.Backups, "old", "manifest.json"), "{}\n")
+	writeFile(t, filepath.Join(target, lufypaths.Backups, "layout-migration", "manifest.json"), "{\"cause\":\"layout-migration\"}\n")
+	writeFile(t, filepath.Join(target, lufypaths.LegacyBackups, "old", "manifest.json"), "{}\n")
+
+	report, err := BuildPlan(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Conflicts) != 0 {
+		t.Fatalf("unexpected conflicts = %#v", report.Conflicts)
+	}
+	if !hasAction(report.Actions, "legacy-stale", lufypaths.LegacyBackups, lufypaths.Backups) {
+		t.Fatalf("missing stale backups action: %#v", report.Actions)
+	}
+}
+
+func TestBuildPlanMergesNonOverlappingLegacyDirectoryEntries(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, lufypaths.Backups, "new", "manifest.json"), "new\n")
+	writeFile(t, filepath.Join(target, lufypaths.LegacyBackups, "old", "manifest.json"), "old\n")
+
+	report, err := BuildPlan(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Conflicts) != 0 {
+		t.Fatalf("unexpected conflicts = %#v", report.Conflicts)
+	}
+	if !hasAction(report.Actions, "migrate-copy", lufypaths.LegacyBackups, lufypaths.Backups) {
+		t.Fatalf("missing merge migrate-copy action: %#v", report.Actions)
+	}
+}
+
+func TestRunMigrationIsIdempotentAfterBackingUpLegacyBackups(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, filepath.Join(target, lufypaths.LegacyBackups, "old", "manifest.json"), "{}\n")
+
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	report, err := BuildPlan(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Conflicts) != 0 {
+		t.Fatalf("migration should be idempotent, conflicts = %#v", report.Conflicts)
+	}
+	if !hasAction(report.Actions, "legacy-stale", lufypaths.LegacyBackups, lufypaths.Backups) {
+		t.Fatalf("missing stale backups action after migration: %#v", report.Actions)
+	}
+}
+
 func TestApplyRejectsSymlinkSource(t *testing.T) {
 	target := t.TempDir()
 	dst := filepath.Join(target, "source.txt")

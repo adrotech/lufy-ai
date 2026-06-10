@@ -149,19 +149,23 @@ func BuildPlan(target string) (Report, error) {
 			return report, err
 		}
 		if pathExists(canonicalPath) {
-			same, err := sameContent(legacyPath, canonicalPath)
+			action, conflict, err := existingPairPlan(legacyPath, canonicalPath)
 			if err != nil {
 				return report, err
 			}
-			if same {
+			if action == "stale" {
 				report.Actions = append(report.Actions, Action{Kind: "legacy-stale", Source: pair.legacy, Target: pair.canonical, Status: "already-migrated", Reason: "ruta nueva ya existe con el mismo contenido"})
+				continue
+			}
+			if action == "merge" {
+				report.Actions = append(report.Actions, Action{Kind: "migrate-copy", Source: pair.legacy, Target: pair.canonical, Status: "planned", Reason: "ruta nueva existe; se copiaran solo entradas legacy no conflictivas"})
 				continue
 			}
 			if pair.preferCanonicalIfBoth {
 				report.Actions = append(report.Actions, Action{Kind: "legacy-stale", Source: pair.legacy, Target: pair.canonical, Status: "stale", Reason: "ruta nueva preferida; legacy obsoleto preservado"})
 				continue
 			}
-			report.Conflicts = append(report.Conflicts, Conflict{Source: pair.legacy, Target: pair.canonical, Reason: "ruta nueva y legacy existen con contenido distinto"})
+			report.Conflicts = append(report.Conflicts, Conflict{Source: pair.legacy, Target: pair.canonical, Reason: conflict})
 			continue
 		}
 		report.Actions = append(report.Actions, Action{Kind: "migrate-copy", Source: pair.legacy, Target: pair.canonical, Status: "planned"})
@@ -331,6 +335,42 @@ func mutating(actions []Action) bool {
 	return false
 }
 
+func existingPairPlan(legacyPath, canonicalPath string) (string, string, error) {
+	li, err := os.Lstat(legacyPath)
+	if err != nil {
+		return "", "", err
+	}
+	ci, err := os.Lstat(canonicalPath)
+	if err != nil {
+		return "", "", err
+	}
+	if li.IsDir() || ci.IsDir() {
+		if !li.IsDir() || !ci.IsDir() {
+			return "", "ruta nueva y legacy tienen tipos distintos", nil
+		}
+		relation, err := dirOverlayRelation(legacyPath, canonicalPath)
+		if err != nil {
+			return "", "", err
+		}
+		switch relation {
+		case "same", "canonical-superset":
+			return "stale", "", nil
+		case "merge-safe":
+			return "merge", "", nil
+		default:
+			return "", "ruta nueva y legacy existen con contenido distinto", nil
+		}
+	}
+	same, err := sameContent(legacyPath, canonicalPath)
+	if err != nil {
+		return "", "", err
+	}
+	if same {
+		return "stale", "", nil
+	}
+	return "", "ruta nueva y legacy existen con contenido distinto", nil
+}
+
 func sameContent(a, b string) (bool, error) {
 	ai, err := os.Lstat(a)
 	if err != nil {
@@ -358,6 +398,35 @@ func sameContent(a, b string) (bool, error) {
 		return false, err
 	}
 	return ah == bh, nil
+}
+
+func dirOverlayRelation(legacyDir, canonicalDir string) (string, error) {
+	legacy, err := dirHashes(legacyDir)
+	if err != nil {
+		return "", err
+	}
+	canonical, err := dirHashes(canonicalDir)
+	if err != nil {
+		return "", err
+	}
+	missing := false
+	for rel, legacyHash := range legacy {
+		canonicalHash, ok := canonical[rel]
+		if !ok {
+			missing = true
+			continue
+		}
+		if canonicalHash != legacyHash {
+			return "conflict", nil
+		}
+	}
+	if missing {
+		return "merge-safe", nil
+	}
+	if len(canonical) == len(legacy) {
+		return "same", nil
+	}
+	return "canonical-superset", nil
 }
 
 func sameDir(a, b string) (bool, error) {
