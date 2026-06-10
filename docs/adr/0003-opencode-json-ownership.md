@@ -14,15 +14,11 @@ Aceptada.
 
 - `$schema`
 - `plugin`
-- `mcp.engram.type`
-- `mcp.engram.command`
 
-Las opciones existentes de `mcp.engram` como `enabled`, `timeout`, `env` y otras claves no gestionadas se preservan.
-
-Se registra metadata bajo `x-lufy-ai` con versión y claves gestionadas.
+Durante el merge también limpia metadata legacy `x-lufy-ai` y remueve integraciones MCP de memoria externa discontinuadas, preservando otros MCPs del usuario.
 
 ## Consecuencias
 
 - `opencode.json` no se registra como asset gestionado por hash completo en `install-state.json`.
 - Los merges deben ser conservadores y validar tipos antes de escribir.
-- `mcp: null` se trata como ausente y puede ser reemplazado por un objeto gestionado.
+- `mcp` se preserva como configuración user-owned salvo claves legacy que Lufy retire explícitamente.

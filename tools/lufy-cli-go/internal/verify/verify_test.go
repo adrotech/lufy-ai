@@ -40,7 +40,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target}, &out); err != nil {
 		t.Fatalf("Run(valid) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "ok: verify estructural completo") {
@@ -49,7 +49,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 
 	writeVerifyFile(t, filepath.Join(target, "lufy-ia.harness.md"), "drift\n")
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(drift) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: drift en lufy-ia.harness.md") {
@@ -60,7 +60,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(missing) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: falta archivo crítico") {
@@ -76,7 +76,7 @@ func TestCheckBuilderFeedsSameReportToJSONPresenter(t *testing.T) {
 	}
 	report := Report{TargetRoot: resolved, Scope: string(assets.ScopeProject)}
 
-	if err := (CheckBuilder{}).Build(Options{Target: resolved, NoEngram: true, Scope: assets.ScopeProject}, &report); err != nil {
+	if err := (CheckBuilder{}).Build(Options{Target: resolved, Scope: assets.ScopeProject}, &report); err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
 
@@ -102,7 +102,7 @@ func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, "tui.json.lufy-new"), "{\"new\":true}\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, JSON: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, JSON: true}, &out); err != nil {
 		t.Fatalf("Run() error = %v body=%s", err, out.String())
 	}
 	var report Report
@@ -152,7 +152,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid structure) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "skills")) {
@@ -185,7 +185,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(missing templates) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "templates")) {
@@ -201,7 +201,7 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	if err := os.WriteFile(state.Path(target), []byte("{bad-json"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "install-state.json inválido") {
+	if err := NewService().Run(Options{Target: target}, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "install-state.json inválido") {
 		t.Fatalf("expected corrupt manifest error, got %v", err)
 	}
 
@@ -227,7 +227,7 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
-	err := NewService().Run(Options{Target: actual, NoEngram: true}, &out)
+	err := NewService().Run(Options{Target: actual}, &out)
 	if err == nil || !strings.Contains(out.String(), "targetRoot del manifest no coincide") {
 		t.Fatalf("expected moved target failure, err=%v output=%s", err, out.String())
 	}
@@ -258,7 +258,7 @@ func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
 	}
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid tui.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: JSON inválido en tui.json") {
@@ -270,7 +270,7 @@ func TestVerifyFailsInvalidOrIncompleteMergeManagedOpenCode(t *testing.T) {
 	target := validVerifyTarget(t)
 	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid opencode.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: JSON inválido en opencode.json") || !strings.Contains(out.String(), "estructura gestionada inválida") {
@@ -280,7 +280,7 @@ func TestVerifyFailsInvalidOrIncompleteMergeManagedOpenCode(t *testing.T) {
 	target = validVerifyTarget(t)
 	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json"}`)
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(incomplete opencode.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "falta clave gestionada mínima plugin") {
@@ -299,7 +299,7 @@ func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(symlink opencode.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "opencode.json") || !strings.Contains(out.String(), "symlink no permitido") {
@@ -314,7 +314,7 @@ func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
 		t.Fatal(err)
 	}
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(directory opencode.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "archivo regular seguro") {
@@ -324,7 +324,7 @@ func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
 	target = validVerifyTarget(t)
 	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":[]}`)
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid managed type opencode.json) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "$schema debe ser string") {
@@ -337,7 +337,7 @@ func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, ".opencode", "agents", "local-agent.md"), "local\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target}, &out); err != nil {
 		t.Fatalf("Run() error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: "+filepath.Join(".opencode", "agents", "local-agent.md")) {
@@ -350,7 +350,7 @@ func TestVerifyJSONReportsFailures(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin referencia\n")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, JSON: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target, JSON: true}, &out); err == nil {
 		t.Fatalf("Run(JSON drift) expected error, output=%s", out.String())
 	}
 	var report Report
@@ -377,7 +377,7 @@ func TestVerifyAllowMissingAgentsRefDoesNotHideCriticalFailures(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, "lufy-ia.harness.md"), "drift crítico\n")
 
 	var out bytes.Buffer
-	err := NewService().Run(Options{Target: target, NoEngram: true, AllowMissingAgentsRef: true, JSON: true}, &out)
+	err := NewService().Run(Options{Target: target, AllowMissingAgentsRef: true, JSON: true}, &out)
 	if err == nil {
 		t.Fatalf("Run(allow missing agents ref with critical drift) expected error, output=%s", out.String())
 	}
@@ -403,7 +403,7 @@ func TestVerifyAllowMissingAgentsRefDoesNotHideCriticalFailures(t *testing.T) {
 func TestVerifyQuietSuppressesHumanOutput(t *testing.T) {
 	target := validVerifyTarget(t)
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Quiet: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Quiet: true}, &out); err != nil {
 		t.Fatalf("Run(quiet) error = %v", err)
 	}
 	if out.Len() != 0 {
@@ -414,7 +414,7 @@ func TestVerifyQuietSuppressesHumanOutput(t *testing.T) {
 func TestVerifyVerboseReportsDerivedRequirements(t *testing.T) {
 	target := validVerifyTarget(t)
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Verbose: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Verbose: true}, &out); err != nil {
 		t.Fatalf("Run(verbose) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "info: requirements derivados") {
@@ -428,7 +428,7 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	refreshVerifyAssetHash(t, target, "tui.json")
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err != nil {
 		t.Fatalf("Run(deep valid) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "plugin referenciado por tui.json") {
@@ -437,7 +437,7 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 
 	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":["../evil.ts"]}`)
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
 		t.Fatalf("Run(deep invalid) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "plugin path inseguro") {
@@ -448,7 +448,7 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":{}}`)
 	refreshVerifyAssetHash(t, target, "tui.json")
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
 		t.Fatalf("Run(deep non-array plugin) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "plugin debe ser array") {
@@ -459,7 +459,7 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":[123,"./.opencode/plugins/missing.ts"]}`)
 	refreshVerifyAssetHash(t, target, "tui.json")
 	out.Reset()
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err == nil {
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
 		t.Fatalf("Run(deep bad plugin entries) expected error, output=%s", out.String())
 	}
 	if !strings.Contains(out.String(), "plugin contiene entrada no string") || !strings.Contains(out.String(), "plugin referenciado no existe") {
@@ -483,7 +483,7 @@ Aprendizaje durable.
 `)
 
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, NoEngram: true, Deep: true}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err != nil {
 		t.Fatalf("Run(deep memory valid) error = %v, output=%s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "memoria Obsidian schema=1 notas=1") {

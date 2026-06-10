@@ -76,10 +76,9 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 ## Obsidian Memory Workflow
 
 - Obsidian is the canonical portable memory when `.lufy/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate` and the local `lufy.mem-*` skills when memory context matters.
-- Engram is optional and conditional: use it only as additional hints when the current OpenCode session exposes an available Engram MCP/tool. If Engram is not configured, disabled, or unavailable, skip that support and report it as `not_available` or omitted; do not block normal work for Engram alone.
 - For non-trivial T1/T2 work, and for T3 work with likely historical context, search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance). Do not pass full memory dumps.
 - After significant work, save only durable learnings in Obsidian: architectural decisions, rules, flows, lessons, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
-- Never treat memory as stronger evidence than repository files, commands, or explicit user instructions. Never claim Engram traceability unless the relevant Engram tool actually ran or explicit evidence was provided.
+- Never treat memory as stronger evidence than repository files, commands, or explicit user instructions. Durable memory traceability is recorded in Obsidian.
 
 ## Proportional SDD Routing
 

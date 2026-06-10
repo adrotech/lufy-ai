@@ -46,6 +46,6 @@ case "$archive" in
 esac
 
 "$bin" version
-"$bin" install --target "$target" --dry-run --yes --no-engram
-"$bin" install --target "$target" --yes --no-engram
-"$bin" verify --target "$target" --no-engram
+"$bin" install --target "$target" --dry-run --yes
+"$bin" install --target "$target" --yes
+"$bin" verify --target "$target"

@@ -22,12 +22,12 @@ La CLI Go SHALL mantener los comandos publicos delegando a casos de uso composab
 El refactor de boundaries SHALL conservar comandos, flags, defaults y layout instalado del preset actual.
 
 #### Scenario: Existing install command remains stable
-- **WHEN** el usuario ejecuta `lufy-ai install --target <dir> --yes --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai install --target <dir> --yes`
 - **THEN** el comando SHALL instalar el preset `opencode` + `openspec` compatible
 - **AND** SHALL preservar la semantica de `AGENTS.md`, `lufy-ia.harness.md`, `opencode.json`, `tui.json` y manifest
 
 #### Scenario: Existing validation command remains stable
-- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir> --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>`
 - **THEN** el comando SHALL validar manifest, hashes, directorios criticos, JSON parseable y referencia de `AGENTS.md` con el mismo contrato observable actual
 
 #### Scenario: Wrapper remains strict

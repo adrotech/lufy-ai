@@ -9,7 +9,7 @@ LOCAL_BIN="$REPO_ROOT/tools/lufy-cli-go/bin/lufy-ai"
 
 usage() {
     cat <<'EOF'
-Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--no-engram] [--backup]
+Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]
 
 Este script solo delega en la CLI Go:
   lufy-ai install
@@ -70,7 +70,7 @@ main() {
                 args+=("$1" "$2")
                 shift 2
                 ;;
-            --dry-run|--yes|--no-engram|--backup)
+            --dry-run|--yes|--backup)
                 args+=("$1")
                 shift
                 ;;
