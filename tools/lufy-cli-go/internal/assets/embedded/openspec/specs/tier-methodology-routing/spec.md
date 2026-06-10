@@ -66,12 +66,12 @@ El sistema SHALL bloquear o exigir justificación explícita cuando se use `none
 La CLI SHALL permitir overrides explicitos de metodologia por tier sin desplazar el tier como decision central de gobernanza.
 
 #### Scenario: T3 none override is accepted
-- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T3:none --target <repo> --yes --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T3:none --target <repo> --yes`
 - **THEN** el sistema SHALL seleccionar `none/none/not-required` para T3
 - **AND** SHALL preservar defaults compatibles para T1 y T2
 
 #### Scenario: T2 OpenSpec lite override is accepted
-- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T2:openspec/lite --target <repo> --yes --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T2:openspec/lite --target <repo> --yes`
 - **THEN** el sistema SHALL seleccionar `openspec/lite/required` para T2
 
 #### Scenario: Repeated tier overrides compose
@@ -115,7 +115,7 @@ El sistema SHALL proveer una fundacion de adapter para `lufy-sdd` con modos `lit
 - **AND** SHALL NOT requerir `.lufy/sdd/specs`
 
 #### Scenario: Mutating CLI accepts Lufy SDD selection
-- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T2:lufy-sdd/lite --target <repo> --yes --no-engram`
+- **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T2:lufy-sdd/lite --target <repo> --yes`
 - **THEN** la CLI SHALL persistir `lufy-sdd/lite` en `methodologyByTier.T2`
 - **AND** SHALL instalar assets minimos bajo `.lufy/sdd/`
 

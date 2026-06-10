@@ -20,7 +20,7 @@ La documentación pública SHALL describir la instalación actual mediante la CL
 
 #### Scenario: Instalación documentada con comandos reales
 - **WHEN** una persona sigue el quickstart en `README.md` o `docs/getting-started.md`
-- **THEN** los comandos usan rutas, binario y flags reales como `tools/lufy-cli-go`, `lufy-ai install`, `scripts/install.sh`, `--target`, `--dry-run`, `--yes` y `--no-engram`
+- **THEN** los comandos usan rutas, binario y flags reales como `tools/lufy-cli-go`, `lufy-ai install`, `scripts/install.sh`, `--target`, `--dry-run` y `--yes`
 
 #### Scenario: Verificación documentada con límites reales
 - **WHEN** la documentación menciona validación local

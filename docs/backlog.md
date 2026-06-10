@@ -258,7 +258,6 @@ Effort estimado:
 
 **Issue:** #82 - https://github.com/adrotech/lufy-ai/issues/82
 
-**Alcance:** agregar al orchestrator una regla de lectura/verificación del archivo esperado después de invocar comandos de spec/sync; si Engram está habilitado, validar registro de delta cuando aplique.
 
 **Acceptance:** falla simulada de generación de spec produce STOP con error accionable.
 

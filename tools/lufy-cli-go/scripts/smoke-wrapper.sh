@@ -40,13 +40,13 @@ main() {
 
     dry_target="$work_root/wrapper-dry-run"
     mkdir -p "$dry_target"
-    "$REPO_ROOT/scripts/install.sh" "$dry_target" --dry-run --yes --no-engram
+    "$REPO_ROOT/scripts/install.sh" "$dry_target" --dry-run --yes
     assert_empty_dir "$dry_target"
 
     target="$work_root/wrapper-install"
     mkdir -p "$target"
-    "$REPO_ROOT/scripts/install.sh" --target "$target" --yes --no-engram
-    "$BIN" verify --target "$target" --no-engram
+    "$REPO_ROOT/scripts/install.sh" --target "$target" --yes
+    "$BIN" verify --target "$target"
 
     printf 'Smoke wrapper completado\n'
 }

@@ -75,10 +75,6 @@ The installed workflow SHALL actively verify expected OpenSpec artifacts after p
 - **WHEN** `/opsx-sync` or `openspec-sync` applies deltas to main specs
 - **THEN** the workflow reads every affected `openspec/specs/<capability>/spec.md` and verifies the added, modified or removed requirement titles match the planned delta before recommending verify or archive
 
-#### Scenario: Engram traceability is explicit
-- **WHEN** Engram MCP is enabled during proposal generation or sync
-- **THEN** the workflow verifies or saves/updates the expected proposal or delta observation with a stable `topic_key` when an Engram tool is available, or reports `not_available` when Engram is enabled but unavailable without blocking for Engram alone
-
 #### Scenario: Failed post-spec verification blocks continuation
 - **WHEN** active post-spec verification cannot find an expected artifact or synced requirement
 - **THEN** the workflow reports `status: blocked`, names the missing path or requirement, and does not continue to apply, verify, archive or delivery guidance until the issue is repaired

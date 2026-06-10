@@ -15,16 +15,14 @@ type Dependencies struct {
 }
 
 type InstallOptions struct {
-	Target   string
-	DryRun   bool
-	Yes      bool
-	NoEngram bool
-	Backup   bool
+	Target string
+	DryRun bool
+	Yes    bool
+	Backup bool
 }
 
 type VerifyOptions struct {
-	Target   string
-	NoEngram bool
+	Target string
 }
 
 type BackupOptions struct {

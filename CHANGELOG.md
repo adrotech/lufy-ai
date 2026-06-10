@@ -25,7 +25,7 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 - `doctor` reporta estado de memoria sin bloquear instalación normal.
 - `verify --deep` valida memoria Obsidian cuando existe.
 - `sync` mantiene los assets de memoria gestionados, pero preserva `.lufy/memory` como contenido privado user-owned.
-- Agentes y guías operativas usan Obsidian como memoria canónica portable; Engram queda como MCP opcional de apoyo.
+- Agentes y guías operativas usan Obsidian como memoria canónica portable.
 
 ### Fixed
 

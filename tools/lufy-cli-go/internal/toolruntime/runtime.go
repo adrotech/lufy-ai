@@ -34,20 +34,20 @@ func ProjectConfigFile(tool domain.ToolID) (string, error) {
 	}
 }
 
-func PlanProjectConfig(tool domain.ToolID, targetRoot string, noEngram bool) (ProjectConfigResult, error) {
+func PlanProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigResult, error) {
 	switch normalizeTool(tool) {
 	case domain.ToolInitialDefault:
-		result, err := config.NewService().Plan(config.Options{TargetRoot: targetRoot, NoEngram: noEngram})
+		result, err := config.NewService().Plan(config.Options{TargetRoot: targetRoot})
 		return fromConfigResult(result), err
 	default:
 		return ProjectConfigResult{}, unsupportedToolError(tool)
 	}
 }
 
-func EnsureProjectConfig(tool domain.ToolID, targetRoot string, noEngram bool) (ProjectConfigResult, error) {
+func EnsureProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigResult, error) {
 	switch normalizeTool(tool) {
 	case domain.ToolInitialDefault:
-		result, err := config.NewService().Ensure(config.Options{TargetRoot: targetRoot, NoEngram: noEngram})
+		result, err := config.NewService().Ensure(config.Options{TargetRoot: targetRoot})
 		return fromConfigResult(result), err
 	default:
 		return ProjectConfigResult{}, unsupportedToolError(tool)

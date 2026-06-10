@@ -18,7 +18,7 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture: %v", err)
 	}
 
@@ -63,7 +63,7 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 
 func TestPinAndUnpinManagedAsset(t *testing.T) {
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture: %v", err)
 	}
 	svc := NewService()
@@ -105,7 +105,7 @@ func TestDoctorReportsInitializedMemoryDrafts(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture: %v", err)
 	}
 	if err := memory.NewService().Init(memory.Options{Target: target}, &bytes.Buffer{}); err != nil {
@@ -142,7 +142,7 @@ func writeGovernanceFile(t *testing.T, path, content string) {
 
 func TestDoctorFailsOnPendingLufyNewConflict(t *testing.T) {
 	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, NoEngram: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(target, "tui.json"), []byte("{\"user\":true}\n"), 0o644); err != nil {
