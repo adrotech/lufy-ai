@@ -4,10 +4,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
-
-const AncestorsDir = "ancestors"
 
 func AncestorRel(targetRel string) (string, error) {
 	clean, err := platform.EnsureRelativeSafe(targetRel)
@@ -15,7 +14,7 @@ func AncestorRel(targetRel string) (string, error) {
 		return "", err
 	}
 	parts := strings.Split(filepath.ToSlash(clean), "/")
-	return filepath.ToSlash(filepath.Join(append([]string{".lufy-ai", AncestorsDir}, parts...)...)), nil
+	return filepath.ToSlash(filepath.Join(append([]string{lufypaths.Ancestors}, parts...)...)), nil
 }
 
 func AncestorPath(targetRoot, targetRel string) (string, error) {

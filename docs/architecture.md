@@ -60,12 +60,12 @@ flowchart TD
 | `internal/adapters/tool/codex` | Adapter dry-run para capabilities y preview conceptual de Codex. |
 | `internal/adapters/tool/claudecode` | Adapter dry-run para capabilities y preview conceptual de Claude Code. |
 | `internal/adapters/methodology/openspec` | Adapter OpenSpec para superficie full/lite. |
-| `internal/adapters/methodology/lufysdd` | Adapter inicial para `.lufy/sdd`. |
+| `internal/adapters/methodology/lufysdd` | Adapter inicial para `.lufy/workflows/sdd`. |
 | `internal/adapters/methodology/none` | Adapter explícito para tiers sin metodología. |
 | `internal/instructions/registry` | Contratos neutrales de roles, skills y bindings. |
 | `internal/instructions/render` | Render de superficies de instrucción sin paths hardcodeados al dominio. |
 | `internal/assets` | Catálogo, policies, assets embebidos y hashing SHA-256. |
-| `internal/state` | `.lufy-ai/install-state.json` versionado. |
+| `internal/state` | `.lufy/managed-state/install-state.json` versionado. |
 | `internal/installer` | Plan/apply de instalación idempotente. |
 | `internal/uninstaller` | Plan/apply de desinstalación gestionada con backup y protección por drift. |
 | `internal/syncer` | Sincronización conservadora de assets ya gestionados. |
@@ -73,7 +73,7 @@ flowchart TD
 | `internal/status` | Estado humano/JSON de instalación y drift. |
 | `internal/backup` | Backup/restore multiasset con manifest. |
 | `internal/config` | Merge conservador de `opencode.json`. |
-| `internal/projectconfig` | Scanner stack-aware para `.lufy/project.yaml`. |
+| `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
 | `internal/platform` | Path safety, locks y resolución portable de targets. |
 
@@ -82,7 +82,7 @@ flowchart TD
 ```mermaid
 flowchart LR
     Plan["install --dry-run"] --> Install["install --yes"]
-    Install --> State[".lufy-ai/install-state.json"]
+    Install --> State[".lufy/managed-state/install-state.json"]
     State --> Verify["verify"]
     State --> Status["status"]
     State --> Sync["sync"]
@@ -110,12 +110,12 @@ Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults com
 | --- | --- | --- |
 | `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins` | Managed | Se copian/sincronizan por catálogo y SHA-256. |
 | `openspec/` | Managed por metodología `openspec` | Se instala cuando la metodología lo requiere. |
-| `.lufy/sdd/` | Managed por metodología `lufy-sdd` | Se instala según mode full/lite. |
+| `.lufy/workflows/sdd/` | Managed por metodología `lufy-sdd` | Se instala según mode full/lite. |
 | `lufy-ia.harness.md` | Managed | Se actualiza por manifest y hash. |
 | `tui.json` | Managed/no-replace según policy | Se preserva ante drift y puede generar `.lufy-new`. |
 | `AGENTS.md` | User-owned con referencia gestionada | `install` agrega `@lufy-ia.harness.md`; `uninstall` remueve solo esa línea. |
 | `opencode.json` | User-owned/merge-managed | Se mergea conservadoramente; no se registra como asset completo por hash. |
-| `.lufy/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
+| `.lufy/config/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
 
 ## Contrato de adapters
 

@@ -12,11 +12,12 @@ import (
 	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
 const (
-	DefaultCacheRoot    = ".lufy-ai/openspec-cache"
+	DefaultCacheRoot    = lufypaths.OpenSpecCache
 	DefaultManifestName = "manifest.json"
 	embeddedUpstreamRel = "openspec/UPSTREAM.json"
 )
@@ -161,10 +162,11 @@ func parseUpstream(body []byte) (Upstream, error) {
 }
 
 func resolveCache(target, minimum string) (Resolution, []Diagnostic) {
-	root, err := platform.SafeJoin(target, DefaultCacheRoot)
+	resolved, err := lufypaths.ResolveExisting(target, lufypaths.OpenSpecCache, lufypaths.LegacyOpenSpecCache)
 	if err != nil {
 		return Resolution{}, []Diagnostic{{Layer: LayerCache, Message: err.Error()}}
 	}
+	root := resolved.Path
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

@@ -113,10 +113,9 @@ func collectChangeArtifacts(changeDir string) ([]changeArtifact, error) {
 	}{
 		{"Proposal", "proposal.md"},
 		{"Design", "design.md"},
-		{"Plan", "plan.md"},
 		{"Tasks", "tasks.md"},
 	}
-	seen := make(map[string]bool, len(base))
+	seen := map[string]bool{"plan.md": true}
 	var artifacts []changeArtifact
 	for _, item := range base {
 		seen[item.rel] = true

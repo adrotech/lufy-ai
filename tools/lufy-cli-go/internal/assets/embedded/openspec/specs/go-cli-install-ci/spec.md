@@ -90,7 +90,7 @@ The Go installer CI SHALL include checks that protect structural hardening guara
 - **THEN** tests include traversal inputs with Windows separators or mixed separators and verify they are rejected
 
 #### Scenario: State metadata covered
-- **WHEN** CI runs install/sync tests that write `.lufy-ai/install-state.json`
+- **WHEN** CI runs install/sync tests that write `.lufy/managed-state/install-state.json`
 - **THEN** tests verify tool metadata and source fingerprint are populated from runtime/catalog sources rather than hardcoded proposal-era constants
 
 #### Scenario: Atomic copy behavior covered

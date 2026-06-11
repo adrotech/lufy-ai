@@ -230,7 +230,7 @@ func prepareTargetConfig(targetValue string) (string, projectconfig.MemoryConfig
 	if _, err := projectconfig.NewService().Ensure(target); err != nil {
 		return "", projectconfig.MemoryConfig{}, err
 	}
-	path := filepath.Join(target, projectconfig.ProjectConfigPath)
+	path := projectconfig.Path(target)
 	cfg, err := projectconfig.Load(path)
 	if err != nil {
 		return "", projectconfig.MemoryConfig{}, err
@@ -261,7 +261,10 @@ func loadTargetConfig(targetValue string) (string, projectconfig.MemoryConfig, b
 	if err != nil {
 		return "", projectconfig.MemoryConfig{}, false, err
 	}
-	path := filepath.Join(target, projectconfig.ProjectConfigPath)
+	path, err := projectconfig.ExistingPath(target)
+	if err != nil {
+		return "", projectconfig.MemoryConfig{}, false, err
+	}
 	cfg, err := projectconfig.Load(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return target, projectconfig.DefaultMemoryConfig(), false, nil

@@ -45,7 +45,7 @@ Canonical policy for lufy-ai agents, commands, and skills.
 
 ## Workflow Limits Config
 
-- `.lufy/project.yaml` top-level `workflow_limits` is the only canonical source for project workflow limits.
+- `.lufy/config/project.yaml` top-level `workflow_limits` is the only canonical source for project workflow limits.
 - Delivery batching decisions use `workflow_limits.delivery_batch_strategy` after a block/change is validated and delivery is explicitly authorized.
 - Delivery batching guidance may be recorded before authorization, but it remains advisory and MUST NOT authorize Git/GH operations or produce `delivered`/`closed` state by itself.
 - Proposal or review splitting uses `workflow_limits.proposal_slicing_strategy` before implementation/review; do not reinterpret proposal slicing as delivery batching or as Git/GH delivery authorization.
@@ -74,7 +74,7 @@ Role boundaries for the gate:
 
 If any gate item is missing, report the precise next state (`implemented`, `validated`, `delivery_pending`, `sync_pending`, or `blocked`) with exact recovery instruction. Delivery remains explicitly authorized regardless of tier, task completion, validation status, or user acceptance of implementation.
 
-Substantive delivery handoffs and final delivery results use Result Contract envelope v1. Include the relevant `workflow_decision` fields from `.lufy/project.yaml` or upstream routing, especially delivery batching guidance, preflight status, stop-rule status, remote check state and authorization status.
+Substantive delivery handoffs and final delivery results use Result Contract envelope v1. Include the relevant `workflow_decision` fields from `.lufy/config/project.yaml` or upstream routing, especially delivery batching guidance, preflight status, stop-rule status, remote check state and authorization status.
 
 Tasks incompletas always block archive. Do not archive a change with unchecked tasks, even with user confirmation. `migrate-installer-to-go-cli` is explicitly blocked from archive while any tasks remain incomplete.
 

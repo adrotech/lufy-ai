@@ -195,7 +195,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 
 func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	target := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(target, ".lufy", "managed-state"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(state.Path(target), []byte("{bad-json"), 0o644); err != nil {

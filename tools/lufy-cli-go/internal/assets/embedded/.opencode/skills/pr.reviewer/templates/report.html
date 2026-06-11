@@ -16,7 +16,7 @@
     .muted{color:var(--stone);font-size:14px;text-align:center;margin:0 auto 18px;max-width:980px;}
     .pr-link{display:block;width:max-content;max-width:100%;margin:0 auto 22px;color:#fff;text-decoration:none;font-size:14px;font-weight:500;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:8px;padding:10px 18px;overflow-wrap:anywhere;}
     .pr-link:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.42);}
-    .card,.issue,details,.gauge{background:var(--canvas);border:1px solid var(--hairline);border-radius:12px;padding:24px;margin:12px 0;box-shadow:var(--shadow-card);overflow-wrap:break-word;word-wrap:break-word;word-break:break-word;max-width:100%;}
+    .card,.issue,details,.gauge,.final-summary{background:var(--canvas);border:1px solid var(--hairline);border-radius:12px;padding:24px;margin:12px 0;box-shadow:var(--shadow-card);overflow-wrap:break-word;word-wrap:break-word;word-break:break-word;max-width:100%;}
     .gauge{margin:30px auto 36px;text-align:center;box-shadow:var(--shadow-hero);}
     .gauge .score{font-size:56px;font-weight:600;letter-spacing:0;color:var(--primary);}
     .gauge .verdict{font-size:18px;font-weight:600;margin-top:8px;color:var(--ink);}
@@ -25,12 +25,15 @@
     .scoreitem:nth-child(1){background:var(--lavender);}.scoreitem:nth-child(2){background:var(--sky);}.scoreitem:nth-child(3){background:var(--mint);}.scoreitem:nth-child(4){background:var(--rose);}.scoreitem:nth-child(5){background:var(--peach);}.scoreitem:nth-child(6){background:#fef7d6;}
     .scoreitem .n{font-size:22px;font-weight:600;color:var(--ink);}.scoreitem .l{font-size:13px;color:var(--slate);}
     .issue{border-left:6px solid var(--error);}.issue.alto{border-left-color:var(--orange);}.issue.medio{border-left-color:#d97706;}.issue.bajo{border-left-color:var(--link);}.issue.info{border-left-color:var(--stone);}.issue.good{border-left-color:var(--green);background:var(--mint);}
+    .final-summary{border-color:rgba(86,69,212,.28);box-shadow:var(--shadow-hero);}
+    .final-summary .decision{font-size:22px;font-weight:600;color:var(--primary);margin-bottom:8px;}
+    .final-summary .next-step{margin-top:12px;padding:12px 14px;border:1px solid var(--hairline);border-radius:8px;background:var(--surface);font-weight:600;color:var(--ink);}
     ul,ol{padding-left:22px;margin:6px 0 10px;}li{overflow-wrap:break-word;word-break:break-word;margin:5px 0;}
     pre{background:var(--navy-deep);color:#e2e8f0;padding:14px;border-radius:8px;overflow-x:auto;max-width:100%;white-space:pre;word-wrap:normal;font-size:13px;margin:10px 0;}code{background:var(--surface);color:var(--ink);padding:2px 6px;border:1px solid var(--hairline-soft);border-radius:6px;font-size:13px;word-break:break-word;overflow-wrap:anywhere;}pre code{background:none;color:inherit;border:0;padding:0;}
     table{width:100%;table-layout:fixed;border-collapse:collapse;margin:10px 0;font-size:14px;background:var(--canvas);border:1px solid var(--hairline);border-radius:8px;overflow:hidden;}th,td{overflow-wrap:break-word;word-break:break-word;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--hairline-soft);text-align:left;}th{background:var(--surface);font-weight:600;color:var(--ink);}tr:last-child td{border-bottom:0;}
     .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;}.b-crit{background:var(--error);}.b-alto{background:var(--orange);}.b-medio{background:#d97706;}.b-bajo{background:var(--link);}.b-ok{background:var(--green);}.b-info{background:var(--primary);}
     details summary{cursor:pointer;font-weight:600;font-size:15px;color:var(--ink);}details[open] summary{margin-bottom:12px;}
-    @media (max-width:640px){body{background:linear-gradient(180deg,var(--navy) 0,var(--navy-deep) 300px,var(--surface) 300px);}.container{padding:32px 16px 56px;}h1{text-align:left;font-size:36px;line-height:1.12}.muted{text-align:left}.pr-link{margin-left:0}.card,.issue,details,.gauge{padding:18px;}table{font-size:13px;}}
+    @media (max-width:640px){body{background:linear-gradient(180deg,var(--navy) 0,var(--navy-deep) 300px,var(--surface) 300px);}.container{padding:32px 16px 56px;}h1{text-align:left;font-size:36px;line-height:1.12}.muted{text-align:left}.pr-link{margin-left:0}.card,.issue,details,.gauge,.final-summary{padding:18px;}table{font-size:13px;}}
   </style>
 </head>
 <body>
@@ -60,6 +63,13 @@
 
     <h2>Desk check y simulación</h2>
     <details><summary>Escenario TC-1</summary><div>Completar trazabilidad por capas.</div></details>
+
+    <h2>Resumen final y recomendación</h2>
+    <div class="final-summary">
+      <div class="decision">VEREDICTO_FINAL</div>
+      <p>Completar con una conclusión ejecutiva consistente con el score, los hallazgos y la evidencia disponible.</p>
+      <div class="next-step">Siguiente paso: completar con la acción exacta recomendada.</div>
+    </div>
   </div>
 </body>
 </html>

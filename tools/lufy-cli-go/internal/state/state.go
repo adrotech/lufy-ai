@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
@@ -54,11 +56,23 @@ type AssetState struct {
 }
 
 func Path(targetRoot string) string {
-	return filepath.Join(targetRoot, ".lufy-ai", "install-state.json")
+	return filepath.Join(targetRoot, lufypaths.InstallState)
+}
+
+func ExistingPath(targetRoot string) (string, error) {
+	resolved, err := lufypaths.ResolveExisting(targetRoot, lufypaths.InstallState, lufypaths.LegacyInstallState)
+	if err != nil {
+		return "", err
+	}
+	return resolved.Path, nil
 }
 
 func Load(targetRoot string) (*InstallState, error) {
-	body, err := os.ReadFile(Path(targetRoot))
+	path, err := ExistingPath(targetRoot)
+	if err != nil {
+		return nil, err
+	}
+	body, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -114,6 +128,9 @@ func normalize(st *InstallState) error {
 		}
 		if asset.Component == "" {
 			asset.Component = "legacy"
+		}
+		if strings.HasPrefix(filepath.ToSlash(asset.AncestorRel), lufypaths.LegacyAncestors+"/") {
+			asset.AncestorRel = lufypaths.Ancestors + strings.TrimPrefix(filepath.ToSlash(asset.AncestorRel), lufypaths.LegacyAncestors)
 		}
 	}
 	return nil

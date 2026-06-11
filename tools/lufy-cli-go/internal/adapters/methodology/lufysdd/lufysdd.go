@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
 )
 
@@ -30,7 +31,7 @@ func (Adapter) RenderWorkflow(model ports.WorkflowModel) ([]ports.AssetSpec, err
 	case domain.MethodologyModeFull:
 		return append(baseAssets(), ports.AssetSpec{
 			ID:        "methodology.lufy-sdd.specs",
-			TargetRel: ".lufy/sdd/specs",
+			TargetRel: lufypaths.LufySDD + "/specs",
 			Policy:    "managed",
 			Scope:     "project",
 		}), nil
@@ -49,9 +50,9 @@ func (Adapter) VerifyWorkflow(ports.Target, domain.Tier) ([]ports.Check, error) 
 
 func baseAssets() []ports.AssetSpec {
 	return []ports.AssetSpec{
-		{ID: "methodology.lufy-sdd.readme", TargetRel: ".lufy/sdd/README.md", Policy: "managed", Scope: "project"},
-		{ID: "methodology.lufy-sdd.changes", TargetRel: ".lufy/sdd/changes", Policy: "managed", Scope: "project"},
-		{ID: "methodology.lufy-sdd.decisions", TargetRel: ".lufy/sdd/decisions", Policy: "managed", Scope: "project"},
-		{ID: "methodology.lufy-sdd.verification", TargetRel: ".lufy/sdd/verification", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.readme", TargetRel: lufypaths.LufySDD + "/README.md", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.changes", TargetRel: lufypaths.LufySDD + "/changes", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.decisions", TargetRel: lufypaths.LufySDD + "/decisions", Policy: "managed", Scope: "project"},
+		{ID: "methodology.lufy-sdd.verification", TargetRel: lufypaths.LufySDD + "/verification", Policy: "managed", Scope: "project"},
 	}
 }

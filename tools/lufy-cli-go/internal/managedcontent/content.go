@@ -47,7 +47,11 @@ func Render(sourceRoot, sourceRel, targetRoot, targetRel string) ([]byte, error)
 	if filepath.ToSlash(targetRel) != implementerAgentRel {
 		return body, nil
 	}
-	cfg, err := projectconfig.Load(filepath.Join(targetRoot, projectconfig.ProjectConfigPath))
+	configPath, err := projectconfig.ExistingPath(targetRoot)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := projectconfig.Load(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return body, nil

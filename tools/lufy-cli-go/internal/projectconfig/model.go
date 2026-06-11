@@ -4,11 +4,13 @@ import (
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 )
 
 const (
-	ProjectConfigPath = ".lufy/project.yaml"
-	SchemaVersion     = 1
+	ProjectConfigPath       = lufypaths.ProjectConfig
+	LegacyProjectConfigPath = lufypaths.LegacyProjectConfig
+	SchemaVersion           = 1
 )
 
 type ProjectConfig struct {

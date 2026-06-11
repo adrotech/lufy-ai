@@ -66,7 +66,7 @@ lufy-ai memory init --target /ruta/a/tu/proyecto
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes
 ```
 
-`init` crea `.lufy/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
+`init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
 
 `memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. El contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter, backlinks y búsqueda con `lufy-ai memory validate|search`.
 
@@ -108,7 +108,7 @@ Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
 /lufy.onboard --demo --dry-run
 ```
 
-El onboarding lee `.lufy/project.yaml`, valida estáticamente la instalación y propone un T3 dummy adaptado al stack detectado sin mutar archivos. Si aceptas aplicar una demo real, el flujo correcto es derivar a `implementer` con alcance T3, ejecutar validación proporcional y mantener commit/push/PR como delivery separado y explícitamente autorizado.
+El onboarding lee `.lufy/config/project.yaml`, valida estáticamente la instalación y propone un T3 dummy adaptado al stack detectado sin mutar archivos. Si aceptas aplicar una demo real, el flujo correcto es derivar a `implementer` con alcance T3, ejecutar validación proporcional y mantener commit/push/PR como delivery separado y explícitamente autorizado.
 
 Para cerrar la sesión con trazabilidad local:
 
@@ -129,9 +129,9 @@ Para cerrar la sesión con trazabilidad local:
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
-| Lufy SDD | `.lufy/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
+| Lufy SDD | `.lufy/workflows/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas que se referencian desde `AGENTS.md`. |
-| Estado local | `.lufy-ai/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
+| Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 
 `.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks y templates de memoria, pero no toca notas privadas.
 
@@ -171,7 +171,7 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 | T2 SDD Lite | Cambio funcional acotado, bug relevante, agente/skill o refactor controlado. | `openspec/lite`, `lufy-sdd/lite` o mini-spec. | Criterios `WHEN`/`THEN`, handoff recuperable, optional overview/render y review enfocada. |
 | T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
 
-La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
+La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/config/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
 
 `init` también escribe `parallel_execution`, que permite paralelismo gobernado solo cuando `sdd-router` detecta `review_slices` independientes, archivos no compartidos, plan de merge claro y validación agrupada tras el join. No se paraleliza delivery, migraciones de schema/db, contratos públicos no cerrados ni cambios sobre los mismos archivos.
 
@@ -193,19 +193,19 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool code
 
 | Comando | Propósito |
 | --- | --- |
-| `lufy-ai init` | Genera `.lufy/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
+| `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
 | `lufy-ai status` | Resume estado instalado, drift, faltantes y detalles por asset. |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks y surfaces sin mutar. |
-| `lufy-ai doctor` | Diagnostica `.lufy/project.yaml`, manifest y drift de forma read-only. |
+| `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest y drift de forma read-only. |
 | `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. |
 | `lufy-ai unpin` | Remueve el freeze de un asset gestionado y permite `sync` normal. |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
-| `lufy-ai backup` | Crea backup multiasset bajo `.lufy-ai/backups/<timestamp>/`. |
+| `lufy-ai backup` | Crea backup multiasset bajo `.lufy/managed-state/backups/<timestamp>/`. |
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
@@ -306,7 +306,7 @@ Disponible e instalable:
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
 - CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, upgrade y version.
-- `init` y `scan` con `.lufy/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
+- `init` y `scan` con `.lufy/config/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.
 - `codex` y `claude-code` solo como adapters dry-run/preview, no como instalación real.

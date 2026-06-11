@@ -29,8 +29,9 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
-		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
-		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
+		filepath.Join(".lufy", "README.md"):                                               false,
+		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
+		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -50,7 +51,7 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") && asset.Methodology != domain.MethodologySpecWorkflow {
 				t.Fatalf("openspec asset %s methodology = %s", asset.TargetRel, asset.Methodology)
 			}
-			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/sdd/") && asset.Methodology != domain.MethodologyLufyWorkflow {
+			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".lufy/workflows/sdd/") && asset.Methodology != domain.MethodologyLufyWorkflow {
 				t.Fatalf("lufy-sdd asset %s methodology = %s", asset.TargetRel, asset.Methodology)
 			}
 		}
@@ -95,8 +96,9 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
-		filepath.Join(".lufy", "sdd", "README.md"):                                        false,
-		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              false,
+		filepath.Join(".lufy", "README.md"):                                               false,
+		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
+		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
 	for _, asset := range catalog.Assets {
 		if strings.HasPrefix(asset.TargetRel, filepath.Join("openspec", "changes")) {
@@ -230,6 +232,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "UPSTREAM.json"):                                        "{}\n",
 		filepath.Join("openspec", "README.md"):                                            "openspec\n",
 		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
+		filepath.Join(".lufy", "README.md"):                                               "layout\n",
 		filepath.Join(".lufy", "sdd", "README.md"):                                        "lufy-sdd\n",
 		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              "",
 		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                            "",

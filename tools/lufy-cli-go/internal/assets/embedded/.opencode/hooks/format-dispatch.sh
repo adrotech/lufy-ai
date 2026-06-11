@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Format one changed file using .lufy/project.yaml stack metadata.
+# Format one changed file using .lufy/config/project.yaml stack metadata.
 
 set -euo pipefail
 
 ROOT="${LUFY_PROJECT_ROOT:-$(pwd)}"
-CONFIG="${LUFY_PROJECT_CONFIG:-$ROOT/.lufy/project.yaml}"
+CONFIG="${LUFY_PROJECT_CONFIG:-$ROOT/.lufy/config/project.yaml}"
 VERBOSE="${LUFY_FORMAT_DISPATCH_VERBOSE:-}"
 
 log() {

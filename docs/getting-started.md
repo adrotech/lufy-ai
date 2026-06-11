@@ -38,7 +38,7 @@ Después de instalar:
 
 ## 2. Inicializar configuración stack-aware y surface-aware
 
-`init` crea `.lufy/project.yaml`, que es configuración del proyecto destino. No es asset gestionado por hash. Además de stacks técnicos, incluye `project_profile.surfaces` para declarar si el proyecto o una raíz se razona como `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
+`init` crea `.lufy/config/project.yaml`, que es configuración del proyecto destino. No es asset gestionado por hash. Además de stacks técnicos, incluye `project_profile.surfaces` para declarar si el proyecto o una raíz se razona como `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
 
 ```bash
 lufy-ai init --target /ruta/a/tu/proyecto

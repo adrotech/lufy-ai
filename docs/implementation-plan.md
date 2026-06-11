@@ -29,7 +29,7 @@ Objetivo: reemplazar el ownership binario por policies que expresen como actuali
 Cambios esperados:
 
 - Expandir `assets.Policy` a `managed`, `no-replace`, `merge-block`, `merge-json` y `metadata`.
-- Persistir `policy`, `scope` y datos de ancestor en `.lufy-ai/install-state.json` con migracion silenciosa desde schema actual.
+- Persistir `policy`, `scope` y datos de ancestor en `.lufy/managed-state/install-state.json` con migracion silenciosa desde schema actual.
 - Ajustar `install`, `sync`, `verify` y `status` para reportar policy por asset.
 - Mantener compatibilidad con assets existentes y no romper targets ya instalados.
 
@@ -50,7 +50,7 @@ Cambios esperados:
 - Definir scope por entry del catalogo.
 - Instalar assets OpenCode compartidos en `~/.config/opencode/` cuando el usuario elige scope global o both.
 - Mantener `--scope=project` como reproduccion del comportamiento actual.
-- Mantener assets intrinsicamente per-project en el target: `openspec/`, `AGENTS.md`, `tui.json` y `.lufy-ai/`.
+- Mantener assets intrinsicamente per-project en el target: `openspec/`, `AGENTS.md`, `tui.json` y `.lufy/managed-state/`.
 
 Decision pendiente antes de implementar:
 
@@ -86,7 +86,7 @@ Objetivo: desbloquear upgrades con drift sin perder datos.
 Cambios esperados:
 
 - Crear `<file>.lufy-new` para nuevas versiones de assets `no-replace` con drift.
-- Guardar ancestors bajo `.lufy-ai/ancestors/` para three-way merge futuro.
+- Guardar ancestors bajo `.lufy/managed-state/ancestors/` para three-way merge futuro.
 - Agregar o extender comando `lufy-ai merge <path>` con `LUFY_MERGE_TOOL` y default seguro documentado.
 - Extender `restore` para listar backups por ID y restaurar el ultimo o uno especifico con dry-run.
 - Mantener retencion de backups y no borrar datos del usuario sin confirmacion.
@@ -98,7 +98,7 @@ Acceptance:
 - `merge <path>` valida ancestor/user/new antes de invocar herramienta externa.
 - `restore --dry-run` lista exactamente que restauraria.
 
-Estado de implementación en rama: `restore --list` muestra IDs/timestamps/manifests y `restore --backup <id>` resuelve backups bajo `.lufy-ai/backups/`; `restore --backup <manifest-or-dir>` se mantiene compatible.
+Estado de implementación en rama: `restore --list` muestra IDs/timestamps/manifests y `restore --backup <id>` resuelve backups bajo `.lufy/managed-state/backups/`; `restore --backup <manifest-or-dir>` se mantiene compatible.
 
 ### Validacion v0.2.0
 
@@ -133,7 +133,7 @@ Objetivo: desacoplar upgrades de OpenSpec upstream del release manual de `lufy-a
 Resolucion runtime:
 
 1. Delegar a `openspec` CLI en PATH si existe y cumple version minima.
-2. Usar cache `.lufy-ai/openspec-cache/<version>/` si existe.
+2. Usar cache `.lufy/cache/openspec/<version>/` si existe.
 3. Usar baseline embebida en el binario como fallback offline.
 
 Cambios esperados:

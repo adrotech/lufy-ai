@@ -1,9 +1,11 @@
 package platform
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 )
 
 type Lock struct {
@@ -13,7 +15,7 @@ type Lock struct {
 }
 
 func AcquireLock(targetRoot string) (*Lock, error) {
-	lockDir := filepath.Join(targetRoot, ".lufy-ai")
+	lockDir := filepath.Join(targetRoot, ".lufy", "managed-state")
 	createdDir := false
 	if _, err := os.Stat(lockDir); os.IsNotExist(err) {
 		createdDir = true
@@ -48,9 +50,17 @@ func (l *Lock) Release() error {
 		err = removeErr
 	}
 	if l.createdDir {
-		if removeErr := os.Remove(filepath.Dir(l.path)); err == nil && removeErr != nil && !os.IsNotExist(removeErr) {
+		lockDir := filepath.Dir(l.path)
+		if removeErr := os.Remove(lockDir); err == nil && !ignorableRemoveDirError(removeErr) {
+			err = removeErr
+		}
+		if removeErr := os.Remove(filepath.Dir(lockDir)); err == nil && !ignorableRemoveDirError(removeErr) {
 			err = removeErr
 		}
 	}
 	return err
+}
+
+func ignorableRemoveDirError(err error) bool {
+	return err == nil || os.IsNotExist(err) || errors.Is(err, syscall.ENOTEMPTY)
 }

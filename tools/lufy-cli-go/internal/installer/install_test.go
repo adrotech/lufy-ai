@@ -238,7 +238,7 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 	harness := st.AssetMap()["lufy-ia.harness.md"]
-	if harness.AncestorRel != ".lufy-ai/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
+	if harness.AncestorRel != ".lufy/managed-state/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
 		t.Fatalf("ancestor metadata not recorded: %#v", harness)
 	}
 	if got := string(readFileForTest(t, filepath.Join(target, harness.AncestorRel))); got != "harness template\n" {
@@ -256,7 +256,7 @@ func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
 	}
 
 	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
-		t.Fatalf("default install should not create .lufy/sdd, stat err=%v", err)
+		t.Fatalf("default install should not create .lufy/workflows/sdd, stat err=%v", err)
 	}
 	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); err != nil {
 		t.Fatalf("default install should keep openspec assets: %v", err)
@@ -612,7 +612,7 @@ func TestRunRejectsCorruptState(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(target, ".lufy", "managed-state"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(state.Path(target), []byte("{not-json"), 0o644); err != nil {
@@ -795,6 +795,7 @@ func minimalInstallerSource(t *testing.T) string {
 		"AGENTS.md.template":                                                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"lufy-ia.harness.md":                                                "harness template\n",
 		"tui.json":                                                          "{}\n",
+		filepath.Join(".lufy", "README.md"):                                 "layout\n",
 		filepath.Join(".opencode", ".gitignore"):                            "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                             "readme\n",
 		filepath.Join(".opencode", "package.json"):                          "{}\n",

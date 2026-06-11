@@ -72,7 +72,7 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 ## Obsidian Memory
 
-- If `.lufy/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
 - If memory is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). After authorized delivery or a significant blocker, save a concise durable memory in Obsidian with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
 
@@ -91,7 +91,7 @@ You handle safe delivery operations only. This file is the operational runbook f
 - For this repository's Go CLI/assets scope, prefer `scripts/validate.sh` for final local evidence before delivery because it runs the PR-aware whitespace gate together with tests/build.
 - Before pushing or reporting a PR-ready branch, include the PR-range whitespace gate for the target base: `git diff --check origin/develop...HEAD` for committed branch contents, or `git diff --check origin/develop` if validating pending local changes before commit. Plain `git diff --check` is not enough for PR readiness.
 - Prefer validación agrupada evidence from the completed block/proposal; do not require repeated test loops unless needed for final delivery or diagnosis.
-- Read project workflow delivery controls only from `.lufy/project.yaml` top-level `workflow_limits`: use `workflow_limits.delivery_batch_strategy` for delivery grouping, `workflow_limits.preflight` for delivery preflight checks, and `workflow_limits.stop_rules` for pause/escalation conditions.
+- Read project workflow delivery controls only from `.lufy/config/project.yaml` top-level `workflow_limits`: use `workflow_limits.delivery_batch_strategy` for delivery grouping, `workflow_limits.preflight` for delivery preflight checks, and `workflow_limits.stop_rules` for pause/escalation conditions.
 - Keep `workflow_limits.proposal_slicing_strategy` limited to proposal/review slicing before delivery readiness; do not treat it as delivery batching or authorization.
 - Treat delivery batching guidance as advisory until the user explicitly authorizes Git/GH operations; report missing authorization as `delivery_pending` or `blocked` even when batching guidance is clear.
 - Stage only relevant files, create accurate commit, push safely, and create PR when requested/required.

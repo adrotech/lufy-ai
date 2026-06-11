@@ -467,7 +467,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
-	fmt.Fprintf(stdout, "- [write] %s\n", filepath.Join(".lufy-ai", "install-state.json"))
+	fmt.Fprintf(stdout, "- [write] %s\n", filepath.ToSlash(filepath.Join(".lufy", "managed-state", "install-state.json")))
 	if err := verify.NewService().Run(verify.Options{Target: plan.TargetRoot, AllowCatalogNewAssets: true, AllowMissingAgentsRef: true}, stdout); err != nil {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}

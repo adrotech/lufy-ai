@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -40,6 +41,18 @@ type Service struct {
 	store   configStore
 }
 
+func Path(targetRoot string) string {
+	return filepath.Join(targetRoot, ProjectConfigPath)
+}
+
+func ExistingPath(targetRoot string) (string, error) {
+	resolved, err := lufypaths.ResolveExisting(targetRoot, ProjectConfigPath, LegacyProjectConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return resolved.Path, nil
+}
+
 func NewService() Service {
 	return Service{Now: func() time.Time { return time.Now().UTC() }}.withDefaults()
 }
@@ -68,13 +81,22 @@ func (s Service) Run(opts Options, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("resolver target: %w", err)
 	}
-	configPath := filepath.Join(target, ProjectConfigPath)
+	resolved, err := lufypaths.ResolveExisting(target, ProjectConfigPath, LegacyProjectConfigPath)
+	if err != nil {
+		return err
+	}
+	configPath := Path(target)
+	readPath := resolved.Path
+	displayPath := resolved.Rel
 	exists, err := s.store.Exists(configPath)
 	if err != nil {
 		return err
 	}
+	if !exists && resolved.Exists {
+		exists = true
+	}
 	if exists && !opts.Force && !opts.Rescan {
-		return fmt.Errorf("%s ya existe; usa --rescan para preservar overrides o --force para reemplazarlo", ProjectConfigPath)
+		return fmt.Errorf("%s ya existe; usa --rescan para preservar overrides o --force para reemplazarlo", displayPath)
 	}
 
 	detected, err := s.scanner.Scan(target)
@@ -84,9 +106,9 @@ func (s Service) Run(opts Options, out io.Writer) error {
 	finalConfig := detected
 	var report *RescanPlan
 	if opts.Rescan && exists {
-		current, err := s.store.Load(configPath)
+		current, err := s.store.Load(readPath)
 		if err != nil {
-			return fmt.Errorf("leer config existente para rescan: corrige o respalda %s antes de reintentar: %w", ProjectConfigPath, err)
+			return fmt.Errorf("leer config existente para rescan: corrige o respalda %s antes de reintentar: %w", displayPath, err)
 		}
 		plan := s.merger.Build(current, detected)
 		report = &plan
@@ -104,7 +126,7 @@ func (s Service) Run(opts Options, out io.Writer) error {
 		finalConfig.ProjectProfile = profile
 	}
 	if report != nil && !report.HasChanges {
-		current, err := s.store.Load(configPath)
+		current, err := s.store.Load(readPath)
 		if err != nil {
 			return fmt.Errorf("leer config existente tras profile prompt: %w", err)
 		}
@@ -135,10 +157,14 @@ func (s Service) Ensure(target string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("resolver target: %w", err)
 	}
-	configPath := filepath.Join(target, ProjectConfigPath)
+	resolved, err := lufypaths.ResolveExisting(target, ProjectConfigPath, LegacyProjectConfigPath)
+	if err != nil {
+		return false, err
+	}
+	configPath := Path(target)
 	if exists, err := s.store.Exists(configPath); err != nil {
 		return false, err
-	} else if exists {
+	} else if exists || resolved.Exists {
 		return false, nil
 	}
 	detected, err := s.scanner.Scan(target)

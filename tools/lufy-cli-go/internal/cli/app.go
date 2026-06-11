@@ -10,9 +10,11 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
@@ -45,6 +47,8 @@ func Run(args []string, deps Dependencies) int {
 		return runRestore(args[1:], deps)
 	case "merge":
 		return runMerge(args[1:], deps)
+	case "migrate-layout":
+		return runMigrateLayout(args[1:], deps)
 	case "memory":
 		return runMemory(args[1:], deps)
 	case "sync":
@@ -103,7 +107,7 @@ func runOpsxRender(args []string, deps Dependencies) int {
 	output := fs.String("output", "", "Ruta de salida opcional")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai opsx render --change <name> [--target <dir>] [--format html] [--theme notion-dark] [--output <path>]")
-		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/plan/tasks/specs en un HTML offline opcional.")
+		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/tasks/specs en un HTML offline opcional.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
@@ -157,7 +161,7 @@ func runMemoryInit(args []string, deps Dependencies) int {
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory init [--target <dir>] [--json]")
-		fmt.Fprintln(deps.Stderr, "Crea .lufy/memory con política Git ignored e integra defaults en project.yaml.")
+		fmt.Fprintln(deps.Stderr, "Crea .lufy/memory con política Git ignored e integra defaults en .lufy/config/project.yaml.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
@@ -169,6 +173,10 @@ func runMemoryInit(args []string, deps Dependencies) int {
 	if len(fs.Args()) > 0 {
 		fmt.Fprintln(deps.Stderr, "memory init no acepta argumentos posicionales")
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	if err := memory.NewService().Init(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -189,6 +197,12 @@ func runMemoryStatus(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "memory status no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
 	if err := memory.NewService().Status(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -207,6 +221,12 @@ func runMemoryValidate(args []string, deps Dependencies) int {
 	if len(fs.Args()) > 0 {
 		fmt.Fprintln(deps.Stderr, "memory validate no acepta argumentos posicionales")
 		return ExitUsageErr
+	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
 	}
 	if err := memory.NewService().Validate(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -234,6 +254,12 @@ func runMemorySearch(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
 	if err := memory.NewService().Search(memory.Options{Target: *target, Query: fs.Args()[0], JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -247,7 +273,7 @@ func runUninstall(args []string, deps Dependencies) int {
 	target := fs.String("target", ".", "Directorio destino")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
-	keepState := fs.Bool("keep-state", false, "Preservar .lufy-ai/install-state.json")
+	keepState := fs.Bool("keep-state", false, "Preservar .lufy/managed-state/install-state.json")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai uninstall [--target <dir>] [--dry-run] [--yes] [--keep-state]")
 		fmt.Fprintln(deps.Stderr, "Remueve assets gestionados por Lufy con backup previo y preserva archivos user-owned.")
@@ -264,6 +290,10 @@ func runUninstall(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
+	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	if err := uninstaller.NewService().Run(uninstaller.Options{Target: *target, DryRun: *dryRun, Yes: *yes, KeepState: *keepState}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -275,12 +305,12 @@ func runInit(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
-	force := fs.Bool("force", false, "Reemplazar .lufy/project.yaml existente")
+	force := fs.Bool("force", false, "Reemplazar .lufy/config/project.yaml existente")
 	rescan := fs.Bool("rescan", false, "Refrescar evidencia de stacks, preservar overrides y reportar drift sin cleanup destructivo")
 	interactive := fs.Bool("interactive", true, "Abrir selector interactivo para project_profile.surfaces cuando haya TTY")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai init [--target <dir>] [--force] [--rescan] [--interactive=false]")
-		fmt.Fprintln(deps.Stderr, "Genera .lufy/project.yaml con reglas stack-aware y surface-aware editables.")
+		fmt.Fprintln(deps.Stderr, "Genera .lufy/config/project.yaml con reglas stack-aware y surface-aware editables.")
 		fmt.Fprintln(deps.Stderr, "--rescan compara evidencia actual, preserva overrides de usuario y reporta drift sin borrar stacks ni archivos.")
 	}
 	if err := fs.Parse(args); err != nil {
@@ -299,11 +329,45 @@ func runInit(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "init no permite combinar --force y --rescan")
 		return ExitUsageErr
 	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	opts := projectconfig.Options{Target: *target, Force: *force, Rescan: *rescan}
 	if *interactive {
 		opts.ProfilePrompt = surfaceProfilePrompt(deps)
 	}
 	if err := projectconfig.NewService().Run(opts, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMigrateLayout(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("migrate-layout", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
+	yes := fs.Bool("yes", false, "Aceptar migracion real")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai migrate-layout [--target <dir>] [--dry-run] [--yes] [--json]")
+		fmt.Fprintln(deps.Stderr, "Migra rutas legacy .lufy-ai/ y .lufy/project.yaml al layout unificado .lufy/.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "migrate-layout no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := layout.NewService().Run(layout.Options{Target: *target, DryRun: *dryRun, Yes: *yes, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -317,7 +381,7 @@ func runScan(args []string, deps Dependencies) int {
 	interactive := fs.Bool("interactive", true, "Abrir selector interactivo para project_profile.surfaces cuando haya TTY")
 	fs.Usage = func() {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai scan [--target <dir>] [--interactive=false]")
-		fmt.Fprintln(deps.Stderr, "Escanea stacks y superficies, crea o actualiza .lufy/project.yaml preservando overrides.")
+		fmt.Fprintln(deps.Stderr, "Escanea stacks y superficies, crea o actualiza .lufy/config/project.yaml preservando overrides.")
 	}
 	if err := fs.Parse(args); err != nil {
 		fs.Usage()
@@ -330,6 +394,10 @@ func runScan(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "scan no acepta argumentos posicionales")
 		fs.Usage()
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	opts := projectconfig.Options{Target: *target, Rescan: true}
 	if *interactive {
@@ -366,6 +434,10 @@ func runMerge(args []string, deps Dependencies) int {
 	if *acceptTheirs && *acceptOurs {
 		fmt.Fprintln(deps.Stderr, "merge no permite combinar --accept-theirs y --accept-ours")
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	if err := merger.NewService().Run(merger.Options{Target: *target, Path: fs.Args()[0], AcceptTheirs: *acceptTheirs, AcceptOurs: *acceptOurs}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -407,6 +479,12 @@ func runStatus(args []string, deps Dependencies) int {
 	if len(fs.Args()) > 0 {
 		fmt.Fprintln(deps.Stderr, "status no acepta argumentos posicionales")
 		return ExitUsageErr
+	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
 	}
 	scope, err := assets.ParseScope(*scopeValue)
 	if err != nil {
@@ -458,6 +536,12 @@ func runDoctor(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "doctor no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
 	scope, err := assets.ParseScope(*scopeValue)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -490,6 +574,10 @@ func runPin(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	if err := governance.NewService().Pin(governance.PinOptions{Target: *target, Path: fs.Args()[0], Reason: *reason}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -515,6 +603,10 @@ func runUnpin(args []string, deps Dependencies) int {
 	if len(fs.Args()) != 1 {
 		fs.Usage()
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	if err := governance.NewService().Unpin(governance.PinOptions{Target: *target, Path: fs.Args()[0]}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -576,6 +668,10 @@ func runSync(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	service := syncer.NewService()
+	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	err = service.Run(syncer.Options{Target: *target, DryRun: *dryRun, Yes: *yes, Scope: scope, Harness: harness}, deps.Stdout)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -608,6 +704,12 @@ func runVerify(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
+	if !*jsonOutput && !*quiet {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
 	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -621,6 +723,10 @@ func runBackup(args []string, deps Dependencies) int {
 	target := fs.String("target", ".", "Directorio destino")
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	svc := backup.NewService()
 	if _, err := svc.Run(backup.Options{Target: *target}, deps.Stdout); err != nil {
@@ -642,6 +748,10 @@ func runRestore(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	if *list {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
 		if err := backup.NewService().List(*target, deps.Stdout); err != nil {
 			fmt.Fprintln(deps.Stderr, err.Error())
 			return ExitRuntimeErr
@@ -651,6 +761,10 @@ func runRestore(args []string, deps Dependencies) int {
 	if *backupPath == "" {
 		fmt.Fprintln(deps.Stderr, "restore requiere --backup <ruta>")
 		return ExitUsageErr
+	}
+	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
 	}
 	svc := backup.NewService()
 	if err := svc.Restore(*target, *backupPath, *dryRun, *yes, deps.Stdout); err != nil {
@@ -700,6 +814,10 @@ func runInstall(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	service := installer.NewService()
+	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
 	err = service.Run(installer.Options{
 		Target:  *target,
 		DryRun:  *dryRun,
@@ -724,10 +842,93 @@ func runInstall(args []string, deps Dependencies) int {
 	return ExitOK
 }
 
+func ensureLayoutForMutation(target string, dryRun bool, allowApply bool, stdout io.Writer) error {
+	if dryRun {
+		resolved, err := platform.ResolveTargetPath(target)
+		if err != nil {
+			return err
+		}
+		report, err := layout.BuildPlan(resolved)
+		if err != nil {
+			return err
+		}
+		if len(report.Actions) == 0 && len(report.Conflicts) == 0 {
+			return nil
+		}
+		for _, conflict := range report.Conflicts {
+			fmt.Fprintf(stdout, "[dry-run] [layout-conflict] %s -> %s: %s\n", conflict.Source, conflict.Target, conflict.Reason)
+		}
+		for _, action := range report.Actions {
+			if action.Source != "" {
+				fmt.Fprintf(stdout, "[dry-run] [layout-%s] %s -> %s\n", action.Kind, action.Source, action.Target)
+				continue
+			}
+			fmt.Fprintf(stdout, "[dry-run] [layout-%s] %s\n", action.Kind, action.Target)
+		}
+		return nil
+	}
+	resolved, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		return err
+	}
+	report, err := layout.BuildPlan(resolved)
+	if err != nil {
+		return err
+	}
+	if len(report.Conflicts) > 0 {
+		return fmt.Errorf("layout .lufy bloqueado por %d conflicto(s); ejecuta lufy-ai migrate-layout --target %s --dry-run", len(report.Conflicts), target)
+	}
+	if len(report.Actions) == 0 {
+		return nil
+	}
+	if !allowApply {
+		for _, action := range report.Actions {
+			if action.Kind == "migrate-copy" {
+				return fmt.Errorf("layout legacy detectado; vuelve a ejecutar con --yes para migrar primero o revisa con lufy-ai migrate-layout --target %s --dry-run", target)
+			}
+		}
+		return nil
+	}
+	_, err = layout.Apply(resolved, report.Actions, stdout)
+	return err
+}
+
+func reportLegacyLayoutForReadOnly(target string, stdout io.Writer) error {
+	resolved, err := platform.ResolveTargetPath(target)
+	if err != nil {
+		return err
+	}
+	report, err := layout.BuildPlan(resolved)
+	if err != nil {
+		return err
+	}
+	if len(report.Legacy) == 0 && len(report.Conflicts) == 0 {
+		return nil
+	}
+	if len(report.Legacy) > 0 {
+		fmt.Fprintf(stdout, "legacy layout detectado: %s; revisa con lufy-ai migrate-layout --target %s --dry-run\n", joinComma(report.Legacy), target)
+	}
+	for _, conflict := range report.Conflicts {
+		fmt.Fprintf(stdout, "legacy layout conflictivo: %s -> %s: %s\n", conflict.Source, conflict.Target, conflict.Reason)
+	}
+	return nil
+}
+
+func joinComma(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	out := values[0]
+	for _, value := range values[1:] {
+		out += ", " + value
+	}
+	return out
+}
+
 func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai <comando> [flags]")
 	fmt.Fprintln(out, "Comandos:")
-	fmt.Fprintln(out, "  init      Genera .lufy/project.yaml stack-aware")
+	fmt.Fprintln(out, "  init      Genera .lufy/config/project.yaml stack-aware")
 	fmt.Fprintln(out, "  scan      Escanea stacks/superficies y actualiza project.yaml")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
@@ -735,6 +936,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
+	fmt.Fprintln(out, "  migrate-layout Migra rutas legacy al layout unificado .lufy/")
 	fmt.Fprintln(out, "  memory    Inicializa, valida y busca memoria Obsidian portable")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")

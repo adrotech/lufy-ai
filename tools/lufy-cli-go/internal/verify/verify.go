@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
@@ -66,25 +67,19 @@ type reportPresenter interface {
 	Present(Report, Options, io.Writer, error) error
 }
 
-type projectConfigEnsurer interface {
-	Ensure(string) (bool, error)
-}
-
 type CheckBuilder struct{}
 
 type ReportPresenter struct{}
 
 type Service struct {
-	checkBuilder  checkBuilder
-	presenter     reportPresenter
-	projectConfig projectConfigEnsurer
+	checkBuilder checkBuilder
+	presenter    reportPresenter
 }
 
 func NewService() Service {
 	return Service{
-		checkBuilder:  CheckBuilder{},
-		presenter:     ReportPresenter{},
-		projectConfig: projectconfig.NewService(),
+		checkBuilder: CheckBuilder{},
+		presenter:    ReportPresenter{},
 	}
 }
 
@@ -103,7 +98,7 @@ var fallbackRequiredManagedFiles = []string{
 	"tui.json",
 }
 
-var requiredStateFiles = []string{filepath.Join(".lufy-ai", "install-state.json")}
+var requiredStateFiles = []string{lufypaths.InstallState}
 
 var jsonValidationFiles = []string{
 	toolruntime.OpenCodeProjectConfigFile,
@@ -136,13 +131,19 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	recorder := reportRecorder{report: &report}
 
-	if created, err := s.projectConfig.Ensure(target); err != nil {
-		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo crear configuración project-local: %s", err.Error())
+	configPath, err := projectconfig.ExistingPath(target)
+	if err != nil {
+		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo resolver configuración project-local: %s", err.Error())
 		return s.presenter.Present(report, opts, stdout, fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
-	} else if created {
-		recorder.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local creada")
+	}
+	if _, err := os.Stat(configPath); err == nil {
+		rel, _ := filepath.Rel(target, configPath)
+		recorder.emit("ok", filepath.ToSlash(rel), "configuración project-local")
+	} else if os.IsNotExist(err) {
+		recorder.emit("warn", projectconfig.ProjectConfigPath, "falta configuración project-local; ejecuta lufy-ai init --target <dir>")
 	} else {
-		recorder.emit("ok", projectconfig.ProjectConfigPath, "configuración project-local")
+		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo leer configuración project-local: %s", err.Error())
+		return s.presenter.Present(report, opts, stdout, fmt.Errorf("verify falló con 1 problema(s) crítico(s)"))
 	}
 
 	opts.Target = target
@@ -182,15 +183,15 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		recorder.emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
 	for _, rel := range requiredStateFiles {
-		path, err := platform.SafeJoin(target, rel)
+		resolved, err := lufypaths.ResolveExisting(target, lufypaths.InstallState, lufypaths.LegacyInstallState)
 		if err != nil {
 			return err
 		}
-		if !regularFile(path) {
+		if !regularFile(resolved.Path) {
 			recorder.emit("fail", rel, "falta archivo crítico")
 			continue
 		}
-		recorder.emit("ok", rel, "archivo crítico")
+		recorder.emit("ok", resolved.Rel, "archivo crítico")
 	}
 	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
 		recorder.emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")

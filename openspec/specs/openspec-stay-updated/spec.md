@@ -10,7 +10,7 @@ La CLI Go SHALL resolver la fuente efectiva de OpenSpec usando capas ordenadas y
 - **THEN** el resolver lo selecciona como fuente efectiva y reporta su ruta y versión
 
 #### Scenario: Cache is used when PATH is unavailable
-- **WHEN** `openspec` no existe en `PATH` o no cumple la versión mínima y `.lufy-ai/openspec-cache/<version>/manifest.json` es válido
+- **WHEN** `openspec` no existe en `PATH` o no cumple la versión mínima y `.lufy/cache/openspec/<version>/manifest.json` es válido
 - **THEN** el resolver selecciona la cache local versionada como fuente efectiva
 
 #### Scenario: Embedded baseline is offline fallback
@@ -18,11 +18,11 @@ La CLI Go SHALL resolver la fuente efectiva de OpenSpec usando capas ordenadas y
 - **THEN** el resolver usa el baseline embebido y reporta que opera en modo fallback offline
 
 ### Requirement: OpenSpec cache is versioned and manifest-backed
-La cache OpenSpec SHALL persistir versiones bajo `.lufy-ai/openspec-cache/<version>/` con manifiesto machine-readable.
+La cache OpenSpec SHALL persistir versiones bajo `.lufy/cache/openspec/<version>/` con manifiesto machine-readable.
 
 #### Scenario: Cache manifest records provenance
 - **WHEN** una versión OpenSpec se guarda en cache
-- **THEN** `.lufy-ai/openspec-cache/<version>/manifest.json` registra versión, fuente, timestamps, assets y hashes disponibles
+- **THEN** `.lufy/cache/openspec/<version>/manifest.json` registra versión, fuente, timestamps, assets y hashes disponibles
 
 #### Scenario: Invalid cache is rejected
 - **WHEN** el manifiesto de cache falta, no parsea o no coincide con los assets esperados
@@ -32,11 +32,11 @@ La cache OpenSpec SHALL persistir versiones bajo `.lufy-ai/openspec-cache/<versi
 Las escrituras de cache y manifiestos OpenSpec SHALL ser atómicas y confinadas al target.
 
 #### Scenario: Cache write is atomic
-- **WHEN** la CLI escribe o actualiza una entrada de `.lufy-ai/openspec-cache/<version>/`
+- **WHEN** la CLI escribe o actualiza una entrada de `.lufy/cache/openspec/<version>/`
 - **THEN** escribe mediante archivo temporal y rename, sin dejar manifiestos parciales como fuente válida
 
 #### Scenario: Path traversal is rejected
-- **WHEN** una versión, asset o path de manifiesto intenta escapar de `.lufy-ai/openspec-cache/`
+- **WHEN** una versión, asset o path de manifiesto intenta escapar de `.lufy/cache/openspec/`
 - **THEN** la CLI rechaza la operación y no escribe archivos fuera del target
 
 ### Requirement: Upstream sync opens pull requests only
