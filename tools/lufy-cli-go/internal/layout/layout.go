@@ -224,7 +224,11 @@ func Apply(target string, actions []Action, stdout io.Writer) (bool, error) {
 			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 				return applied, err
 			}
-			if err := platform.WriteFileAtomic(dst, []byte(ReadmeContent()), 0o644); err != nil {
+			content := []byte(ReadmeContent())
+			if managedContent, err := managedReadmeContent(); err == nil {
+				content = managedContent
+			}
+			if err := platform.WriteFileAtomic(dst, content, 0o644); err != nil {
 				return applied, err
 			}
 			fmt.Fprintf(stdout, "- [migrate-layout] %s\n", action.Target)
@@ -258,7 +262,19 @@ Workspace local de Lufy para este repositorio.
 - ` + "`cache/`" + `: caches locales reutilizables, como OpenSpec.
 
 No borres ` + "`managed-state/`" + ` manualmente salvo que vayas a reinstalar Lufy en este repo.
-`
+	`
+}
+
+func managedReadmeContent() ([]byte, error) {
+	sourceRoot, err := platform.ResolveSourceRoot("")
+	if err != nil {
+		return assets.ReadSourceFile(assets.EmbeddedSourceRoot, lufypaths.Readme)
+	}
+	path, err := platform.SafeJoin(sourceRoot, lufypaths.Readme)
+	if err != nil {
+		return nil, err
+	}
+	return os.ReadFile(path)
 }
 
 func writeMigrationBackup(target string, actions []Action) error {
