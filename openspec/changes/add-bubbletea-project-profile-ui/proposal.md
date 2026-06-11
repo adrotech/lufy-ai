@@ -11,7 +11,7 @@ La CLI necesita una experiencia interactiva mas clara sin romper automatizacion.
 - Reemplazar el prompt textual actual por un adapter TUI cuando haya TTY y `--interactive` este habilitado.
 - Preservar fallback no interactivo cuando no haya TTY, stdin/stdout no sean terminales o `--interactive=false`.
 - Permitir que la TUI muestre superficies detectadas, tipo, roots, stacks, frameworks y lens resultante antes de confirmar.
-- Mantener compatibilidad del schema `.lufy/project.yaml` version 1.
+- Mantener compatibilidad del schema `.lufy/config/project.yaml` version 1.
 
 ## Non-Goals
 

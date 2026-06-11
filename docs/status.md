@@ -10,7 +10,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Result Contract envelope v1 para handoffs, evidencia, riesgos y siguiente acción.
 - Review Workload Harness con `review_slices` para T1/T2 con varios riesgos.
 - Skill resolution local-first con AutoSkills solo como bootstrap opcional y autorizado.
-- Memoria Obsidian portable como fuente canónica cuando `.lufy/project.yaml` declara `memory.provider: obsidian`.
+- Memoria Obsidian portable como fuente canónica cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`.
 - Paralelismo gobernado para `review_slices` independientes con plan de merge y validación agrupada.
 - Core neutral con separación inicial de tool adapters y methodology adapters.
 - Registry de adapters con `opencode` como adapter escribible actual.
@@ -27,14 +27,14 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `verify` estructural con salida humana, `--json`, `--quiet`, `--verbose` y `--deep`.
 - `status` humano/JSON con drift, frozen assets, `.lufy-new` pendiente y detalles por asset.
 - `info` humano/JSON con catálogo efectivo, manifest, stacks, surfaces y conteos operativos.
-- `doctor` humano/JSON para diagnóstico read-only de `.lufy/project.yaml`, manifest, drift y conflictos pendientes.
+- `doctor` humano/JSON para diagnóstico read-only de `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes.
 - `pin`/`unpin` para congelar assets gestionados desde el manifest sin editar el archivo target.
 - `sync` conservador para assets gestionados sin drift.
 - `merge` para reconciliar `.lufy-new` con ancestor seguro y cerrar estado/sidecar.
 - `backup` y `restore` con manifest, targetRoot y validación de paths/hashes.
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
-- `init` y `--rescan` para `.lufy/project.yaml` stack-aware.
+- `init` y `--rescan` para `.lufy/config/project.yaml` stack-aware.
 - `memory init/status/validate/search` para crear, diagnosticar, validar y buscar memoria Obsidian en repos destino.
 
 ### Assets instalables
@@ -48,7 +48,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos `/lufy.*` instalables según catálogo.
 - Agent Observatory TUI.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
-- Lufy SDD inicial bajo `.lufy/sdd/` cuando se selecciona.
+- Lufy SDD inicial bajo `.lufy/workflows/sdd/` cuando se selecciona.
 
 ### Release, calidad y seguridad
 
@@ -79,6 +79,6 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - El único adapter escribible es `opencode`.
 - `codex` y `claude-code` no deben documentarse como instalables.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
-- `AGENTS.md`, `opencode.json` y `.lufy/project.yaml` son user-owned o user-managed.
+- `AGENTS.md`, `opencode.json` y `.lufy/config/project.yaml` son user-owned o user-managed.
 - No existe suite Node/TS global en la raíz.
 - No hacer delivery sin autorización explícita.

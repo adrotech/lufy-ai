@@ -7,7 +7,7 @@ func TestAncestorRelMapsSafePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AncestorRel() error = %v", err)
 	}
-	want := ".lufy-ai/ancestors/.opencode/agents/orchestrator.md"
+	want := ".lufy/managed-state/ancestors/.opencode/agents/orchestrator.md"
 	if got != want {
 		t.Fatalf("AncestorRel() = %q, want %q", got, want)
 	}

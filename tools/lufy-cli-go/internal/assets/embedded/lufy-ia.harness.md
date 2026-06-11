@@ -10,9 +10,9 @@ Operational guide for coding agents working in this repository.
 - **Routing/CLI/API**: Fill in the relevant entrypoints for this repo
 - **Testing**: Fill in the real testing framework and commands, or state that validation is static/manual
 - **Tool adapter**: Default installed adapter is `opencode`; future adapters such as Codex or Claude Code must not change the core workflow contract
-- **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/sdd/` when selected
+- **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/workflows/sdd/` when selected
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks, with methodology chosen by tier
-- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/project.yaml` `project_profile` structural expectations are acceptance criteria, not optional style guidance
+- **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile` structural expectations are acceptance criteria, not optional style guidance
 
 ## Source Layout
 

@@ -84,7 +84,7 @@ Verify that an implementation matches the change artifacts (specs, tasks, design
    - Extract folder/layer expectations from the user request, proposal, design, tasks and specs.
    - For frontend/fullstack feature-driven changes, verify each affected feature has the requested directories such as `components/`, `pages/` or normalized route directory, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts` and `index.ts` when requested or profile-required.
    - Search for pages, hooks, utilities or constants left in the feature root when the requested structure requires subdirectories.
-   - For backend changes, read `.lufy/project.yaml` when available and audit the affected backend surface against `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations`.
+   - For backend changes, read `.lufy/config/project.yaml` when available and audit the affected backend surface against `project_profile.surfaces[*].architecture.preferred` and `architecture.structural_expectations`.
    - If required directories/layers are missing, or forbidden root files remain, add a CRITICAL issue and set the gate state to `blocked` or `needs_revision` unless the artifacts include explicit user confirmation that the missing structure is an accepted follow-up.
 
 6. **Verify Correctness**

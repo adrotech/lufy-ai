@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
@@ -83,7 +84,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 	if len(rels) == 0 {
 		return "", fmt.Errorf("no hay archivos gestionados existentes para respaldar")
 	}
-	backupRoot := filepath.Join(target, ".lufy-ai", "backups")
+	backupRoot := filepath.Join(target, lufypaths.Backups)
 	backupDir := uniqueBackupDir(backupRoot, time.Now().UTC())
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		return "", err
@@ -375,6 +376,10 @@ type backupItem struct {
 }
 
 func resolveBackupReference(target, backupPath string) (string, error) {
+	if strings.HasPrefix(backupPath, "legacy:") {
+		id := strings.TrimPrefix(backupPath, "legacy:")
+		return platform.SafeJoin(target, filepath.Join(lufypaths.LegacyBackups, id))
+	}
 	absBackup, err := platform.ResolveTargetPath(backupPath)
 	if err == nil {
 		if _, statErr := os.Stat(absBackup); statErr == nil {
@@ -389,33 +394,42 @@ func resolveBackupReference(target, backupPath string) (string, error) {
 	if filepath.IsAbs(backupPath) || strings.Contains(backupPath, string(filepath.Separator)) {
 		return absBackup, nil
 	}
-	return platform.SafeJoin(target, filepath.Join(".lufy-ai", "backups", backupPath))
+	return lufypaths.ResolveBackupReference(target, backupPath)
 }
 
 func backupItems(target string) ([]backupItem, error) {
-	root := filepath.Join(target, ".lufy-ai", "backups")
-	entries, err := os.ReadDir(root)
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
+	var out []backupItem
+	roots, err := lufypaths.ExistingPaths(target, lufypaths.Backups, lufypaths.LegacyBackups)
 	if err != nil {
 		return nil, err
 	}
-	var out []backupItem
-	for _, entry := range entries {
-		if !entry.IsDir() {
+	for _, root := range roots {
+		entries, err := os.ReadDir(root.Path)
+		if os.IsNotExist(err) {
 			continue
 		}
-		manifestPath := filepath.Join(root, entry.Name(), "manifest.json")
-		body, err := os.ReadFile(manifestPath)
 		if err != nil {
-			continue
+			return nil, err
 		}
-		var manifest Manifest
-		if err := json.Unmarshal(body, &manifest); err != nil || manifest.SchemaVersion != SchemaVersion {
-			continue
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			manifestPath := filepath.Join(root.Path, entry.Name(), "manifest.json")
+			body, err := os.ReadFile(manifestPath)
+			if err != nil {
+				continue
+			}
+			var manifest Manifest
+			if err := json.Unmarshal(body, &manifest); err != nil || manifest.SchemaVersion != SchemaVersion {
+				continue
+			}
+			id := entry.Name()
+			if root.Legacy {
+				id = "legacy:" + id
+			}
+			out = append(out, backupItem{ID: id, CreatedAt: manifest.CreatedAt, ManifestPath: manifestPath})
 		}
-		out = append(out, backupItem{ID: entry.Name(), CreatedAt: manifest.CreatedAt, ManifestPath: manifestPath})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID > out[j].ID })
 	return out, nil

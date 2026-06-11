@@ -29,7 +29,7 @@ func TestEffectiveDefaultPreservesOpenCodeOpenSpecPreset(t *testing.T) {
 			t.Fatalf("default effective catalog missing %s", target)
 		}
 	}
-	if hasTarget(effective, filepath.Join(".lufy", "sdd", "README.md")) {
+	if hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "README.md")) {
 		t.Fatalf("default effective catalog includes lufy-sdd")
 	}
 }
@@ -54,13 +54,13 @@ func TestEffectiveLufySDDLiteOmitsOpenSpecAndSpecs(t *testing.T) {
 	if hasTarget(effective, filepath.Join(".opencode", "commands", "opsx-apply.md")) {
 		t.Fatalf("lufy-sdd catalog includes openspec command")
 	}
-	if !hasTarget(effective, filepath.Join(".lufy", "sdd", "README.md")) {
+	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "README.md")) {
 		t.Fatalf("lufy-sdd catalog missing readme")
 	}
-	if !hasTarget(effective, filepath.Join(".lufy", "sdd", "changes", ".gitkeep")) {
+	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep")) {
 		t.Fatalf("lufy-sdd lite catalog missing changes")
 	}
-	if hasTarget(effective, filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
+	if hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "specs", ".gitkeep")) {
 		t.Fatalf("lufy-sdd lite catalog includes specs")
 	}
 }
@@ -78,7 +78,7 @@ func TestEffectiveLufySDDFullIncludesSpecs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("effective catalog: %v", err)
 	}
-	if !hasTarget(effective, filepath.Join(".lufy", "sdd", "specs", ".gitkeep")) {
+	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "specs", ".gitkeep")) {
 		t.Fatalf("lufy-sdd full catalog missing specs")
 	}
 }
@@ -126,9 +126,9 @@ func testCatalog() assets.Catalog {
 		{TargetRel: filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-skill"},
 		{TargetRel: filepath.Join("openspec", "config.yaml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-surface"},
 		{TargetRel: "tui.json", Kind: assets.KindFile, Policy: assets.PolicyNoReplace, Scope: assets.ScopeProject, Methodology: domain.MethodologyNone, Component: "tool-ui"},
-		{TargetRel: filepath.Join(".lufy", "sdd", "README.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
-		{TargetRel: filepath.Join(".lufy", "sdd", "changes", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
-		{TargetRel: filepath.Join(".lufy", "sdd", "specs", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
+		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "README.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
+		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
+		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "specs", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
 	}}
 }
 

@@ -15,7 +15,7 @@ import (
 
 func TestRunValidatesPrerequisitesBeforeTool(t *testing.T) {
 	target := t.TempDir()
-	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: filepath.Join(".lufy-ai", "ancestors", "tui.json")}}, "test")); err != nil {
+	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")}}, "test")); err != nil {
 		t.Fatal(err)
 	}
 	err := NewService().Run(Options{Target: target, Path: "tui.json"}, &bytes.Buffer{})
@@ -82,7 +82,7 @@ func TestRunRejectsUnsafeOrMissingConflictFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			target := t.TempDir()
-			ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+			ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 			tt.setup(t, target, ancestorRel)
 			ancestorHash := ""
 			if info, err := os.Lstat(filepath.Join(target, ancestorRel)); err == nil && info.Mode().IsRegular() {
@@ -123,8 +123,8 @@ func TestRunInvokesConfiguredToolAndPreservesOnFailure(t *testing.T) {
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	write(t, filepath.Join(target, ".lufy-ai", "ancestors", "tui.json"), "old\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	write(t, filepath.Join(target, ".lufy", "managed-state", "ancestors", "tui.json"), "old\n")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	ancestorHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: ancestorRel, AncestorHash: ancestorHash}}, "test")); err != nil {
 		t.Fatal(err)
@@ -143,7 +143,7 @@ func TestRunAcceptTheirsUpdatesTargetStateAncestorAndRemovesSidecar(t *testing.T
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: hash(t, filepath.Join(target, "tui.json")), Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -175,7 +175,7 @@ func TestRunAcceptOursPreservesTargetUpdatesStateAncestorAndRemovesSidecar(t *te
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -207,7 +207,7 @@ func TestRunAcceptFlagsAreRejectedTogetherBeforeMutatingFiles(t *testing.T) {
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -233,7 +233,7 @@ func TestRunAcceptTheirsUsesDefaultAncestorRelWhenStateOmitsIt(t *testing.T) {
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	oldHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: oldHash, TargetSHA256: oldHash, Policy: "no-replace", Scope: "project", AncestorHash: oldHash, LastAction: "write-lufy-new"}}, "test")); err != nil {
@@ -266,7 +266,7 @@ func TestRunConfiguredToolSuccessFinalizesResolution(t *testing.T) {
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), "user\n")
 	write(t, filepath.Join(target, "tui.json.lufy-new"), "new\n")
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), "old\n")
 	ancestorHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{TargetRel: "tui.json", AncestorRel: ancestorRel, AncestorHash: ancestorHash, TargetSHA256: hash(t, filepath.Join(target, "tui.json"))}}, "test")); err != nil {
@@ -306,7 +306,7 @@ func writeManagedMergeFixture(t *testing.T, targetContent, ancestorContent, lufy
 	target := t.TempDir()
 	write(t, filepath.Join(target, "tui.json"), targetContent)
 	write(t, filepath.Join(target, "tui.json.lufy-new"), lufyNewContent)
-	ancestorRel := filepath.Join(".lufy-ai", "ancestors", "tui.json")
+	ancestorRel := filepath.Join(".lufy", "managed-state", "ancestors", "tui.json")
 	write(t, filepath.Join(target, ancestorRel), ancestorContent)
 	ancestorHash := hash(t, filepath.Join(target, ancestorRel))
 	if err := state.WriteAtomic(target, state.New(target, nil, []state.AssetState{{ID: "tui.json", SourceRel: "tui.json", TargetRel: "tui.json", SourceSHA256: ancestorHash, TargetSHA256: hash(t, filepath.Join(target, "tui.json")), Policy: "no-replace", Scope: "project", AncestorRel: ancestorRel, AncestorHash: ancestorHash, LastAction: "write-lufy-new"}}, "test")); err != nil {

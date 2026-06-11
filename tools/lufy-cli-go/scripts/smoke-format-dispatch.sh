@@ -8,9 +8,9 @@ HOOK="$ROOT/.opencode/hooks/format-dispatch.sh"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-mkdir -p "$TMP/.lufy" "$TMP/bin"
+mkdir -p "$TMP/.lufy/config" "$TMP/bin"
 
-cat >"$TMP/.lufy/project.yaml" <<'YAML'
+cat >"$TMP/.lufy/config/project.yaml" <<'YAML'
 schema_version: 1
 detected_at: 2026-05-25T00:00:00Z
 stacks:

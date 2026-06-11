@@ -21,7 +21,6 @@ La CLI SHALL implementar los comandos iniciales `install`, `verify`, `backup`, `
 
 #### Scenario: Verify de un target
 - **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>`
-- **THEN** la CLI valida estructura instalada, archivos esperados, JSON parseable cuando aplique, `.lufy-ai/install-state.json`, manifest de assets gestionados y hashes SHA-256
 
 #### Scenario: Backup explícito
 - **WHEN** el usuario ejecuta `lufy-ai backup --target <dir>`
@@ -97,7 +96,7 @@ La CLI SHALL registrar backups en un manifest portable antes de cambios riesgoso
 
 #### Scenario: Manifest creado antes de sobrescribir
 - **WHEN** `install` necesita modificar un archivo existente y backup está habilitado o requerido por seguridad
-- **THEN** la CLI copia el estado previo a `.lufy-ai/backups/<timestamp>/` y registra path relativo, operación y hash en `manifest.json`
+- **THEN** la CLI copia el estado previo a `.lufy/managed-state/backups/<timestamp>/` y registra path relativo, operación y hash en `manifest.json`
 
 #### Scenario: Error durante instalación
 - **WHEN** una acción de instalación falla después de crear un backup
@@ -124,7 +123,7 @@ La CLI SHALL crear o mergear `opencode.json` mediante JSON válido, preservando 
 
 #### Scenario: Opencode no se registra con hash completo
 - **WHEN** `install` o `sync` escriben `opencode.json` mediante `merge-json`
-- **THEN** `.lufy-ai/install-state.json` no contiene una entrada de asset completo para `opencode.json` ni requiere comparar su SHA-256 como asset gestionado
+- **THEN** `.lufy/managed-state/install-state.json` no contiene una entrada de asset completo para `opencode.json` ni requiere comparar su SHA-256 como asset gestionado
 
 ### Requirement: Wrapper Bash estricto
 `scripts/install.sh` SHALL permanecer como wrapper de compatibilidad que delega exclusivamente en `lufy-ai install` y MUST NOT conservar lógica legacy de instalación.
@@ -219,14 +218,14 @@ La CLI Go SHALL usar `lufy-ai verify` como verificador canónico de instalacione
 
 #### Scenario: Verificación de archivos críticos
 - **WHEN** el usuario ejecuta `lufy-ai verify --target <dir>` sobre un target instalado
-- **THEN** la CLI valida que `.opencode/plugins/agent-observatory.tsx`, `lufy-ia.harness.md`, `tui.json`, `openspec/config.yaml` y `.lufy-ai/install-state.json` existen como archivos seguros no symlink, y valida `AGENTS.md` como archivo user-owned que referencia el harness cuando esté presente
+- **THEN** la CLI valida que `.opencode/plugins/agent-observatory.tsx`, `lufy-ia.harness.md`, `tui.json`, `openspec/config.yaml` y `.lufy/managed-state/install-state.json` existen como archivos seguros no symlink, y valida `AGENTS.md` como archivo user-owned que referencia el harness cuando esté presente
 
 #### Scenario: Archivos críticos presentes en manifest
-- **WHEN** un archivo crítico gestionado existe en el target pero no está registrado en `.lufy-ai/install-state.json`
+- **WHEN** un archivo crítico gestionado existe en el target pero no está registrado en `.lufy/managed-state/install-state.json`
 - **THEN** `lufy-ai verify` falla indicando que el asset clave no está en el manifest; esta regla aplica a `lufy-ia.harness.md` y no exige entrada de manifest para `AGENTS.md`
 
 #### Scenario: Hashes de assets gestionados
-- **WHEN** un asset listado en `.lufy-ai/install-state.json` existe pero su SHA-256 actual no coincide con `targetSHA256`
+- **WHEN** un asset listado en `.lufy/managed-state/install-state.json` existe pero su SHA-256 actual no coincide con `targetSHA256`
 - **THEN** `lufy-ai verify` falla reportando drift con hashes abreviados expected/actual
 
 #### Scenario: Verificación de opencode merge-managed
@@ -396,7 +395,7 @@ The CLI Go SHALL expose `lufy-ai init` as the command for generating stack-aware
 
 #### Scenario: Help includes init
 - **WHEN** the user requests CLI help
-- **THEN** the output lists `init` as the command for generating `.lufy/project.yaml`
+- **THEN** the output lists `init` as the command for generating `.lufy/config/project.yaml`
 
 #### Scenario: Init delegates outside main
 - **WHEN** `cmd/lufy-ai/main.go` receives the `init` command
@@ -404,18 +403,18 @@ The CLI Go SHALL expose `lufy-ai init` as the command for generating stack-aware
 
 #### Scenario: Init supports target flag
 - **WHEN** the user runs `lufy-ai init --target <dir>`
-- **THEN** the CLI resolves `<dir>` with the same safe target handling used by managed commands before reading or writing `.lufy/project.yaml`
+- **THEN** the CLI resolves `<dir>` with the same safe target handling used by managed commands before reading or writing `.lufy/config/project.yaml`
 
 ### Requirement: CLI init write safety
 The `init` command SHALL use safe write semantics consistent with the existing CLI safety model.
 
 #### Scenario: Init creates parent directory safely
 - **WHEN** `.lufy/` does not exist and the user runs `lufy-ai init --target <dir>`
-- **THEN** the CLI creates only the required `.lufy/` directory and `.lufy/project.yaml` inside the resolved target
+- **THEN** the CLI creates only the required `.lufy/` directory and `.lufy/config/project.yaml` inside the resolved target
 
 #### Scenario: Init dry-run is not required
 - **WHEN** the user runs `lufy-ai init --target <dir>`
-- **THEN** the command may write `.lufy/project.yaml` because initialization is its explicit purpose, but it MUST NOT modify managed assets, install state, backups or unrelated files
+- **THEN** the command may write `.lufy/config/project.yaml` because initialization is its explicit purpose, but it MUST NOT modify managed assets, install state, backups or unrelated files
 
 #### Scenario: Init reports generated path
 - **WHEN** `lufy-ai init` completes successfully
@@ -437,7 +436,7 @@ The implementation of `lufy-ai init` SHALL be validated with Go tests and fixtur
 - **THEN** the Go validation includes tests for `lufy-ai init` and still validates existing install/sync/verify behavior
 
 ### Requirement: CLI rescan drift reporting
-The CLI Go SHALL expose `lufy-ai init --rescan` as the stack-aware project rescan mode that reports drift between `.lufy/project.yaml` and current repository evidence.
+The CLI Go SHALL expose `lufy-ai init --rescan` as the stack-aware project rescan mode that reports drift between `.lufy/config/project.yaml` and current repository evidence.
 
 #### Scenario: Help describes rescan drift behavior
 - **WHEN** the user requests help for `lufy-ai init`

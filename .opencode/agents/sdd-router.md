@@ -24,9 +24,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
-- When `.lufy/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
+- When `.lufy/config/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
 - Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
-- When `.lufy/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
+- When `.lufy/config/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
 - Produce Result Contract envelope v1 with execution mode, context slice, required permissions, skill status, workflow-limit decisions, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
 - Do not execute shell, Git, OpenSpec, validation, package-manager, or discovery commands; use only context already provided in the prompt and route to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
@@ -54,12 +54,12 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Memory Context
 
 - Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
-- If `.lufy/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
 - If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
 
 ## Governed Parallelism
 
-- Read `parallel_execution` from `.lufy/project.yaml` when present.
+- Read `parallel_execution` from `.lufy/config/project.yaml` when present.
 - Recommend parallelism only when `enabled: true`, the task has independent `review_slices`, each slice touches independent files, the merge plan is clear, and validation can run grouped after join.
 - Block parallelism for delivery, schema/database migrations, shared generated files, shared public contracts, unresolved API decisions, security-sensitive changes, or slices that touch the same files.
 - When recommending parallelism, include `parallel_execution.recommended: true`, `max_parallel_agents`, slice ownership, merge plan and `validation_mode: grouped_after_join` in the handoff.
@@ -119,10 +119,10 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Workflow Limits Metadata
 
-- Report `.lufy/project.yaml` top-level `workflow_limits` as `workflow_limits_source: workflow_limits` only when that configuration is available in provided context; otherwise report `not_available`.
+- Report `.lufy/config/project.yaml` top-level `workflow_limits` as `workflow_limits_source: workflow_limits` only when that configuration is available in provided context; otherwise report `not_available`.
 - Report each canonical path independently: `workflow_limits.sizing`, `workflow_limits.routing`, `workflow_limits.proposal_slicing_strategy`, `workflow_limits.delivery_batch_strategy`, `workflow_limits.preflight`, and `workflow_limits.stop_rules`; use `not_available` for missing file/path values.
 - Do not read, consume, or migrate top-level legacy `loc_budget` or top-level legacy `delivery_strategy` as sizing, routing, slicing, batching, preflight, stop-rule, authorization, or closure inputs.
-- Resolve optional `chain_strategy` as routing metadata in this order: top-level `.lufy/project.yaml` `chain_strategy`, then `workflow_limits.routing.chain_strategy`, then `not_available`. Do not require CLI struct changes to report this metadata.
+- Resolve optional `chain_strategy` as routing metadata in this order: top-level `.lufy/config/project.yaml` `chain_strategy`, then `workflow_limits.routing.chain_strategy`, then `not_available`. Do not require CLI struct changes to report this metadata.
 
 ## Review Slices
 
@@ -150,7 +150,7 @@ Each slice should include:
 - Do not require Git read-only state for docs/OpenSpec-only validation unless delivery is requested or there is concrete suspicion of mixed runtime changes; dirty worktree is a delivery risk, not a documentation-validation blocker.
 - Do not replace `delivery`; route to it when Git/GH state, commits, PRs, sync, or delivery are needed.
 - Do not replace `orchestrator`; return routing guidance only.
-- Do not treat top-level `loc_budget` or top-level `delivery_strategy` in `.lufy/project.yaml` as valid workflow-limit sources; if mentioned, report them as legacy/non-canonical and route actionable migration or validation as needed.
+- Do not treat top-level `loc_budget` or top-level `delivery_strategy` in `.lufy/config/project.yaml` as valid workflow-limit sources; if mentioned, report them as legacy/non-canonical and route actionable migration or validation as needed.
 - Do not use `workflow_limits.delivery_batch_strategy` to create `review_slices`; use only `workflow_limits.proposal_slicing_strategy` plus observed risk/scope.
 
 ## Output Contract

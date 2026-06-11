@@ -7,7 +7,7 @@ if ! command -v lufy-ai >/dev/null 2>&1; then
   exit 0
 fi
 
-if [ ! -f "$ROOT/.lufy/project.yaml" ]; then
+if [ ! -f "$ROOT/.lufy/config/project.yaml" ]; then
   exit 0
 fi
 

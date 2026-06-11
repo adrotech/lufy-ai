@@ -41,11 +41,11 @@ Assets with policy `merge-block` SHALL update only lufy-managed blocks delimited
 - **THEN** install or sync reports a conflict and does not write the target file
 
 ### Requirement: Ancestors are recorded for managed versions
-The CLI SHALL record the last clean lufy-provided content for drift-resolvable assets under `.lufy-ai/ancestors/` using safe relative paths.
+The CLI SHALL record the last clean lufy-provided content for drift-resolvable assets under `.lufy/managed-state/ancestors/` using safe relative paths.
 
 #### Scenario: Ancestor stored after successful write
 - **WHEN** install or sync successfully writes or updates a policy-managed asset that supports drift resolution
-- **THEN** the CLI stores the source content used for that write as the asset ancestor under `.lufy-ai/ancestors/`
+- **THEN** the CLI stores the source content used for that write as the asset ancestor under `.lufy/managed-state/ancestors/`
 
 #### Scenario: Ancestor path cannot escape target
 - **WHEN** an asset target path would map to an unsafe ancestor path

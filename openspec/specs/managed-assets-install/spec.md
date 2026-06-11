@@ -6,7 +6,7 @@ La CLI Go SHALL instalar el conjunto completo de assets gestionados de `lufy-ai`
 
 #### Scenario: Catálogo incluye assets requeridos
 - **WHEN** la CLI construye el catálogo de instalación
-- **THEN** el catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `lufy-ia.harness.md`, `tui.json`, `openspec/` y metadatos requeridos bajo `.lufy-ai/`
+- **THEN** el catálogo incluye `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/policies`, `.opencode/plugins`, `.opencode/agent-observatory`, `lufy-ia.harness.md`, `tui.json`, `openspec/` y metadatos requeridos bajo `.lufy/managed-state/`
 
 #### Scenario: AGENTS es integración user-owned
 - **WHEN** la CLI construye el catálogo de instalación
@@ -52,7 +52,7 @@ El comando `install` SHALL construir un plan explícito antes de cualquier mutac
 
 #### Scenario: Dry-run sin mutaciones
 - **WHEN** el usuario ejecuta `lufy-ai install --target <dir> --dry-run`
-- **THEN** la CLI muestra acciones planificadas y MUST NOT crear directorios, copiar archivos, crear backups ni escribir `.lufy-ai/install-state.json`
+- **THEN** la CLI muestra acciones planificadas y MUST NOT crear directorios, copiar archivos, crear backups ni escribir `.lufy/managed-state/install-state.json`
 
 #### Scenario: Acciones explicables
 - **WHEN** el plan contiene acciones
@@ -74,14 +74,14 @@ La instalación SHALL decidir acciones por contenido/hash y MUST ser idempotente
 - **THEN** la segunda ejecución produce `skip` para assets ya instalados y no modifica contenido ni timestamps de archivos gestionados salvo el estado si necesita reparación no destructiva
 
 #### Scenario: Upstream cambiado en archivo gestionado
-- **WHEN** `.lufy-ai/install-state.json` indica que un archivo fue gestionado previamente, el target no tiene drift local y el source hash actual difiere del source hash instalado
+- **WHEN** `.lufy/managed-state/install-state.json` indica que un archivo fue gestionado previamente, el target no tiene drift local y el source hash actual difiere del source hash instalado
 - **THEN** el plan incluye `backup` y `update-managed` para actualizarlo de forma segura
 
 ### Requirement: Conflictos no se sobrescriben silenciosamente
 La CLI MUST detectar conflictos y MUST NOT sobrescribir archivos no gestionados o modificados localmente sin una decisión explícita soportada por la policy del asset.
 
 #### Scenario: Archivo existente no gestionado
-- **WHEN** un asset destino existe pero no aparece como gestionado en `.lufy-ai/install-state.json` y su policy no permite adopción o merge seguro
+- **WHEN** un asset destino existe pero no aparece como gestionado en `.lufy/managed-state/install-state.json` y su policy no permite adopción o merge seguro
 - **THEN** el plan lo marca como `conflict` y apply MUST NOT sobrescribirlo
 
 #### Scenario: Archivo gestionado con drift local y policy managed
@@ -97,22 +97,22 @@ La CLI MUST detectar conflictos y MUST NOT sobrescribir archivos no gestionados 
 - **THEN** el plan puede actualizar solo los bloques lufy gestionados sin tratar el texto del usuario como conflicto
 
 #### Scenario: Estado corrupto
-- **WHEN** `.lufy-ai/install-state.json` existe pero no es JSON válido o usa schema no soportado
+- **WHEN** `.lufy/managed-state/install-state.json` existe pero no es JSON válido o usa schema no soportado
 - **THEN** install MUST fail de forma accionable o marcar conflictos bloqueantes y MUST NOT asumir que archivos son seguros de sobrescribir
 
 ### Requirement: Manifest de estado de instalación
-La CLI SHALL persistir estado de instalación en `.lufy-ai/install-state.json` con schema versionado, metadata real del binario, fingerprint estable del catalogo y hashes por asset completo gestionado, excluyendo configuraciones merge-managed especiales como `opencode.json` e integraciones user-owned especiales como `AGENTS.md`.
+La CLI SHALL persistir estado de instalación en `.lufy/managed-state/install-state.json` con schema versionado, metadata real del binario, fingerprint estable del catalogo y hashes por asset completo gestionado, excluyendo configuraciones merge-managed especiales como `opencode.json` e integraciones user-owned especiales como `AGENTS.md`.
 
 #### Scenario: Estado escrito tras install exitoso
 - **WHEN** install aplica acciones exitosamente
-- **THEN** escribe `.lufy-ai/install-state.json` con `schemaVersion`, `toolVersion`, `sourceChangeID`, `sourceRootFingerprint`, timestamps y lista de assets completos gestionados con `sourceSHA256` y `targetSHA256`, incluyendo `lufy-ia.harness.md` y excluyendo `AGENTS.md`
+- **THEN** escribe `.lufy/managed-state/install-state.json` con `schemaVersion`, `toolVersion`, `sourceChangeID`, `sourceRootFingerprint`, timestamps y lista de assets completos gestionados con `sourceSHA256` y `targetSHA256`, incluyendo `lufy-ia.harness.md` y excluyendo `AGENTS.md`
 
 #### Scenario: Estado usa paths relativos
 - **WHEN** la CLI registra assets en install state
 - **THEN** cada asset usa paths relativos al target para portabilidad y trazabilidad
 
 #### Scenario: Estado compatible con verify
-- **WHEN** `verify` lee `.lufy-ai/install-state.json`
+- **WHEN** `verify` lee `.lufy/managed-state/install-state.json`
 - **THEN** puede recalcular hashes destino y comparar contra el estado registrado
 
 #### Scenario: Merge-managed no tiene hash completo
@@ -128,7 +128,7 @@ La CLI SHALL crear backups de todos los assets afectados antes de actualizacione
 
 #### Scenario: Backup antes de update-managed
 - **WHEN** install va a aplicar `update-managed` sobre uno o más archivos
-- **THEN** crea un backup bajo `.lufy-ai/backups/<timestamp>/` antes de sobrescribir cualquier archivo existente
+- **THEN** crea un backup bajo `.lufy/managed-state/backups/<timestamp>/` antes de sobrescribir cualquier archivo existente
 
 #### Scenario: Manifest de backup completo
 - **WHEN** se crea un backup
@@ -173,12 +173,12 @@ El comando `verify` SHALL validar estructura, estado y hashes de una instalació
 - **THEN** `verify` reporta drift con hash esperado y hash actual
 
 #### Scenario: Manifest ausente o inválido
-- **WHEN** `.lufy-ai/install-state.json` falta o no puede parsearse
+- **WHEN** `.lufy/managed-state/install-state.json` falta o no puede parsearse
 - **THEN** `verify` reporta `fail` o `warn` según severidad definida y explica la recuperación recomendada
 
 #### Scenario: Opencode merge-managed inválido
 - **WHEN** `opencode.json` falta, no parsea como JSON o carece de estructura merge-managed mínima
-- **THEN** `verify` reporta `fail` para `opencode.json` sin buscarlo en `.lufy-ai/install-state.json` como asset completo
+- **THEN** `verify` reporta `fail` para `opencode.json` sin buscarlo en `.lufy/managed-state/install-state.json` como asset completo
 
 #### Scenario: Referencia AGENTS ausente o incompleta
 - **WHEN** `AGENTS.md` falta o no contiene la referencia `@lufy-ia.harness.md`
@@ -197,7 +197,7 @@ El comando `verify` SHALL validar estructura, estado y hashes de una instalació
 
 #### Scenario: Mutaciones confinadas
 - **WHEN** install, backup, restore o verify operan con `--target <dir>`
-- **THEN** cualquier escritura se limita al target y a `.lufy-ai/` dentro del target
+- **THEN** cualquier escritura se limita al target y a `.lufy/managed-state/` dentro del target
 
 ### Requirement: Sync seguro de assets gestionados
 El comando `sync` SHALL reaplicar assets gestionados desde el source hacia un target existente usando el catálogo permitido, estado de instalación, SHA-256 y políticas de conflicto existentes, y MUST treat `AGENTS.md` as user-owned reference integration rather than a managed file payload.
@@ -208,7 +208,7 @@ El comando `sync` SHALL reaplicar assets gestionados desde el source hacia un ta
 
 #### Scenario: Sync dry-run sin mutaciones
 - **WHEN** el usuario ejecuta `lufy-ai sync --target <dir> --dry-run`
-- **THEN** la CLI muestra acciones planificadas y MUST NOT crear directorios, copiar archivos, crear backups, reparar estado ni escribir `.lufy-ai/install-state.json`
+- **THEN** la CLI muestra acciones planificadas y MUST NOT crear directorios, copiar archivos, crear backups, reparar estado ni escribir `.lufy/managed-state/install-state.json`
 
 #### Scenario: Sync usa catálogo permitido
 - **WHEN** el source contiene archivos fuera del catálogo de assets gestionados
@@ -234,7 +234,7 @@ El comando `sync` SHALL decidir acciones por hash de source actual, target actua
 - **THEN** el plan de sync lo marca como `skip` y apply MUST NOT reescribirlo
 
 #### Scenario: Upstream cambiado sin drift local se actualiza
-- **WHEN** `.lufy-ai/install-state.json` indica que un asset fue gestionado previamente, el hash target actual coincide con el último hash target registrado y el hash source actual difiere del hash source registrado
+- **WHEN** `.lufy/managed-state/install-state.json` indica que un asset fue gestionado previamente, el hash target actual coincide con el último hash target registrado y el hash source actual difiere del hash source registrado
 - **THEN** el plan de sync incluye `backup` y `update-managed` para ese asset
 
 #### Scenario: Segunda sync sin cambios
@@ -242,12 +242,12 @@ El comando `sync` SHALL decidir acciones por hash de source actual, target actua
 - **THEN** la segunda ejecución produce `skip` para los assets ya sincronizados y no modifica contenido ni timestamps de archivos gestionados
 
 #### Scenario: Asset retirado del catálogo se preserva rastreado
-- **WHEN** un asset registrado previamente en `.lufy-ai/install-state.json` ya no existe en el catálogo source actual y el archivo target conserva el hash registrado
-- **THEN** `sync` lo reporta como `retired`, no lo borra y mantiene su entrada en `.lufy-ai/install-state.json` para que siga siendo verificable o limpiable manualmente
+- **WHEN** un asset registrado previamente en `.lufy/managed-state/install-state.json` ya no existe en el catálogo source actual y el archivo target conserva el hash registrado
+- **THEN** `sync` lo reporta como `retired`, no lo borra y mantiene su entrada en `.lufy/managed-state/install-state.json` para que siga siendo verificable o limpiable manualmente
 
 #### Scenario: Estado actualizado tras sync exitoso
 - **WHEN** sync aplica `update-managed` exitosamente sobre uno o más assets
-- **THEN** escribe `.lufy-ai/install-state.json` con hashes source y target actualizados solo después de completar las mutaciones requeridas
+- **THEN** escribe `.lufy/managed-state/install-state.json` con hashes source y target actualizados solo después de completar las mutaciones requeridas
 
 ### Requirement: Sync preserva personalizaciones fuera de scope
 El comando `sync` MUST NOT sobrescribir archivos no gestionados, assets con drift local ni personalizaciones fuera del catálogo permitido; solo puede modificar drift local cuando la policy del asset define una estrategia segura y no destructiva.
@@ -265,7 +265,7 @@ El comando `sync` MUST NOT sobrescribir archivos no gestionados, assets con drif
 - **THEN** sync preserva esas personalizaciones y actualiza solo los bloques gestionados que cambiaron
 
 #### Scenario: Archivo existente no gestionado bloqueado
-- **WHEN** un path del catálogo existe en el target pero no aparece como gestionado en `.lufy-ai/install-state.json` y su policy no permite merge/adopción segura
+- **WHEN** un path del catálogo existe en el target pero no aparece como gestionado en `.lufy/managed-state/install-state.json` y su policy no permite merge/adopción segura
 - **THEN** el plan de sync lo marca como `conflict` y apply MUST NOT sobrescribirlo
 
 #### Scenario: Archivo desconocido del usuario preservado
@@ -307,7 +307,7 @@ La CLI Go SHALL instalar los assets OpenSpec core v2 como parte del catálogo ge
 - **THEN** el plan de sync lo marca como `conflict` y apply MUST NOT borrarlo, reemplazarlo ni eliminarlo del estado gestionado
 
 #### Scenario: Estado ausente o corrupto bloquea sobrescrituras
-- **WHEN** `.lufy-ai/install-state.json` falta, no es JSON válido o usa schema no soportado
+- **WHEN** `.lufy/managed-state/install-state.json` falta, no es JSON válido o usa schema no soportado
 - **THEN** `sync` MUST fail de forma accionable o marcar conflictos bloqueantes y MUST NOT asumir que archivos existentes son seguros de sobrescribir
 
 ### Requirement: Sync crea backup antes de actualizaciones gestionadas
@@ -315,7 +315,7 @@ El comando `sync` SHALL crear un backup multiasset antes de sobrescribir cualqui
 
 #### Scenario: Backup previo a update-managed por sync
 - **WHEN** sync va a aplicar `update-managed` sobre uno o más archivos existentes
-- **THEN** crea un backup bajo `.lufy-ai/backups/<timestamp>/` antes de sobrescribir cualquier archivo
+- **THEN** crea un backup bajo `.lufy/managed-state/backups/<timestamp>/` antes de sobrescribir cualquier archivo
 
 #### Scenario: Manifest de backup identifica sync
 - **WHEN** sync crea un backup
@@ -337,32 +337,32 @@ El resultado de un sync exitoso SHALL ser verificable mediante `verify` usando e
 - **THEN** `restore` puede usar ese manifest para restaurar los paths registrados de forma controlada y confinada al target
 
 ### Requirement: Install state uses real tool metadata
-`.lufy-ai/install-state.json` SHALL record runtime tool metadata from the built CLI instead of hardcoded proposal-era constants.
+`.lufy/managed-state/install-state.json` SHALL record runtime tool metadata from the built CLI instead of hardcoded proposal-era constants.
 
 #### Scenario: Release install records release metadata
-- **WHEN** a release-built `lufy-ai` applies install or sync and writes `.lufy-ai/install-state.json`
+- **WHEN** a release-built `lufy-ai` applies install or sync and writes `.lufy/managed-state/install-state.json`
 - **THEN** `toolVersion` reflects `version.Current().Version` and does not remain hardcoded as `dev` unless the binary is actually a development build
 
 #### Scenario: Development install is explicit
-- **WHEN** a local development binary writes `.lufy-ai/install-state.json`
+- **WHEN** a local development binary writes `.lufy/managed-state/install-state.json`
 - **THEN** the state may record `dev`, but it does so through the same runtime version metadata path used by release builds
 
 ### Requirement: Source fingerprint reflects effective catalog
-`.lufy-ai/install-state.json` SHALL store a `sourceRootFingerprint` derived from the effective managed asset catalog.
+`.lufy/managed-state/install-state.json` SHALL store a `sourceRootFingerprint` derived from the effective managed asset catalog.
 
 #### Scenario: Fingerprint written after install
-- **WHEN** install writes `.lufy-ai/install-state.json`
+- **WHEN** install writes `.lufy/managed-state/install-state.json`
 - **THEN** `sourceRootFingerprint` equals the stable fingerprint of the catalog used for that install
 
 #### Scenario: Fingerprint updated after sync
-- **WHEN** sync writes `.lufy-ai/install-state.json` after applying managed updates
+- **WHEN** sync writes `.lufy/managed-state/install-state.json` after applying managed updates
 - **THEN** `sourceRootFingerprint` reflects the catalog used by that sync
 
 ### Requirement: Backup manifest uses real tool metadata
 Backup manifests SHALL record runtime tool metadata from the CLI version source rather than a hardcoded state constant.
 
 #### Scenario: Backup records runtime version
-- **WHEN** install, sync, manual backup or restore recovery creates `.lufy-ai/backups/<timestamp>/manifest.json`
+- **WHEN** install, sync, manual backup or restore recovery creates `.lufy/managed-state/backups/<timestamp>/manifest.json`
 - **THEN** `toolVersion` is populated from runtime CLI version metadata
 
 ### Requirement: Managed copies are atomic
@@ -376,7 +376,7 @@ Install, sync, backup and restore SHALL avoid direct non-atomic writes for manag
 La CLI SHALL persistir metadata de policy, scope y ancestor por asset gestionado para que install, sync, verify y status puedan tomar decisiones consistentes.
 
 #### Scenario: Estado nuevo incluye metadata de drift
-- **WHEN** install o sync escribe `.lufy-ai/install-state.json`
+- **WHEN** install o sync escribe `.lufy/managed-state/install-state.json`
 - **THEN** cada asset gestionado incluye `policy`, `scope` y referencia de ancestor cuando aplique
 
 #### Scenario: Estado anterior migra con defaults seguros
@@ -409,11 +409,11 @@ La CLI SHALL proveer un comando `uninstall` que remueva de forma segura los asse
 
 #### Scenario: Uninstall real crea backup previo
 - **WHEN** el usuario ejecuta `lufy-ai uninstall --target <dir> --yes`
-- **THEN** la CLI SHALL crear un backup bajo `.lufy-ai/backups/<timestamp>/` antes de borrar cualquier archivo
-- **AND** el backup SHALL incluir assets gestionados existentes, ancestors gestionados, `AGENTS.md` si contiene la referencia Lufy e `.lufy-ai/install-state.json`
+- **THEN** la CLI SHALL crear un backup bajo `.lufy/managed-state/backups/<timestamp>/` antes de borrar cualquier archivo
+- **AND** el backup SHALL incluir assets gestionados existentes, ancestors gestionados, `AGENTS.md` si contiene la referencia Lufy e `.lufy/managed-state/install-state.json`
 
 #### Scenario: Uninstall remueve solo assets sin drift
-- **WHEN** un asset registrado en `.lufy-ai/install-state.json` existe y su hash actual coincide con el hash registrado
+- **WHEN** un asset registrado en `.lufy/managed-state/install-state.json` existe y su hash actual coincide con el hash registrado
 - **THEN** uninstall SHALL remover ese archivo gestionado y su ancestor registrado cuando corresponda
 - **AND** SHALL remover directorios gestionados que queden vacíos
 

@@ -21,16 +21,16 @@ func TestRenderChangeHTMLIncludesArtifactsAndEscapesContent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}
-	if res.OutputPath != out || len(res.Artifacts) != 5 {
+	if res.OutputPath != out || len(res.Artifacts) != 4 {
 		t.Fatalf("unexpected result: %#v", res)
 	}
 	body := readFile(t, out)
-	for _, want := range []string{"Proposal", "Design", "Plan", "Tasks", "notes.md"} {
+	for _, want := range []string{"Proposal", "Design", "Tasks", "notes.md"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("html missing %q", want)
 		}
 	}
-	for _, unwanted := range []string{"Spec: specs/widget/spec.md", "specs/widget/spec.md", "Notion dark", "Offline HTML", "Artifacts disponibles:", "Sin recursos remotos"} {
+	for _, unwanted := range []string{"Plan", "plan.md", "Spec: specs/widget/spec.md", "specs/widget/spec.md", "Notion dark", "Offline HTML", "Artifacts disponibles:", "Sin recursos remotos"} {
 		if strings.Contains(body, unwanted) {
 			t.Fatalf("html should not include %q", unwanted)
 		}
@@ -43,7 +43,7 @@ func TestRenderChangeHTMLIncludesArtifactsAndEscapesContent(t *testing.T) {
 	if strings.Contains(body, "<nav>") || strings.Contains(body, `class="layout"`) {
 		t.Fatalf("html should not render sidebar/navigation layout")
 	}
-	for _, want := range []string{"Diseño", "acción", "está vacío"} {
+	for _, want := range []string{"Diseño", "acción"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("html should preserve unicode text %q", want)
 		}
@@ -70,19 +70,25 @@ func TestRenderChangeHTMLIncludesArtifactsAndEscapesContent(t *testing.T) {
 	}
 }
 
-func TestRenderChangeHTMLAllowsMissingPlan(t *testing.T) {
+func TestRenderChangeHTMLIgnoresPlanArtifact(t *testing.T) {
 	target := t.TempDir()
-	changeDir := filepath.Join(target, "openspec", "changes", "without-plan")
+	changeDir := filepath.Join(target, "openspec", "changes", "with-plan")
 	writeFile(t, filepath.Join(changeDir, "proposal.md"), "# Proposal")
+	writeFile(t, filepath.Join(changeDir, "plan.md"), "# Plan\n\nShould not render")
 	writeFile(t, filepath.Join(changeDir, "tasks.md"), "# Tasks")
 
-	res, err := NewChangeRenderer().Render(RenderOptions{Target: target, Change: "without-plan"})
+	res, err := NewChangeRenderer().Render(RenderOptions{Target: target, Change: "with-plan"})
 	if err != nil {
 		t.Fatalf("Render() error = %v", err)
 	}
+	if len(res.Artifacts) != 3 {
+		t.Fatalf("unexpected artifacts: %#v", res.Artifacts)
+	}
 	body := readFile(t, res.OutputPath)
-	if !strings.Contains(body, "Plan") || !strings.Contains(body, "No disponible") {
-		t.Fatalf("html should include unavailable Plan section: %s", body)
+	for _, unwanted := range []string{"Plan", "plan.md", "Should not render"} {
+		if strings.Contains(body, unwanted) {
+			t.Fatalf("html should ignore plan artifact %q: %s", unwanted, body)
+		}
 	}
 }
 

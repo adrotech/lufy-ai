@@ -132,18 +132,18 @@ The system SHALL use read-only Git metadata as a secondary source for commits an
 - **THEN** commits and net LOC are marked `No disponible` and other non-Git report sections can still be generated
 
 ### Requirement: Stack metadata degrades gracefully
-The system SHALL use `.lufy/project.yaml` for stack metadata when present and SHALL degrade gracefully when it is absent or invalid.
+The system SHALL use `.lufy/config/project.yaml` for stack metadata when present and SHALL degrade gracefully when it is absent or invalid.
 
 #### Scenario: Project YAML stack is used
-- **WHEN** `.lufy/project.yaml` exists and contains stack metadata
+- **WHEN** `.lufy/config/project.yaml` exists and contains stack metadata
 - **THEN** the report includes the configured stack/tooling information in the stack section
 
 #### Scenario: Project YAML is absent
-- **WHEN** `.lufy/project.yaml` does not exist
+- **WHEN** `.lufy/config/project.yaml` does not exist
 - **THEN** the report uses safe heuristic stack detection when possible or reports stack as `No configurado` without failing report generation
 
 #### Scenario: Project YAML is invalid
-- **WHEN** `.lufy/project.yaml` exists but cannot be parsed
+- **WHEN** `.lufy/config/project.yaml` exists but cannot be parsed
 - **THEN** the report marks configured stack metadata as unavailable, includes an actionable limitation and does not overwrite the file
 
 ### Requirement: Phase, subagent and skill summaries
@@ -169,7 +169,7 @@ The implementation SHALL include validation coverage using sanitized fixtures or
 - **THEN** the generated report includes the required metric sections and excludes prompts, outputs, diffs and full tool payloads
 
 #### Scenario: Degradation fixtures validate missing sources
-- **WHEN** validation runs with fixtures or setup where OpenCode DB, Git or `.lufy/project.yaml` are missing
+- **WHEN** validation runs with fixtures or setup where OpenCode DB, Git or `.lufy/config/project.yaml` are missing
 - **THEN** the report explicitly marks the affected sections unavailable while preserving available sections
 
 #### Scenario: Validation commands are read-only

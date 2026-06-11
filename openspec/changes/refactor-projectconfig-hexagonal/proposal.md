@@ -16,7 +16,7 @@ La intencion hexagonal del CLI ya existe en otras zonas (`domain`, `ports`, adap
   - `lufy-ai init --rescan`;
   - `lufy-ai init --interactive`;
   - `lufy-ai scan`.
-- Mantener compatibilidad del schema `.lufy/project.yaml` version 1.
+- Mantener compatibilidad del schema `.lufy/config/project.yaml` version 1.
 
 ## Non-Goals
 

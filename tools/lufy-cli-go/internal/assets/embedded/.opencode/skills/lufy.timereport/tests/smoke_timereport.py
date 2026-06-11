@@ -68,8 +68,8 @@ def main() -> int:
         if "OpenCode SQLite no disponible" not in missing_html:
             raise AssertionError("La degradación por DB faltante no quedó visible")
 
-        (target / ".lufy").mkdir()
-        (target / ".lufy/project.yaml").write_text(":::\n", encoding="utf-8")
+        (target / ".lufy/config").mkdir(parents=True)
+        (target / ".lufy/config/project.yaml").write_text(":::\n", encoding="utf-8")
         invalid_project_output = tmp_path / "invalid-project.html"
         run([sys.executable, str(SCRIPT), "--db", str(db_path), "--target-dir", str(target), "--output", str(invalid_project_output)])
         if "project.yaml" not in invalid_project_output.read_text(encoding="utf-8"):

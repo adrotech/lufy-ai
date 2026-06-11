@@ -223,7 +223,7 @@ func TestRunRefreshesAncestorForSuccessfulUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	harness := st.AssetMap()["lufy-ia.harness.md"]
-	if harness.AncestorRel != ".lufy-ai/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
+	if harness.AncestorRel != ".lufy/managed-state/ancestors/lufy-ia.harness.md" || harness.AncestorHash != harness.SourceSHA256 {
 		t.Fatalf("ancestor metadata not refreshed: %#v", harness)
 	}
 	if got := string(readFile(t, filepath.Join(target, harness.AncestorRel))); got != "upstream changed\n" {
@@ -293,7 +293,7 @@ func TestDryRunPerformsNoMutations(t *testing.T) {
 	if !bytes.Equal(targetBefore, readFile(t, filepath.Join(target, "AGENTS.md"))) {
 		t.Fatal("dry-run rewrote managed file")
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy-ai", "backups")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", "backups")); !os.IsNotExist(err) {
 		t.Fatalf("dry-run created backups dir, stat err=%v", err)
 	}
 	if _, err := os.Stat(projectConfigPath); !os.IsNotExist(err) {
@@ -358,7 +358,7 @@ func TestRunCreatesSyncBackupManifestAndUpdatesState(t *testing.T) {
 		t.Fatalf("sync output missing backup/verify: %s", out.String())
 	}
 
-	manifests, err := filepath.Glob(filepath.Join(target, ".lufy-ai", "backups", "*", "manifest.json"))
+	manifests, err := filepath.Glob(filepath.Join(target, ".lufy", "managed-state", "backups", "*", "manifest.json"))
 	if err != nil || len(manifests) != 1 {
 		t.Fatalf("expected one backup manifest, manifests=%v err=%v", manifests, err)
 	}
@@ -621,7 +621,7 @@ func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing
 		t.Fatalf("Run(default upgrade sync) error = %v, output=%s", err, out.String())
 	}
 	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
-		t.Fatalf("default sync should not create .lufy/sdd, stat err=%v", err)
+		t.Fatalf("default sync should not create .lufy/workflows/sdd, stat err=%v", err)
 	}
 
 	st, err := state.Load(target)
@@ -750,7 +750,7 @@ func TestRunRejectsMissingOrCorruptState(t *testing.T) {
 	}
 
 	target := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(target, ".lufy-ai"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(target, ".lufy", "managed-state"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	writeFile(t, state.Path(target), "{not-json")
@@ -843,6 +843,7 @@ func minimalSource(t *testing.T) string {
 		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"lufy-ia.harness.md":                                           "harness template\n",
 		"tui.json":                                                     "{}\n",
+		filepath.Join(".lufy", "README.md"):                            "layout\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",
 		filepath.Join(".opencode", "package.json"):                     "{}\n",

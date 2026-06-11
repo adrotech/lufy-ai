@@ -11,6 +11,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
@@ -219,7 +220,7 @@ func printPlan(plan Plan, opts Options, stdout io.Writer) {
 		fmt.Fprintf(stdout, "- [%s] %s (%s)\n", action.Kind, action.Target, action.Reason)
 	}
 	if opts.KeepState {
-		fmt.Fprintln(stdout, "Estado: se preservará .lufy-ai/install-state.json por --keep-state")
+		fmt.Fprintln(stdout, "Estado: se preservará .lufy/managed-state/install-state.json por --keep-state")
 	}
 }
 
@@ -273,7 +274,7 @@ func emptyDirsFor(actions []Action) []string {
 		case "remove-file", "remove-ancestor":
 			dir := filepath.ToSlash(filepath.Dir(action.Target))
 			for dir != "." && dir != "/" && dir != "" {
-				if strings.HasPrefix(dir, ".lufy-ai/backups") {
+				if strings.HasPrefix(dir, lufypaths.Backups) || strings.HasPrefix(dir, lufypaths.LegacyBackups) {
 					break
 				}
 				seen[dir] = true
@@ -317,7 +318,7 @@ func removeEmptyDir(target, rel string) error {
 }
 
 func stateRelPath() string {
-	return filepath.ToSlash(filepath.Join(".lufy-ai", "install-state.json"))
+	return lufypaths.InstallState
 }
 
 func uninstallRecoveryError(err error, backupDir string) error {
