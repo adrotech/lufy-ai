@@ -59,6 +59,21 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 	}
 }
 
+func TestDefaultRegistryListsWritableTools(t *testing.T) {
+	reg := Default()
+
+	got := reg.WritableToolIDs()
+	want := []domain.ToolID{domain.ToolCodex, domain.ToolInitialDefault}
+	if len(got) != len(want) {
+		t.Fatalf("writable tools = %#v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("writable tools = %#v", got)
+		}
+	}
+}
+
 func TestDefaultRegistryRejectsUnsupportedAdapters(t *testing.T) {
 	reg := Default()
 

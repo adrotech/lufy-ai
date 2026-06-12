@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/registry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
@@ -28,14 +29,14 @@ type harnessFlagValues struct {
 }
 
 func addHarnessFlags(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode")
+	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: "+writableToolList())
 	methodologyTier := methodologyTierFlags{}
 	fs.Var(&methodologyTier, "methodology-tier", "Override por tier: T1:openspec/full, T2:openspec/lite o T3:none; repetible")
 	return harnessFlagValues{Tool: tool, MethodologyTier: &methodologyTier}
 }
 
 func addToolFlag(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode")
+	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: "+writableToolList())
 	return harnessFlagValues{Tool: tool}
 }
 
@@ -46,8 +47,8 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 		if tool == "" {
 			return domain.HarnessConfig{}, fmt.Errorf("--tool no puede estar vacío")
 		}
-		if tool != domain.ToolInitialDefault {
-			return domain.HarnessConfig{}, fmt.Errorf("tool adapter no soportado para escritura: %s; disponible: opencode", tool)
+		if !writableToolSupported(tool) {
+			return domain.HarnessConfig{}, fmt.Errorf("tool adapter no soportado para escritura: %s; disponibles: %s", tool, writableToolList())
 		}
 		cfg.Tool = tool
 	}
@@ -67,6 +68,35 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 		return domain.HarnessConfig{}, err
 	}
 	return cfg, nil
+}
+
+func writableToolSupported(tool domain.ToolID) bool {
+	for _, id := range writableToolIDs() {
+		if tool == id {
+			return true
+		}
+	}
+	return false
+}
+
+func writableToolList() string {
+	return strings.Join(toolIDStrings(writableToolIDs()), ", ")
+}
+
+func writableToolUsage() string {
+	return strings.Join(toolIDStrings(writableToolIDs()), "|")
+}
+
+func writableToolIDs() []domain.ToolID {
+	return registry.Default().WritableToolIDs()
+}
+
+func toolIDStrings(ids []domain.ToolID) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, string(id))
+	}
+	return out
 }
 
 func parseMethodologyTier(raw string) (domain.Tier, domain.MethodologySelection, error) {
