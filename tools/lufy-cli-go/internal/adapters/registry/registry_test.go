@@ -20,7 +20,7 @@ func TestDefaultRegistryResolvesInitialAdapters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("codex tool lookup: %v", err)
 	}
-	if codexTool.ID() != domain.ToolCodex || !codexTool.Capabilities().DryRunOnly {
+	if codexTool.ID() != domain.ToolCodex || codexTool.Capabilities().DryRunOnly {
 		t.Fatalf("codex tool = %s capabilities=%+v", codexTool.ID(), codexTool.Capabilities())
 	}
 	claudeTool, err := reg.Tool(domain.ToolClaudeCode)

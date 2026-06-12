@@ -301,7 +301,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 				return Plan{}, hashErr
 			}
 			if currentHash != legacy.TargetSHA256 {
-				plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: "AGENTS.md legacy gestionado tiene drift local y falta referencia; preservado, agrega @lufy-ia.harness.md manualmente", Risk: "high", CurrentHash: currentHash, SourceHash: legacy.SourceSHA256})
+				plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: "AGENTS.md legacy gestionado tiene drift local y falta integración LUFY; preservado, agrega el bloque gestionado manualmente", Risk: "high", CurrentHash: currentHash, SourceHash: legacy.SourceSHA256})
 			}
 		}
 	}
@@ -310,13 +310,13 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 		if err != nil {
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error(), Risk: "high"})
 		} else if !exists {
-			plan.Actions = append(plan.Actions, Action{Kind: ActionAgentsReferenceCreate, Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned ausente; se crea referencia mínima al harness", Risk: "low"})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionAgentsReferenceCreate, Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned ausente; se crea integración mínima al harness", Risk: "low"})
 		} else if hasReference {
-			plan.Actions = append(plan.Actions, Action{Kind: ActionAgentsReferenceSkip, Target: agentsref.AgentsFile, Reason: "referencia al harness ya presente; AGENTS.md no se reescribe", Risk: "none"})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionAgentsReferenceSkip, Target: agentsref.AgentsFile, Reason: "integración al harness ya presente; AGENTS.md no se reescribe", Risk: "none"})
 		} else {
 			plan.Actions = append(plan.Actions,
-				Action{Kind: ActionBackup, Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned recibirá referencia al harness", Risk: "medium"},
-				Action{Kind: ActionAgentsReferenceInsert, Target: agentsref.AgentsFile, Reason: "se agrega solo @lufy-ia.harness.md sin copiar contenido completo de Lufy", Risk: "medium"},
+				Action{Kind: ActionBackup, Target: agentsref.AgentsFile, Reason: "AGENTS.md user-owned recibirá integración al harness", Risk: "medium"},
+				Action{Kind: ActionAgentsReferenceInsert, Target: agentsref.AgentsFile, Reason: "se agrega bloque gestionado LUFY compacto sin copiar contenido completo de Lufy", Risk: "medium"},
 			)
 		}
 	}
@@ -344,10 +344,16 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	if configPlan.Action == string(ActionMergeJSON) && managedio.FileExists(filepath.Join(target, configPlan.File)) {
-		plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado", Risk: "medium"})
+	if configPlan.Action != "" {
+		if configPlan.Action == string(ActionMergeJSON) && managedio.FileExists(filepath.Join(target, configPlan.File)) {
+			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado", Risk: "medium"})
+		}
+		reason := "configuración de tool gestionada"
+		if harness.Tool == domain.ToolInitialDefault {
+			reason = "configuración OpenCode gestionada con merge conservador"
+		}
+		plan.Actions = append(plan.Actions, Action{Kind: ActionKind(configPlan.Action), Target: configPlan.File, Reason: reason, Risk: "low"})
 	}
-	plan.Actions = append(plan.Actions, Action{Kind: ActionKind(configPlan.Action), Target: configPlan.File, Reason: "configuración OpenCode gestionada con merge conservador", Risk: "low"})
 	plan.Actions = append(plan.Actions, Action{Kind: ActionVerify, Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
 		if actionOrder[plan.Actions[i].Kind] == actionOrder[plan.Actions[j].Kind] {

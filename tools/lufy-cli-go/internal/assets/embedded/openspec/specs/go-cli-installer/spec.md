@@ -69,7 +69,7 @@ El comando `install` SHALL construir un plan explícito antes de modificar el fi
 - **THEN** el plan marca el conflicto y no lo sobrescribe silenciosamente
 
 ### Requirement: Idempotencia y preservación de trabajo del usuario
-La instalación SHALL ser idempotente y MUST NOT sobrescribir trabajo del usuario sin estrategia explícita, backup y confirmación cuando corresponda; `AGENTS.md` SHALL be treated as user-owned and integrated only through the minimal `@lufy-ia.harness.md` reference.
+La instalación SHALL ser idempotente y MUST NOT sobrescribir trabajo del usuario sin estrategia explícita, backup y confirmación cuando corresponda; `AGENTS.md` SHALL be treated as user-owned and integrated only through the managed LUFY block, while still accepting the legacy `@lufy-ia.harness.md` reference.
 
 #### Scenario: Reinstalación sin cambios
 - **WHEN** el usuario ejecuta `install` dos veces sobre el mismo target sin modificaciones intermedias
@@ -77,15 +77,15 @@ La instalación SHALL ser idempotente y MUST NOT sobrescribir trabajo del usuari
 
 #### Scenario: AGENTS.md existente
 - **WHEN** el target ya contiene `AGENTS.md` sin referencia al harness
-- **THEN** la CLI preserva el archivo, planifica únicamente la inserción de la referencia `@lufy-ia.harness.md` con backup y confirmación/`--yes`, y no inserta el contenido completo de Lufy
+- **THEN** la CLI preserva el archivo, planifica únicamente la inserción del bloque LUFY gestionado con backup y confirmación/`--yes`, y no inserta el contenido completo de Lufy
 
 #### Scenario: AGENTS.md ausente
 - **WHEN** el target no contiene `AGENTS.md`
-- **THEN** install crea un archivo mínimo user-owned que referencia `@lufy-ia.harness.md` y no lo registra como asset completo gestionado por hash
+- **THEN** install crea un archivo mínimo user-owned con el bloque LUFY gestionado y no lo registra como asset completo gestionado por hash
 
-#### Scenario: AGENTS.md con referencia existente
-- **WHEN** el target contiene `AGENTS.md` con la referencia `@lufy-ia.harness.md`
-- **THEN** install no duplica la referencia y no reescribe `AGENTS.md` solo por esa integración
+#### Scenario: AGENTS.md con integración existente
+- **WHEN** el target contiene `AGENTS.md` con el bloque LUFY gestionado o la referencia legacy `@lufy-ia.harness.md`
+- **THEN** install no duplica la integración y no reescribe `AGENTS.md` solo por esa integración
 
 #### Scenario: Archivo desconocido del usuario
 - **WHEN** el target contiene archivos no gestionados por `lufy-ai`
@@ -191,7 +191,7 @@ La CLI Go SHALL exponer `lufy-ai sync` como comando para sincronizar assets gest
 - **THEN** `sync` planifica/aplica backup y `update-managed` para `lufy-ia.harness.md` y actualiza su entrada de manifest
 
 #### Scenario: Sync no auto-repara AGENTS
-- **WHEN** un target instalado tiene `AGENTS.md` sin la referencia `@lufy-ia.harness.md`
+- **WHEN** un target instalado tiene `AGENTS.md` sin bloque LUFY gestionado ni referencia legacy `@lufy-ia.harness.md`
 - **THEN** `sync` reporta warning o acción explícita requerida y MUST NOT modificar `AGENTS.md` silenciosamente
 
 ### Requirement: Validación de sync en CLI Go

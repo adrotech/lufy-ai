@@ -11,21 +11,46 @@ import (
 )
 
 const (
-	AgentsFile  = "AGENTS.md"
-	HarnessFile = "lufy-ia.harness.md"
-	Reference   = "@lufy-ia.harness.md"
+	AgentsFile        = "AGENTS.md"
+	HarnessFile       = "lufy-ia.harness.md"
+	Reference         = "@lufy-ia.harness.md"
+	BeginMarker       = "<!-- LUFY:BEGIN codex-harness -->"
+	EndMarker         = "<!-- LUFY:END codex-harness -->"
+	IntegrationPolicy = "bloque gestionado LUFY en AGENTS.md"
 )
 
 func MinimalContent() []byte {
-	return []byte("# AGENTS.md\n\n" + Reference + "\n")
+	return []byte("# AGENTS.md\n\n" + ManagedBlock())
 }
 
 func RecommendedInstallAction() string {
-	return "ejecuta `lufy-ai install --target <target> --yes` para crear/agregar `" + Reference + "`, o edita AGENTS.md manualmente"
+	return "ejecuta `lufy-ai install --target <target> --yes` para crear/agregar el bloque gestionado LUFY en AGENTS.md, o edita AGENTS.md manualmente"
 }
 
 func ContainsReference(body []byte) bool {
-	return bytes.Contains(body, []byte(Reference))
+	return bytes.Contains(body, []byte(Reference)) || ContainsManagedBlock(body)
+}
+
+func ContainsManagedBlock(body []byte) bool {
+	return bytes.Contains(body, []byte(BeginMarker)) && bytes.Contains(body, []byte(EndMarker))
+}
+
+func ManagedBlock() string {
+	return BeginMarker + `
+# Lufy AI Harness
+
+- Responde en español para comunicación humana.
+- Trata este repo como un proyecto gobernado por Lufy.
+- Antes de cambios no triviales, clasifica el trabajo como T1/T2/T3.
+- T1: arquitectura, contratos públicos, seguridad, cambios transversales o alta incertidumbre; usar workflow SDD completo.
+- T2: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar SDD Lite o handoff estructurado.
+- T3: cambio trivial, mecánico, documental o local; permite ejecución directa con validación proporcional.
+- Usa skills repo-locales en .agents/skills cuando apliquen.
+- No hagas commit, push, PR ni delivery sin autorización explícita.
+- Reporta siempre comandos de validación reales y resultados reales.
+- No asumas tooling no detectado en el repo.
+- Preserva trabajo local no relacionado.
+` + EndMarker + "\n"
 }
 
 func Status(targetRoot string) (exists bool, hasReference bool, err error) {
@@ -104,13 +129,13 @@ func appendReference(body []byte) []byte {
 	if !strings.HasSuffix(b.String(), "\n\n") {
 		b.WriteString("\n")
 	}
-	b.WriteString(Reference)
-	b.WriteString("\n")
+	b.WriteString(ManagedBlock())
 	return []byte(b.String())
 }
 
 func removeReferenceLines(body []byte) []byte {
-	lines := strings.Split(string(body), "\n")
+	text := removeManagedBlocks(string(body))
+	lines := strings.Split(text, "\n")
 	filtered := make([]string, 0, len(lines))
 	for _, line := range lines {
 		if strings.TrimSpace(line) == Reference {
@@ -118,7 +143,7 @@ func removeReferenceLines(body []byte) []byte {
 		}
 		filtered = append(filtered, line)
 	}
-	text := strings.Join(filtered, "\n")
+	text = strings.Join(filtered, "\n")
 	for strings.Contains(text, "\n\n\n") {
 		text = strings.ReplaceAll(text, "\n\n\n", "\n\n")
 	}
@@ -127,6 +152,24 @@ func removeReferenceLines(body []byte) []byte {
 		return nil
 	}
 	return []byte(text + "\n")
+}
+
+func removeManagedBlocks(text string) string {
+	for {
+		start := strings.Index(text, BeginMarker)
+		if start < 0 {
+			return text
+		}
+		end := strings.Index(text[start:], EndMarker)
+		if end < 0 {
+			return text
+		}
+		end += start + len(EndMarker)
+		for end < len(text) && (text[end] == '\r' || text[end] == '\n') {
+			end++
+		}
+		text = text[:start] + text[end:]
+	}
 }
 
 func writeAgentsFile(path string, body []byte) error {

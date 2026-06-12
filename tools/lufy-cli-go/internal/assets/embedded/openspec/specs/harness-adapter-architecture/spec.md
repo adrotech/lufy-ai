@@ -105,7 +105,7 @@ La CLI SHALL permitir seleccionar explicitamente el tool adapter efectivo para c
 - **AND** el manifest SHALL registrar `tool: opencode`
 
 #### Scenario: Unsupported write tool is rejected
-- **WHEN** el usuario ejecuta un comando mutante con `--tool codex`, `--tool claude-code` u otra tool sin adapter escribible
+- **WHEN** el usuario ejecuta un comando mutante con `--tool claude-code` u otra tool sin adapter escribible
 - **THEN** el sistema SHALL fallar con error de uso explicito
 - **AND** SHALL NOT instalar assets parciales ni asumir compatibilidad OpenCode
 
@@ -130,28 +130,28 @@ Los reportes JSON de estado y verificacion SHALL exponer el contexto de harness 
 - **WHEN** el usuario ejecuta `lufy-ai verify --json --target <repo>`
 - **THEN** la salida JSON SHALL incluir `tool`, `methodologyByTier` y `schemaVersion` cuando exista manifest
 
-### Requirement: Codex dry-run adapter
-El sistema SHALL modelar `codex` como tool adapter conocido pero dry-run-only hasta que una propuesta posterior autorice escritura real.
+### Requirement: Codex writable core adapter
+El sistema SHALL modelar `codex` como tool adapter escribible core para superficies project-locales.
 
-#### Scenario: Codex adapter exposes conservative capabilities
+#### Scenario: Codex adapter exposes writable project capabilities
 - **WHEN** el registry resuelve el adapter `codex`
-- **THEN** sus capabilities SHALL declarar `DryRunOnly=true`
-- **AND** SHALL NOT declarar soporte nativo de subagents, slash commands, hooks, TUI o configuracion OpenCode
+- **THEN** sus capabilities SHALL declarar `DryRunOnly=false`
+- **AND** SHALL declarar soporte project-local de skills, subagents, hooks, MCP, project config y system prompt
+- **AND** SHALL NOT declarar TUI ni configuracion OpenCode
 
-#### Scenario: Codex render is preview only
+#### Scenario: Codex render is installable
 - **WHEN** se renderiza la superficie del adapter `codex`
-- **THEN** la salida SHALL describir un preview compatible con `AGENTS.md`
-- **AND** SHALL usar fallback inline para roles Lufy que no tengan subagentes nativos equivalentes
-- **AND** SHALL NOT producir assets instalables reales para repos destino
+- **THEN** la salida SHALL producir assets gestionados bajo `.agents/skills` y `.codex`
+- **AND** `AGENTS.md` SHALL recibir una integracion LUFY compacta y autocontenida
 
 #### Scenario: Codex adapter does not leak OpenCode paths
 - **WHEN** se valida la salida del adapter `codex`
 - **THEN** el check SHALL fallar si aparecen referencias a `.opencode`, `opencode.json` o paths propios de OpenCode
 
-#### Scenario: Mutating CLI still blocks Codex
+#### Scenario: Mutating CLI installs Codex core assets
 - **WHEN** el usuario ejecuta `lufy-ai install --tool codex`
-- **THEN** la CLI SHALL fallar con error de uso explicito
-- **AND** SHALL NOT escribir ni planificar assets Codex reales
+- **THEN** la CLI SHALL planificar y escribir assets Codex gestionados
+- **AND** SHALL NOT escribir assets OpenCode ni `opencode.json`
 
 ### Requirement: Claude Code dry-run adapter
 El sistema SHALL modelar `claude-code` como tool adapter conocido pero dry-run-only hasta que una propuesta posterior autorice escritura real.

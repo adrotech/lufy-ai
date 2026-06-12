@@ -152,7 +152,7 @@ func (s Service) BuildPlan(opts Options) (Plan, error) {
 	if exists, hasReference, err := agentsref.Status(target); err != nil {
 		plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error()})
 	} else if exists && hasReference {
-		plan.Actions = append(plan.Actions, Action{Kind: "remove-agents-reference", Target: agentsref.AgentsFile, Reason: "remover referencia user-owned al harness Lufy"})
+		plan.Actions = append(plan.Actions, Action{Kind: "remove-agents-reference", Target: agentsref.AgentsFile, Reason: "remover integración user-owned al harness Lufy"})
 	}
 	if projectConfig, err := toolruntime.ProjectConfigFile(previous.Tool); err == nil {
 		plan.Actions = append(plan.Actions, Action{Kind: "preserve", Target: projectConfig, Reason: "configuración merge-managed/user-owned preservada"})

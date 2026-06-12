@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
@@ -53,7 +54,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 		t.Fatalf("BuildPlan(conflict) error = %v", err)
 	}
 	if len(conflictPlan.Conflicts) != 0 || !hasAction(conflictPlan.Actions, "backup", "AGENTS.md") || !hasAction(conflictPlan.Actions, "agents-reference-insert", "AGENTS.md") {
-		t.Fatalf("expected AGENTS.md reference insertion, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
+		t.Fatalf("expected AGENTS.md integration insertion, actions=%#v conflicts=%#v", conflictPlan.Actions, conflictPlan.Conflicts)
 	}
 
 	updatedTarget := t.TempDir()
@@ -208,13 +209,13 @@ func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 		t.Fatalf("BuildPlan() error = %v", err)
 	}
 	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "backup", "AGENTS.md") || !hasAction(plan.Actions, "agents-reference-insert", "AGENTS.md") {
-		t.Fatalf("expected agents reference insertion without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
+		t.Fatalf("expected agents integration insertion without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
 	}
 
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents+"\n@lufy-ia.harness.md\n" {
+	if got := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); got != customAgents+"\n"+agentsref.ManagedBlock() {
 		t.Fatalf("custom AGENTS.md was rewritten: %q", got)
 	}
 	st, err := state.Load(target)
@@ -223,6 +224,48 @@ func TestRunAdoptsExistingUnmanagedMergeBlockFile(t *testing.T) {
 	}
 	if _, ok := st.AssetMap()["AGENTS.md"]; ok {
 		t.Fatal("AGENTS.md no debe quedar registrado como asset completo")
+	}
+}
+
+func TestRunInstallsCodexManagedSurface(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+
+	harness := domain.DefaultHarnessConfig()
+	harness.Tool = domain.ToolCodex
+	if err := NewService().Run(Options{Target: target, Yes: true, Harness: harness}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Run(codex) error = %v", err)
+	}
+
+	for _, rel := range []string{
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"),
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(".codex", "config.toml"),
+		filepath.Join(".codex", "agents", "implementer.toml"),
+		filepath.Join("openspec", "config.yaml"),
+	} {
+		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
+			t.Fatalf("codex install missing %s: %v", rel, err)
+		}
+	}
+	for _, rel := range []string{".opencode", "opencode.json", "tui.json"} {
+		if _, err := os.Stat(filepath.Join(target, rel)); !os.IsNotExist(err) {
+			t.Fatalf("codex install should not create %s, stat err=%v", rel, err)
+		}
+	}
+	if body := string(readFileForTest(t, filepath.Join(target, "AGENTS.md"))); !strings.Contains(body, agentsref.BeginMarker) {
+		t.Fatalf("codex install missing managed AGENTS block: %q", body)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Tool != domain.ToolCodex {
+		t.Fatalf("install state tool = %s", st.Tool)
+	}
+	if _, ok := st.AssetMap()[filepath.Join(".codex", "config.toml")]; !ok {
+		t.Fatalf("install state missing codex config asset")
 	}
 }
 
@@ -450,7 +493,7 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 		"Plan de instalación para " + resolvedTarget,
 		"Source root: ",
 		"- [mkdir] .opencode (directorio padre requerido)",
-		"- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea referencia mínima al harness)",
+		"- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea integración mínima al harness)",
 		"- [copy] lufy-ia.harness.md (archivo gestionado ausente)",
 		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
 		"Modo dry-run: sin mutaciones en filesystem",
@@ -791,11 +834,18 @@ func minimalInstallerSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"AGENTS.md":                                                         "agents root\n",
-		"AGENTS.md.template":                                                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
-		"lufy-ia.harness.md":                                                "harness template\n",
-		"tui.json":                                                          "{}\n",
-		filepath.Join(".lufy", "README.md"):                                 "layout\n",
+		"AGENTS.md":                         "agents root\n",
+		"AGENTS.md.template":                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
+		"lufy-ia.harness.md":                "harness template\n",
+		"tui.json":                          "{}\n",
+		filepath.Join(".lufy", "README.md"): "layout\n",
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):        "close skill\n",
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):      "sdd skill\n",
+		filepath.Join(".codex", "README.md"):                                "codex readme\n",
+		filepath.Join(".codex", "config.toml"):                              "project_doc_max_bytes = 32768\n",
+		filepath.Join(".codex", "agents", "implementer.toml"):               "name = \"implementer\"\n",
+		filepath.Join(".codex", "hooks.json"):                               "{\"hooks\":{}}\n",
+		filepath.Join(".codex", "rules", "lufy.rules"):                      "# rules\n",
 		filepath.Join(".opencode", ".gitignore"):                            "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                             "readme\n",
 		filepath.Join(".opencode", "package.json"):                          "{}\n",
