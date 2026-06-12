@@ -122,10 +122,11 @@ lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
 
 ## Selección de tool y metodología
 
-El único tool adapter escribible actual es `opencode`.
+Los tool adapters escribibles actuales son `opencode` y `codex`. `opencode` sigue siendo el default efectivo.
 
 ```bash
 lufy-ai install --target <repo> --tool opencode --yes
+lufy-ai install --target <repo> --tool codex --yes
 ```
 
 Sin `--tool`, el default efectivo sigue siendo `opencode`.
@@ -148,8 +149,8 @@ Restricciones actuales:
 
 - `T1:none` está bloqueado para comandos mutantes;
 - `T2:none` está bloqueado para comandos mutantes;
-- `--tool codex` y `--tool claude-code` están bloqueados para escritura;
-- `codex` y `claude-code` existen solo como dry-run/preview.
+- `--tool claude-code` está bloqueado para escritura;
+- `claude-code` existe solo como dry-run/preview.
 
 ## Qué queda instalado
 
@@ -158,6 +159,8 @@ En scope `project`, la CLI gestiona:
 - `.opencode/agents`;
 - `.opencode/commands`;
 - `.opencode/skills`;
+- `.agents/skills` cuando `--tool codex`;
+- `.codex` cuando `--tool codex`;
 - `.opencode/templates`;
 - `.opencode/policies`;
 - `.opencode/plugins`;
@@ -168,13 +171,13 @@ En scope `project`, la CLI gestiona:
 - `.lufy/workflows/sdd/` cuando se selecciona `lufy-sdd`;
 - `.lufy/managed-state/install-state.json`.
 
-`AGENTS.md` es user-owned. `install` solo agrega la referencia:
+`AGENTS.md` es user-owned. `install` solo agrega la integración LUFY gestionada:
 
 ```text
-@lufy-ia.harness.md
+<!-- LUFY:BEGIN codex-harness -->
 ```
 
-`opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
+La CLI sigue reconociendo la referencia legacy `@lufy-ia.harness.md` para compatibilidad. `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
 
 
 
@@ -280,7 +283,7 @@ Comportamiento:
 - remueve `.lufy/managed-state/install-state.json`;
 - preserva `.lufy/managed-state/backups`;
 - preserva `opencode.json`;
-- preserva `AGENTS.md` y remueve solo la línea `@lufy-ia.harness.md`;
+- preserva `AGENTS.md` y remueve solo la integración LUFY gestionada, ya sea el bloque nuevo o la línea legacy `@lufy-ia.harness.md`;
 - limpia directorios gestionados que queden vacíos.
 
 Reinstalar:
@@ -370,7 +373,7 @@ Revisa el error exacto. `verify` valida:
 - estructura crítica;
 - hashes SHA-256;
 - JSON gestionado;
-- referencia `@lufy-ia.harness.md` en `AGENTS.md`;
+- bloque LUFY gestionado o referencia legacy `@lufy-ia.harness.md` en `AGENTS.md`;
 - adapter esperado si usas `--tool`.
 
 Si falta la referencia en `AGENTS.md`, ejecuta:

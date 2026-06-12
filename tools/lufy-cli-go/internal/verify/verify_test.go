@@ -347,7 +347,7 @@ func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 
 func TestVerifyJSONReportsFailures(t *testing.T) {
 	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin referencia\n")
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin integración\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, JSON: true}, &out); err == nil {
@@ -360,20 +360,20 @@ func TestVerifyJSONReportsFailures(t *testing.T) {
 	if report.OK || report.Failures == 0 || report.TargetRoot == "" || report.Assets == 0 {
 		t.Fatalf("unexpected JSON report: %#v", report)
 	}
-	foundMissingReference := false
+	foundMissingIntegration := false
 	for _, check := range report.Checks {
-		if check.Level == "fail" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no referencia") {
-			foundMissingReference = true
+		if check.Level == "fail" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no contiene integración LUFY") {
+			foundMissingIntegration = true
 		}
 	}
-	if !foundMissingReference {
-		t.Fatalf("missing reference check not found in JSON: %#v", report.Checks)
+	if !foundMissingIntegration {
+		t.Fatalf("missing integration check not found in JSON: %#v", report.Checks)
 	}
 }
 
 func TestVerifyAllowMissingAgentsRefDoesNotHideCriticalFailures(t *testing.T) {
 	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin referencia\n")
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "sin integración\n")
 	writeVerifyFile(t, filepath.Join(target, "lufy-ia.harness.md"), "drift crítico\n")
 
 	var out bytes.Buffer
@@ -388,7 +388,7 @@ func TestVerifyAllowMissingAgentsRefDoesNotHideCriticalFailures(t *testing.T) {
 	foundAgentsWarn := false
 	foundHarnessFail := false
 	for _, check := range report.Checks {
-		if check.Level == "warn" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no referencia") {
+		if check.Level == "warn" && check.Path == "AGENTS.md" && strings.Contains(check.Message, "no contiene integración LUFY") {
 			foundAgentsWarn = true
 		}
 		if check.Level == "fail" && strings.Contains(check.Message, "drift en lufy-ia.harness.md") {

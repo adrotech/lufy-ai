@@ -40,7 +40,7 @@ Estado actual documentable:
 - `opencode.json` se maneja como configuración `merge-json`: se crea/mergea de forma conservadora, preserva claves desconocidas, falla ante JSON inválido y no se registra como asset completo por hash.
 - Wrapper `scripts/install.sh` estricto, sin fallback legacy ni detección de stack en Bash.
 - Harness SDD proporcional instalable: `sdd-router`, T1/T2/T3, SDD Lite, result contracts, context slicing, review workload y skill resolution local-first.
-- Foundation hexagonal implementada: core neutral, `opencode` escribible, `codex`/`claude-code` dry-run, metodología por tier con `openspec`, `lufy-sdd` y `none`.
+- Foundation hexagonal implementada: core neutral, `opencode` escribible, `codex` escribible core, `claude-code` dry-run, metodología por tier con `openspec`, `lufy-sdd` y `none`.
 - Review Workload Harness instalable: slices revisables para features/propuestas grandes, sin forzar micro-entregables en T3.
 - Templates de proceso instalables: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
@@ -60,7 +60,7 @@ No son capacidades instalables actuales:
 - consumidores completos de `.lufy/config/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
-- instalación real/escribible sobre Codex o Claude Code.
+- instalación real/escribible sobre Claude Code y superficies avanzadas de Codex.
 - Lufy SDD full como reemplazo completo de OpenSpec.
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.

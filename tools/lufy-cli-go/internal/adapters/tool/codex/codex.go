@@ -19,34 +19,32 @@ func (Adapter) ID() domain.ToolID {
 
 func (Adapter) Capabilities() domain.ToolCapabilities {
 	return domain.ToolCapabilities{
-		Subagents:     false,
+		Subagents:     true,
 		SlashCommands: false,
-		Skills:        false,
-		Hooks:         false,
-		MCP:           false,
+		Skills:        true,
+		Hooks:         true,
+		MCP:           true,
 		TUI:           false,
 		GlobalConfig:  false,
 		ProjectConfig: true,
 		SystemPrompt:  true,
-		DryRunOnly:    true,
+		DryRunOnly:    false,
 	}
 }
 
 func (Adapter) Detect(context.Context, ports.Env) ports.DetectionResult {
-	return ports.DetectionResult{Detected: false, Reason: "codex adapter is dry-run only"}
+	return ports.DetectionResult{Detected: true, Reason: "codex project adapter"}
 }
 
 func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {
 	return []ports.AssetSpec{
-		{ID: "codex.agents-preview", TargetRel: "AGENTS.md", Policy: "dry-run", Scope: "preview"},
-		{ID: "codex.inline-roles-preview", TargetRel: "AGENTS.md#lufy-inline-roles", Policy: "dry-run", Scope: "preview"},
-		{ID: "codex.gaps-preview", TargetRel: "AGENTS.md#lufy-capability-gaps", Policy: "dry-run", Scope: "preview"},
+		{ID: "codex.skills", TargetRel: ".agents/skills", Policy: "managed", Scope: "project"},
+		{ID: "codex.project-config", TargetRel: ".codex", Policy: "managed", Scope: "project"},
 	}, nil
 }
 
 func (Adapter) Verify(ports.Target) ([]ports.Check, error) {
 	return []ports.Check{
-		{Level: "info", Message: "codex adapter is dry-run only; no repository assets are installed"},
-		{Level: "info", Message: "roles must run as inline phases because native subagent isolation is not declared"},
+		{Level: "info", Message: "codex adapter verification is structural in the installer layer"},
 	}, nil
 }

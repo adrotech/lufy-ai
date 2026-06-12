@@ -302,9 +302,9 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 					return Plan{}, hashErr
 				}
 				if currentHash != prev.TargetSHA256 {
-					plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "AGENTS.md legacy gestionado tiene drift local y falta @lufy-ia.harness.md; preservado, agrega la referencia manualmente o resuelve el drift antes de reintentar sync", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+					plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "AGENTS.md legacy gestionado tiene drift local y falta integración LUFY; preservado, agrega el bloque gestionado manualmente o resuelve el drift antes de reintentar sync", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				} else {
-					plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega @lufy-ia.harness.md con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
+					plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega el bloque gestionado LUFY con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
 				}
 			}
 			continue
@@ -348,7 +348,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 		if err != nil {
 			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error()})
 		} else if !exists || !hasReference {
-			plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega @lufy-ia.harness.md con install --yes o edición manual"})
+			plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega el bloque gestionado LUFY con install --yes o edición manual"})
 		}
 	}
 	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target)
@@ -360,7 +360,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado conservadoramente"})
 		}
 		plan.Actions = append(plan.Actions, Action{Kind: ActionMergeJSON, Target: configPlan.File, Reason: "configuración OpenCode merge-managed parcial"})
-	} else {
+	} else if configPlan.Action != "" {
 		plan.Actions = append(plan.Actions, Action{Kind: ActionSkip, Target: configPlan.File, Reason: "configuración OpenCode merge-managed sin cambios"})
 	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {

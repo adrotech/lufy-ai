@@ -129,6 +129,8 @@ type entry struct {
 var allowedEntries = []entry{
 	{sourceRel: lufypaths.Readme, targetRel: lufypaths.Readme, kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".lufy/sdd", targetRel: lufypaths.LufySDD, kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".agents/skills", targetRel: ".agents/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".codex", targetRel: ".codex", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/hooks", targetRel: ".opencode/hooks", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
@@ -257,6 +259,16 @@ func withOwnership(asset Asset) Asset {
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/opsx-"):
 		asset.Methodology = domain.MethodologySpecWorkflow
 		asset.Component = "methodology-command"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/") || filepath.ToSlash(asset.TargetRel) == ".agents/skills":
+		asset.Tool = domain.ToolCodex
+		asset.Component = "instruction-surface"
+		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/sdd-workflow") {
+			asset.Methodology = domain.MethodologySpecWorkflow
+			asset.Component = "methodology-skill"
+		}
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".codex/") || filepath.ToSlash(asset.TargetRel) == ".codex":
+		asset.Tool = domain.ToolCodex
+		asset.Component = "instruction-surface"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/"):
 		asset.Component = "instruction-surface"
 	case filepath.ToSlash(asset.TargetRel) == "tui.json":

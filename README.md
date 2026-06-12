@@ -88,7 +88,7 @@ lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
 lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
 ```
 
-`uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva `opencode.json` y remueve solo la referencia `@lufy-ia.harness.md` de `AGENTS.md`.
+`uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva configuración user-owned y remueve solo la integración LUFY gestionada de `AGENTS.md`.
 
 ## Walkthrough end-to-end
 
@@ -128,14 +128,15 @@ Para cerrar la sesión con trazabilidad local:
 | Templates | `.opencode/templates/` | `sdd-lite.md`, `result-contract.md` y `memory-note.md` para T2, handoffs y notas validables. |
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
+| Codex core | `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | Roles, skills, hooks, reglas y config project-locales cuando se instala con `--tool codex`. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
 | Lufy SDD | `.lufy/workflows/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
-| Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas que se referencian desde `AGENTS.md`. |
+| Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas legacy; `AGENTS.md` usa bloque LUFY gestionado compacto. |
 | Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 
 `.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks y templates de memoria, pero no toca notas privadas.
 
-`AGENTS.md` es user-owned: la CLI solo crea o mantiene la referencia `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
+`AGENTS.md` es user-owned: la CLI solo crea o mantiene un bloque LUFY gestionado compacto y sigue reconociendo la referencia legacy `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
 
 ## Arquitectura
 
@@ -148,14 +149,14 @@ flowchart TD
     Core --> Assets["Managed assets + manifest SHA-256"]
 
     Tool --> OC["opencode: adapter escribible actual"]
-    Tool --> CX["codex: dry-run preview"]
+    Tool --> CX["codex: adapter escribible core"]
     Tool --> CC["claude-code: dry-run preview"]
 
     Meth --> OS["openspec: full/lite"]
     Meth --> LS["lufy-sdd: full/lite inicial"]
     Meth --> NN["none: permitido solo donde la policy lo acepta"]
 
-    Assets --> Target[".opencode / openspec / .lufy / lufy-ia.harness.md"]
+    Assets --> Target[".opencode / .agents / .codex / openspec / .lufy / lufy-ia.harness.md"]
     Target --> Verify["verify / status / info / doctor / sync / uninstall"]
 ```
 
@@ -187,7 +188,7 @@ lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
 ```
 
-Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none`, `--tool codex` y `--tool claude-code` hasta que existan adapters escribibles con validación.
+Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool claude-code`. `opencode` sigue siendo el default; `codex` ya instala una superficie project-local core con `.agents/skills`, `.codex/agents`, hooks/rules/config y `AGENTS.md` gestionado.
 
 ## CLI y lifecycle
 
@@ -302,6 +303,7 @@ Ver [`docs/github-branch-settings.md`](docs/github-branch-settings.md) y [`docs/
 Disponible e instalable:
 
 - OpenCode como tool adapter escribible.
+- Codex como tool adapter escribible core project-local.
 - OpenSpec como metodología principal.
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
@@ -309,11 +311,12 @@ Disponible e instalable:
 - `init` y `scan` con `.lufy/config/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.
-- `codex` y `claude-code` solo como adapters dry-run/preview, no como instalación real.
+- `claude-code` solo como adapter dry-run/preview, no como instalación real.
 
 No disponible como feature escribible todavía:
 
-- instalación real en Codex o Claude Code;
+- plugin marketplace, Observatory y reporting avanzado para Codex;
+- instalación real en Claude Code;
 - templates por stack;
 - subagentes de dominio adicionales;
 - Lufy SDD full como reemplazo completo de OpenSpec;
