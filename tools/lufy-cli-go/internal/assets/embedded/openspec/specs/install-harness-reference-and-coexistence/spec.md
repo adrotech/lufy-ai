@@ -1,21 +1,21 @@
 ## Purpose
-Definir el modelo de coexistencia donde las instrucciones gestionadas por Lufy viven en `lufy-ia.harness.md`, mientras `AGENTS.md` permanece user-owned y referencia el harness sin ser un asset completo gestionado por hash.
+Definir el modelo de coexistencia donde las instrucciones gestionadas por Lufy viven en assets gestionados y `AGENTS.md` permanece user-owned, integrado mediante un bloque LUFY compacto sin ser un asset completo gestionado por hash.
 
 ## Requirements
-### Requirement: Harness Lufy gestionado por referencia
-La instalación SHALL mantener el contenido de instrucciones gestionado por Lufy en `lufy-ia.harness.md` y SHALL integrar ese contenido en el proyecto destino mediante una referencia mínima `@lufy-ia.harness.md` desde `AGENTS.md` sin convertir `AGENTS.md` en asset completo gestionado por hash.
+### Requirement: Harness Lufy gestionado en AGENTS
+La instalación SHALL mantener assets de instrucciones gestionados por Lufy y SHALL integrar el harness en el proyecto destino mediante un bloque LUFY gestionado desde `AGENTS.md` sin convertir `AGENTS.md` en asset completo gestionado por hash. La referencia legacy `@lufy-ia.harness.md` SHALL seguir siendo aceptada por compatibilidad.
 
 #### Scenario: Target vacío instala harness y AGENTS mínimo
 - **WHEN** el usuario ejecuta `lufy-ai install --target <dir>` sobre un target sin instalación previa, sin `AGENTS.md` y sin assets Lufy
-- **THEN** la CLI instala `lufy-ia.harness.md` como asset gestionado, crea un `AGENTS.md` mínimo con una única referencia `@lufy-ia.harness.md`, instala los assets restantes permitidos y escribe `.lufy/managed-state/install-state.json` con el harness registrado por SHA-256
+- **THEN** la CLI instala `lufy-ia.harness.md` como asset gestionado, crea un `AGENTS.md` mínimo con el bloque LUFY gestionado, instala los assets restantes permitidos y escribe `.lufy/managed-state/install-state.json` con el harness registrado por SHA-256
 
-#### Scenario: AGENTS propio recibe solo referencia
+#### Scenario: AGENTS propio recibe solo bloque gestionado
 - **WHEN** el target ya contiene un `AGENTS.md` user-owned sin referencia al harness y el usuario confirma la mutación o pasa `--yes`
-- **THEN** install crea backup del `AGENTS.md` existente, agrega solo la referencia `@lufy-ia.harness.md` sin insertar el contenido completo de Lufy y no registra `AGENTS.md` como asset completo gestionado
+- **THEN** install crea backup del `AGENTS.md` existente, agrega solo el bloque LUFY gestionado sin insertar el contenido completo de Lufy y no registra `AGENTS.md` como asset completo gestionado
 
-#### Scenario: Referencia existente no se duplica
-- **WHEN** el target ya contiene `AGENTS.md` con la referencia `@lufy-ia.harness.md`
-- **THEN** install planifica `skip` para la integración de referencia y MUST NOT duplicar la referencia ni reescribir el archivo solo por esa integración
+#### Scenario: Integración existente no se duplica
+- **WHEN** el target ya contiene `AGENTS.md` con el bloque LUFY gestionado o la referencia legacy `@lufy-ia.harness.md`
+- **THEN** install planifica `skip` para la integración y MUST NOT duplicarla ni reescribir el archivo solo por esa integración
 
 ### Requirement: Sync actualiza harness sin mutar AGENTS
 El comando `sync` SHALL actualizar `lufy-ia.harness.md` mediante las reglas de manifest, SHA-256, backup e idempotencia de assets gestionados, y MUST NOT modificar `AGENTS.md` durante sync salvo que una acción explícita futura lo autorice.
@@ -25,8 +25,8 @@ El comando `sync` SHALL actualizar `lufy-ia.harness.md` mediante las reglas de m
 - **THEN** sync crea backup del harness si existe, actualiza `lufy-ia.harness.md`, actualiza su estado en el manifest y preserva `AGENTS.md` byte-for-byte
 
 #### Scenario: Sync reporta referencia ausente sin auto-fix
-- **WHEN** el target contiene `lufy-ia.harness.md` gestionado pero `AGENTS.md` no referencia `@lufy-ia.harness.md`
-- **THEN** sync reporta un warning o acción explícita requerida para agregar la referencia y MUST NOT modificar `AGENTS.md` silenciosamente
+- **WHEN** el target contiene `lufy-ia.harness.md` gestionado pero `AGENTS.md` no contiene el bloque LUFY gestionado ni la referencia legacy `@lufy-ia.harness.md`
+- **THEN** sync reporta un warning o acción explícita requerida para agregar la integración y MUST NOT modificar `AGENTS.md` silenciosamente
 
 ### Requirement: Migración legacy de AGENTS gestionado no destructiva
 La CLI SHALL detectar instalaciones legacy donde `AGENTS.md` fue registrado como asset gestionado y SHALL migrar hacia el modelo de harness sin sobrescribir ni borrar el `AGENTS.md` existente.
@@ -58,7 +58,7 @@ La instalación SHALL preservar archivos OpenCode/OpenSpec propios del target fu
 - **THEN** verify exige que `lufy-ia.harness.md` exista, sea archivo seguro, esté registrado en `.lufy/managed-state/install-state.json` y coincida con el SHA-256 registrado
 
 #### Scenario: Verify valida referencia sin hash completo
-- **WHEN** el target contiene `AGENTS.md` con contenido propio y una referencia `@lufy-ia.harness.md`
+- **WHEN** el target contiene `AGENTS.md` con contenido propio y el bloque LUFY gestionado o la referencia legacy `@lufy-ia.harness.md`
 - **THEN** verify reporta ok para la integración de `AGENTS.md` sin exigir que `AGENTS.md` esté registrado como asset completo ni comparar su hash completo
 
 #### Scenario: Verify reporta referencia faltante accionable

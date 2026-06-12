@@ -9,22 +9,25 @@ import (
 
 func TestMinimalContentAndRecommendedAction(t *testing.T) {
 	body := string(MinimalContent())
-	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, Reference) {
-		t.Fatalf("minimal content missing expected reference: %q", body)
+	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") {
+		t.Fatalf("minimal content missing expected managed block: %q", body)
 	}
 
 	action := RecommendedInstallAction()
-	if !strings.Contains(action, "lufy-ai install") || !strings.Contains(action, Reference) {
-		t.Fatalf("recommended action missing command/reference: %q", action)
+	if !strings.Contains(action, "lufy-ai install") || !strings.Contains(action, "bloque gestionado") {
+		t.Fatalf("recommended action missing command/managed block: %q", action)
 	}
 }
 
 func TestContainsReference(t *testing.T) {
 	if !ContainsReference([]byte("before " + Reference + " after")) {
-		t.Fatalf("expected reference to be detected")
+		t.Fatalf("expected legacy reference to be detected")
+	}
+	if !ContainsReference([]byte(ManagedBlock())) {
+		t.Fatalf("expected managed block to be detected")
 	}
 	if ContainsReference([]byte("no harness reference")) {
-		t.Fatalf("unexpected reference detected")
+		t.Fatalf("unexpected integration detected")
 	}
 }
 
@@ -84,13 +87,13 @@ func TestInsertReferenceCreatesAppendsAndIsIdempotent(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := InsertReference(other); err != nil {
-		t.Fatalf("append reference: %v", err)
+		t.Fatalf("append managed block: %v", err)
 	}
 	appended, err := os.ReadFile(filepath.Join(other, AgentsFile))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(appended) != "# Existing\n\n"+Reference+"\n" {
+	if string(appended) != "# Existing\n\n"+ManagedBlock() {
 		t.Fatalf("unexpected appended body: %q", string(appended))
 	}
 }
@@ -111,7 +114,7 @@ func TestInsertReferenceRejectsSymlink(t *testing.T) {
 
 func TestRemoveReferencePreservesUserContent(t *testing.T) {
 	target := t.TempDir()
-	original := "# Existing\n\nKeep this\n" + Reference + "\n\nKeep after\n"
+	original := "# Existing\n\nKeep this\n" + ManagedBlock() + "\n" + Reference + "\n\nKeep after\n"
 	if err := os.WriteFile(filepath.Join(target, AgentsFile), []byte(original), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -128,8 +131,8 @@ func TestRemoveReferencePreservesUserContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(body)
-	if strings.Contains(got, Reference) {
-		t.Fatalf("reference remained: %q", got)
+	if strings.Contains(got, Reference) || strings.Contains(got, BeginMarker) || strings.Contains(got, EndMarker) {
+		t.Fatalf("integration remained: %q", got)
 	}
 	for _, want := range []string{"# Existing", "Keep this", "Keep after"} {
 		if !strings.Contains(got, want) {

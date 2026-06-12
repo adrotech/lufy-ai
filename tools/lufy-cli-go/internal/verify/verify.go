@@ -360,7 +360,7 @@ func verifyAgentsReference(target string, allowMissing bool, emitAsset func(leve
 		if allowMissing {
 			level = "warn"
 		}
-		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "falta AGENTS.md con referencia %s", agentsref.Reference)
+		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "falta AGENTS.md con integración LUFY")
 		return
 	}
 	if !hasReference {
@@ -368,10 +368,10 @@ func verifyAgentsReference(target string, allowMissing bool, emitAsset func(leve
 		if allowMissing {
 			level = "warn"
 		}
-		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "AGENTS.md no referencia %s", agentsref.Reference)
+		emitAsset(level, agentsref.AgentsFile, "user-owned-reference", agentsref.RecommendedInstallAction(), "AGENTS.md no contiene integración LUFY")
 		return
 	}
-	emitAsset("ok", agentsref.AgentsFile, "user-owned-reference", "", "referencia %s presente", agentsref.Reference)
+	emitAsset("ok", agentsref.AgentsFile, "user-owned-reference", "", "integración LUFY presente")
 }
 
 func catalogRequirements(st *state.InstallState) ([]string, []string) {
@@ -382,11 +382,13 @@ func catalogRequirements(st *state.InstallState) ([]string, []string) {
 	}
 	dirs := map[string]bool{}
 	files := map[string]bool{}
-	for _, dir := range fallbackRequiredDirs {
-		dirs[dir] = true
-	}
-	for _, file := range fallbackRequiredManagedFiles {
-		files[file] = true
+	if st.Tool == domain.ToolInitialDefault {
+		for _, dir := range fallbackRequiredDirs {
+			dirs[dir] = true
+		}
+		for _, file := range fallbackRequiredManagedFiles {
+			files[file] = true
+		}
 	}
 	for _, asset := range catalog.Assets {
 		if asset.Policy != assets.PolicyManaged {

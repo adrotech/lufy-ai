@@ -13,8 +13,9 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Memoria Obsidian portable como fuente canónica cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`.
 - Paralelismo gobernado para `review_slices` independientes con plan de merge y validación agrupada.
 - Core neutral con separación inicial de tool adapters y methodology adapters.
-- Registry de adapters con `opencode` como adapter escribible actual.
-- Adapters dry-run para `codex` y `claude-code`, sin escritura real.
+- Registry de adapters con `opencode` como adapter escribible default.
+- Adapter `codex` escribible core con assets project-locales bajo `.agents` y `.codex`.
+- Adapter dry-run para `claude-code`, sin escritura real.
 - Methodology adapters para `openspec`, `lufy-sdd` y `none`.
 - Methodology por tier registrada en manifest y expuesta por `verify/status --json`.
 
@@ -47,6 +48,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos `/opsx-*`.
 - Comandos `/lufy.*` instalables según catálogo.
 - Agent Observatory TUI.
+- Superficie Codex core: roles Lufy bajo `.codex/agents`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules`, `.codex/config.toml` y bloque gestionado en `AGENTS.md`.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
 - Lufy SDD inicial bajo `.lufy/workflows/sdd/` cuando se selecciona.
 
@@ -62,7 +64,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Pendiente o futuro
 
 - Promover `develop` a `main` y publicar la próxima release estable desde tag `v*`.
-- Adapter escribible real para Codex.
+- Plugin marketplace, Observatory y reporting avanzado para Codex.
 - Adapter escribible real para Claude Code.
 - Lufy SDD full como alternativa completa a OpenSpec.
 - Templates por stack como paquetes instalables.
@@ -76,8 +78,8 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 
 ## Límites actuales
 
-- El único adapter escribible es `opencode`.
-- `codex` y `claude-code` no deben documentarse como instalables.
+- Los adapters escribibles actuales son `opencode` y `codex`; `opencode` sigue siendo el default efectivo.
+- `claude-code` no debe documentarse como instalable real; sigue dry-run/preview.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
 - `AGENTS.md`, `opencode.json` y `.lufy/config/project.yaml` son user-owned o user-managed.
 - No existe suite Node/TS global en la raíz.

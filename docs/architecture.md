@@ -1,6 +1,6 @@
 # Arquitectura
 
-`lufy-ai` está evolucionando de un kit OpenCode/OpenSpec a un harness neutral con adapters. La implementación productiva actual sigue instalando OpenCode y OpenSpec, pero el dominio ya separa lo que pertenece a Lufy de lo que pertenece a una tool o metodología concreta.
+`lufy-ai` está evolucionando de un kit OpenCode/OpenSpec a un harness neutral con adapters. La implementación productiva actual instala OpenCode como default y Codex como adapter escribible core project-local; el dominio separa lo que pertenece a Lufy de lo que pertenece a una tool o metodología concreta.
 
 ## Objetivo arquitectónico
 
@@ -14,8 +14,9 @@ Lufy debe ser el harness:
 
 La tool debe ser un adapter:
 
-- hoy `opencode` es el único adapter escribible;
-- `codex` y `claude-code` existen como dry-run/preview para perfilar capabilities y contratos futuros;
+- hoy `opencode` es el adapter escribible default;
+- `codex` existe como adapter escribible core para superficie project-local;
+- `claude-code` existe como dry-run/preview para perfilar capabilities y contratos futuros;
 - ningún adapter futuro debe duplicar el dominio de tiers, roles o delivery.
 
 La metodología también debe ser un adapter:
@@ -41,7 +42,7 @@ flowchart TD
     Domain --> D4["workflow policies"]
 
     ToolAdapters --> OC["opencode: paths, agents, commands, plugin"]
-    ToolAdapters --> CX["codex: dry-run/preview"]
+    ToolAdapters --> CX["codex: .agents + .codex"]
     ToolAdapters --> CC["claude-code: dry-run/preview"]
 
     MethodAdapters --> OS["openspec"]
@@ -57,7 +58,7 @@ flowchart TD
 | --- | --- |
 | `internal/core/domain` | Modelos neutrales: harness, tiers, roles, methodology por tier y routing policy. |
 | `internal/adapters/tool/opencode` | Adapter escribible actual para OpenCode. |
-| `internal/adapters/tool/codex` | Adapter dry-run para capabilities y preview conceptual de Codex. |
+| `internal/adapters/tool/codex` | Adapter escribible core para Codex con `.agents/skills`, `.codex/agents`, hooks/rules/config y `AGENTS.md` gestionado. |
 | `internal/adapters/tool/claudecode` | Adapter dry-run para capabilities y preview conceptual de Claude Code. |
 | `internal/adapters/methodology/openspec` | Adapter OpenSpec para superficie full/lite. |
 | `internal/adapters/methodology/lufysdd` | Adapter inicial para `.lufy/workflows/sdd`. |
@@ -96,7 +97,7 @@ flowchart LR
 
 `install-state.json` usa schema v2 y registra:
 
-- `tool`, por ahora `opencode` en instalaciones reales;
+- `tool`, actualmente `opencode` o `codex` en instalaciones reales;
 - `methodologyByTier`;
 - ownership por asset: `tool`, `methodology`, `component`, `policy` y `scope`;
 - hashes SHA-256 de source/target;
@@ -113,7 +114,7 @@ Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults com
 | `.lufy/workflows/sdd/` | Managed por metodología `lufy-sdd` | Se instala según mode full/lite. |
 | `lufy-ia.harness.md` | Managed | Se actualiza por manifest y hash. |
 | `tui.json` | Managed/no-replace según policy | Se preserva ante drift y puede generar `.lufy-new`. |
-| `AGENTS.md` | User-owned con referencia gestionada | `install` agrega `@lufy-ia.harness.md`; `uninstall` remueve solo esa línea. |
+| `AGENTS.md` | User-owned con bloque gestionado | `install` agrega el bloque LUFY gestionado y reconoce la referencia legacy `@lufy-ia.harness.md`; `uninstall` remueve solo esa integración. |
 | `opencode.json` | User-owned/merge-managed | Se mergea conservadoramente; no se registra como asset completo por hash. |
 | `.lufy/config/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
 
@@ -140,7 +141,7 @@ Esta separación es clave para no duplicar texto de agentes y skills cuando agre
 
 ## Harness instalado
 
-El preset OpenCode actual instala:
+Los presets OpenCode y Codex instalan el mismo núcleo de roles:
 
 - `orchestrator`: coordinación y routing general;
 - `sdd-router`: clasificación T1/T2/T3 en modo read-only/no-shell;
@@ -160,6 +161,8 @@ También instala:
 - comandos `/lufy.*`;
 - plugin Agent Observatory.
 
+OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, sin comandos slash ni plugin Observatory todavía.
+
 ## Decisiones vigentes
 
 - El wrapper `scripts/install.sh` delega estrictamente en la CLI Go.
@@ -167,7 +170,7 @@ También instala:
 - No se asume tooling Node/TS en la raíz.
 - Releases estables se publican desde tags `v*` alcanzables desde `main`.
 - Delivery requiere autorización explícita.
-- `codex` y `claude-code` no son escribibles todavía.
+- `codex` es escribible core project-local; `claude-code` sigue dry-run/preview.
 
 ## ADRs relacionados
 

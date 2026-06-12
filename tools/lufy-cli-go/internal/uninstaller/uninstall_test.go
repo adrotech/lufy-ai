@@ -59,8 +59,8 @@ func TestRunDryRunAndRealUninstallThenReinstall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(agentsBody), agentsref.Reference) || !strings.Contains(string(agentsBody), "Keep me") {
-		t.Fatalf("AGENTS.md reference removal unexpected: %q", string(agentsBody))
+	if strings.Contains(string(agentsBody), agentsref.Reference) || strings.Contains(string(agentsBody), agentsref.BeginMarker) || !strings.Contains(string(agentsBody), "Keep me") {
+		t.Fatalf("AGENTS.md integration removal unexpected: %q", string(agentsBody))
 	}
 	if matches, err := filepath.Glob(filepath.Join(target, ".lufy", "managed-state", "backups", "*", "manifest.json")); err != nil || len(matches) == 0 {
 		t.Fatalf("expected uninstall backup manifest, matches=%v err=%v", matches, err)

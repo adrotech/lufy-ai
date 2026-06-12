@@ -9,16 +9,16 @@ Esta guía asume que ya tienes el binario instalado. Para instalarlo, ver [`docs
 Hoy el flujo productivo es:
 
 ```text
-lufy-ai core -> opencode adapter -> openspec/lufy-sdd/none por tier
+lufy-ai core -> opencode | codex -> openspec/lufy-sdd/none por tier
 ```
 
-La separación futura es:
+La separación futura conserva el mismo contrato para más tools:
 
 ```text
 lufy-ai core -> opencode | codex | claude-code | otros adapters
 ```
 
-Por ahora solo `opencode` escribe archivos. `codex` y `claude-code` son previews dry-run.
+Por ahora `opencode` es el default escribible y `codex` también puede instalar una superficie core project-local. `claude-code` sigue como preview dry-run.
 
 ## 1. Revisar e instalar
 
@@ -32,8 +32,8 @@ lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode
 Después de instalar:
 
 1. Revisa que `AGENTS.md` conserve tus convenciones locales.
-2. Confirma que contiene `@lufy-ia.harness.md`.
-3. Reinicia OpenCode para cargar agentes, comandos, skills y plugin.
+2. Confirma que contiene el bloque gestionado `LUFY:BEGIN codex-harness` / `LUFY:END codex-harness`.
+3. Reinicia la tool elegida para cargar agentes, comandos, skills o reglas.
 4. Ejecuta `lufy-ai status --target /ruta/a/tu/proyecto --verbose` si quieres ver assets y drift.
 
 ## 2. Inicializar configuración stack-aware y surface-aware
@@ -93,7 +93,7 @@ Para combinar OpenSpec Lite en T2 y T3 Express sin spec:
 lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
 ```
 
-Los comandos mutantes bloquean combinaciones inseguras como `T1:none`, `T2:none`, `--tool codex` y `--tool claude-code`.
+Los comandos mutantes bloquean combinaciones inseguras como `T1:none`, `T2:none` y `--tool claude-code`.
 
 ## 4. Usar el harness
 
@@ -183,7 +183,7 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
 lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
 ```
 
-`uninstall` preserva `opencode.json`, preserva `AGENTS.md` y elimina solo la referencia `@lufy-ia.harness.md`. Si encuentra drift en assets gestionados, bloquea antes de mutar.
+`uninstall` preserva `opencode.json`, preserva `AGENTS.md` y elimina solo la integración LUFY gestionada, incluyendo el bloque nuevo o la referencia legacy `@lufy-ia.harness.md`. Si encuentra drift en assets gestionados, bloquea antes de mutar.
 
 ## 6. Comandos slash disponibles
 

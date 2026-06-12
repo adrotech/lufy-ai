@@ -10,7 +10,7 @@ La CLI Go SHALL instalar el conjunto completo de assets gestionados de `lufy-ai`
 
 #### Scenario: AGENTS es integración user-owned
 - **WHEN** la CLI construye el catálogo de instalación
-- **THEN** `AGENTS.md` no se trata como asset completo gestionado por SHA-256 y se maneja únicamente mediante la integración especial de referencia `@lufy-ia.harness.md`
+- **THEN** `AGENTS.md` no se trata como asset completo gestionado por SHA-256 y se maneja únicamente mediante la integración especial del bloque LUFY gestionado, aceptando la referencia legacy `@lufy-ia.harness.md`
 
 #### Scenario: Catálogo excluye archivos fuera de alcance
 - **WHEN** el repo fuente contiene archivos no listados dentro del set raíz permitido
@@ -120,7 +120,7 @@ La CLI SHALL persistir estado de instalación en `.lufy/managed-state/install-st
 - **THEN** el manifest de estado no registra `opencode.json` como asset completo ni usa su hash para detectar drift
 
 #### Scenario: AGENTS user-owned no tiene hash completo
-- **WHEN** `AGENTS.md` se crea o recibe la referencia `@lufy-ia.harness.md` como integración user-owned
+- **WHEN** `AGENTS.md` se crea o recibe el bloque LUFY gestionado como integración user-owned
 - **THEN** el manifest de estado no registra `AGENTS.md` como asset completo ni usa su hash para detectar drift
 
 ### Requirement: Backup multiasset antes de mutar
@@ -181,7 +181,7 @@ El comando `verify` SHALL validar estructura, estado y hashes de una instalació
 - **THEN** `verify` reporta `fail` para `opencode.json` sin buscarlo en `.lufy/managed-state/install-state.json` como asset completo
 
 #### Scenario: Referencia AGENTS ausente o incompleta
-- **WHEN** `AGENTS.md` falta o no contiene la referencia `@lufy-ia.harness.md`
+- **WHEN** `AGENTS.md` falta o no contiene el bloque LUFY gestionado ni la referencia legacy `@lufy-ia.harness.md`
 - **THEN** `verify` reporta un requisito incumplido o warning accionable para la integración de `AGENTS.md` sin requerir hash completo ni entrada de manifest para ese archivo
 
 ### Requirement: Wrapper Bash permanece estricto

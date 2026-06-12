@@ -30,6 +30,10 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 		filepath.Join(".lufy", "README.md"):                                               false,
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
+		filepath.Join(".codex", "config.toml"):                                            false,
+		filepath.Join(".codex", "agents", "implementer.toml"):                             false,
 		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
@@ -45,7 +49,7 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("file asset %s missing hash", asset.TargetRel)
 			}
-			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+			if expectedTool(asset.TargetRel) != asset.Tool || asset.Component == "" {
 				t.Fatalf("asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
 			}
 			if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") && asset.Methodology != domain.MethodologySpecWorkflow {
@@ -97,6 +101,10 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 		filepath.Join(".lufy", "README.md"):                                               false,
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
+		filepath.Join(".codex", "config.toml"):                                            false,
+		filepath.Join(".codex", "agents", "implementer.toml"):                             false,
 		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
@@ -112,7 +120,7 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 			if asset.Kind == KindFile && asset.SourceSHA256 == "" {
 				t.Fatalf("embedded file asset %s missing hash", asset.TargetRel)
 			}
-			if asset.Tool != domain.ToolInitialDefault || asset.Component == "" {
+			if expectedTool(asset.TargetRel) != asset.Tool || asset.Component == "" {
 				t.Fatalf("embedded asset %s missing ownership metadata: %#v", asset.TargetRel, asset)
 			}
 		}
@@ -181,6 +189,14 @@ func comparableAssets(c Catalog) []comparableAsset {
 	return out
 }
 
+func expectedTool(targetRel string) domain.ToolID {
+	target := filepath.ToSlash(targetRel)
+	if strings.HasPrefix(target, ".agents/") || strings.HasPrefix(target, ".codex/") || target == ".codex" {
+		return domain.ToolCodex
+	}
+	return domain.ToolInitialDefault
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	dir, err := os.Getwd()
@@ -208,10 +224,17 @@ func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"AGENTS.md":                                                                       "agents root\n",
-		"AGENTS.md.template":                                                              "agents template\n",
-		"lufy-ia.harness.md":                                                              "agents template\n",
-		"tui.json":                                                                        "{}\n",
+		"AGENTS.md":          "agents root\n",
+		"AGENTS.md.template": "agents template\n",
+		"lufy-ia.harness.md": "agents template\n",
+		"tui.json":           "{}\n",
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      "close skill\n",
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    "sdd skill\n",
+		filepath.Join(".codex", "README.md"):                                              "codex readme\n",
+		filepath.Join(".codex", "config.toml"):                                            "project_doc_max_bytes = 32768\n",
+		filepath.Join(".codex", "agents", "implementer.toml"):                             "name = \"implementer\"\n",
+		filepath.Join(".codex", "hooks.json"):                                             "{\"hooks\":{}}\n",
+		filepath.Join(".codex", "rules", "lufy.rules"):                                    "# rules\n",
 		filepath.Join(".opencode", ".gitignore"):                                          "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                                           "readme\n",
 		filepath.Join(".opencode", "package.json"):                                        "{}\n",

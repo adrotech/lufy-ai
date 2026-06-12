@@ -9,33 +9,37 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
 )
 
-func TestAdapterCapabilitiesAreDryRunOnly(t *testing.T) {
+func TestAdapterCapabilitiesAreWritableProjectSurface(t *testing.T) {
 	if New().ID() != domain.ToolCodex {
 		t.Fatalf("unexpected adapter id: %s", New().ID())
 	}
 	caps := New().Capabilities()
-	if !caps.DryRunOnly || !caps.ProjectConfig || !caps.SystemPrompt {
-		t.Fatalf("expected codex dry-run project/system capabilities: %+v", caps)
+	if caps.DryRunOnly || !caps.ProjectConfig || !caps.SystemPrompt || !caps.Subagents || !caps.Skills || !caps.Hooks || !caps.MCP {
+		t.Fatalf("expected codex writable project/system capabilities: %+v", caps)
 	}
-	if caps.Subagents || caps.SlashCommands || caps.Skills || caps.Hooks || caps.TUI || caps.GlobalConfig {
+	if caps.SlashCommands || caps.TUI || caps.GlobalConfig {
 		t.Fatalf("codex capabilities overpromise native tool support: %+v", caps)
 	}
 }
 
-func TestRenderSurfaceIsPreviewOnly(t *testing.T) {
+func TestRenderSurfaceIsManagedProjectSurface(t *testing.T) {
 	assets, err := New().RenderSurface(ports.HarnessModel{Tool: domain.ToolCodex})
 	if err != nil {
 		t.Fatalf("render surface: %v", err)
 	}
 	if len(assets) == 0 {
-		t.Fatal("expected preview assets")
+		t.Fatal("expected managed assets")
 	}
+	targets := map[string]bool{}
 	for _, asset := range assets {
-		if asset.Policy != "dry-run" || asset.Scope != "preview" {
-			t.Fatalf("asset is not preview-only: %+v", asset)
+		if asset.Policy != "managed" || asset.Scope != "project" {
+			t.Fatalf("asset is not managed project surface: %+v", asset)
 		}
-		if !strings.HasPrefix(asset.TargetRel, "AGENTS.md") {
-			t.Fatalf("codex preview target should be AGENTS.md-based: %+v", asset)
+		targets[asset.TargetRel] = true
+	}
+	for _, want := range []string{".agents/skills", ".codex"} {
+		if !targets[want] {
+			t.Fatalf("codex surface missing %s: %+v", want, assets)
 		}
 	}
 }
@@ -56,16 +60,16 @@ func TestRenderSurfaceDoesNotLeakForbiddenToolPaths(t *testing.T) {
 	}
 }
 
-func TestDetectAndVerifyExplainDryRunOnly(t *testing.T) {
+func TestDetectAndVerifyExplainWritableAdapter(t *testing.T) {
 	detection := New().Detect(context.Background(), ports.Env{})
-	if detection.Detected || !strings.Contains(detection.Reason, "dry-run") {
+	if !detection.Detected || !strings.Contains(detection.Reason, "codex") {
 		t.Fatalf("detection = %+v", detection)
 	}
 	checks, err := New().Verify(ports.Target{Root: t.TempDir()})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(checks) == 0 || !strings.Contains(checks[0].Message, "dry-run") {
+	if len(checks) == 0 || !strings.Contains(checks[0].Message, "structural") {
 		t.Fatalf("checks = %+v", checks)
 	}
 }

@@ -423,8 +423,8 @@ func TestSyncWarnsWhenAgentsReferenceMissingWithoutMutatingAgents(t *testing.T) 
 	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
 		t.Fatalf("Run(sync missing reference) error = %v, output=%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "warn-agents-reference") || !strings.Contains(out.String(), "@lufy-ia.harness.md") {
-		t.Fatalf("sync output missing agents reference warning: %s", out.String())
+	if !strings.Contains(out.String(), "warn-agents-reference") || !strings.Contains(out.String(), "bloque gestionado LUFY") {
+		t.Fatalf("sync output missing agents integration warning: %s", out.String())
 	}
 	if got := readFile(t, agentsPath); !bytes.Equal(got, before) {
 		t.Fatalf("sync mutated AGENTS.md: before=%q after=%q", before, got)
@@ -506,7 +506,7 @@ func TestSyncBlocksLegacyManagedAgentsDriftWithoutMutations(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "sync bloqueado") {
 		t.Fatalf("Run(sync legacy drift) expected blocked conflict, err=%v output=%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "agrega la referencia manualmente") || !strings.Contains(out.String(), "recordedTarget") {
+	if !strings.Contains(out.String(), "agrega el bloque gestionado manualmente") || !strings.Contains(out.String(), "recordedTarget") {
 		t.Fatalf("sync output missing actionable legacy drift details: %s", out.String())
 	}
 	if got := readFile(t, agentsPath); !bytes.Equal(got, agentsBefore) {
@@ -839,11 +839,18 @@ func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
-		"AGENTS.md":                                                    "agents root\n",
-		"AGENTS.md.template":                                           "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
-		"lufy-ia.harness.md":                                           "harness template\n",
-		"tui.json":                                                     "{}\n",
-		filepath.Join(".lufy", "README.md"):                            "layout\n",
+		"AGENTS.md":                         "agents root\n",
+		"AGENTS.md.template":                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
+		"lufy-ia.harness.md":                "harness template\n",
+		"tui.json":                          "{}\n",
+		filepath.Join(".lufy", "README.md"): "layout\n",
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):   "close skill\n",
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"): "sdd skill\n",
+		filepath.Join(".codex", "README.md"):                           "codex readme\n",
+		filepath.Join(".codex", "config.toml"):                         "project_doc_max_bytes = 32768\n",
+		filepath.Join(".codex", "agents", "implementer.toml"):          "name = \"implementer\"\n",
+		filepath.Join(".codex", "hooks.json"):                          "{\"hooks\":{}}\n",
+		filepath.Join(".codex", "rules", "lufy.rules"):                 "# rules\n",
 		filepath.Join(".opencode", ".gitignore"):                       "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                        "readme\n",
 		filepath.Join(".opencode", "package.json"):                     "{}\n",
