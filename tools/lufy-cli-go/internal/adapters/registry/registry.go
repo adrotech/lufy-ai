@@ -59,6 +59,17 @@ func (r Registry) ToolIDs() []domain.ToolID {
 	return ids
 }
 
+func (r Registry) WritableToolIDs() []domain.ToolID {
+	ids := make([]domain.ToolID, 0, len(r.tools))
+	for id, adapter := range r.tools {
+		if !adapter.Capabilities().DryRunOnly {
+			ids = append(ids, id)
+		}
+	}
+	sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+	return ids
+}
+
 func (r Registry) MethodologyIDs() []domain.MethodologyID {
 	ids := make([]domain.MethodologyID, 0, len(r.methodology))
 	for id := range r.methodology {

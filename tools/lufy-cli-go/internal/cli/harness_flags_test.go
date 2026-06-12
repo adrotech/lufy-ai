@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"strings"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
@@ -42,15 +43,36 @@ func TestParseHarnessFlagsComposesRepeatedMethodologyOverrides(t *testing.T) {
 	}
 }
 
-func TestParseHarnessFlagsRejectsUnsupportedTool(t *testing.T) {
+func TestParseHarnessFlagsAcceptsWritableCodexTool(t *testing.T) {
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	flags := addHarnessFlags(fs)
 	if err := fs.Parse([]string{"--tool", "codex"}); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := parseHarnessFlags(flags); err == nil {
+	cfg, err := parseHarnessFlags(flags)
+	if err != nil {
+		t.Fatalf("parse codex tool: %v", err)
+	}
+	if cfg.Tool != domain.ToolCodex {
+		t.Fatalf("tool = %s", cfg.Tool)
+	}
+}
+
+func TestParseHarnessFlagsRejectsNonWritableTool(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	flags := addHarnessFlags(fs)
+	if err := fs.Parse([]string{"--tool", "claude-code"}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := parseHarnessFlags(flags)
+	if err == nil {
 		t.Fatalf("expected unsupported tool error")
+	}
+	available := strings.TrimPrefix(err.Error(), "tool adapter no soportado para escritura: claude-code; disponibles: ")
+	if available != "codex, opencode" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
