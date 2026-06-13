@@ -517,6 +517,36 @@ func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
 	}
 }
 
+func TestRunInstallWithCodexHarness(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--tool", "codex"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install codex expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	for _, rel := range []string{
+		filepath.Join(".codex", "lufy-agent-mapping.md"),
+		filepath.Join(".codex", "agents", "implementer.toml"),
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
+			t.Fatalf("codex install missing %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(target, ".opencode")); !os.IsNotExist(err) {
+		t.Fatalf("codex install should not create .opencode, err=%v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil || st.Tool != domain.ToolCodex {
+		t.Fatalf("install state tool = %#v", st)
+	}
+}
+
 func TestRunInstallRejectsUnsupportedHarnessFlags(t *testing.T) {
 	tests := [][]string{
 		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "claude-code"},

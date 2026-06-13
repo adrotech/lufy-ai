@@ -46,5 +46,6 @@ func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {
 func (Adapter) Verify(ports.Target) ([]ports.Check, error) {
 	return []ports.Check{
 		{Level: "info", Message: "codex adapter verification is structural in the installer layer"},
+		{Level: "info", Message: "codex Lufy roles should use native agents when discovered, with emulated/inline fallback documented in .codex/lufy-agent-mapping.md"},
 	}, nil
 }

@@ -58,7 +58,7 @@ flowchart TD
 | --- | --- |
 | `internal/core/domain` | Modelos neutrales: harness, tiers, roles, methodology por tier y routing policy. |
 | `internal/adapters/tool/opencode` | Adapter escribible actual para OpenCode. |
-| `internal/adapters/tool/codex` | Adapter escribible core para Codex con `.agents/skills`, `.codex/agents`, hooks/rules/config y `AGENTS.md` gestionado. |
+| `internal/adapters/tool/codex` | Adapter escribible core para Codex con `.agents/skills`, custom agents en `.codex/agents`, `.codex/lufy-agent-mapping.md`, hooks/rules/config y `AGENTS.md` gestionado. |
 | `internal/adapters/tool/claudecode` | Adapter dry-run para capabilities y preview conceptual de Claude Code. |
 | `internal/adapters/methodology/openspec` | Adapter OpenSpec para superficie full/lite. |
 | `internal/adapters/methodology/lufysdd` | Adapter inicial para `.lufy/workflows/sdd`. |
