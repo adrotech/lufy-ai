@@ -46,6 +46,8 @@ func ManagedBlock() string {
 - T2: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar SDD Lite o handoff estructurado.
 - T3: cambio trivial, mecánico, documental o local; permite ejecución directa con validación proporcional.
 - Usa skills repo-locales en .agents/skills cuando apliquen.
+- Si existe '.codex/lufy-agent-mapping.md', declara 'agent_execution_mode' como 'native', 'emulated' o 'inline' antes de delegar roles Lufy.
+- No afirmes haber usado subagentes Lufy nativos si el runtime solo expone roles genericos como 'default', 'explorer' o 'worker'.
 - No hagas commit, push, PR ni delivery sin autorización explícita.
 - Reporta siempre comandos de validación reales y resultados reales.
 - No asumas tooling no detectado en el repo.

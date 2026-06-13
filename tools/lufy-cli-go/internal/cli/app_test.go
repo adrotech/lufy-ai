@@ -419,6 +419,66 @@ func TestRunInstallPersistsHarnessSelection(t *testing.T) {
 	}
 }
 
+func TestRunInstallPersistsCodexSelection(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--tool", "codex"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil {
+		t.Fatal("expected install state")
+	}
+	if st.Tool != domain.ToolCodex {
+		t.Fatalf("tool = %s", st.Tool)
+	}
+	for _, path := range []string{
+		filepath.Join(target, ".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(target, ".codex", "config.toml"),
+		filepath.Join(target, ".codex", "agents", "implementer.toml"),
+		filepath.Join(target, ".codex", "hooks.json"),
+		filepath.Join(target, ".codex", "rules", "lufy.rules"),
+	} {
+		if _, err := os.Stat(path); err != nil {
+			t.Fatalf("expected codex asset %s: %v", path, err)
+		}
+	}
+	agents, err := os.ReadFile(filepath.Join(target, "AGENTS.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(agents, []byte("LUFY:BEGIN codex-harness")) {
+		t.Fatalf("AGENTS.md missing codex harness block: %s", string(agents))
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"verify", "--target", target, "--tool", "codex", "--quiet"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("verify codex expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"status", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("status codex expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("status output is not JSON: %v body=%s", err, out.String())
+	}
+	if decoded["tool"] != string(domain.ToolCodex) {
+		t.Fatalf("status tool = %#v body=%s", decoded["tool"], out.String())
+	}
+}
+
 func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
 	target := t.TempDir()
 	var out bytes.Buffer
@@ -457,9 +517,39 @@ func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
 	}
 }
 
+func TestRunInstallWithCodexHarness(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+
+	code := Run([]string{"install", "--target", target, "--yes", "--tool", "codex"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("install codex expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	for _, rel := range []string{
+		filepath.Join(".codex", "lufy-agent-mapping.md"),
+		filepath.Join(".codex", "agents", "implementer.toml"),
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
+			t.Fatalf("codex install missing %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(target, ".opencode")); !os.IsNotExist(err) {
+		t.Fatalf("codex install should not create .opencode, err=%v", err)
+	}
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st == nil || st.Tool != domain.ToolCodex {
+		t.Fatalf("install state tool = %#v", st)
+	}
+}
+
 func TestRunInstallRejectsUnsupportedHarnessFlags(t *testing.T) {
 	tests := [][]string{
-		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"install", "--target", t.TempDir(), "--dry-run", "--tool", "claude-code"},
 		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T1:none"},
 		{"install", "--target", t.TempDir(), "--dry-run", "--methodology-tier", "T3:spec-kit"},
 	}
@@ -482,7 +572,7 @@ func TestRunInstallHelpIncludesHarnessFlags(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("install --help expected ExitOK, got %d", code)
 	}
-	for _, want := range []string{"--tool opencode", "--methodology-tier T3:none"} {
+	for _, want := range []string{"--tool codex|opencode", "--methodology-tier T3:none"} {
 		if !bytes.Contains(errOut.Bytes(), []byte(want)) {
 			t.Fatalf("install help missing %q: %s", want, errOut.String())
 		}
@@ -972,7 +1062,7 @@ func TestRunSyncHelpAndUnknownFlag(t *testing.T) {
 
 func TestRunSyncAndVerifyRejectUnsupportedTool(t *testing.T) {
 	tests := [][]string{
-		{"sync", "--target", t.TempDir(), "--dry-run", "--tool", "codex"},
+		{"sync", "--target", t.TempDir(), "--dry-run", "--tool", "claude-code"},
 		{"verify", "--target", t.TempDir(), "--tool", "claude-code"},
 	}
 	for _, args := range tests {

@@ -69,7 +69,7 @@ func TestDetectAndVerifyExplainWritableAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(checks) == 0 || !strings.Contains(checks[0].Message, "structural") {
+	if len(checks) < 2 || !strings.Contains(checks[0].Message, "structural") || !strings.Contains(checks[1].Message, "lufy-agent-mapping.md") {
 		t.Fatalf("checks = %+v", checks)
 	}
 }

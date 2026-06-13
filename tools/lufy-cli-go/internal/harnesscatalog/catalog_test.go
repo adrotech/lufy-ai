@@ -100,6 +100,7 @@ func TestEffectiveCodexIncludesCodexSurfaceAndOmitsOpenCode(t *testing.T) {
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"),
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
 		filepath.Join(".codex", "config.toml"),
+		filepath.Join(".codex", "lufy-agent-mapping.md"),
 		filepath.Join(".codex", "agents", "implementer.toml"),
 		filepath.Join("openspec", "config.yaml"),
 	} {
@@ -159,6 +160,7 @@ func testCatalog() assets.Catalog {
 		{TargetRel: filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-skill"},
 		{TargetRel: filepath.Join(".codex", "config.toml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
+		{TargetRel: filepath.Join(".codex", "lufy-agent-mapping.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".codex", "agents", "implementer.toml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join("openspec", "config.yaml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-surface"},
 		{TargetRel: "tui.json", Kind: assets.KindFile, Policy: assets.PolicyNoReplace, Scope: assets.ScopeProject, Methodology: domain.MethodologyNone, Component: "tool-ui"},

@@ -9,7 +9,7 @@ import (
 
 func TestMinimalContentAndRecommendedAction(t *testing.T) {
 	body := string(MinimalContent())
-	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") {
+	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") || !strings.Contains(body, ".codex/lufy-agent-mapping.md") {
 		t.Fatalf("minimal content missing expected managed block: %q", body)
 	}
 

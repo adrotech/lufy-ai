@@ -137,7 +137,16 @@ El sistema SHALL modelar `codex` como tool adapter escribible core para superfic
 - **WHEN** el registry resuelve el adapter `codex`
 - **THEN** sus capabilities SHALL declarar `DryRunOnly=false`
 - **AND** SHALL declarar soporte project-local de skills, subagents, hooks, MCP, project config y system prompt
+- **AND** SHALL modelar `.codex/agents/*.toml` como custom agents nativos cuando tool discovery expone el rol Lufy exacto
 - **AND** SHALL NOT declarar TUI ni configuracion OpenCode
+
+#### Scenario: Codex role mapping is explicit
+- **WHEN** se instala o sincroniza la superficie Codex
+- **THEN** `.codex/lufy-agent-mapping.md` SHALL documentar los modos `native`, `emulated` e `inline`
+- **AND** SHALL requerir `native` cuando tool discovery expone el rol Lufy exacto
+- **AND** SHALL mapear roles Lufy a roles Codex genericos solo cuando los roles Lufy no sean invocables directamente
+- **AND** instrucciones gestionadas SHALL requerir que el assistant declare si esta usando roles nativos, emulados o inline
+- **AND** `.codex/rules/*.rules` SHALL remain reserved for Codex command execution policy, not Lufy role guidance
 
 #### Scenario: Codex render is installable
 - **WHEN** se renderiza la superficie del adapter `codex`
