@@ -640,7 +640,7 @@ func runSync(args []string, deps Dependencies) int {
 	harnessFlags := addToolFlag(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode] [--dry-run] [--yes]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool opencode|codex] [--dry-run] [--yes]")
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -786,7 +786,7 @@ func runInstall(args []string, deps Dependencies) int {
 	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]")
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool opencode|codex] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]")
 	}
 
 	if err := fs.Parse(args); err != nil {

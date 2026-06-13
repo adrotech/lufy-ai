@@ -48,7 +48,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos `/opsx-*`.
 - Comandos `/lufy.*` instalables según catálogo.
 - Agent Observatory TUI.
-- Superficie Codex core: roles Lufy bajo `.codex/agents`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules`, `.codex/config.toml` y bloque gestionado en `AGENTS.md`.
+- Superficie Codex core instalable con `lufy-ai install --tool codex`: custom agents Lufy bajo `.codex/agents`, mapeo explícito native/emulated/inline en `.codex/lufy-agent-mapping.md`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules`, `.codex/config.toml` y bloque gestionado en `AGENTS.md`.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
 - Lufy SDD inicial bajo `.lufy/workflows/sdd/` cuando se selecciona.
 
@@ -79,6 +79,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Límites actuales
 
 - Los adapters escribibles actuales son `opencode` y `codex`; `opencode` sigue siendo el default efectivo.
+- Algunas sesiones Codex pueden exponer solo roles genéricos (`default`, `explorer`, `worker`); Lufy debe usar roles nativos cuando tool discovery los expone y degradar explícitamente a `emulated`/`inline` cuando no.
 - `claude-code` no debe documentarse como instalable real; sigue dry-run/preview.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
 - `AGENTS.md`, `opencode.json` y `.lufy/config/project.yaml` son user-owned o user-managed.

@@ -3,8 +3,10 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/registry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
 
@@ -28,14 +30,14 @@ type harnessFlagValues struct {
 }
 
 func addHarnessFlags(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode")
+	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode o codex")
 	methodologyTier := methodologyTierFlags{}
 	fs.Var(&methodologyTier, "methodology-tier", "Override por tier: T1:openspec/full, T2:openspec/lite o T3:none; repetible")
 	return harnessFlagValues{Tool: tool, MethodologyTier: &methodologyTier}
 }
 
 func addToolFlag(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode")
+	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: opencode o codex")
 	return harnessFlagValues{Tool: tool}
 }
 
@@ -46,8 +48,9 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 		if tool == "" {
 			return domain.HarnessConfig{}, fmt.Errorf("--tool no puede estar vacío")
 		}
-		if tool != domain.ToolInitialDefault {
-			return domain.HarnessConfig{}, fmt.Errorf("tool adapter no soportado para escritura: %s; disponible: opencode", tool)
+		adapter, err := registry.Default().Tool(tool)
+		if err != nil || adapter.Capabilities().DryRunOnly {
+			return domain.HarnessConfig{}, fmt.Errorf("tool adapter no soportado para escritura: %s; disponibles: %s", tool, strings.Join(writableToolIDs(), ", "))
 		}
 		cfg.Tool = tool
 	}
@@ -67,6 +70,19 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 		return domain.HarnessConfig{}, err
 	}
 	return cfg, nil
+}
+
+func writableToolIDs() []string {
+	reg := registry.Default()
+	out := []string{}
+	for _, id := range reg.ToolIDs() {
+		adapter, err := reg.Tool(id)
+		if err == nil && !adapter.Capabilities().DryRunOnly {
+			out = append(out, string(id))
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func parseMethodologyTier(raw string) (domain.Tier, domain.MethodologySelection, error) {

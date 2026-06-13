@@ -45,12 +45,28 @@ func TestParseHarnessFlagsComposesRepeatedMethodologyOverrides(t *testing.T) {
 func TestParseHarnessFlagsRejectsUnsupportedTool(t *testing.T) {
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	flags := addHarnessFlags(fs)
-	if err := fs.Parse([]string{"--tool", "codex"}); err != nil {
+	if err := fs.Parse([]string{"--tool", "claude-code"}); err != nil {
 		t.Fatal(err)
 	}
 
 	if _, err := parseHarnessFlags(flags); err == nil {
 		t.Fatalf("expected unsupported tool error")
+	}
+}
+
+func TestParseHarnessFlagsAcceptsCodexTool(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	flags := addHarnessFlags(fs)
+	if err := fs.Parse([]string{"--tool", "codex"}); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := parseHarnessFlags(flags)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != domain.ToolCodex {
+		t.Fatalf("tool = %s", cfg.Tool)
 	}
 }
 

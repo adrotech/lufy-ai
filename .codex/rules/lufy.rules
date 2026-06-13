@@ -1,2 +1,5 @@
 # Managed by lufy-ai.
-# Project-specific allow/prompt rules can be added by the user after install.
+# Codex rules files use Starlark prefix_rule(...) entries for command
+# allow/prompt/forbid policy. Lufy role execution guidance lives in
+# AGENTS.md and .codex/lufy-agent-mapping.md, not in this rules file.
+# Project-specific command rules can be added by the user after install.
