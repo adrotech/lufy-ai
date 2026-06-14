@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
@@ -269,6 +270,7 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		recorder.emit("ok", clean, "archivo crítico")
 	}
 	verifyAgentsReference(target, opts.AllowMissingAgentsRef, recorder.emitAsset)
+	verifyCodexPRReviewerSkillContract(target, recorder.emit)
 
 	for _, asset := range st.Assets {
 		clean, err := platform.EnsureRelativeSafe(asset.TargetRel)
@@ -301,6 +303,41 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	reportExtraManagedDirFiles(target, requiredDirs, assetMap, recorder.emit)
 
 	return nil
+}
+
+func verifyCodexPRReviewerSkillContract(target string, emit func(string, string, string, ...any)) {
+	rel := filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md")
+	path, err := platform.SafeJoin(target, rel)
+	if err != nil {
+		emit("fail", rel, "skill Codex PR review inseguro: %s", err.Error())
+		return
+	}
+	if !regularFile(path) {
+		return
+	}
+	body, err := os.ReadFile(path)
+	if err != nil {
+		emit("fail", rel, "no se pudo leer skill Codex PR review: %s", err.Error())
+		return
+	}
+	text := string(body)
+	required := []string{
+		"pr_review/",
+		"pr-review-<number>-<yyyyMMdd-HHmm>.html",
+		".opencode/skills/pr.reviewer/SKILL.md",
+		"templates/report.html",
+		"Desk check",
+		"Scoring",
+		"Reporte generado:",
+		"open pr_review/pr-review-<...>.html",
+	}
+	for _, want := range required {
+		if !strings.Contains(text, want) {
+			emit("fail", rel, "skill Codex PR review no cumple contrato HTML Lufy: falta %q", want)
+			return
+		}
+	}
+	emit("ok", rel, "skill Codex PR review conserva contrato HTML Lufy")
 }
 
 func (e reportRecorder) emit(level, path, format string, args ...any) {

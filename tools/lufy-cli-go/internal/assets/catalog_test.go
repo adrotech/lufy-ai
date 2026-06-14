@@ -463,6 +463,88 @@ func TestAgentAssetsRequireRouterForSecuritySensitivePrompts(t *testing.T) {
 	}
 }
 
+func TestCodexPRReviewerSkillPreservesHTMLContract(t *testing.T) {
+	root := repoRoot(t)
+	read := func(rel string) string {
+		t.Helper()
+		body, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("ReadFile(%s) error = %v", rel, err)
+		}
+		return string(body)
+	}
+
+	cases := []struct {
+		name string
+		rel  string
+		want []string
+	}{
+		{
+			name: "codex visible skill requires Lufy HTML report",
+			rel:  filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md"),
+			want: []string{
+				"This Codex-visible skill MUST follow the Lufy PR review contract",
+				".opencode/skills/pr.reviewer/SKILL.md",
+				"Create `pr_review/` if it does not exist",
+				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
+				"templates/report.html",
+				"Desk check y simulación",
+				"Scoring weights",
+				"Reporte generado:",
+				"open pr_review/pr-review-<...>.html",
+			},
+		},
+		{
+			name: "embedded codex visible skill requires Lufy HTML report",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".agents", "skills", "pr-reviewer", "SKILL.md"),
+			want: []string{
+				"This Codex-visible skill MUST follow the Lufy PR review contract",
+				".opencode/skills/pr.reviewer/SKILL.md",
+				"Create `pr_review/` if it does not exist",
+				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
+				"templates/report.html",
+				"Desk check y simulación",
+				"Scoring weights",
+				"Reporte generado:",
+				"open pr_review/pr-review-<...>.html",
+			},
+		},
+		{
+			name: "openspec captures codex PR review contract",
+			rel:  filepath.Join("openspec", "specs", "instruction-surface-rendering", "spec.md"),
+			want: []string{
+				"Codex PR review skill preserves Lufy HTML contract",
+				"`.agents/skills/pr-reviewer/SKILL.md` SHALL require creating `pr_review/`",
+				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
+				"scoring, severity-ordered findings, desk check and simulation",
+				".opencode/skills/pr.reviewer/SKILL.md",
+			},
+		},
+		{
+			name: "embedded openspec captures codex PR review contract",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", "openspec", "specs", "instruction-surface-rendering", "spec.md"),
+			want: []string{
+				"Codex PR review skill preserves Lufy HTML contract",
+				"`.agents/skills/pr-reviewer/SKILL.md` SHALL require creating `pr_review/`",
+				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
+				"scoring, severity-ordered findings, desk check and simulation",
+				".opencode/skills/pr.reviewer/SKILL.md",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			text := read(tc.rel)
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", tc.rel, want)
+				}
+			}
+		})
+	}
+}
+
 type comparableAsset struct {
 	TargetRel    string
 	Kind         Kind

@@ -123,6 +123,53 @@ func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
 	}
 }
 
+func TestVerifyDetectsCodexPRReviewerMissingHTMLContract(t *testing.T) {
+	target := validVerifyTarget(t)
+	skillRel := filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md")
+	writeVerifyFile(t, filepath.Join(target, skillRel), `---
+name: pr-reviewer
+description: Review a PR or branch.
+---
+
+# PR Reviewer
+
+1. Lead with findings.
+2. Do not edit files.
+`)
+
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target}, &out); err == nil {
+		t.Fatalf("Run(light pr reviewer) expected error, output=%s", out.String())
+	}
+	if !strings.Contains(out.String(), "skill Codex PR review no cumple contrato HTML Lufy") || !strings.Contains(out.String(), "pr_review/") {
+		t.Fatalf("missing PR review contract failure, output=%s", out.String())
+	}
+
+	writeVerifyFile(t, filepath.Join(target, skillRel), `---
+name: pr-reviewer
+description: Review a PR or branch and generate the Lufy HTML report.
+---
+
+# PR Reviewer
+
+Use .opencode/skills/pr.reviewer/SKILL.md as the canonical contract.
+Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
+Use templates/report.html when available.
+Include Desk check and Scoring.
+Return:
+Reporte generado: `+"`"+`pr_review/pr-review-<...>.html`+"`"+`
+Abrir: `+"`"+`open pr_review/pr-review-<...>.html`+"`"+`
+`)
+
+	out.Reset()
+	if err := NewService().Run(Options{Target: target}, &out); err != nil {
+		t.Fatalf("Run(full pr reviewer) error = %v, output=%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "skill Codex PR review conserva contrato HTML Lufy") {
+		t.Fatalf("missing PR review contract ok, output=%s", out.String())
+	}
+}
+
 func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
