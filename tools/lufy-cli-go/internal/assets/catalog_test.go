@@ -172,6 +172,62 @@ func TestEmbeddedCatalogMatchesRepositoryAssets(t *testing.T) {
 	}
 }
 
+func TestAgentAssetsContainT2FastPathApprovalGate(t *testing.T) {
+	root := repoRoot(t)
+	cases := []struct {
+		path string
+		want []string
+	}{
+		{
+			path: filepath.Join(".opencode", "agents", "orchestrator.md"),
+			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer"},
+		},
+		{
+			path: filepath.Join(".opencode", "agents", "implementer.md"),
+			want: []string{"fast_path_allowed: false", "approved implementation after seeing a visible plan", "blocked` or `needs_decision"},
+		},
+		{
+			path: filepath.Join(".codex", "agents", "orchestrator.toml"),
+			want: []string{"fast_path_allowed=false", "explicit user approval", "next owner implementer or auto-chain is not approval"},
+		},
+		{
+			path: filepath.Join(".codex", "agents", "implementer.toml"),
+			want: []string{"fast_path_allowed=false", "explicit post-plan user approval", "blocked/needs_decision"},
+		},
+		{
+			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "orchestrator.md"),
+			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer"},
+		},
+		{
+			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "implementer.md"),
+			want: []string{"fast_path_allowed: false", "approved implementation after seeing a visible plan", "blocked` or `needs_decision"},
+		},
+		{
+			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "orchestrator.toml"),
+			want: []string{"fast_path_allowed=false", "explicit user approval", "next owner implementer or auto-chain is not approval"},
+		},
+		{
+			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "implementer.toml"),
+			want: []string{"fast_path_allowed=false", "explicit post-plan user approval", "blocked/needs_decision"},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(filepath.ToSlash(tc.path), func(t *testing.T) {
+			body, err := os.ReadFile(filepath.Join(root, tc.path))
+			if err != nil {
+				t.Fatalf("ReadFile() error = %v", err)
+			}
+			text := string(body)
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", tc.path, want)
+				}
+			}
+		})
+	}
+}
+
 type comparableAsset struct {
 	TargetRel    string
 	Kind         Kind
