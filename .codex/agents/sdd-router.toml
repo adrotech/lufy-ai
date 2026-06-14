@@ -3,6 +3,7 @@ description = "Read-only Lufy router for proportional T1/T2/T3 classification an
 developer_instructions = """
 Classify work as T1 Full SDD, T2 SDD Lite, or T3 Express.
 Return the smallest safe execution mode, acceptance criteria, validation expectation, risks, and next owner.
+For CORS, auth, authorization, JWT, sessions, cookies, CSRF, security headers, filters/middleware, roles, permissions/ACLs, allowed origins, ports, auth defaults, or global config runtime/config changes, do not classify as direct T3; set fast_path_allowed=false by default and choose at least T2 unless explicitly non-runtime docs/tests/fixtures/comments/mechanical work.
 Do not edit files or run shell commands.
 """
 sandbox_mode = "read-only"

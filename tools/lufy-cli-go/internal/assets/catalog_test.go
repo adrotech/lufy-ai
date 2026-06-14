@@ -333,6 +333,136 @@ func TestAgentAssetsCoverT2ApprovalConversationScenarios(t *testing.T) {
 	}
 }
 
+func TestAgentAssetsRequireRouterForSecuritySensitivePrompts(t *testing.T) {
+	root := repoRoot(t)
+	read := func(rel string) string {
+		t.Helper()
+		body, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("ReadFile(%s) error = %v", rel, err)
+		}
+		return string(body)
+	}
+
+	cases := []struct {
+		name string
+		rel  string
+		want []string
+	}{
+		{
+			name: "opencode orchestrator routes sensitive prompts through router",
+			rel:  filepath.Join(".opencode", "agents", "orchestrator.md"),
+			want: []string{
+				"Use `sdd-router` before implementation for security-sensitive runtime or global configuration requests",
+				"CORS, authentication, authorization, JWT",
+				"Do not classify these requests as direct `T3` from `orchestrator`",
+				"documentation, tests, fixtures, comments, or a non-runtime/non-config mechanical change",
+			},
+		},
+		{
+			name: "embedded opencode orchestrator routes sensitive prompts through router",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "orchestrator.md"),
+			want: []string{
+				"Use `sdd-router` before implementation for security-sensitive runtime or global configuration requests",
+				"CORS, authentication, authorization, JWT",
+				"Do not classify these requests as direct `T3` from `orchestrator`",
+				"documentation, tests, fixtures, comments, or a non-runtime/non-config mechanical change",
+			},
+		},
+		{
+			name: "opencode router classifies sensitive prompts as non fast path",
+			rel:  filepath.Join(".opencode", "agents", "sdd-router.md"),
+			want: []string{
+				"Security-sensitive routing guardrail",
+				"CORS, authentication, authorization, JWT",
+				"are not direct T3",
+				"Set `fast_path_allowed: false` by default",
+				"T3 is allowed only for explicitly non-runtime/non-config documentation, tests, fixtures, comments, or mechanical updates",
+			},
+		},
+		{
+			name: "embedded opencode router classifies sensitive prompts as non fast path",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "sdd-router.md"),
+			want: []string{
+				"Security-sensitive routing guardrail",
+				"CORS, authentication, authorization, JWT",
+				"are not direct T3",
+				"Set `fast_path_allowed: false` by default",
+				"T3 is allowed only for explicitly non-runtime/non-config documentation, tests, fixtures, comments, or mechanical updates",
+			},
+		},
+		{
+			name: "codex orchestrator routes sensitive prompts through router",
+			rel:  filepath.Join(".codex", "agents", "orchestrator.toml"),
+			want: []string{
+				"Route security-sensitive runtime/global-config requests through sdd-router before implementation",
+				"CORS, auth, authorization, JWT",
+				"Do not classify them as direct T3 unless explicitly limited to docs/tests/fixtures/comments or non-runtime mechanical work",
+			},
+		},
+		{
+			name: "embedded codex orchestrator routes sensitive prompts through router",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "orchestrator.toml"),
+			want: []string{
+				"Route security-sensitive runtime/global-config requests through sdd-router before implementation",
+				"CORS, auth, authorization, JWT",
+				"Do not classify them as direct T3 unless explicitly limited to docs/tests/fixtures/comments or non-runtime mechanical work",
+			},
+		},
+		{
+			name: "codex router marks sensitive prompts non direct T3",
+			rel:  filepath.Join(".codex", "agents", "sdd-router.toml"),
+			want: []string{
+				"CORS, auth, authorization, JWT",
+				"do not classify as direct T3",
+				"set fast_path_allowed=false by default",
+				"explicitly non-runtime docs/tests/fixtures/comments/mechanical work",
+			},
+		},
+		{
+			name: "embedded codex router marks sensitive prompts non direct T3",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "sdd-router.toml"),
+			want: []string{
+				"CORS, auth, authorization, JWT",
+				"do not classify as direct T3",
+				"set fast_path_allowed=false by default",
+				"explicitly non-runtime docs/tests/fixtures/comments/mechanical work",
+			},
+		},
+		{
+			name: "openspec captures sensitive routing scenarios",
+			rel:  filepath.Join("openspec", "specs", "sdd-harness-routing", "spec.md"),
+			want: []string{
+				"Security-sensitive runtime request is not direct T3",
+				"`orchestrator` SHALL route to `sdd-router` before implementation",
+				"`sdd-router` SHALL set `fast_path_allowed: false` by default and classify at least T2",
+				"Security keyword documentation-only exception",
+			},
+		},
+		{
+			name: "embedded openspec captures sensitive routing scenarios",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", "openspec", "specs", "sdd-harness-routing", "spec.md"),
+			want: []string{
+				"Security-sensitive runtime request is not direct T3",
+				"`orchestrator` SHALL route to `sdd-router` before implementation",
+				"`sdd-router` SHALL set `fast_path_allowed: false` by default and classify at least T2",
+				"Security keyword documentation-only exception",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			text := read(tc.rel)
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", tc.rel, want)
+				}
+			}
+		})
+	}
+}
+
 type comparableAsset struct {
 	TargetRel    string
 	Kind         Kind
