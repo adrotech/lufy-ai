@@ -20,10 +20,10 @@
     .gauge{margin:30px auto 36px;text-align:center;box-shadow:var(--shadow-hero);}
     .gauge .score{font-size:56px;font-weight:600;letter-spacing:0;color:var(--primary);}
     .gauge .verdict{font-size:18px;font-weight:600;margin-top:8px;color:var(--ink);}
-    .scoregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:20px;}
+    .scoregrid,.riskgrid,.audiencegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:20px;}
     .scoreitem{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:14px;text-align:center;}
     .scoreitem:nth-child(1){background:var(--lavender);}.scoreitem:nth-child(2){background:var(--sky);}.scoreitem:nth-child(3){background:var(--mint);}.scoreitem:nth-child(4){background:var(--rose);}.scoreitem:nth-child(5){background:var(--peach);}.scoreitem:nth-child(6){background:#fef7d6;}
-    .scoreitem .n{font-size:22px;font-weight:600;color:var(--ink);}.scoreitem .l{font-size:13px;color:var(--slate);}
+    .scoreitem .n{font-size:22px;font-weight:600;color:var(--ink);}.scoreitem .l{font-size:13px;color:var(--slate);}.riskitem,.audienceitem{background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:14px;}.riskitem strong,.audienceitem strong{display:block;color:var(--ink);margin-bottom:6px;}
     .issue{border-left:6px solid var(--error);}.issue.alto{border-left-color:var(--orange);}.issue.medio{border-left-color:#d97706;}.issue.bajo{border-left-color:var(--link);}.issue.info{border-left-color:var(--stone);}.issue.good{border-left-color:var(--green);background:var(--mint);}
     .final-summary{border-color:rgba(86,69,212,.28);box-shadow:var(--shadow-hero);}
     .final-summary .decision{font-size:22px;font-weight:600;color:var(--primary);margin-bottom:8px;}
@@ -46,11 +46,12 @@
       <div class="score">SCORE%</div>
       <div class="verdict">VEREDICTO</div>
       <div class="scoregrid">
-        <div class="scoreitem"><div class="n">-/10</div><div class="l">Arquitectura</div></div>
-        <div class="scoreitem"><div class="n">-/10</div><div class="l">Correctitud</div></div>
-        <div class="scoreitem"><div class="n">-/10</div><div class="l">Pruebas</div></div>
-        <div class="scoreitem"><div class="n">-/10</div><div class="l">Seguridad</div></div>
+        <div class="scoreitem"><div class="n">-/20</div><div class="l">Arquitectura</div></div>
+        <div class="scoreitem"><div class="n">-/20</div><div class="l">Correctitud</div></div>
+        <div class="scoreitem"><div class="n">-/15</div><div class="l">Pruebas</div></div>
+        <div class="scoreitem"><div class="n">-/15</div><div class="l">Seguridad</div></div>
         <div class="scoreitem"><div class="n">-/10</div><div class="l">Observabilidad</div></div>
+        <div class="scoreitem"><div class="n">-/10</div><div class="l">Mantenibilidad</div></div>
         <div class="scoreitem"><div class="n">-/10</div><div class="l">Desk check</div></div>
       </div>
     </div>
@@ -58,11 +59,80 @@
     <h2>Resumen ejecutivo</h2>
     <div class="card"><ul><li>Completar con hallazgos principales.</li></ul></div>
 
+    <h2>Metadata del PR</h2>
+    <div class="card">
+      <table>
+        <tr><th>Campo</th><th>Valor</th></tr>
+        <tr><td>Base</td><td>BASE_REF</td></tr>
+        <tr><td>Head</td><td>HEAD_REF</td></tr>
+        <tr><td>Autor</td><td>AUTHOR</td></tr>
+        <tr><td>Estado</td><td>PR_STATE</td></tr>
+        <tr><td>Checks</td><td>CHECK_STATUS</td></tr>
+      </table>
+    </div>
+
+    <h2>Confianza del review y riesgo de merge</h2>
+    <div class="card">
+      <div class="riskgrid">
+        <div class="riskitem"><strong>Confianza del review</strong>Alta/Media/Baja con justificación de evidencia disponible.</div>
+        <div class="riskitem"><strong>Riesgo de merge</strong>Bajo/Medio/Alto según severidades, checks, migraciones, contratos y rollout.</div>
+        <div class="riskitem"><strong>Cobertura</strong>Completa/parcial; indicar superficies revisadas y limitaciones.</div>
+      </div>
+    </div>
+
     <h2>Hallazgos críticos y altos</h2>
     <div class="issue info">No se registraron hallazgos en esta plantilla base.</div>
 
+    <h2>Hallazgos medios y bajos</h2>
+    <div class="issue info">Completar con hallazgos MEDIO/BAJO o marcar No aplica.</div>
+
+    <h2>Buenas prácticas observadas</h2>
+    <div class="issue good">Completar con decisiones correctas observadas o marcar No disponible.</div>
+
+    <h2>Análisis arquitectónico</h2>
+    <div class="card">Completar con boundaries, dependencias, contratos, capas y ajuste a reglas locales.</div>
+
+    <h2>Seguridad y privacidad</h2>
+    <div class="card">Completar con auth/authz, secrets, PII, input handling, permisos y exposición de datos.</div>
+
+    <h2>Pruebas y evidencia</h2>
+    <div class="card">Completar con checks, tests, validación manual/estática y limitaciones.</div>
+
+    <h2>Test gap map</h2>
+    <div class="card">
+      <table>
+        <tr><th>Comportamiento cambiado</th><th>Evidencia existente</th><th>Evidencia faltante</th><th>Riesgo cubierto</th></tr>
+        <tr><td>Completar</td><td>No disponible</td><td>Completar</td><td>Completar</td></tr>
+      </table>
+    </div>
+
+    <h2>Observabilidad y operación</h2>
+    <div class="card">Completar con logs, métricas, trazas, diagnósticos, rollback y monitores.</div>
+
+    <h2>Migraciones, configuración y contratos</h2>
+    <div class="card">Completar con schema/env/flags/contratos públicos, compatibilidad y rollback.</div>
+
     <h2>Desk check y simulación</h2>
     <details><summary>Escenario TC-1</summary><div>Completar trazabilidad por capas.</div></details>
+
+    <h2>Comentarios previos no resueltos</h2>
+    <div class="card">Clasificar comentarios/reviews previos como resuelto, pendiente, no verificable o no aplica.</div>
+
+    <h2>Resumen por audiencia</h2>
+    <div class="card">
+      <div class="audiencegrid">
+        <div class="audienceitem"><strong>Autor del PR</strong>Correcciones concretas o follow-ups aceptables.</div>
+        <div class="audienceitem"><strong>Reviewer humano</strong>Focos que debe mirar primero.</div>
+        <div class="audienceitem"><strong>Tech lead</strong>Riesgo de merge/release y tradeoffs.</div>
+        <div class="audienceitem"><strong>QA/release</strong>Escenarios manuales o automáticos a validar.</div>
+      </div>
+    </div>
+
+    <h2>Action items priorizados</h2>
+    <div class="card"><ol><li>Completar con acción, dueño sugerido y criterio de aceptación.</li></ol></div>
+
+    <h2>Limitaciones del review</h2>
+    <div class="card">Completar con evidencia faltante, permisos no disponibles, cobertura parcial o supuestos.</div>
 
     <h2>Resumen final y recomendación</h2>
     <div class="final-summary">
