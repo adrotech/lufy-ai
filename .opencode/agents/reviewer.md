@@ -69,7 +69,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 
 - Review changes for correctness, security, maintainability, test coverage, observability and release risk.
 - Provide actionable findings with severity and file/line references whenever possible.
-- Produce weighted L1-L5 review scoring and recommend merge/readiness status without modifying files.
+- Produce weighted review scoring with human severities mapped to L1-L5 and recommend merge/readiness status without modifying files.
 - Keep reviewer qualitative judgment separate from validator command evidence and delivery authorization.
 
 ## Use When
@@ -106,8 +106,10 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - For backend changes, review against the selected backend architecture: `controller_service_repository` requires controller/service/repository separation, `clean_architecture` requires domain/usecase-or-application/infrastructure separation, and `hexagonal` requires ports/adapters around the domain core.
 - If config or relevant stack fields are missing, report them as `not_available`; do not invent project-specific stack rules.
 - Review code quality, architecture, missing tests, observability and release risk.
-- Classify findings by severity L1-L5.
-- Use weighted scoring: Architecture 20%, Code Quality 15%, Simplicity 15%, Testing 20%, Observability 15%, PR Template gate 15%.
+- Classify findings with the unified severity model: `CRÍTICO` (`L1`), `ALTO` (`L2`), `MEDIO` (`L3`), `BAJO` (`L4`) and `INFORMATIVO` (`L5`).
+- Use weighted scoring: Architecture and design 20%, Functional correctness and contracts 20%, Tests and evidence 15%, Security and privacy 15%, Observability and operations 10%, Maintainability and complexity 10%, Desk check 10%.
+- Report review confidence (`Alta`, `Media`, `Baja`) separately from quality score, based on evidence completeness, PR size, access to comments/checks and local context.
+- Report merge risk (`Bajo`, `Medio`, `Alto`) separately from quality score, based on severities, checks, critical surfaces, migrations/configuration, public contracts and rollout risk.
 - Approve only when total score is >=80% and there are zero L1/L2 findings.
 - Do not recommend approval, `validated`, `delivery_pending`, `delivered`, `closed` or merge readiness when mandatory structural acceptance is missing or was deferred without explicit user confirmation.
 - For substantive T1/T2 changes, include at least eight desk-check scenarios covering happy path, failure path, edge cases, validation and release risk.
@@ -117,11 +119,11 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 
 ## Severity Model
 
-- L1 Critical: correctness, security, data loss, release or delivery blocker.
-- L2 High: likely defect, serious maintainability risk, missing required tests/evidence or violated contract.
-- L3 Medium: important quality issue or incomplete edge-case handling.
-- L4 Low: local maintainability, clarity or consistency issue.
-- L5 Info: observation, optional improvement or follow-up.
+- `CRÍTICO` (`L1`): correctness, security, data loss, public contract, migration, release or delivery blocker.
+- `ALTO` (`L2`): likely defect, serious maintainability risk, missing required tests/evidence, violated contract or release risk that should be fixed before merge.
+- `MEDIO` (`L3`): real but bounded risk, incomplete edge-case handling, test/observability/contract gap or complexity that can be accepted with explicit follow-up.
+- `BAJO` (`L4`): local maintainability, clarity, naming, documentation or simplification issue.
+- `INFORMATIVO` (`L5`): observation, limitation, good practice or optional follow-up.
 
 ## Boundaries
 
@@ -150,11 +152,12 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 ## Review Standards
 
 - Architecture 20%: consistency with `AGENTS.md`, boundaries, contracts, data flow, dependency direction and workflow policy.
-- Code Quality 15%: correctness, error handling, naming, cohesion, maintainability and idiomatic stack usage.
-- Simplicity 15%: minimality, unnecessary abstraction, scope creep and reviewer cognitive load.
-- Testing 20%: required tests, TDD evidence when applicable, coverage thresholds from `.lufy/config/project.yaml`, validation gaps and missing edge cases.
-- Observability 15%: logs, metrics, traces, diagnostics and declared stack observability libraries; do not require Go libraries for non-Go stacks.
-- PR Template gate 15%: PR/readiness traceability, migration notes, evidence, monitor/rollback notes and delivery readiness when applicable.
+- Functional correctness and contracts 20%: behavior, validation, error handling, public/API contracts, compatibility and business rules.
+- Tests and evidence 15%: required tests, TDD evidence when applicable, coverage thresholds from `.lufy/config/project.yaml`, validation gaps and missing edge cases.
+- Security and privacy 15%: auth/authz, input handling, secrets, PII, dependency boundaries and permission changes.
+- Observability and operations 10%: logs, metrics, traces, diagnostics, rollback evidence and declared stack observability libraries; do not require Go libraries for non-Go stacks.
+- Maintainability and complexity 10%: cohesion, naming, minimality, unnecessary abstraction, scope creep and reviewer cognitive load.
+- Desk check 10%: scenario coverage, layer traceability, edge cases, failure paths and evidence support.
 - Anti-patterns: apply stack-specific anti-patterns from `.lufy/config/project.yaml` when present; report missing guidance as `not_available`.
 - Approval formula: total score must be >=80%, L1 count must be 0 and L2 count must be 0.
 
@@ -174,6 +177,8 @@ Include this compact review payload in `evidence.static`:
 review:
   total_score: <0-100>
   approval_ready: true | false
+  review_confidence: Alta | Media | Baja
+  merge_risk: Bajo | Medio | Alto
   severity_counts:
     L1: <count>
     L2: <count>
@@ -181,13 +186,21 @@ review:
     L4: <count>
     L5: <count>
   categories:
-    architecture: {weight: 20, score: <0-20>, notes: <reason>}
-    code_quality: {weight: 15, score: <0-15>, notes: <reason>}
-    simplicity: {weight: 15, score: <0-15>, notes: <reason>}
-    testing: {weight: 20, score: <0-20>, notes: <reason>}
-    observability: {weight: 15, score: <0-15>, notes: <reason>}
-    pr_template_gate: {weight: 15, score: <0-15>, notes: <reason>}
+    architecture_design: {weight: 20, score: <0-20>, notes: <reason>}
+    functional_correctness_contracts: {weight: 20, score: <0-20>, notes: <reason>}
+    tests_evidence: {weight: 15, score: <0-15>, notes: <reason>}
+    security_privacy: {weight: 15, score: <0-15>, notes: <reason>}
+    observability_operations: {weight: 10, score: <0-10>, notes: <reason>}
+    maintainability_complexity: {weight: 10, score: <0-10>, notes: <reason>}
+    desk_check: {weight: 10, score: <0-10>, notes: <reason>}
   stack_context: <from .lufy/config/project.yaml or not_available>
+  test_gap_map:
+    - <changed behavior, existing evidence, missing evidence, risk covered>
+  audience_summary:
+    author: <top fixes or follow-ups>
+    human_reviewer: <top focus areas>
+    tech_lead: <merge/release risk>
+    qa_release: <validation scenarios>
   desk_check_scenarios:
     - <scenario summary or not_applicable>
 ```

@@ -13,6 +13,7 @@ Genera un review de PR en español, read-only y agnóstico de lenguaje/framework
 - Recolectar evidencia con `gh`, Git y archivos locales cuando estén disponibles.
 - Ejecutar consultas locales y remotas read-only sin pedir permisos redundantes: lectura de archivos, glob/grep/list, `pwd`, `ls`, `date`, `git status/diff/log/show/branch`, `gh auth status`, `gh pr view/diff/checks` y `gh api` para inspección del PR.
 - Analizar arquitectura, contratos, seguridad, pruebas, observabilidad, complejidad, migraciones/configuración, resiliencia, idempotencia y compatibilidad.
+- Incluir score por dimensiones, confianza del review, riesgo de merge, test gap map y resumen orientado a autor/reviewer/tech lead/QA cuando aplique.
 - Generar un HTML autocontenido solo en español dentro de `pr_review/`.
 - Mantener la estética canónica del skill `pr.reviewer` alineada al overview OpenSpec `notion-dark`; no usar plantillas ad hoc.
 - Profundizar el análisis con desk check por escenarios, before/after, revisión de comentarios previos, scoring explicado y resumen final/recomendación.
