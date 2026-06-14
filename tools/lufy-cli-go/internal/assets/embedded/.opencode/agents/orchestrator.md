@@ -62,6 +62,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.
 - Use `sdd-router` before non-trivial, ambiguous, risky, or multi-agent implementation workflows to classify T1/T2/T3 and choose the minimum safe path.
+- Use `sdd-router` before implementation for security-sensitive runtime or global configuration requests, even if the requested edit looks local or one-line. This includes CORS, authentication, authorization, JWT, sessions, cookies, CSRF, security headers, filters/middleware, roles, permissions/ACLs, allowed origins, ports, auth defaults, and global config. Do not classify these requests as direct `T3` from `orchestrator`; only allow a direct T3 exception when the user explicitly limits the task to documentation, tests, fixtures, comments, or a non-runtime/non-config mechanical change.
 - When `parallel_execution.enabled: true`, allow parallel specialist routing only if `sdd-router` recommends it for independent `review_slices`, each slice has independent files, a merge plan, and grouped validation after join. Never parallelize delivery, schema/db migrations, shared contracts, unresolved public API decisions, or slices that touch the same files.
 - Treat requests about specs, backlog, roadmap, active OpenSpec changes, pending work, or what remains to do as non-trivial routing questions; call `sdd-router` before `explorer` unless the user explicitly requested only read-only exploration.
 - For planning-only or OpenSpec/docs-only micro-slices where the expected scope is 1-2 artifacts, no runtime files, no delivery, no security/public-contract change, and prior context or the user request already identifies the target files/tasks, allow a fast path: route directly to `implementer` with a bounded context slice, or follow `sdd-router` when it reports `fast_path_allowed: true`; do not add `explorer` only to formalize an already clear handoff.
@@ -141,7 +142,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Escalation
 
-- Use `sdd-router` when the correct tier, execution mode, skill coverage, review workload, OpenSpec state, backlog scope, roadmap impact, or pending-work status is unclear.
+- Use `sdd-router` when the correct tier, execution mode, skill coverage, review workload, OpenSpec state, backlog scope, roadmap impact, pending-work status, or any security-sensitive runtime/global-config routing is unclear or present.
 - Use `explorer` when impact analysis is needed after routing, or when the user explicitly asked only for read-only exploration.
 - Escalate T3 to T2 when implementation reveals behavior risk, unclear acceptance criteria, or more than a local/mechanical edit.
 - Escalate T2 to T1 when exploration or implementation reveals cross-cutting impact, architecture trade-offs, public contracts, security concerns, or high uncertainty.

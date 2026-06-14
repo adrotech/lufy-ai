@@ -17,6 +17,18 @@ The system SHALL classify development requests into T1 Full SDD, T2 SDD Lite, or
 - **WHEN** a request is small, mechanical, documentary, local, and has no meaningful behavior risk
 - **THEN** the system SHALL classify the request as T3 Express
 
+#### Scenario: Security-sensitive runtime request is not direct T3
+- **WHEN** a request touches or likely touches runtime behavior or global configuration for CORS, authentication, authorization, JWT, sessions, cookies, CSRF, security headers, filters or middleware, roles, permissions or ACLs, allowed origins, ports, auth defaults, or global config
+- **THEN** the workflow SHALL NOT classify it as direct T3 from `orchestrator`
+- **AND** `orchestrator` SHALL route to `sdd-router` before implementation
+- **AND** `sdd-router` SHALL set `fast_path_allowed: false` by default and classify at least T2, escalating to T1 when public contracts, cross-cutting security policy, auth defaults, architecture or unclear blast radius are involved
+
+#### Scenario: Security keyword documentation-only exception
+- **WHEN** a request mentions CORS, authentication, authorization, JWT, sessions, cookies, CSRF, security headers, filters or middleware, roles, permissions or ACLs, allowed origins, ports, auth defaults, or global config
+- **AND** the user explicitly limits the task to documentation, tests, fixtures, comments, or a non-runtime/non-config mechanical update
+- **THEN** the workflow MAY classify the task as T3 Express
+- **AND** it SHALL record why no runtime or global configuration behavior is affected
+
 ### Requirement: Lightweight SDD router
 The system SHALL provide a lightweight `sdd-router` subagent that classifies the request and recommends the minimum safe workflow before activating heavier subagents or OpenSpec flows.
 
