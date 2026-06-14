@@ -847,7 +847,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):   "close skill\n",
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"): "sdd skill\n",
 		filepath.Join(".codex", "README.md"):                           "codex readme\n",
-		filepath.Join(".codex", "config.toml"):                         "project_doc_max_bytes = 32768\n",
+		filepath.Join(".codex", "config.toml"):                         "project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n",
 		filepath.Join(".codex", "lufy-agent-mapping.md"):               "agent_execution_mode\n",
 		filepath.Join(".codex", "agents", "implementer.toml"):          "name = \"implementer\"\n",
 		filepath.Join(".codex", "hooks.json"):                          "{\"hooks\":{}}\n",

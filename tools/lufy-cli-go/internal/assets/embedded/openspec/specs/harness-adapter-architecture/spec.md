@@ -146,6 +146,8 @@ El sistema SHALL modelar `codex` como tool adapter escribible core para superfic
 - **AND** SHALL requerir `native` cuando tool discovery expone el rol Lufy exacto
 - **AND** SHALL mapear roles Lufy a roles Codex genericos solo cuando los roles Lufy no sean invocables directamente
 - **AND** instrucciones gestionadas SHALL requerir que el assistant declare si esta usando roles nativos, emulados o inline
+- **AND** instrucciones gestionadas SHALL tratar `@orchestrator` y `@<rol-lufy>` como solicitud de delegacion con spawn/wait/close cuando subagent tooling este disponible
+- **AND** instrucciones gestionadas SHALL bloquear el fallback inline silencioso cuando una delegacion fue solicitada o requerida
 - **AND** `.codex/rules/*.rules` SHALL remain reserved for Codex command execution policy, not Lufy role guidance
 
 #### Scenario: Codex render is installable

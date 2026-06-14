@@ -1,6 +1,9 @@
 # Managed by lufy-ai.
 project_doc_max_bytes = 32768
 
+[features]
+multi_agent = true
+
 [agents]
 max_threads = 6
 max_depth = 1
