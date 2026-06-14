@@ -179,7 +179,7 @@ En scope `project`, la CLI gestiona:
 
 La CLI sigue reconociendo la referencia legacy `@lufy-ia.harness.md` para compatibilidad. `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
 
-En Codex, `lufy-ai install --tool codex` instala archivos `.codex/agents/*.toml` como custom agents para roles Lufy. La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos.
+En Codex, `lufy-ai install --tool codex` instala archivos `.codex/agents/*.toml` como custom agents para roles Lufy y habilita `features.multi_agent` en `.codex/config.toml`. La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
 
 
 

@@ -65,7 +65,7 @@ func TestProjectConfigLifecycleSupportsCodexManagedConfig(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(target, ".codex"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(target, CodexProjectConfigFile), []byte("project_doc_max_bytes = 32768\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(target, CodexProjectConfigFile), []byte("project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if exists, err := ValidateProjectConfig(domain.ToolCodex, target); err != nil || !exists {

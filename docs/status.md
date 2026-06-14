@@ -48,7 +48,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos `/opsx-*`.
 - Comandos `/lufy.*` instalables según catálogo.
 - Agent Observatory TUI.
-- Superficie Codex core instalable con `lufy-ai install --tool codex`: custom agents Lufy bajo `.codex/agents`, mapeo explícito native/emulated/inline en `.codex/lufy-agent-mapping.md`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules`, `.codex/config.toml` y bloque gestionado en `AGENTS.md`.
+- Superficie Codex core instalable con `lufy-ai install --tool codex`: custom agents Lufy bajo `.codex/agents`, multi-agent habilitado en `.codex/config.toml`, mapeo explícito native/emulated/inline y contrato `@<rol-lufy>` como delegación en `.codex/lufy-agent-mapping.md`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules` y bloque gestionado en `AGENTS.md`.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
 - Lufy SDD inicial bajo `.lufy/workflows/sdd/` cuando se selecciona.
 

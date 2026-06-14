@@ -62,8 +62,10 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 14. Durante una propuesta, concentrar el análisis de código viejo al inicio y la revisión final en archivos viejos modificados/afectados; no releer archivos ya analizados salvo conflicto, bloqueo, nueva evidencia, cambio de alcance o riesgo explícito.
 15. Usar routing proporcional T1/T2/T3 para propuestas, funcionalidades y tareas: elegir el flujo más pequeño que resuelva el pedido con seguridad.
 16. Mantener aislamiento de subagentes: pasar contexto mínimo, permisos mínimos y contrato de salida claro.
-17. Resolver skills local-first desde `.opencode/skills`; AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
-18. Aplicar Review Workload Harness en T1 y T2 con varios riesgos: pensar en el reviewer humano, dividir features grandes en slices revisables y entregar por partes cuando reduzca carga cognitiva; no fragmentar T3 artificialmente.
+17. En Codex, `@orchestrator` o `@<rol-lufy>` es una solicitud de delegación: usar subagent tooling con spawn/wait/close cuando esté disponible; no responder como ese rol en el mismo hilo para luego seguir ejecutando.
+18. Si Codex no expone subagent tooling para una delegación solicitada o requerida, reportar el bloqueo y no convertir silenciosamente la solicitud en ejecución inline.
+19. Resolver skills local-first desde `.opencode/skills`; AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
+20. Aplicar Review Workload Harness en T1 y T2 con varios riesgos: pensar en el reviewer humano, dividir features grandes en slices revisables y entregar por partes cuando reduzca carga cognitiva; no fragmentar T3 artificialmente.
 
 ## Routing SDD proporcional
 

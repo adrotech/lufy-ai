@@ -12,6 +12,9 @@ func TestMinimalContentAndRecommendedAction(t *testing.T) {
 	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") || !strings.Contains(body, ".codex/lufy-agent-mapping.md") {
 		t.Fatalf("minimal content missing expected managed block: %q", body)
 	}
+	if !strings.Contains(body, "@orchestrator") || !strings.Contains(body, "spawn/wait/close") || !strings.Contains(body, "no conviertas silenciosamente") {
+		t.Fatalf("minimal content missing Codex delegation guardrails: %q", body)
+	}
 
 	action := RecommendedInstallAction()
 	if !strings.Contains(action, "lufy-ai install") || !strings.Contains(action, "bloque gestionado") {
