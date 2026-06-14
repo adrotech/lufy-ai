@@ -16,10 +16,19 @@ Revisa un Pull Request existente y genera un reporte HTML autocontenido en espa�
 
 - Modo read-only: no edites archivos de código, no comentes en GitHub, no apruebes, no rechaces, no mergees y no ejecutes delivery.
 - Puedes crear `pr_review/` y escribir el HTML del reporte dentro de esa carpeta.
+- El consentimiento de revisión cubre consultas locales y remotas read-only del repositorio y del PR: lectura de archivos, glob/grep/list, `pwd`, `ls`, `date`, `git status`, `git diff`, `git log`, `git show`, `git branch`, `gh auth status`, `gh pr view`, `gh pr diff`, `gh pr checks` y `gh api` para comentarios/threads cuando `gh pr view` no alcance.
+- No pidas permiso por cada consulta read-only normal del review; pide permiso solo si necesitas una acción fuera del allowlist, acceso externo no relacionado con el PR/repositorio o una operación con efectos secundarios.
 - No inventes evidencia, checks, comentarios previos, cobertura, benchmarks, monitores ni riesgos.
 - El contenido humano del reporte debe estar solo en español. Preserva identificadores técnicos, rutas, nombres de comandos, IDs, URLs, snippets y nombres de tecnologías.
 - Si falta evidencia, usa `No disponible`, `No aplica` o `Pendiente de confirmar`.
 - No uses reglas específicas de un dominio/proyecto salvo que estén documentadas en el repositorio o en el PR.
+
+## Permisos esperados
+
+- El agente `reviewer` debe tener permisos suficientes para ejecutar herramientas de consulta sin prompts repetidos: `read`, `glob`, `grep`, `list`, `webfetch`, utilidades locales inocuas, comandos `git` read-only y comandos `gh pr`/`gh api` de inspección.
+- El único write permitido por este skill es crear `pr_review/` y escribir `pr_review/pr-review-*.html` con el reporte autocontenido.
+- Están fuera de alcance: checkout, reset, merge, rebase, commit, push, publicar comentarios, aprobar/rechazar PRs, mergear PRs, ejecutar scripts, package managers, builds, tests o descargas externas.
+- Si OpenCode solicita permiso para una consulta cubierta por este allowlist, considera que la configuración del agente está incompleta y reporta la limitación en el HTML.
 
 ## Inputs esperados
 
@@ -35,6 +44,8 @@ Revisa un Pull Request existente y genera un reporte HTML autocontenido en espa�
    gh pr diff <PR>
    gh pr view <PR> --comments --json comments,reviews,reviewThreads
    gh pr checks <PR>
+   # Fallback read-only si la version local de gh no expone un campo requerido:
+   gh api <endpoint-del-PR-o-review-thread>
    ```
 
    Si alguna forma JSON no está soportada por la versión local de `gh`, usa el comando equivalente disponible y registra la limitación.
@@ -70,17 +81,53 @@ Detecta tecnologías por archivos y manifests, sin acoplar el skill a un lenguaj
 
 Usa esa detección para elegir ejemplos y checks, pero nunca bloquees por convenciones que el repo no declare.
 
+## Matriz stack-aware y audiencia
+
+Adapta el review al público principal del PR. Si el PR cruza varias superficies, marca `fullstack` o `multi-surface` y cubre contratos entre capas.
+
+| Superficie | Señales | Foco de review | Audiencia principal |
+|------------|---------|----------------|---------------------|
+| Frontend | rutas UI, componentes, hooks, CSS, assets, tests browser | estados loading/empty/error, accesibilidad, responsive, contratos API, boundaries por feature, performance percibida | autor frontend, reviewer UI, QA |
+| Backend | handlers/controllers, servicios, repositorios, jobs, APIs, DB | contratos, validación, dominio, auth/authz, transacciones, idempotencia, persistencia, observabilidad | backend reviewer, tech lead, SRE |
+| Fullstack | cambios coordinados UI + API + datos | compatibilidad frontend/backend, serialización, estados de error, rollout, flags, versionado, contract tests | tech lead, QA, release owner |
+| Infra/CI | Docker, Terraform, Helm, workflows, env vars, secrets | seguridad, rollback, ambientes, permisos, reproducibilidad, costo operativo, impacto en pipeline | infra/SRE, release owner |
+| Mobile | app nativa/híbrida, permisos, stores, offline/cache | lifecycle, permisos, offline, performance, crash reporting, compatibilidad de versiones, release channels | mobile reviewer, QA mobile |
+| CLI | comandos, flags, instaladores, scripts de usuario | UX de comandos, compatibilidad de flags, errores accionables, idempotencia, filesystem, cross-platform | CLI maintainer, soporte |
+| Library/SDK | API pública, paquetes, exports, ejemplos | semver, backwards compatibility, typings/docs, deprecations, ejemplos, consumer ergonomics | maintainers, consumers |
+
+Incluye un resumen por audiencia:
+
+- Autor del PR: correcciones concretas o follow-ups aceptables.
+- Reviewer humano: focos que debe mirar primero.
+- Tech lead: riesgo de merge/release y tradeoffs.
+- QA/release: escenarios manuales o automáticos a validar.
+
+## Profundidad por tamaño y riesgo
+
+- PR pequeño o mecánico: review completo, desk check reducido si no hay comportamiento observable.
+- PR mediano: review completo por áreas modificadas y test gap map.
+- PR grande o multi-objetivo: divide en slices por superficie/riesgo; si no puedes cubrir todo, declara `Cobertura parcial` y prioriza archivos críticos.
+- PR crítico: eleva profundidad cuando toca auth, permisos, datos personales, dinero, migraciones, contratos públicos, infra de deploy, concurrencia o procesamiento masivo.
+
+## Test gap map
+
+Para cada cambio funcional relevante, registra:
+
+| Comportamiento cambiado | Evidencia existente | Evidencia faltante | Riesgo cubierto |
+|-------------------------|--------------------|--------------------|-----------------|
+| ... | tests/checks/manual/No disponible | test o validación sugerida | contrato, edge, seguridad, rollback, etc. |
+
 ## Framework de revisión
 
 Aplica `references/review-framework.md` como checklist base. Prioriza hallazgos con evidencia concreta de diff, código, PR, checks o comentarios previos.
 
-Severidades:
+Severidades unificadas:
 
-- `CRÍTICO`: bug funcional, riesgo de seguridad, pérdida/corrupción de datos, ruptura de contrato público, migración peligrosa, regresión de producción, race/consistencia grave o arquitectura que bloquea mantenibilidad esencial.
-- `ALTO`: defecto probable o deuda significativa que debería corregirse antes de mergear.
-- `MEDIO`: riesgo real pero acotado, mejora de test/observabilidad/contrato o complejidad que puede aceptarse con seguimiento.
-- `BAJO`: mejora menor, naming, claridad o documentación.
-- `INFORMATIVO`: contexto, template, limitación o buena práctica observada; no afecta veredicto.
+- `CRÍTICO` (`L1`): bug funcional, riesgo de seguridad, pérdida/corrupción de datos, ruptura de contrato público, migración peligrosa, regresión de producción, race/consistencia grave o arquitectura que bloquea mantenibilidad esencial.
+- `ALTO` (`L2`): defecto probable, falta de evidencia esencial, deuda significativa o riesgo de release que debería corregirse antes de mergear.
+- `MEDIO` (`L3`): riesgo real pero acotado, mejora de test/observabilidad/contrato o complejidad que puede aceptarse con seguimiento explícito.
+- `BAJO` (`L4`): mejora menor, naming, claridad, documentación o simplificación local.
+- `INFORMATIVO` (`L5`): contexto, limitación, buena práctica observada o follow-up opcional; no afecta por sí solo el veredicto.
 
 ## Desk check obligatorio
 
@@ -119,6 +166,11 @@ Calcula score de 0 a 100 con dimensiones ponderadas:
 | Mantenibilidad y complejidad | 10% |
 | Desk check | 10% |
 
+Además del score de calidad, calcula:
+
+- `Confianza del review`: `Alta`, `Media` o `Baja`, según completitud de diff, acceso a comentarios/checks, contexto local, evidencia de pruebas y tamaño del PR.
+- `Riesgo de merge`: `Bajo`, `Medio` o `Alto`, según severidades, checks, tamaño, áreas críticas, migraciones/configuración, contratos públicos y rollout.
+
 Veredicto:
 
 - `Aprobar`: score >= 80, sin hallazgos críticos ni altos bloqueantes.
@@ -137,6 +189,7 @@ El reporte no debe ser un resumen superficial del diff. Debe leer el PR como lo 
 - Incluye al menos una sección de `Buenas prácticas observadas` cuando el PR tenga decisiones correctas; no todo el reporte debe ser punitivo.
 - El desk check debe cubrir escenarios reales del dominio del PR. Usa 5 escenarios como mínimo cuando el cambio sea funcional; si el alcance es documental o mecánico, explica por qué aplica una simulación reducida.
 - El score debe estar justificado por dimensión. No basta un número global.
+- Incluye `Test gap map`, `Confianza del review`, `Riesgo de merge` y resumen por audiencia cuando el PR tenga cambios funcionales o multi-superficie.
 
 ## Reporte HTML
 
@@ -165,19 +218,22 @@ Secciones obligatorias:
 1. Resumen ejecutivo.
 2. Metadata del PR.
 3. Veredicto y score.
-4. Hallazgos críticos y altos.
-5. Hallazgos medios/bajos.
-6. Buenas prácticas observadas.
-7. Análisis arquitectónico.
-8. Seguridad y privacidad.
-9. Pruebas y evidencia.
-10. Observabilidad y operación.
-11. Migraciones/configuración/contratos.
-12. Desk check y simulación.
-13. Comentarios previos no resueltos.
-14. Action items priorizados.
-15. Limitaciones del review.
-16. Resumen final y recomendación.
+4. Confianza del review y riesgo de merge.
+5. Hallazgos críticos y altos.
+6. Hallazgos medios/bajos.
+7. Buenas prácticas observadas.
+8. Análisis arquitectónico.
+9. Seguridad y privacidad.
+10. Pruebas y evidencia.
+11. Test gap map.
+12. Observabilidad y operación.
+13. Migraciones/configuración/contratos.
+14. Desk check y simulación.
+15. Comentarios previos no resueltos.
+16. Resumen por audiencia.
+17. Action items priorizados.
+18. Limitaciones del review.
+19. Resumen final y recomendación.
 
 ### Secciones recomendadas para PRs funcionales
 
@@ -187,13 +243,15 @@ Cuando haya cambios funcionales, contratos públicos, datos sensibles, seguridad
 - Puntos de revisiones anteriores.
 - Before/After del comportamiento.
 - Tabla de scoring por dimensión con peso, score y justificación.
+- Test gap map por comportamiento cambiado.
+- Riesgo de merge, confianza del review y resumen para autor/reviewer/tech lead/QA.
 - Cierre ejecutivo final que diga explícitamente si conviene aprobar, pedir cambios o rechazar, y cuál es el próximo paso exacto.
 
 ### Control de calidad antes de entregar
 
 Antes de responder al usuario, inspecciona el HTML generado y confirma:
 
-- Contiene `Resumen ejecutivo`, `Desk check`, `Action items`, `Limitaciones` y `Resumen final`.
+- Contiene `Resumen ejecutivo`, `Desk check`, `Test gap map`, `Action items`, `Limitaciones` y `Resumen final`.
 - Contiene la estética canónica (`--navy`, `--navy-deep`, `.gauge`, `.final-summary`).
 - Cada hallazgo alto/crítico tiene evidencia y recomendación concreta.
 - El cierre no contradice el veredicto ni el score.
