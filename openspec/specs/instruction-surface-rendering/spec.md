@@ -57,3 +57,18 @@ Cuando el renderer o los assets operativos cambien, los assets embebidos del bin
 #### Scenario: Installable asset changes
 - **WHEN** cambia un agente, subagente, command, skill, template o policy instalable
 - **THEN** `tools/lufy-cli-go/internal/assets/embedded` y el catálogo efectivo SHALL reflejar el cambio antes de reportar readiness
+
+### Requirement: Codex PR review skill preserves Lufy HTML contract
+El skill visible para Codex `pr-reviewer` SHALL preserve the observable Lufy PR review contract instead of degrading to chat-only findings.
+
+#### Scenario: Codex PR review generates HTML artifact
+- **WHEN** un usuario en Codex pide un PR review o PR audit
+- **THEN** `.agents/skills/pr-reviewer/SKILL.md` SHALL require creating `pr_review/` when missing
+- **AND** it SHALL require writing `pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html` or a slug equivalent for non-numbered reviews
+- **AND** it SHALL require reporting the generated path and `open pr_review/pr-review-<...>.html` in the final response
+
+#### Scenario: Codex PR review includes full review contract
+- **WHEN** `.agents/skills/pr-reviewer/SKILL.md` is installed or synced
+- **THEN** it SHALL require scoring, severity-ordered findings, desk check and simulation, evidence, limitations, action items, and final recommendation
+- **AND** it SHALL reference the canonical `.opencode/skills/pr.reviewer/SKILL.md` contract when that file exists
+- **AND** it SHALL require the canonical HTML template or equivalent Notion-dark markers when available

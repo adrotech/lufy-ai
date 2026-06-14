@@ -173,5 +173,7 @@ skill_resolution:
 - Do not treat `tasks.md` checkboxes or micro-checkboxes as `closed`/archive-ready without the task/block gate evidence
 - When asked to commit/push, follow repository branch standards
 - When task depends on repository-local tooling, inspect relevant SKILL.md files before acting
+- In Codex, `@orchestrator` or `@<lufy-role>` is a delegation request, not an inline identity switch; spawn/wait/close the requested subagent when available, or report delegation unavailable before continuing
+- Do not silently fall back to inline execution after a requested or required Lufy delegation
 - Pass only minimal role-scoped context to subagents and ask for Result Contract envelope v1
 <!-- LUFY:END project-guide -->

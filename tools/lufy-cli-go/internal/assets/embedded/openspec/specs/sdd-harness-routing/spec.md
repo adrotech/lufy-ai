@@ -17,6 +17,18 @@ The system SHALL classify development requests into T1 Full SDD, T2 SDD Lite, or
 - **WHEN** a request is small, mechanical, documentary, local, and has no meaningful behavior risk
 - **THEN** the system SHALL classify the request as T3 Express
 
+#### Scenario: Security-sensitive runtime request is not direct T3
+- **WHEN** a request touches or likely touches runtime behavior or global configuration for CORS, authentication, authorization, JWT, sessions, cookies, CSRF, security headers, filters or middleware, roles, permissions or ACLs, allowed origins, ports, auth defaults, or global config
+- **THEN** the workflow SHALL NOT classify it as direct T3 from `orchestrator`
+- **AND** `orchestrator` SHALL route to `sdd-router` before implementation
+- **AND** `sdd-router` SHALL set `fast_path_allowed: false` by default and classify at least T2, escalating to T1 when public contracts, cross-cutting security policy, auth defaults, architecture or unclear blast radius are involved
+
+#### Scenario: Security keyword documentation-only exception
+- **WHEN** a request mentions CORS, authentication, authorization, JWT, sessions, cookies, CSRF, security headers, filters or middleware, roles, permissions or ACLs, allowed origins, ports, auth defaults, or global config
+- **AND** the user explicitly limits the task to documentation, tests, fixtures, comments, or a non-runtime/non-config mechanical update
+- **THEN** the workflow MAY classify the task as T3 Express
+- **AND** it SHALL record why no runtime or global configuration behavior is affected
+
 ### Requirement: Lightweight SDD router
 The system SHALL provide a lightweight `sdd-router` subagent that classifies the request and recommends the minimum safe workflow before activating heavier subagents or OpenSpec flows.
 
@@ -323,6 +335,21 @@ The routing harness SHALL distinguish a broad program tier from the tier of the 
 #### Scenario: Fast path is not allowed
 - **WHEN** the slice changes runtime/app files, affects security or public contracts, requires delivery, touches more than two artifacts, or has unclear acceptance criteria
 - **THEN** `fast_path_allowed` SHALL be false and the workflow SHALL use the proportional T1/T2/T3 routing path for the actual risk
+
+#### Scenario: T2 SDD Lite runtime work requires post-plan approval
+- **GIVEN** `sdd-router` classifies a new feature or runtime/app change as `T2` / `sdd_lite` with `fast_path_allowed: false`
+- **AND** the user has not explicitly approved implementation after seeing a visible SDD Lite plan
+- **WHEN** `orchestrator` receives `next_recommended.owner: implementer` or `chain_strategy: auto-chain`
+- **THEN** `orchestrator` SHALL NOT invoke `implementer`
+- **AND** it SHALL present a short plan with objective, scope, likely files, WHEN/THEN criteria, risks and validation expectation, then ask for explicit approval to implement
+- **AND** phrases that only express intent to generate or explore a feature SHALL NOT count as post-plan implementation approval
+
+#### Scenario: Implementer blocks missing post-plan approval
+- **GIVEN** `implementer` receives a `T2` / `sdd_lite` feature or runtime/app handoff with `fast_path_allowed: false`
+- **AND** the handoff lacks evidence of explicit post-plan user approval
+- **WHEN** implementation would edit files
+- **THEN** `implementer` SHALL return `blocked` or `needs_decision` instead of mutating the working tree
+- **AND** the result SHALL ask `orchestrator` to present the plan and collect approval
 
 ### Requirement: Delivery batching remains authorization-gated
 The workflow SHALL report delivery batching guidance separately from delivery authorization.

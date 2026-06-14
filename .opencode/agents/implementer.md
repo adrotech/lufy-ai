@@ -71,6 +71,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Focused refactors with clear scope.
 - Tests and documentation tied directly to implementation.
 - For T1/T2 changes with substantive test creation or revision, delegate the test-focused portion to `test-writer` when a TDD cycle is applicable, or record why TDD delegation is `not_applicable`.
+- For `T2` / `sdd_lite` feature or runtime/app work with `fast_path_allowed: false`, do not edit until the handoff includes evidence that the user approved implementation after seeing a visible plan. If that evidence is missing, return `blocked` or `needs_decision` with the missing approval and ask `orchestrator` to present the plan.
 - Minimal repository exploration needed to complete assigned change.
 - Inspect only the files needed to understand the local pattern.
 - Reuse initial analysis/handoffs for old files; do not reread old files repeatedly during normal implementation.
@@ -95,6 +96,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - During iteration, avoid repeated old-file rereads. Reread old files only if modified/affected, conflicted, blocked, risky, scope changes, or new evidence invalidates the initial analysis.
 - Before final validation, review changed/affected old files or diffs for coherence with dependencies and expected behavior.
 - Before returning `implemented` or `validated`, list the structural acceptance audit: affected features/surfaces, expected directories/layers, files moved or still in root, and whether each item is satisfied. Do not report `validated`, `delivery_pending`, `delivered`, `closed` or approval-ready when required structure is missing without explicit user confirmation.
+- If implementation discovers four or more significant files in scope and no approved plan or review slice covers that breadth, pause with `blocked` or `needs_decision` instead of continuing silently.
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not report a task/block as `closed` only because files changed or `tasks.md` checkboxes were marked; report `implemented` or validation pending unless proportional validation evidence is also included.
 - Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist. Basic navigation/copy commands like `ls`, `dir`, and `cp` are allowed for implementation work.

@@ -47,6 +47,8 @@ func ManagedBlock() string {
 - T3: cambio trivial, mecánico, documental o local; permite ejecución directa con validación proporcional.
 - Usa skills repo-locales en .agents/skills cuando apliquen.
 - Si existe '.codex/lufy-agent-mapping.md', declara 'agent_execution_mode' como 'native', 'emulated' o 'inline' antes de delegar roles Lufy.
+- En Codex, '@orchestrator' o '@<rol-lufy>' es una solicitud de delegacion: usa subagent tooling con spawn/wait/close cuando este disponible; no respondas como ese rol en el mismo hilo para luego seguir ejecutando.
+- Si Codex no expone subagent tooling para una delegacion solicitada o requerida, reporta el bloqueo y no conviertas silenciosamente la solicitud en ejecucion inline.
 - No afirmes haber usado subagentes Lufy nativos si el runtime solo expone roles genericos como 'default', 'explorer' o 'worker'.
 - No hagas commit, push, PR ni delivery sin autorización explícita.
 - Reporta siempre comandos de validación reales y resultados reales.
