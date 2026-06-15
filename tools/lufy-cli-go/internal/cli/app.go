@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/url"
+	"path/filepath"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
@@ -126,8 +128,18 @@ func runOpsxRender(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
-	fmt.Fprintf(deps.Stdout, "HTML OpenSpec generado: %s\n", res.OutputPath)
+	fmt.Fprintf(deps.Stdout, "HTML OpenSpec generado: [%s](%s)\n", res.OutputPath, fileURL(res.OutputPath))
+	fmt.Fprintf(deps.Stdout, "Abrir: open %s\n", res.OutputPath)
 	return ExitOK
+}
+
+func fileURL(path string) string {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		abs = path
+	}
+	u := url.URL{Scheme: "file", Path: filepath.ToSlash(abs)}
+	return u.String()
 }
 
 func runMemory(args []string, deps Dependencies) int {
