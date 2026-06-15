@@ -25,7 +25,7 @@ El resultado es un reporte estilo Notion para entender cómo la IA ayudó en el 
 3. Por defecto limita métricas a la tarea raíz actual y sus subagentes. Solo usa todo el repo con `--scope repo`.
 4. Incluye un paso a paso sanitizado con qué tipo de trabajo ocurrió, por qué, duración total, tiempo IA y tiempo humano por tramo.
 5. Renderiza el HTML con estética tipo Notion: propiedades de tarea, callouts, tablas tipo database y diseño claro/offline.
-6. Reporta la ruta final del HTML o una degradación accionable si faltan fuentes.
+6. Reporta la ruta final del HTML como hipervínculo Markdown clicable y conserva `open <ruta>` como fallback; si la ruta es absoluta o temporal, usa `file://` en el enlace. Si faltan fuentes, reporta una degradación accionable.
 
 ## Privacidad por defecto
 

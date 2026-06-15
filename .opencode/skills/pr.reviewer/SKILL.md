@@ -201,10 +201,10 @@ Antes de responder al usuario, inspecciona el HTML generado y confirma:
 
 ## Respuesta final al usuario
 
-Devuelve solo:
+Devuelve solo. Reporta la ruta generada como hipervínculo Markdown clicable y conserva `open <ruta>` como fallback:
 
 ```markdown
-Reporte generado: `pr_review/pr-review-<...>.html`
+Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)
 Abrir: `open pr_review/pr-review-<...>.html`
 
 Resumen ejecutivo:

@@ -157,7 +157,7 @@ Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
 Use templates/report.html when available.
 Include Desk check and Scoring.
 Return:
-Reporte generado: `+"`"+`pr_review/pr-review-<...>.html`+"`"+`
+Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)
 Abrir: `+"`"+`open pr_review/pr-review-<...>.html`+"`"+`
 `)
 

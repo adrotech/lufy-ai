@@ -65,10 +65,10 @@ Verdict rules:
 
 ## Final Chat Response
 
-Do not paste the full HTML. Respond only with:
+Do not paste the full HTML. Report the generated path as a clickable Markdown link and keep the `open` command as a fallback. Respond only with:
 
 ```markdown
-Reporte generado: `pr_review/pr-review-<...>.html`
+Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)
 Abrir: `open pr_review/pr-review-<...>.html`
 
 Resumen ejecutivo:

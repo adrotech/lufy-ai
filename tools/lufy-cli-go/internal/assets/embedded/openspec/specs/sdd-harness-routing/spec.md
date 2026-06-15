@@ -336,13 +336,19 @@ The routing harness SHALL distinguish a broad program tier from the tier of the 
 - **WHEN** the slice changes runtime/app files, affects security or public contracts, requires delivery, touches more than two artifacts, or has unclear acceptance criteria
 - **THEN** `fast_path_allowed` SHALL be false and the workflow SHALL use the proportional T1/T2/T3 routing path for the actual risk
 
-#### Scenario: T2 SDD Lite runtime work requires post-plan approval
-- **GIVEN** `sdd-router` classifies a new feature or runtime/app change as `T2` / `sdd_lite` with `fast_path_allowed: false`
+#### Scenario: T1/T2 non-trivial work requires post-plan approval
+- **GIVEN** `sdd-router` classifies a non-trivial route as `T1` or `T2` with `fast_path_allowed: false`
 - **AND** the user has not explicitly approved implementation after seeing a visible SDD Lite plan
 - **WHEN** `orchestrator` receives `next_recommended.owner: implementer` or `chain_strategy: auto-chain`
 - **THEN** `orchestrator` SHALL NOT invoke `implementer`
-- **AND** it SHALL present a short plan with objective, scope, likely files, WHEN/THEN criteria, risks and validation expectation, then ask for explicit approval to implement
+- **AND** it SHALL present a short human plan with tier, tier reason, objective, scope, likely files/artifacts, WHEN/THEN criteria, risks, validation expectation, next step and explicit options to accept, change tier/scope or cancel, then ask for explicit approval to implement
 - **AND** phrases that only express intent to generate or explore a feature SHALL NOT count as post-plan implementation approval
+
+#### Scenario: Pending overview outcome becomes a visible question
+- **GIVEN** a router, subagent or methodology adapter returns `offered_pending` for an HTML overview or optional render
+- **WHEN** `orchestrator` summarizes the handoff or readiness result to the user
+- **THEN** it SHALL convert the pending outcome into a visible question for the user, including the available command or path when present
+- **AND** it SHALL NOT leave `offered_pending` only in the internal Result Contract
 
 #### Scenario: Implementer blocks missing post-plan approval
 - **GIVEN** `implementer` receives a `T2` / `sdd_lite` feature or runtime/app handoff with `fast_path_allowed: false`

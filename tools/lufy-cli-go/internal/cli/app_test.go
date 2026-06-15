@@ -1135,6 +1135,9 @@ func TestRunOpsxRenderGeneratesHTML(t *testing.T) {
 	if !bytes.Contains(out.Bytes(), []byte("HTML OpenSpec generado")) {
 		t.Fatalf("unexpected stdout: %s", out.String())
 	}
+	if !bytes.Contains(out.Bytes(), []byte("file://")) || !bytes.Contains(out.Bytes(), []byte("Abrir: open")) {
+		t.Fatalf("stdout missing clickable link/open fallback: %s", out.String())
+	}
 	body := readCLITestFile(t, filepath.Join(changeDir, "change-overview.html"))
 	for _, want := range [][]byte{[]byte("Proposal"), []byte("Design"), []byte("Tasks"), []byte(`class="tabs"`)} {
 		if !bytes.Contains(body, want) {
