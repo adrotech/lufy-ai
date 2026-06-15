@@ -328,7 +328,7 @@ func verifyCodexPRReviewerSkillContract(target string, emit func(string, string,
 		"templates/report.html",
 		"Desk check",
 		"Scoring",
-		"Reporte generado:",
+		"Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)",
 		"open pr_review/pr-review-<...>.html",
 	}
 	for _, want := range required {
