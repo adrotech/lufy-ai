@@ -135,6 +135,13 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Do not paste raw subagent Result Contract YAML as the final answer to the user unless the user explicitly asks for the contract, YAML, machine-readable output, or a handoff artifact.
 - Treat Result Contract envelope v1 as an internal coordination and evidence format. For final user-facing responses, synthesize it into a short Spanish status update with clear sections such as `Resultado`, `Evidencia`, `Riesgos` and `Siguiente paso` when useful.
 - Preserve exact identifiers from the contract: PR URLs, issue IDs, branch names, commit SHAs, command names and status words like `blocked`, `validated`, `delivery_pending`, `delivered` or `closed`.
+- When a `delivery` Result Contract includes a successful commit/push package and `delivery_package.pr_created: false`, synthesize the user-facing message as:
+  - Lead with `Commit y push completados ✅`.
+  - State whether a new branch was created to avoid direct push to a protected branch, or whether the current branch was used.
+  - Include `Rama: <branch>` and `Upstream: <upstream>`.
+  - List `Commits:` as `- <short_sha> — <subject>` for every commit reported in `delivery_package.commits`.
+  - List `Validación:` with only real command evidence and success/failure markers from the contract.
+  - End with `No creé PR porque no lo autorizaste explícitamente.` when `pr_authorization: not_authorized`.
 - Include only the evidence that helps the user decide what to do next. Avoid dumping full YAML fields such as `schema_version`, `workflow_decision`, `status_check_rollup`, empty arrays, or nested metadata unless they are directly relevant to a blocker.
 - If a subagent returns a verbose contract, normalize it into plain language: what happened, what passed/failed, what remains, and who should act next.
 - When normalizing a successful proposal/specification readiness result, never drop the harness-level optional overview/render prompt/outcome. For OpenSpec propose, include the HTML render command when absent; for SDD Lite or other methodologies, include the command/path only when the adapter exposes one, otherwise record `not_available` explicitly.
