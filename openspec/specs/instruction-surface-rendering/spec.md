@@ -65,7 +65,7 @@ El skill visible para Codex `pr-reviewer` SHALL preserve the observable Lufy PR 
 - **WHEN** un usuario en Codex pide un PR review o PR audit
 - **THEN** `.agents/skills/pr-reviewer/SKILL.md` SHALL require creating `pr_review/` when missing
 - **AND** it SHALL require writing `pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html` or a slug equivalent for non-numbered reviews
-- **AND** it SHALL require reporting the generated path and `open pr_review/pr-review-<...>.html` in the final response
+- **AND** it SHALL require reporting the generated path as a clickable Markdown link and preserving `open pr_review/pr-review-<...>.html` as a fallback in the final response
 
 #### Scenario: Codex PR review includes full review contract
 - **WHEN** `.agents/skills/pr-reviewer/SKILL.md` is installed or synced
