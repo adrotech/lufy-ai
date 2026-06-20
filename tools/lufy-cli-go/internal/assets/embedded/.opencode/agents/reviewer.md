@@ -96,6 +96,12 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Return compact `memory_hints` (path or id, line when available, status, relevance), not full memory dumps.
 - Treat memory as review context only; findings still need current diff/file/evidence references.
 
+## Context Graph
+
+- When `lufy-ai context` is available and permitted by the invocation, use it as an optional secondary index for impacted files, paths between symbols/docs and review desk-check ideas.
+- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, continue review with `context_graph_hints.status: not_available` or `stale`; do not penalize the change solely for absent graph data.
+- Return compact `context_graph_hints` when useful. Findings still require current diff/file/line, validation evidence, logs or explicit acceptance criteria; graph inference alone is not a finding.
+
 ## Workflow
 
 - Load `.lufy/config/project.yaml` when available and use affected stack data for anti-patterns, coverage expectations and observability libraries.
@@ -106,6 +112,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - For backend changes, review against the selected backend architecture: `controller_service_repository` requires controller/service/repository separation, `clean_architecture` requires domain/usecase-or-application/infrastructure separation, and `hexagonal` requires ports/adapters around the domain core.
 - If config or relevant stack fields are missing, report them as `not_available`; do not invent project-specific stack rules.
 - Review code quality, architecture, missing tests, observability and release risk.
+- Use context graph hints only to focus review areas or desk-check scenarios; verify them against the diff and source files before scoring risk.
 - Classify findings with the unified severity model: `CRÍTICO` (`L1`), `ALTO` (`L2`), `MEDIO` (`L3`), `BAJO` (`L4`) and `INFORMATIVO` (`L5`).
 - Use weighted scoring: Architecture and design 20%, Functional correctness and contracts 20%, Tests and evidence 15%, Security and privacy 15%, Observability and operations 10%, Maintainability and complexity 10%, Desk check 10%.
 - Report review confidence (`Alta`, `Media`, `Baja`) separately from quality score, based on evidence completeness, PR size, access to comments/checks and local context.

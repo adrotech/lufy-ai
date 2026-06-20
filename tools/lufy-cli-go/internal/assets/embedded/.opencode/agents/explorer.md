@@ -52,9 +52,16 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/config/project.yaml` for
 - If memory is unavailable, report it only when relevant as `not_available`; do not block exploration.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
 
+## Context Graph
+
+- When `lufy-ai context` is available and graph context is relevant, use it only as a secondary index after or alongside targeted repository discovery: `context status`, then `context query`, `context diff --base <ref>` or `context explain` when permitted.
+- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, report `context_graph_hints.status: not_available` (or `stale`) with recovery `lufy-ai context build`; do not block exploration.
+- Return compact `context_graph_hints` (node/path/kind/reason/relevance). Treat graph output as hints for where to read next, never as evidence stronger than current files, diffs, validation commands, logs or explicit user instructions.
+
 ## Workflow
 
 - Identify relevant files, modules, packages, endpoints, migrations, tests, and OpenSpec artifacts.
+- Use optional context graph hints to prioritize file reads and impact mapping when available; verify any hint against repository files before turning it into a finding or implementation handoff.
 - Use `project_profile.surfaces` when available to choose the right discovery lens: UI flows, accessibility and feature-driven boundaries for frontend, contracts/persistence/auth for backend, contracts across layers plus frontend feature boundaries for fullstack, device/release constraints for mobile, command contracts for CLI, and plan/secrets/rollback for infra.
 - Read `project_profile.surfaces[*].architecture` when available and report whether the repo already appears to use the detected/preferred architecture before recommending feature-driven frontend structure or backend-only controller/service/repository, clean architecture, or hexagonal patterns.
 - Map system interconnections and dependencies: APIs, persistence, services, agents, skills, policies, tests, documentation, feedback loops, and structure/behavior risks relevant to the request.

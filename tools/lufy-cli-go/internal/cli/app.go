@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	contextstore "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters"
+	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
@@ -69,6 +72,8 @@ func Run(args []string, deps Dependencies) int {
 		return runUpgrade(args[1:], deps)
 	case "opsx":
 		return runOpsx(args[1:], deps)
+	case "context":
+		return runContext(args[1:], deps)
 	case "version":
 		return runVersion(args[1:], deps)
 	case "-h", "--help", "help":
@@ -79,6 +84,207 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runContext(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printContextHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "scan":
+		return runContextScan(args[1:], deps)
+	case "build":
+		return runContextBuild(args[1:], deps)
+	case "status":
+		return runContextStatus(args[1:], deps)
+	case "query":
+		return runContextQuery(args[1:], deps)
+	case "path":
+		return runContextPath(args[1:], deps)
+	case "explain":
+		return runContextExplain(args[1:], deps)
+	case "diff":
+		return runContextDiff(args[1:], deps)
+	case "-h", "--help", "help":
+		printContextHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando context desconocido: %s\n\n", args[0])
+		printContextHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func contextFlagSet(name string, deps Dependencies) (*flag.FlagSet, *string, *bool) {
+	fs := flag.NewFlagSet("context "+name, flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	return fs, target, jsonOutput
+}
+
+func runContextScan(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("scan", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "context scan no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Scan(*target)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context scan: %d sources, %d nodes, %d edges (no persistido)\n", res.Sources, res.Nodes, res.Edges)
+	})
+}
+
+func runContextBuild(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("build", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "context build no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Build(*target)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context graph ready: %s (%d sources, %d nodes, %d edges, changed=%t)\n", res.GraphPath, res.Sources, res.Nodes, res.Edges, res.Changed)
+	})
+}
+
+func runContextStatus(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("status", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "context status no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	res := contextapp.NewService().Status(*target)
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context graph: %s\n", res.Status)
+		if res.Reason != "" {
+			fmt.Fprintf(deps.Stdout, "reason: %s\n", res.Reason)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextQuery(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("query", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai context query [--target <dir>] [--json] <term>")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Query(*target, fs.Args()[0])
+	if err != nil {
+		return contextGraphErr(deps, err, *jsonOutput)
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		for _, m := range res.Matches {
+			fmt.Fprintf(deps.Stdout, "%s [%s] %s\n", m.Node.ID, m.Node.Type, m.Node.Label)
+		}
+	})
+}
+
+func runContextPath(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("path", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 2 {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai context path [--target <dir>] [--json] <from> <to>")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Path(*target, fs.Args()[0], fs.Args()[1])
+	if err != nil {
+		return contextGraphErr(deps, err, *jsonOutput)
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		if !res.Found {
+			fmt.Fprintln(deps.Stdout, "path: not_found")
+			return
+		}
+		fmt.Fprintf(deps.Stdout, "path: %s\n", joinComma(res.Nodes))
+	})
+}
+
+func runContextExplain(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("explain", deps)
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai context explain [--target <dir>] [--json] <node-or-edge>")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Explain(*target, fs.Args()[0])
+	if err != nil {
+		return contextGraphErr(deps, err, *jsonOutput)
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() { fmt.Fprintf(deps.Stdout, "%s: %s\n", res.ID, res.Explanation) })
+}
+
+func runContextDiff(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("diff", deps)
+	base := fs.String("base", "", "Referencia Git base")
+	if err := fs.Parse(args); err != nil {
+		return ExitUsageErr
+	}
+	if *base == "" {
+		fmt.Fprintln(deps.Stderr, "context diff requiere --base <ref>")
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "context diff no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Diff(*target, *base)
+	if err != nil {
+		return contextGraphErr(deps, err, *jsonOutput)
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "changed files: %d\nimpact nodes: %d\n", len(res.ChangedFiles), len(res.Impact))
+	})
+}
+
+func writeContextResult(deps Dependencies, jsonOutput bool, value interface{}, human func()) int {
+	if jsonOutput {
+		data, err := json.MarshalIndent(value, "", "  ")
+		if err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+		fmt.Fprintln(deps.Stdout, string(data))
+		return ExitOK
+	}
+	human()
+	return ExitOK
+}
+
+func contextGraphErr(deps Dependencies, err error, jsonOutput bool) int {
+	if errors.Is(err, contextstore.ErrGraphNotAvailable) {
+		value := map[string]string{"status": "not_available", "recovery": "lufy-ai context build"}
+		return writeContextResult(deps, jsonOutput, value, func() { fmt.Fprintln(deps.Stderr, "context graph not_available; ejecuta lufy-ai context build") })
+	}
+	fmt.Fprintln(deps.Stderr, err.Error())
+	return ExitRuntimeErr
 }
 
 func runOpsx(args []string, deps Dependencies) int {
@@ -957,8 +1163,21 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  pin       Congela un asset gestionado para preservar edits locales")
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
+	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
+}
+
+func printContextHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai context <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  scan      Inspecciona fuentes soportadas sin persistir grafo")
+	fmt.Fprintln(out, "  build     Genera .lufy/context/graph.json, graph-summary.md y manifest.json")
+	fmt.Fprintln(out, "  status    Reporta ready, stale o not_available")
+	fmt.Fprintln(out, "  query     Busca nodos por término lexical")
+	fmt.Fprintln(out, "  path      Calcula un camino explicable entre nodos")
+	fmt.Fprintln(out, "  explain   Explica por qué existe un nodo o edge")
+	fmt.Fprintln(out, "  diff      Resume impacto desde git diff --base <ref>")
 }
 
 func printOpsxHelp(out io.Writer) {

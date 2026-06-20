@@ -106,6 +106,7 @@ Comandos Lufy:
 - `/lufy.pr-review`: generar un review HTML en español para un PR existente.
 - `/lufy.timereport`: generar un reporte local de tiempo/ROI como extra del kit.
 - `/lufy.onboard`: onboarding/demo stack-aware cuando el asset esté disponible en el target.
+- `/lufy.context`: consultar `lufy-ai context` como índice secundario de hints compactos.
 
 ## Skills
 
@@ -118,8 +119,21 @@ Comandos Lufy:
 - `skills/lufy.close`: finalizar un cambio activo con gates de cierre, delivery, PR y limpieza segura.
 - `skills/lufy.timereport`: generar reportes locales de tiempo/ROI.
 - `skills/lufy.onboard`: onboarding operativo del harness cuando corresponda.
+- `skills/lufy.context-search`: buscar hints compactos con `lufy-ai context` sin sustituir archivos, diff o validación.
 - `skills/pr.creator`: asistencia para cuerpo de PR cuando delivery está autorizado.
 - `skills/pr.reviewer`: review read-only de PR existente con reporte HTML en español.
+
+## Context Graph
+
+`lufy-ai context` mantiene un grafo local bajo `.lufy/context/` para orientar exploración, routing y review:
+
+```bash
+lufy-ai context status --target <repo> --json
+lufy-ai context query --target <repo> --json "<term>"
+lufy-ai context diff --target <repo> --json --base origin/develop
+```
+
+Los agentes deben usarlo como índice secundario y devolver `context_graph_hints` compactos. Si el grafo no existe, está stale o la CLI falla, reportan `not_available`/`stale` y continúan con inspección normal. Las inferencias del grafo nunca superan evidencia de archivos actuales, diff, tests, logs o comandos.
 
 Skills opcionales de memoria, release o dominios específicos pueden agregarse en proyectos downstream. El kit base incluye lifecycle OpenSpec y extras Lufy catalogados.
 
