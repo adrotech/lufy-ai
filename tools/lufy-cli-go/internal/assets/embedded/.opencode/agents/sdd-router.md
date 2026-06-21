@@ -55,6 +55,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
+- Detect explicit memory/correction triggers in the user request and include `memory_capture_required: true` in handoffs when the next role must persist a durable decision, user correction, rule, lesson, flow, or requested note. Include suggested `type` and candidate links when obvious.
+- For handoffs with `memory_capture_required: true`, require the receiving role to use `lufy-ai memory capture` and, when related notes exist, `lufy-ai memory connect`; memory validation evidence is required before reporting the capture as complete.
 - If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
 
 ## Context Graph

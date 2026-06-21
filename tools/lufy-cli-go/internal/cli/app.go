@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
@@ -362,6 +363,12 @@ func runMemory(args []string, deps Dependencies) int {
 		return runMemoryValidate(args[1:], deps)
 	case "search":
 		return runMemorySearch(args[1:], deps)
+	case "capture":
+		return runMemoryCapture(args[1:], deps)
+	case "connect":
+		return runMemoryConnect(args[1:], deps)
+	case "index":
+		return runMemoryIndex(args[1:], deps)
 	case "-h", "--help", "help":
 		printMemoryHelp(deps.Stdout)
 		return ExitOK
@@ -370,6 +377,17 @@ func runMemory(args []string, deps Dependencies) int {
 		printMemoryHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+type repeatedStringFlag []string
+
+func (f *repeatedStringFlag) String() string {
+	return strings.Join(*f, ",")
+}
+
+func (f *repeatedStringFlag) Set(value string) error {
+	*f = append(*f, value)
+	return nil
 }
 
 func runMemoryInit(args []string, deps Dependencies) int {
@@ -479,6 +497,111 @@ func runMemorySearch(args []string, deps Dependencies) int {
 		}
 	}
 	if err := memory.NewService().Search(memory.Options{Target: *target, Query: fs.Args()[0], JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemoryCapture(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory capture", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutar")
+	title := fs.String("title", "", "Título durable de la nota")
+	noteType := fs.String("type", "lesson", "Tipo: decision|rule|flow|lesson|concept")
+	var links repeatedStringFlag
+	fs.Var(&links, "link", "Slug existente para enlazar; repetible")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory capture [--target <dir>] --title <title> [--type <type>] [--link <slug>] [--dry-run] [--json] <texto>")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	body := strings.TrimSpace(strings.Join(fs.Args(), " "))
+	if *title == "" || body == "" {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
+	if err := memory.NewService().Capture(memory.CaptureOptions{Target: *target, Title: *title, Type: *noteType, Body: body, Links: links, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemoryConnect(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory connect", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutar")
+	bidirectional := fs.Bool("bidirectional", false, "Agregar enlace en ambas notas")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory connect [--target <dir>] [--bidirectional] [--dry-run] [--json] <from-slug> <to-slug>")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 2 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
+	if err := memory.NewService().Connect(memory.ConnectOptions{Target: *target, From: fs.Args()[0], To: fs.Args()[1], Bidirectional: *bidirectional, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func runMemoryIndex(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("memory index", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutar")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory index [--target <dir>] [--dry-run] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if !*jsonOutput {
+		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
+			fmt.Fprintln(deps.Stderr, err.Error())
+			return ExitRuntimeErr
+		}
+	}
+	if err := memory.NewService().Index(memory.IndexOptions{Target: *target, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1155,7 +1278,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
 	fmt.Fprintln(out, "  migrate-layout Migra rutas legacy al layout unificado .lufy/")
-	fmt.Fprintln(out, "  memory    Inicializa, valida y busca memoria Obsidian portable")
+	fmt.Fprintln(out, "  memory    Inicializa, valida, busca, captura y conecta memoria Obsidian portable")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
 	fmt.Fprintln(out, "  info      Muestra catálogo efectivo, manifest, stacks y surfaces")
@@ -1193,4 +1316,7 @@ func printMemoryHelp(out io.Writer) {
 	fmt.Fprintln(out, "  status    Resume notas, drafts y backlinks")
 	fmt.Fprintln(out, "  validate  Valida schema de notas y backlinks")
 	fmt.Fprintln(out, "  search    Busca en knowledge/maps con rg cuando está disponible")
+	fmt.Fprintln(out, "  capture   Crea o actualiza una nota durable y sus backlinks")
+	fmt.Fprintln(out, "  connect   Conecta dos notas existentes con backlinks seguros")
+	fmt.Fprintln(out, "  index     Reconstruye index/backlinks.json desde wikilinks")
 }

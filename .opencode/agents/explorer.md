@@ -49,6 +49,7 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/config/project.yaml` for
 ## Obsidian Memory
 
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the first memory index before broad exploration when historical context is likely: short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
+- If exploration uncovers a durable architecture fact, recurring gotcha, or user-corrected assumption that should guide future work, recommend or perform `lufy-ai memory capture` through the appropriate role; use `memory connect` for related existing notes.
 - If memory is unavailable, report it only when relevant as `not_available`; do not block exploration.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
 

@@ -71,6 +71,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior stack/test commands, coverage blockers, test patterns, anti-patterns, and bug cases related to the behavior under test.
 - If memory is unavailable, skip memory lookup and rely on `.lufy/config/project.yaml`, repository tests, and user-provided evidence.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Save memory in Obsidian only for durable test/toolchain gotchas or reusable coverage patterns, not routine TDD phase status.
+- If the user corrects a testing policy or a durable test/toolchain lesson is discovered, persist it with `lufy-ai memory capture --type rule|lesson`, connect related notes when available, and validate memory after changes.
 
 ## Workflow
 

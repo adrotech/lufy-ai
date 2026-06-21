@@ -68,7 +68,7 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes
 
 `init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
 
-`memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. El contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter, backlinks y búsqueda con `lufy-ai memory validate|search`.
+`memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. El contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter/backlinks, busca notas y persiste conocimiento con `lufy-ai memory validate|search|capture|connect|index`.
 
 ### 3. Instalar y verificar
 

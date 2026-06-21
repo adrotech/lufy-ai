@@ -36,7 +36,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
 - `init` y `--rescan` para `.lufy/config/project.yaml` stack-aware.
-- `memory init/status/validate/search` para crear, diagnosticar, validar y buscar memoria Obsidian en repos destino.
+- `memory init/status/validate/search/capture/connect/index` para crear, diagnosticar, validar, buscar, persistir y relacionar memoria Obsidian en repos destino.
 
 ### Assets instalables
 

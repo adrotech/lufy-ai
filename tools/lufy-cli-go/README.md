@@ -67,6 +67,9 @@ scripts/validate.sh
 | `lufy-ai memory status` | Resume estructura, notas, drafts y backlinks rotos. | `--target`, `--json` |
 | `lufy-ai memory validate` | Valida schema de notas Obsidian, decisiones y backlinks. | `--target`, `--json` |
 | `lufy-ai memory search` | Busca en `knowledge/` y `maps/` con `rg` cuando está disponible. | `--target`, `--json`, `<query>` |
+| `lufy-ai memory capture` | Crea o actualiza una nota durable y evita backlinks rotos. | `--target`, `--title`, `--type`, `--link`, `--dry-run`, `--json`, `<texto>` |
+| `lufy-ai memory connect` | Conecta dos notas existentes con backlinks seguros. | `--target`, `--bidirectional`, `--dry-run`, `--json`, `<from> <to>` |
+| `lufy-ai memory index` | Reconstruye `.lufy/memory/index/backlinks.json` desde wikilinks. | `--target`, `--dry-run`, `--json` |
 | `lufy-ai context scan` | Inspecciona fuentes soportadas y calcula conteos sin persistir el grafo completo. | `--target`, `--json` |
 | `lufy-ai context build` | Genera `.lufy/context/graph.json`, `.lufy/context/graph-summary.md` y manifest/cache para consultas posteriores. | `--target`, `--json` |
 | `lufy-ai context status` | Reporta si el grafo está `ready`, `stale` o `not_available`. | `--target`, `--json` |
@@ -171,6 +174,8 @@ memory:
   index/backlinks.json
   .gitignore
 ```
+
+`memory capture` persiste decisiones, reglas, flows, lessons y conceptos durables. Las correcciones explícitas del usuario a decisiones de la IA deben capturarse como `rule` o `lesson`, y conectarse con `memory connect` cuando existan notas relacionadas. `memory index` deriva `index/backlinks.json` desde wikilinks existentes.
 
 `doctor` reporta memoria faltante, drafts y backlinks rotos sin bloquear instalación normal. `verify --deep` valida memoria cuando existe. `sync` gestiona los comandos, skills, hooks y templates de memoria, pero no registra ni sobrescribe contenido privado dentro de `.lufy/memory/inbox` o `.lufy/memory/knowledge`.
 

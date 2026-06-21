@@ -75,9 +75,10 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 
 ## Obsidian Memory Workflow
 
-- Obsidian is the canonical portable memory when `.lufy/config/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate` and the local `lufy.mem-*` skills when memory context matters.
+- Obsidian is the canonical portable memory when `.lufy/config/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate/capture/connect/index` and the local `lufy.mem-*` skills when memory context matters.
 - For non-trivial T1/T2 work, and for T3 work with likely historical context, search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance). Do not pass full memory dumps.
 - After significant work, save only durable learnings in Obsidian: architectural decisions, rules, flows, lessons, reusable patterns, config changes, gotchas, delivery outcomes, or session summaries. Do not save routine command noise or duplicate status updates.
+- If the user asks to save/remember something or corrects an AI technical decision, persist it as a `rule`, `lesson`, or `decision` with `lufy-ai memory capture`; connect related notes with `lufy-ai memory connect` and validate memory.
 - Never treat memory as stronger evidence than repository files, commands, or explicit user instructions. Durable memory traceability is recorded in Obsidian.
 
 ## Proportional SDD Routing

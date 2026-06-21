@@ -52,6 +52,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
 - If memory is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Save a memory in Obsidian only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
+- Persist durable validation blockers or user corrections with `lufy-ai memory capture --type lesson|rule`, connect them to existing notes when possible, and include `lufy-ai memory validate` evidence after memory changes.
 
 ## Workflow
 

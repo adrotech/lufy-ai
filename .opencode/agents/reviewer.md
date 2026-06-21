@@ -92,6 +92,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 ## Obsidian Memory
 
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- When review establishes a reusable project rule, recurring defect pattern, or user correction to review criteria, persist it with `lufy-ai memory capture --type rule|lesson` and connect it to related active notes. Do not persist one-off stylistic comments.
 - If memory is unavailable, skip memory lookup and continue the review without penalty.
 - Return compact `memory_hints` (path or id, line when available, status, relevance), not full memory dumps.
 - Treat memory as review context only; findings still need current diff/file/evidence references.

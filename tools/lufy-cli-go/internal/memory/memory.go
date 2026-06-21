@@ -24,6 +24,31 @@ type Options struct {
 	JSON   bool
 }
 
+type CaptureOptions struct {
+	Target string
+	Title  string
+	Type   string
+	Body   string
+	Links  []string
+	DryRun bool
+	JSON   bool
+}
+
+type ConnectOptions struct {
+	Target        string
+	From          string
+	To            string
+	Bidirectional bool
+	DryRun        bool
+	JSON          bool
+}
+
+type IndexOptions struct {
+	Target string
+	DryRun bool
+	JSON   bool
+}
+
 type Report struct {
 	OK         bool           `json:"ok"`
 	TargetRoot string         `json:"targetRoot"`
@@ -58,6 +83,27 @@ type SearchResult struct {
 	Path   string `json:"path"`
 	Line   int    `json:"line"`
 	Text   string `json:"text"`
+}
+
+type CaptureResult struct {
+	Path    string   `json:"path"`
+	Slug    string   `json:"slug"`
+	Created bool     `json:"created"`
+	Updated bool     `json:"updated"`
+	DryRun  bool     `json:"dryRun"`
+	Links   []string `json:"links"`
+}
+
+type ConnectResult struct {
+	Changed []string `json:"changed"`
+	DryRun  bool     `json:"dryRun"`
+}
+
+type IndexResult struct {
+	Path   string `json:"path"`
+	Notes  int    `json:"notes"`
+	Links  int    `json:"links"`
+	DryRun bool   `json:"dryRun"`
 }
 
 type Service struct{}
@@ -172,6 +218,212 @@ func (s Service) Search(opts Options, stdout io.Writer) error {
 	return nil
 }
 
+func (s Service) Capture(opts CaptureOptions, stdout io.Writer) error {
+	target, root, _, err := s.requireInitialized(opts.Target)
+	if err != nil {
+		return err
+	}
+	title := strings.TrimSpace(opts.Title)
+	body := strings.TrimSpace(opts.Body)
+	noteType := strings.TrimSpace(opts.Type)
+	if title == "" {
+		return fmt.Errorf("memory capture requiere --title")
+	}
+	if body == "" {
+		return fmt.Errorf("memory capture requiere texto")
+	}
+	if noteType == "" {
+		noteType = "lesson"
+	}
+	if !contains([]string{"decision", "rule", "flow", "lesson", "concept"}, noteType) {
+		return fmt.Errorf("type inválido: %s", noteType)
+	}
+	known, err := knownNoteSlugs(root)
+	if err != nil {
+		return err
+	}
+	links, err := normalizeExistingLinks(opts.Links, known)
+	if err != nil {
+		return err
+	}
+	slug := slugify(title)
+	if slug == "" {
+		return fmt.Errorf("title no genera slug válido")
+	}
+	path := filepath.Join(root, "knowledge", slug+".md")
+	created := false
+	updated := false
+	var content string
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		created = true
+		content = newNoteContent(slug, title, noteType, body, links)
+	} else if err != nil {
+		return err
+	} else {
+		existing, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		content = string(existing)
+		content, updated = appendCaptureUpdate(content, body, links)
+	}
+	rel, _ := filepath.Rel(target, path)
+	result := CaptureResult{Path: filepath.ToSlash(rel), Slug: slug, Created: created, Updated: updated || created, DryRun: opts.DryRun, Links: links}
+	if !opts.DryRun && (created || updated) {
+		if err := platform.WriteFileAtomic(path, []byte(content), 0o644); err != nil {
+			return err
+		}
+		if _, err := s.BuildIndex(IndexOptions{Target: target}); err != nil {
+			return err
+		}
+		validateReport, err := s.BuildValidate(Options{Target: target})
+		if err != nil {
+			return err
+		}
+		if !validateReport.OK {
+			return fmt.Errorf("memory validate detectó problemas: %s", firstCheckMessage(validateReport.Checks))
+		}
+	}
+	if opts.JSON {
+		return writeJSON(stdout, result)
+	}
+	verb := "actualizada"
+	if created {
+		verb = "creada"
+	} else if opts.DryRun {
+		verb = "propuesta"
+	}
+	fmt.Fprintf(stdout, "Nota %s: %s\n", verb, result.Path)
+	return nil
+}
+
+func (s Service) Connect(opts ConnectOptions, stdout io.Writer) error {
+	target, root, _, err := s.requireInitialized(opts.Target)
+	if err != nil {
+		return err
+	}
+	known, err := knownNoteSlugs(root)
+	if err != nil {
+		return err
+	}
+	from := slugify(opts.From)
+	to := slugify(opts.To)
+	if from == "" || to == "" {
+		return fmt.Errorf("memory connect requiere slugs from y to")
+	}
+	if from == to {
+		return fmt.Errorf("memory connect requiere notas distintas")
+	}
+	fromPath, ok := known[from]
+	if !ok {
+		return fmt.Errorf("nota no encontrada: %s", from)
+	}
+	if _, ok := known[to]; !ok {
+		return fmt.Errorf("nota no encontrada: %s", to)
+	}
+	changed := []string{}
+	if did, err := addLinkToNote(root, fromPath, to, opts.DryRun); err != nil {
+		return err
+	} else if did {
+		changed = append(changed, filepath.ToSlash(fromPath))
+	}
+	if opts.Bidirectional {
+		toPath := known[to]
+		if did, err := addLinkToNote(root, toPath, from, opts.DryRun); err != nil {
+			return err
+		} else if did {
+			changed = append(changed, filepath.ToSlash(toPath))
+		}
+	}
+	if !opts.DryRun {
+		if _, err := s.BuildIndex(IndexOptions{Target: target}); err != nil {
+			return err
+		}
+		validateReport, err := s.BuildValidate(Options{Target: target})
+		if err != nil {
+			return err
+		}
+		if !validateReport.OK {
+			return fmt.Errorf("memory validate detectó problemas: %s", firstCheckMessage(validateReport.Checks))
+		}
+	}
+	result := ConnectResult{Changed: changed, DryRun: opts.DryRun}
+	if opts.JSON {
+		return writeJSON(stdout, result)
+	}
+	fmt.Fprintf(stdout, "Conexiones actualizadas: %d\n", len(changed))
+	return nil
+}
+
+func (s Service) Index(opts IndexOptions, stdout io.Writer) error {
+	result, err := s.BuildIndex(opts)
+	if err != nil {
+		return err
+	}
+	if opts.JSON {
+		return writeJSON(stdout, result)
+	}
+	fmt.Fprintf(stdout, "Índice de backlinks actualizado: %s notas=%d links=%d\n", result.Path, result.Notes, result.Links)
+	return nil
+}
+
+func (s Service) BuildIndex(opts IndexOptions) (IndexResult, error) {
+	target, root, cfg, err := s.requireInitialized(opts.Target)
+	if err != nil {
+		return IndexResult{}, err
+	}
+	known, err := knownNoteSlugs(root)
+	if err != nil {
+		return IndexResult{}, err
+	}
+	backlinks := map[string][]string{}
+	linkCount := 0
+	seenRel := map[string]bool{}
+	noteCount := 0
+	for _, rel := range known {
+		if seenRel[rel] {
+			continue
+		}
+		seenRel[rel] = true
+		noteCount++
+		path := filepath.Join(root, filepath.FromSlash(rel))
+		n, err := readNote(path)
+		if err != nil {
+			return IndexResult{}, err
+		}
+		sourceSlug := canonicalNoteSlug(path, n)
+		for _, link := range wikiLinks(n.Body) {
+			linked := slugify(link)
+			if _, ok := known[linked]; !ok {
+				continue
+			}
+			backlinks[linked] = appendUnique(backlinks[linked], sourceSlug)
+			linkCount++
+		}
+	}
+	for slug := range backlinks {
+		sort.Strings(backlinks[slug])
+	}
+	indexPath, err := platform.SafeJoin(target, cfg.BacklinksIndex)
+	if err != nil {
+		return IndexResult{}, err
+	}
+	payload := struct {
+		Backlinks map[string][]string `json:"backlinks"`
+	}{Backlinks: backlinks}
+	body, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return IndexResult{}, err
+	}
+	if !opts.DryRun {
+		if err := platform.WriteFileAtomic(indexPath, append(body, '\n'), 0o644); err != nil {
+			return IndexResult{}, err
+		}
+	}
+	rel, _ := filepath.Rel(target, indexPath)
+	return IndexResult{Path: filepath.ToSlash(rel), Notes: noteCount, Links: linkCount, DryRun: opts.DryRun}, nil
+}
+
 func (s Service) BuildStatus(opts Options) (Report, error) {
 	target, cfg, exists, err := loadTargetConfig(opts.Target)
 	if err != nil {
@@ -220,6 +472,21 @@ func (s Service) BuildSearch(opts Options) (Report, error) {
 	}
 	report.Results = results
 	return report, nil
+}
+
+func (s Service) requireInitialized(targetValue string) (string, string, projectconfig.MemoryConfig, error) {
+	target, cfg, _, err := loadTargetConfig(targetValue)
+	if err != nil {
+		return "", "", projectconfig.MemoryConfig{}, err
+	}
+	root, err := memoryRoot(target, cfg)
+	if err != nil {
+		return "", "", projectconfig.MemoryConfig{}, err
+	}
+	if info, err := os.Stat(root); err != nil || !info.IsDir() {
+		return "", "", projectconfig.MemoryConfig{}, fmt.Errorf("memoria no inicializada; ejecuta lufy-ai memory init --target %s", target)
+	}
+	return target, root, cfg, nil
 }
 
 func prepareTargetConfig(targetValue string) (string, projectconfig.MemoryConfig, error) {
@@ -347,6 +614,9 @@ func validateNotes(target, root string, cfg projectconfig.MemoryConfig, strict b
 			rel, _ := filepath.Rel(root, path)
 			slug := strings.TrimSuffix(filepath.Base(path), ".md")
 			knownNotes[strings.ToLower(slug)] = filepath.ToSlash(rel)
+			if n, err := readNote(path); err == nil && strings.TrimSpace(n.Name) != "" {
+				knownNotes[strings.ToLower(slugify(n.Name))] = filepath.ToSlash(rel)
+			}
 			noteFiles = append(noteFiles, path)
 			return nil
 		})
@@ -537,6 +807,139 @@ func sortSearchResults(results []SearchResult) {
 		}
 		return results[i].Line < results[j].Line
 	})
+}
+
+func knownNoteSlugs(root string) (map[string]string, error) {
+	known := map[string]string{}
+	for _, dir := range []string{"knowledge", "maps"} {
+		base := filepath.Join(root, dir)
+		_ = filepath.WalkDir(base, func(path string, entry os.DirEntry, err error) error {
+			if err != nil || entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+				return nil
+			}
+			rel, relErr := filepath.Rel(root, path)
+			if relErr != nil {
+				return relErr
+			}
+			slug := slugify(strings.TrimSuffix(filepath.Base(path), ".md"))
+			known[slug] = filepath.ToSlash(rel)
+			if n, readErr := readNote(path); readErr == nil && strings.TrimSpace(n.Name) != "" {
+				known[slugify(n.Name)] = filepath.ToSlash(rel)
+			}
+			return nil
+		})
+	}
+	return known, nil
+}
+
+func canonicalNoteSlug(path string, n note) string {
+	if strings.TrimSpace(n.Name) != "" {
+		return slugify(n.Name)
+	}
+	return slugify(strings.TrimSuffix(filepath.Base(path), ".md"))
+}
+
+func normalizeExistingLinks(values []string, known map[string]string) ([]string, error) {
+	links := []string{}
+	for _, value := range values {
+		slug := slugify(value)
+		if slug == "" {
+			continue
+		}
+		if _, ok := known[slug]; !ok {
+			return nil, fmt.Errorf("nota enlazada no encontrada: %s", slug)
+		}
+		links = appendUnique(links, slug)
+	}
+	sort.Strings(links)
+	return links, nil
+}
+
+func newNoteContent(slug, title, noteType, body string, links []string) string {
+	var out strings.Builder
+	fmt.Fprintf(&out, "---\nname: %s\ndescription: %s\ntype: %s\nstatus: active\n---\n\n", slug, yamlScalar("Memoria durable: "+title), noteType)
+	out.WriteString("## Summary\n\n")
+	out.WriteString(body)
+	out.WriteString("\n")
+	if noteType == "decision" {
+		out.WriteString("\n**Why:** ")
+		out.WriteString(body)
+		out.WriteString("\n")
+	}
+	if len(links) > 0 {
+		out.WriteString("\n## Links\n\n")
+		for _, link := range links {
+			fmt.Fprintf(&out, "- [[%s]]\n", link)
+		}
+	}
+	return out.String()
+}
+
+func appendCaptureUpdate(content, body string, links []string) (string, bool) {
+	changed := false
+	if !strings.Contains(content, body) {
+		content = strings.TrimRight(content, "\n") + "\n\n## Updates\n\n" + body + "\n"
+		changed = true
+	}
+	updated, linkChanged := appendLinks(content, links)
+	return updated, changed || linkChanged
+}
+
+func addLinkToNote(root, rel, link string, dryRun bool) (bool, error) {
+	path := filepath.Join(root, filepath.FromSlash(rel))
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	updated, changed := appendLinks(string(body), []string{link})
+	if !changed || dryRun {
+		return changed, nil
+	}
+	return true, platform.WriteFileAtomic(path, []byte(updated), 0o644)
+}
+
+func appendLinks(content string, links []string) (string, bool) {
+	changed := false
+	for _, link := range links {
+		needle := "[[" + link + "]]"
+		if strings.Contains(content, needle) {
+			continue
+		}
+		if !strings.Contains(content, "\n## Links\n") {
+			content = strings.TrimRight(content, "\n") + "\n\n## Links\n\n"
+		}
+		content = strings.TrimRight(content, "\n") + "\n- " + needle + "\n"
+		changed = true
+	}
+	return content, changed
+}
+
+func appendUnique(values []string, value string) []string {
+	for _, existing := range values {
+		if existing == value {
+			return values
+		}
+	}
+	return append(values, value)
+}
+
+func firstCheckMessage(checks []Check) string {
+	for _, check := range checks {
+		if check.Level != "fail" {
+			continue
+		}
+		if check.Path == "" {
+			return check.Message
+		}
+		return check.Path + ": " + check.Message
+	}
+	return "sin detalle"
+}
+
+func yamlScalar(value string) string {
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.ReplaceAll(value, "'", "''")
+	return "'" + value + "'"
 }
 
 func statusRank(status string) int {

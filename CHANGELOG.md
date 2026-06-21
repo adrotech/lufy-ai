@@ -11,6 +11,16 @@ El formato recomendado sigue categorías simples:
 
 Las releases públicas deben enlazar su tag y resumir validación relevante.
 
+## Unreleased
+
+### Added
+
+- `lufy-ai memory capture/connect/index` para persistir decisiones, correcciones del usuario y backlinks Obsidian con validación determinística.
+
+### Changed
+
+- Agentes y skills de memoria ahora tratan correcciones explícitas del usuario como memoria durable (`rule`/`lesson`) y usan el CLI para capturar/conectar notas.
+
 ## [v0.6.11] - 2026-06-09
 
 ### Added
