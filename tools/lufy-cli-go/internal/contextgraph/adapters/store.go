@@ -21,13 +21,39 @@ type Store struct{}
 
 func NewStore() Store { return Store{} }
 
-func ContextDir(root string) string   { return filepath.Join(root, ".lufy", "context") }
-func GraphPath(root string) string    { return filepath.Join(ContextDir(root), "graph.json") }
-func SummaryPath(root string) string  { return filepath.Join(ContextDir(root), "graph-summary.md") }
-func ManifestPath(root string) string { return filepath.Join(ContextDir(root), "manifest.json") }
+func ContextDir(root string) string  { return ContextDirFor(root, ".lufy/context") }
+func GraphPath(root string) string   { return GraphPathFor(root, ".lufy/context") }
+func SummaryPath(root string) string { return SummaryPathFor(root, ".lufy/context") }
+func ReportPath(root string) string {
+	return ReportPathFor(root, ".lufy/context", ".lufy/context/GRAPH_REPORT.md")
+}
+func ManifestPath(root string) string { return ManifestPathFor(root, ".lufy/context") }
+func CachePath(root string) string    { return CachePathFor(root, ".lufy/context") }
 
-func (Store) LoadGraph(root string) (domain.Graph, error) {
-	data, err := os.ReadFile(GraphPath(root))
+func ContextDirFor(root, contextRoot string) string {
+	return filepath.Join(root, filepath.FromSlash(contextRoot))
+}
+func GraphPathFor(root, contextRoot string) string {
+	return filepath.Join(ContextDirFor(root, contextRoot), "graph.json")
+}
+func SummaryPathFor(root, contextRoot string) string {
+	return filepath.Join(ContextDirFor(root, contextRoot), "graph-summary.md")
+}
+func ReportPathFor(root, contextRoot, reportPath string) string {
+	if reportPath == "" {
+		return filepath.Join(ContextDirFor(root, contextRoot), "GRAPH_REPORT.md")
+	}
+	return filepath.Join(root, filepath.FromSlash(reportPath))
+}
+func ManifestPathFor(root, contextRoot string) string {
+	return filepath.Join(ContextDirFor(root, contextRoot), "manifest.json")
+}
+func CachePathFor(root, contextRoot string) string {
+	return filepath.Join(ContextDirFor(root, contextRoot), "cache", "extract.json")
+}
+
+func (Store) LoadGraph(root string, contextRoot ...string) (domain.Graph, error) {
+	data, err := os.ReadFile(GraphPathFor(root, firstContextRoot(contextRoot)))
 	if err != nil {
 		return domain.Graph{}, ErrGraphNotAvailable
 	}
@@ -41,8 +67,8 @@ func (Store) LoadGraph(root string) (domain.Graph, error) {
 	return graph, nil
 }
 
-func (Store) LoadManifest(root string) (domain.Manifest, error) {
-	data, err := os.ReadFile(ManifestPath(root))
+func (Store) LoadManifest(root string, contextRoot ...string) (domain.Manifest, error) {
+	data, err := os.ReadFile(ManifestPathFor(root, firstContextRoot(contextRoot)))
 	if err != nil {
 		return domain.Manifest{}, err
 	}
@@ -50,7 +76,24 @@ func (Store) LoadManifest(root string) (domain.Manifest, error) {
 	return manifest, json.Unmarshal(data, &manifest)
 }
 
-func (Store) Save(root string, graph domain.Graph, summary string) error {
+func (Store) LoadCache(root string, contextRoot string) (domain.Cache, error) {
+	data, err := os.ReadFile(CachePathFor(root, contextRoot))
+	if err != nil {
+		return domain.Cache{}, err
+	}
+	var cache domain.Cache
+	return cache, json.Unmarshal(data, &cache)
+}
+
+func (Store) Save(root string, graph domain.Graph, summary, report string, contextRoot string, reportPath ...string) error {
+	rootDir := contextRoot
+	if rootDir == "" {
+		rootDir = ".lufy/context"
+	}
+	reportRel := ""
+	if len(reportPath) > 0 {
+		reportRel = reportPath[0]
+	}
 	graphData, err := json.MarshalIndent(graph, "", "  ")
 	if err != nil {
 		return err
@@ -61,13 +104,31 @@ func (Store) Save(root string, graph domain.Graph, summary string) error {
 		return err
 	}
 	manifestData = append(manifestData, '\n')
-	if err := platform.WriteFileAtomic(GraphPath(root), graphData, 0o644); err != nil {
+	if err := platform.WriteFileAtomic(GraphPathFor(root, rootDir), graphData, 0o644); err != nil {
 		return err
 	}
-	if err := platform.WriteFileAtomic(SummaryPath(root), []byte(summary), 0o644); err != nil {
+	if err := platform.WriteFileAtomic(SummaryPathFor(root, rootDir), []byte(summary), 0o644); err != nil {
 		return err
 	}
-	return platform.WriteFileAtomic(ManifestPath(root), manifestData, 0o644)
+	if err := platform.WriteFileAtomic(ReportPathFor(root, rootDir, reportRel), []byte(report), 0o644); err != nil {
+		return err
+	}
+	return platform.WriteFileAtomic(ManifestPathFor(root, rootDir), manifestData, 0o644)
+}
+
+func (Store) SaveCache(root, contextRoot string, cache domain.Cache) error {
+	data, err := json.MarshalIndent(cache, "", "  ")
+	if err != nil {
+		return err
+	}
+	return platform.WriteFileAtomic(CachePathFor(root, contextRoot), append(data, '\n'), 0o644)
+}
+
+func firstContextRoot(values []string) string {
+	if len(values) > 0 && values[0] != "" {
+		return values[0]
+	}
+	return ".lufy/context"
 }
 
 func ChangedFiles(root, base string) ([]string, error) {

@@ -2,11 +2,11 @@
 
 ### Requirement: Native context graph schema
 
-LUFY SHALL define a local context graph artifact using schema `lufy-context-graph/v1` with deterministic nodes, edges, sources, metadata and manifest information.
+LUFY SHALL define a local context graph artifact using schema `lufy-context-graph` with deterministic nodes, edges, sources, health, communities, important nodes and derived manifest information.
 
 #### Scenario: Graph artifact declares schema version
 - **WHEN** `lufy-ai context build` writes `.lufy/context/graph.json`
-- **THEN** the artifact SHALL include `schema: "lufy-context-graph/v1"`, stable workspace-relative node ids, deterministic edge ordering and enough metadata to verify staleness
+- **THEN** the artifact SHALL include `schema: "lufy-context-graph"`, stable workspace-relative node ids, deterministic edge ordering and enough metadata to verify staleness
 
 #### Scenario: Graph avoids local-only absolute ids
 - **WHEN** nodes or edges are serialized into `graph.json`
@@ -14,11 +14,19 @@ LUFY SHALL define a local context graph artifact using schema `lufy-context-grap
 
 ### Requirement: Context graph persisted artifacts
 
-LUFY SHALL persist context graph outputs under `.lufy/context/` as managed local artifacts that can be inspected, rebuilt and validated.
+LUFY SHALL use `.lufy/config/project.yaml` as the canonical configuration source for context graph, memory and vault settings, and SHALL persist graph outputs as derived local artifacts that can be inspected, rebuilt and validated.
+
+#### Scenario: Project config owns graph and vault settings
+- **WHEN** `lufy-ai init` or rescan writes `.lufy/config/project.yaml`
+- **THEN** it SHALL include canonical `context_graph` settings and `memory.vault` without requiring separate graph, vault or memory configuration files
+
+#### Scenario: Derived artifacts are not canonical config
+- **WHEN** `lufy-ai context build` writes `manifest.json`, cache files or report files
+- **THEN** those files SHALL be treated as derived/regenerable state, not as canonical configuration
 
 #### Scenario: Build writes graph and summary
 - **WHEN** `lufy-ai context build` completes successfully
-- **THEN** `.lufy/context/graph.json` and `.lufy/context/graph-summary.md` SHALL exist and describe the same graph version and source set
+- **THEN** `graph.json`, `graph-summary.md` and `GRAPH_REPORT.md` SHALL exist under `context_graph.root` and describe the same graph schema and source set
 
 #### Scenario: Build remains idempotent
 - **WHEN** input files, extractor versions and build options have not changed since the previous build
@@ -38,7 +46,7 @@ LUFY SHALL provide deterministic initial extractors for Go, Markdown, YAML and J
 
 ### Requirement: Context CLI command suite
 
-LUFY SHALL expose context graph operations through the Go CLI as `lufy-ai context scan/status/build/query/path/explain/diff`.
+LUFY SHALL expose context graph operations through the Go CLI as `lufy-ai context scan/status/build/query/path/explain/diff` with bounded outputs designed to reduce broad file reads.
 
 #### Scenario: Status reports graph availability
 - **WHEN** `lufy-ai context status` runs in a workspace with no readable valid graph
@@ -46,7 +54,7 @@ LUFY SHALL expose context graph operations through the Go CLI as `lufy-ai contex
 
 #### Scenario: Query returns deterministic matches
 - **WHEN** `lufy-ai context query <term>` runs against a valid graph
-- **THEN** it SHALL return deterministic lexical matches with node ids, labels, types and bounded neighboring context
+- **THEN** it SHALL return ranked deterministic matches with node ids, labels, types, reasons, scores, bounded neighboring context and a token-savings summary
 
 #### Scenario: Path and explain provide traceability
 - **WHEN** `lufy-ai context path <from> <to>` or `lufy-ai context explain <node-or-path>` runs against a valid graph
@@ -58,7 +66,7 @@ LUFY SHALL support `lufy-ai context diff --base <ref>` to map changed files from
 
 #### Scenario: Diff impact maps changed files to graph neighborhoods
 - **WHEN** `lufy-ai context diff --base origin/develop` runs with a valid graph and Git diff available
-- **THEN** it SHALL report changed graph nodes, directly connected neighbors and explainable impact hints derived from structural edges
+- **THEN** it SHALL report changed graph nodes, directly connected neighbors, impacted communities and explainable impact hints derived from structural edges
 
 #### Scenario: Diff impact degrades without graph
 - **WHEN** `lufy-ai context diff --base origin/develop` runs without a valid graph
@@ -94,7 +102,7 @@ LUFY SHALL integrate optional context graph hints into `explorer`, `sdd-router` 
 
 ### Requirement: Semantic analysis remains optional future phase
 
-LUFY SHALL keep LLM, embedding or semantic ranking features out of the default `lufy-context-graph/v1` implementation and reserve them for an explicit future opt-in phase.
+LUFY SHALL keep LLM, embedding or semantic ranking features out of the default `lufy-context-graph` implementation and reserve them for an explicit future opt-in phase.
 
 #### Scenario: Default build avoids semantic services
 - **WHEN** `lufy-ai context build` runs with default options
@@ -102,4 +110,16 @@ LUFY SHALL keep LLM, embedding or semantic ranking features out of the default `
 
 #### Scenario: Future semantic data is isolated
 - **WHEN** a future proposal adds optional semantic enrichment
-- **THEN** it SHALL store any additional data under explicit extension fields or separate artifacts without changing the default deterministic behavior of `lufy-context-graph/v1`
+- **THEN** it SHALL store any additional data under explicit extension fields or separate artifacts without changing the default deterministic behavior of `lufy-context-graph`
+
+### Requirement: Context graph must be functionally useful
+
+LUFY SHALL NOT consider the context graph ready if it only serializes a lexical index without reducing exploration cost for agents.
+
+#### Scenario: Report guides first reads
+- **WHEN** `lufy-ai context build` generates the derived report
+- **THEN** the report SHALL include health, important nodes, communities, suggested questions and an audit trail sufficient to guide targeted first reads
+
+#### Scenario: Cache avoids full re-extraction
+- **WHEN** unchanged files are processed after a previous build
+- **THEN** the build SHALL reuse hash-matched extractor results where available and report cache hit/miss counts

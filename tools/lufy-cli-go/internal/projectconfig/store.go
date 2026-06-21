@@ -27,6 +27,7 @@ func Load(path string) (ProjectConfig, error) {
 	if err := node.Content[0].Decode(&cfg); err != nil {
 		return ProjectConfig{}, err
 	}
+	cfg = applyMissingDefaults(cfg)
 	if err := validateHarnessConfig(cfg); err != nil {
 		return ProjectConfig{}, err
 	}
@@ -69,4 +70,29 @@ func validateHarnessConfig(cfg ProjectConfig) error {
 		Tool:              cfg.Tool,
 		MethodologyByTier: cfg.MethodologyByTier,
 	}.ValidateSupported()
+}
+
+func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
+	if cfg.ContextGraph.Root == "" && cfg.ContextGraph.Report == "" && len(cfg.ContextGraph.SensitivePatterns) == 0 {
+		cfg.ContextGraph = DefaultContextGraphConfig()
+	}
+	if cfg.ContextGraph.Root == "" {
+		cfg.ContextGraph.Root = DefaultContextGraphConfig().Root
+	}
+	if cfg.ContextGraph.Report == "" {
+		cfg.ContextGraph.Report = DefaultContextGraphConfig().Report
+	}
+	if cfg.ContextGraph.MaxQueryResults == 0 {
+		cfg.ContextGraph.MaxQueryResults = DefaultContextGraphConfig().MaxQueryResults
+	}
+	if cfg.ContextGraph.MaxNeighborsPerHint == 0 {
+		cfg.ContextGraph.MaxNeighborsPerHint = DefaultContextGraphConfig().MaxNeighborsPerHint
+	}
+	if len(cfg.ContextGraph.SensitivePatterns) == 0 {
+		cfg.ContextGraph.SensitivePatterns = DefaultContextGraphConfig().SensitivePatterns
+	}
+	if cfg.Memory.Vault == "" {
+		cfg.Memory.Vault = cfg.Memory.Root
+	}
+	return cfg
 }

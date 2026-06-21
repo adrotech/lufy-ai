@@ -140,7 +140,7 @@ func runContextScan(args []string, deps Dependencies) int {
 		return ExitRuntimeErr
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
-		fmt.Fprintf(deps.Stdout, "context scan: %d sources, %d nodes, %d edges (no persistido)\n", res.Sources, res.Nodes, res.Edges)
+		fmt.Fprintf(deps.Stdout, "context scan: %d sources, %d nodes, %d edges, skipped=%d (no persistido)\n", res.Sources, res.Nodes, res.Edges, res.Health.SkippedFiles)
 	})
 }
 
@@ -159,7 +159,10 @@ func runContextBuild(args []string, deps Dependencies) int {
 		return ExitRuntimeErr
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
-		fmt.Fprintf(deps.Stdout, "context graph ready: %s (%d sources, %d nodes, %d edges, changed=%t)\n", res.GraphPath, res.Sources, res.Nodes, res.Edges, res.Changed)
+		fmt.Fprintf(deps.Stdout, "context graph ready: %s (%d sources, %d nodes, %d edges, changed=%t, cache_hits=%d)\n", res.GraphPath, res.Sources, res.Nodes, res.Edges, res.Changed, res.CacheHits)
+		if res.ReportPath != "" {
+			fmt.Fprintf(deps.Stdout, "report: %s\n", res.ReportPath)
+		}
 	})
 }
 
@@ -199,7 +202,10 @@ func runContextQuery(args []string, deps Dependencies) int {
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
 		for _, m := range res.Matches {
-			fmt.Fprintf(deps.Stdout, "%s [%s] %s\n", m.Node.ID, m.Node.Type, m.Node.Label)
+			fmt.Fprintf(deps.Stdout, "%s [%s] score=%d %s\n", m.Node.ID, m.Node.Type, m.Score, m.Node.Label)
+		}
+		if res.TokenSavings != "" {
+			fmt.Fprintf(deps.Stdout, "token savings: %s\n", res.TokenSavings)
 		}
 	})
 }
@@ -261,7 +267,7 @@ func runContextDiff(args []string, deps Dependencies) int {
 		return contextGraphErr(deps, err, *jsonOutput)
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
-		fmt.Fprintf(deps.Stdout, "changed files: %d\nimpact nodes: %d\n", len(res.ChangedFiles), len(res.Impact))
+		fmt.Fprintf(deps.Stdout, "changed files: %d\nimpact nodes: %d\ncommunities: %d\ntoken savings: %s\n", len(res.ChangedFiles), len(res.Impact), len(res.Communities), res.TokenSavings)
 	})
 }
 

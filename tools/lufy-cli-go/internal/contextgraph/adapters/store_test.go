@@ -30,7 +30,7 @@ func TestStorePathsAndSaveLoad(t *testing.T) {
 		Extensions: map[string]interface{}{},
 	}
 	store := NewStore()
-	if err := store.Save(root, graph, "# summary\n"); err != nil {
+	if err := store.Save(root, graph, "# summary\n", "# report\n", ".lufy/context"); err != nil {
 		t.Fatalf("Save() error = %v", err)
 	}
 	loaded, err := store.LoadGraph(root)

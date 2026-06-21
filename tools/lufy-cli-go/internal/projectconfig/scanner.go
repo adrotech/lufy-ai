@@ -39,6 +39,7 @@ func (s Scanner) Scan(root string) (ProjectConfig, error) {
 		TDD:               defaultTDD(),
 		Validation:        scanValidation(root, stacks),
 		WorkflowLimits:    defaultWorkflowLimits(),
+		ContextGraph:      DefaultContextGraphConfig(),
 		Memory:            DefaultMemoryConfig(),
 		ParallelExecution: DefaultParallelExecutionConfig(),
 	}, nil

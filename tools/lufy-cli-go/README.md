@@ -71,12 +71,12 @@ scripts/validate.sh
 | `lufy-ai memory connect` | Conecta dos notas existentes con backlinks seguros. | `--target`, `--bidirectional`, `--dry-run`, `--json`, `<from> <to>` |
 | `lufy-ai memory index` | Reconstruye `.lufy/memory/index/backlinks.json` desde wikilinks. | `--target`, `--dry-run`, `--json` |
 | `lufy-ai context scan` | Inspecciona fuentes soportadas y calcula conteos sin persistir el grafo completo. | `--target`, `--json` |
-| `lufy-ai context build` | Genera `.lufy/context/graph.json`, `.lufy/context/graph-summary.md` y manifest/cache para consultas posteriores. | `--target`, `--json` |
+| `lufy-ai context build` | Genera artefactos derivados del grafo (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, manifest/cache) bajo `context_graph.root` configurado en `.lufy/config/project.yaml`. | `--target`, `--json` |
 | `lufy-ai context status` | Reporta si el grafo está `ready`, `stale` o `not_available`. | `--target`, `--json` |
-| `lufy-ai context query` | Busca nodos por término lexical determinístico. | `--target`, `--json`, `<term>` |
+| `lufy-ai context query` | Busca hints rankeados por término/vocabulario del grafo y muestra vecinos acotados para ahorrar lecturas iniciales. | `--target`, `--json`, `<term>` |
 | `lufy-ai context path` | Calcula un camino explicable entre dos nodos. | `--target`, `--json`, `<from> <to>` |
 | `lufy-ai context explain` | Explica por qué existe un nodo o edge. | `--target`, `--json`, `<node-or-edge>` |
-| `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base. | `--target`, `--json`, `--base <ref>` |
+| `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base con nodos, vecinos y comunidades afectadas. | `--target`, `--json`, `--base <ref>` |
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks, surfaces y conteos operativos sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |

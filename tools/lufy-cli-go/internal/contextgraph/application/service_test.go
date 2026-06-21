@@ -17,27 +17,35 @@ func TestBuildWritesDeterministicArtifacts(t *testing.T) {
 	mustWrite(t, filepath.Join(root, "README.md"), "# Demo\n\nVer tools/lufy-cli-go/main.go\n")
 	mustWrite(t, filepath.Join(root, "config.yaml"), "agent:\n  path: .opencode/agents/explorer.md\n")
 	mustWrite(t, filepath.Join(root, "data.json"), `{"skill":{"path":".opencode/skills/demo/SKILL.md"}}`)
+	mustWrite(t, filepath.Join(root, ".env"), "SECRET_TOKEN=redacted\n")
 
 	res, err := NewService().Build(root)
 	if err != nil {
 		t.Fatalf("Build() error = %v", err)
 	}
-	if res.Status != "ready" || res.Sources != 4 || res.Nodes == 0 || res.Edges == 0 {
+	if res.Status != "ready" || res.Sources != 5 || res.Nodes == 0 || res.Edges == 0 || res.Health.SkippedFiles != 1 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
 	if _, err := os.Stat(filepath.Join(root, ".lufy", "context", "graph.json")); err != nil {
 		t.Fatalf("graph missing: %v", err)
 	}
+	graphBody, err := os.ReadFile(filepath.Join(root, ".lufy", "context", "graph.json"))
+	if err != nil || !strings.Contains(string(graphBody), `"schema": "lufy-context-graph"`) || strings.Contains(string(graphBody), "lufy-context-graph/v1") {
+		t.Fatalf("unexpected graph schema body=%s err=%v", string(graphBody), err)
+	}
 	if _, err := os.Stat(filepath.Join(root, ".lufy", "context", "graph-summary.md")); err != nil {
 		t.Fatalf("summary missing: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".lufy", "context", "GRAPH_REPORT.md")); err != nil {
+		t.Fatalf("report missing: %v", err)
 	}
 
 	second, err := NewService().Build(root)
 	if err != nil {
 		t.Fatalf("second Build() error = %v", err)
 	}
-	if second.Changed {
-		t.Fatalf("second build should be idempotent: %+v", second)
+	if second.Changed || second.CacheHits == 0 {
+		t.Fatalf("second build should be idempotent and use cache: %+v", second)
 	}
 }
 
@@ -53,6 +61,9 @@ func TestQueryPathAndExplain(t *testing.T) {
 	}
 	if len(query.Matches) == 0 {
 		t.Fatal("expected query match")
+	}
+	if query.TokenSavings == "" || query.Matches[0].Score == 0 {
+		t.Fatalf("expected ranked token-saving hints: %+v", query)
 	}
 	from := "file:main.go"
 	to := "file:main.go#type:User"

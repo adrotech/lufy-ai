@@ -125,7 +125,7 @@ Comandos Lufy:
 
 ## Context Graph
 
-`lufy-ai context` mantiene un grafo local bajo `.lufy/context/` para orientar exploración, routing y review:
+`lufy-ai context` mantiene un grafo local bajo `context_graph.root` de `.lufy/config/project.yaml` para orientar exploración, routing y review. `graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/` son artefactos derivados/regenerables:
 
 ```bash
 lufy-ai context status --target <repo> --json
@@ -133,7 +133,7 @@ lufy-ai context query --target <repo> --json "<term>"
 lufy-ai context diff --target <repo> --json --base origin/develop
 ```
 
-Los agentes deben usarlo como índice secundario y devolver `context_graph_hints` compactos. Si el grafo no existe, está stale o la CLI falla, reportan `not_available`/`stale` y continúan con inspección normal. Las inferencias del grafo nunca superan evidencia de archivos actuales, diff, tests, logs o comandos.
+Los agentes deben usarlo como índice secundario y devolver `context_graph_hints` compactos con ranking, vecinos acotados y `token_savings` cuando estén disponibles. Si el grafo no existe, está stale o la CLI falla, reportan `not_available`/`stale` y continúan con inspección normal. Las inferencias del grafo nunca superan evidencia de archivos actuales, diff, tests, logs o comandos.
 
 Skills opcionales de memoria, release o dominios específicos pueden agregarse en proyectos downstream. El kit base incluye lifecycle OpenSpec y extras Lufy catalogados.
 

@@ -24,6 +24,7 @@ type ProjectConfig struct {
 	TDD               TDDConfig                `yaml:"tdd"`
 	Validation        ValidationConfig         `yaml:"validation"`
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
+	ContextGraph      ContextGraphConfig       `yaml:"context_graph"`
 	Memory            MemoryConfig             `yaml:"memory"`
 	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
@@ -137,11 +138,24 @@ type WorkflowRouting struct {
 type MemoryConfig struct {
 	Provider       string         `yaml:"provider"`
 	Root           string         `yaml:"root"`
+	Vault          string         `yaml:"vault"`
 	GitPolicy      string         `yaml:"git_policy"`
 	SchemaVersion  int            `yaml:"schema_version"`
 	Search         string         `yaml:"search"`
 	BacklinksIndex string         `yaml:"backlinks_index"`
 	Extra          map[string]any `yaml:",inline,omitempty"`
+}
+
+type ContextGraphConfig struct {
+	Enabled             bool           `yaml:"enabled"`
+	Root                string         `yaml:"root"`
+	Cache               bool           `yaml:"cache"`
+	Report              string         `yaml:"report"`
+	SkipSensitive       bool           `yaml:"skip_sensitive"`
+	SensitivePatterns   []string       `yaml:"sensitive_patterns"`
+	MaxQueryResults     int            `yaml:"max_query_results"`
+	MaxNeighborsPerHint int            `yaml:"max_neighbors_per_hint"`
+	Extra               map[string]any `yaml:",inline,omitempty"`
 }
 
 type ParallelExecutionConfig struct {

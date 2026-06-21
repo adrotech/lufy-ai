@@ -6,17 +6,18 @@ Un grafo de contexto nativo y deterministico permite construir un indice portabl
 
 ## What Changes
 
-- Agregar capacidad `native-context-graph` con schema estable `lufy-context-graph/v1`.
+- Agregar capacidad `native-context-graph` con schema estable `lufy-context-graph` sin exponer sufijos de versionado en la narrativa publica.
 - Extender la CLI Go en `tools/lufy-cli-go` con `lufy-ai context scan/status/build/query/path/explain/diff`.
-- Persistir artefactos gestionados en `.lufy/context/`:
+- Persistir artefactos derivados y regenerables en la ruta definida por `.lufy/config/project.yaml` bajo `context_graph.root`:
   - `graph.json` como grafo deterministico machine-readable;
   - `graph-summary.md` como resumen humano compacto;
-  - manifest/cache cuando aplique para idempotencia, incrementalidad y verificacion estructural.
+  - `GRAPH_REPORT.md` como reporte accionable para ahorrar tokens en exploracion inicial;
+  - manifest/cache derivados cuando aplique para idempotencia, incrementalidad y verificacion estructural.
 - Implementar extractores iniciales deterministas para Go (`go/parser`/`go/ast`), Markdown, YAML y JSON.
 - Agregar skill `lufy.context-search` para OpenCode y skill equivalente bajo `.agents` cuando el catalogo Codex lo requiera.
 - Integrar hints de grafo en `explorer`, `sdd-router` y `reviewer`, degradando a `not_available` si `.lufy/context/graph.json` no existe, esta obsoleto o falla la lectura.
 - Agregar `context diff --base <ref>` para estimar impacto por diff antes de implementar o revisar.
-- Mantener semantica/LLM como fase futura opcional, nunca como default del grafo inicial.
+- Entregar una version funcional final: el grafo debe producir hints compactos, ranking, health, cache incremental y reporte util; no se acepta una base lexical que no reduzca lecturas/tokens.
 
 ## Non-Goals
 
@@ -31,11 +32,12 @@ Un grafo de contexto nativo y deterministico permite construir un indice portabl
 
 ### Slice 1: Schema y almacenamiento local
 
-- Objetivo: definir `lufy-context-graph/v1`, nodos, edges, manifest/cache y reglas de escritura atomica en `.lufy/context/`.
+- Objetivo: definir `lufy-context-graph`, nodos, edges, health, comunidades deterministicas, manifest/cache derivados y reglas de escritura atomica bajo `context_graph.root`.
 - Archivos esperados: `tools/lufy-cli-go/internal/contextgraph/*`, tests unitarios y fixtures.
 - Criterios:
-  - WHEN se ejecuta `lufy-ai context build`, THEN se escribe un `graph.json` validable con `schema: lufy-context-graph/v1`.
-  - WHEN no hay cambios de entrada, THEN el manifest/cache permite salida idempotente sin churn innecesario.
+  - WHEN se ejecuta `lufy-ai context build`, THEN se escribe un `graph.json` validable con `schema: lufy-context-graph`.
+  - WHEN no hay cambios de entrada, THEN el manifest/cache derivado permite salida idempotente sin churn innecesario.
+  - WHEN se consulta el grafo, THEN la respuesta devuelve un paquete acotado de hints que reduce lecturas amplias.
 - Riesgo: schema demasiado rigido; mantener `version`, `metadata`, `nodes`, `edges` y `extensions` compatibles con evolucion.
 
 ### Slice 2: Extractores deterministas
@@ -54,7 +56,8 @@ Un grafo de contexto nativo y deterministico permite construir un indice portabl
 - Criterios:
   - WHEN el usuario corre `lufy-ai context diff --base origin/develop`, THEN recibe un resumen de nodos afectados, vecinos relevantes y rutas explicables.
   - WHEN no existe grafo, THEN `status` y comandos consumidores reportan `not_available` con accion de recuperacion.
-- Riesgo: comandos lentos en repos grandes; usar caches y limites de salida desde el inicio.
+  - WHEN se ejecuta `query` o `diff`, THEN la salida incluye ranking, vecinos acotados y resumen de ahorro de tokens.
+- Riesgo: comandos lentos en repos grandes; usar cache incremental, health y limites de salida desde el inicio.
 
 ### Slice 4: Skills e integracion de agentes
 

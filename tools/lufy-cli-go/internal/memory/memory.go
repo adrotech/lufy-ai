@@ -1055,7 +1055,7 @@ func gitignoreTemplate() string {
 }
 
 func isZeroMemoryConfig(config projectconfig.MemoryConfig) bool {
-	return config.Provider == "" && config.Root == "" && config.GitPolicy == "" && config.SchemaVersion == 0 && config.Search == "" && config.BacklinksIndex == "" && len(config.Extra) == 0
+	return config.Provider == "" && config.Root == "" && config.Vault == "" && config.GitPolicy == "" && config.SchemaVersion == 0 && config.Search == "" && config.BacklinksIndex == "" && len(config.Extra) == 0
 }
 
 func isZeroParallelExecutionConfig(config projectconfig.ParallelExecutionConfig) bool {

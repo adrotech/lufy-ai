@@ -8,7 +8,7 @@ El cambio propone un grafo local, deterministico y verificable. Debe acelerar co
 
 ### Capas CLI Go
 
-- `internal/contextgraph/domain`: tipos puros del schema `lufy-context-graph/v1` (`Graph`, `Node`, `Edge`, `Manifest`, `ExtractorReport`).
+- `internal/contextgraph/domain`: tipos puros del schema `lufy-context-graph` (`Graph`, `Node`, `Edge`, `Health`, `Community`, `Manifest`, `ExtractorReport`).
 - `internal/contextgraph/application`: casos de uso `Scan`, `Build`, `Status`, `Query`, `Path`, `Explain`, `DiffImpact`.
 - `internal/contextgraph/extractors`: extractores deterministicos para Go, Markdown, YAML y JSON.
 - `internal/contextgraph/adapters`: filesystem, git diff provider, JSON encoder, cache/manifest store.
@@ -16,18 +16,20 @@ El cambio propone un grafo local, deterministico y verificable. Debe acelerar co
 
 Mantener handlers CLI delgados: parsean flags, invocan servicios y formatean salida. Los servicios reciben dependencias por constructor cuando aplique.
 
-### Schema `lufy-context-graph/v1`
+### Schema `lufy-context-graph`
 
 `graph.json` debe contener como minimo:
 
-- `schema`: literal `lufy-context-graph/v1`.
+- `schema`: literal `lufy-context-graph`.
 - `generated_at`: timestamp ISO-8601.
 - `root`: metadata del workspace y version de CLI.
 - `sources`: archivos escaneados con hash, parser y estado.
 - `nodes`: entidades normalizadas, ordenadas por id estable.
 - `edges`: relaciones normalizadas, ordenadas por `(from, type, to)`.
-- `manifest`: hashes/config usados para detectar obsolescencia.
-- `extensions`: espacio opcional para futuras fases sin romper v1.
+- `health`: estado del corpus, archivos indexados, omitidos, errores y warnings accionables.
+- `communities`, `important_nodes` y `suggested_questions`: analisis deterministico para ahorrar lecturas iniciales.
+- `manifest`: hashes y opciones derivados usados para detectar obsolescencia; no es fuente canonica de configuracion.
+- `extensions`: espacio opcional para futuras fases sin romper el schema publico.
 
 Tipos iniciales de nodos:
 
@@ -42,24 +44,42 @@ Tipos iniciales de edges:
 
 Los ids deben ser estables y relativos al root; no deben incluir paths absolutos salvo metadata explicitamente marcada como local.
 
-### Artefactos `.lufy/context/`
+### Configuracion canonica y artefactos derivados
+
+La fuente canonica para grafo, memoria y vault es `.lufy/config/project.yaml`. No se deben crear archivos de configuracion adicionales para context graph, memoria o vault.
+
+Campos canonicos iniciales:
+
+- `context_graph.enabled`
+- `context_graph.root`
+- `context_graph.cache`
+- `context_graph.report`
+- `context_graph.skip_sensitive`
+- `context_graph.sensitive_patterns`
+- `context_graph.max_query_results`
+- `context_graph.max_neighbors_per_hint`
+- `memory.root`
+- `memory.vault`
+
+Los artefactos bajo `context_graph.root` son derivados y regenerables:
 
 - `graph.json`: salida canonical JSON, con orden deterministico.
 - `graph-summary.md`: resumen humano con conteos, top comunidades/areas por heuristica deterministica y comandos sugeridos.
-- `manifest.json`: opcional si no queda embebido; registra hashes, version CLI, version schema y opciones.
-- `cache/`: opcional para resultados intermedios por hash de archivo cuando mejore rendimiento.
+- `GRAPH_REPORT.md`: reporte accionable con health, nodos importantes, areas/comunidades y preguntas sugeridas.
+- `manifest.json`: derivado; registra hashes, version CLI, schema y opciones efectivas para staleness.
+- `cache/`: derivado; resultados intermedios por hash de archivo para builds incrementales.
 
 Las escrituras deben ser atomicas: generar en temporal dentro de `.lufy/context/`, validar estructura minima, luego reemplazar.
 
 ### Comandos CLI
 
 - `lufy-ai context scan`: inspecciona fuentes soportadas y reporta que se construiria sin persistir grafo completo, salvo cache si se habilita explicitamente.
-- `lufy-ai context build`: construye y persiste `graph.json`, `graph-summary.md` y manifest/cache aplicable.
+- `lufy-ai context build`: construye y persiste `graph.json`, `graph-summary.md`, `GRAPH_REPORT.md` y manifest/cache derivado aplicable.
 - `lufy-ai context status`: reporta `ready`, `stale` o `not_available` con razones accionables.
-- `lufy-ai context query <term>`: devuelve nodos/edges relevantes por busqueda lexical deterministica.
+- `lufy-ai context query <term>`: devuelve hints compactos rankeados por busqueda lexical expandida contra el vocabulario del grafo y conectividad estructural.
 - `lufy-ai context path <from> <to>`: calcula camino explicable entre nodos cuando existe.
 - `lufy-ai context explain <node-or-path>`: explica por que un nodo o relacion existe, incluyendo source spans cuando esten disponibles.
-- `lufy-ai context diff --base <ref>`: usa diff Git contra `<ref>` para mapear archivos cambiados a nodos, vecinos y posibles agentes/specs afectados.
+- `lufy-ai context diff --base <ref>`: usa diff Git contra `<ref>` para mapear archivos cambiados a nodos, vecinos, comunidades y posibles agentes/specs afectados.
 
 Todos los comandos consumidores deben degradar a `not_available` si el grafo no existe, no cumple schema, esta stale o no puede leerse. La recuperacion sugerida sera `lufy-ai context build`.
 
@@ -80,9 +100,13 @@ Todos los extractores deben ordenar resultados, limitar contenido textual y repo
 - `sdd-router`: puede consultar `context diff --base` o query para sizing/routing, pero no debe ejecutar mutaciones ni reemplazar analisis read-only requerido.
 - `reviewer`: puede consultar impacto y caminos para orientar review, manteniendo scoring basado en diff, tests y evidencia real.
 
+### Ahorro de tokens como criterio de readiness
+
+La capacidad no esta lista si solo produce un grafo lexical que obliga al agente a leer ampliamente. Cada consulta sustantiva debe devolver un paquete compacto con top nodos, vecinos acotados, comunidades afectadas y razon de relevancia para orientar lecturas especificas antes de `grep`/reads amplios.
+
 ### Semantica/LLM futura
 
-La fase inicial es lexical/estructural. Embeddings, resúmenes LLM, ranking semantico o clustering aprendido quedan como extension opcional posterior bajo `extensions`, desactivada por defecto y sujeta a nueva propuesta si cambia privacidad, costo o dependencias.
+La fase default sigue siendo deterministica y local. Embeddings, resúmenes LLM, ranking semantico o clustering aprendido quedan como extension opcional posterior bajo `extensions`, desactivada por defecto y sujeta a nueva propuesta si cambia privacidad, costo o dependencias.
 
 ## Estrategia de migracion
 
@@ -94,7 +118,7 @@ La fase inicial es lexical/estructural. Embeddings, resúmenes LLM, ranking sema
 
 ## Riesgos y mitigaciones
 
-- **Rendimiento**: usar manifest/cache, limites de salida y builds incrementales posteriores.
+- **Rendimiento**: usar cache incremental por SHA-256, limites de salida y status que no reconstruya todo cuando el manifest derivado alcanza.
 - **Ruido del grafo**: empezar con edges conservadores y `explain` para trazabilidad.
 - **Privacidad**: no persistir secretos ni dumps completos; almacenar hashes, spans y snippets acotados solo cuando sean seguros.
 - **Acoplamiento de agentes**: documentar `not_available` como estado normal y mantener exploracion tradicional como fallback.

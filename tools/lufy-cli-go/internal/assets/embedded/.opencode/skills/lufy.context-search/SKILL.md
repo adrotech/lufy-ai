@@ -10,30 +10,31 @@ metadata:
 
 # Skill: lufy.context-search
 
-Usar cuando una tarea necesita orientación rápida sobre relaciones de archivos, símbolos, docs u OpenSpec y el repositorio puede tener `.lufy/context/graph.json` generado.
+Usar cuando una tarea necesita orientación rápida sobre relaciones de archivos, símbolos, docs u OpenSpec y el repositorio puede tener un grafo generado bajo `context_graph.root` de `.lufy/config/project.yaml`.
 
 ## Flujo
 
-1. Consultar disponibilidad:
+1. Tratar `.lufy/config/project.yaml` como fuente canonica de `context_graph` y memoria/vault. `manifest.json`, cache y reportes del grafo son derivados/regenerables.
+2. Consultar disponibilidad:
 
 ```bash
 lufy-ai context status --target <repo> --json
 ```
 
-2. Si el estado es `not_available` o `stale`, reportar `context_graph_hints.status: not_available` o `stale` con `recovery: lufy-ai context build`; continuar con inspección normal del repositorio.
-3. Para búsqueda lexical de hints:
+3. Si el estado es `not_available` o `stale`, reportar `context_graph_hints.status: not_available` o `stale` con `recovery: lufy-ai context build`; continuar con inspección normal del repositorio.
+4. Para hints rankeados:
 
 ```bash
 lufy-ai context query --target <repo> --json "<term>"
 ```
 
-4. Para impacto por diff cuando aplique:
+5. Para impacto por diff cuando aplique:
 
 ```bash
 lufy-ai context diff --target <repo> --json --base <ref>
 ```
 
-5. Para explicar una relación antes de usarla como pista:
+6. Para explicar una relación antes de usarla como pista:
 
 ```bash
 lufy-ai context explain --target <repo> --json <node-or-edge>
@@ -42,6 +43,7 @@ lufy-ai context explain --target <repo> --json <node-or-edge>
 ## Reglas
 
 - Devolver solo hints compactos: `node`, `path`, `kind`, `reason`, `status`, `relevance`.
+- Priorizar salidas que ahorren tokens: top nodos, vecinos acotados, comunidades afectadas, preguntas sugeridas y `token_savings`.
 - Tratar el grafo como índice secundario; no es evidencia superior a archivos actuales, diff, tests, logs o comandos de validación.
 - No inferir comportamiento runtime solo por edges del grafo; verificar con lectura directa cuando afecte decisiones.
 - No ejecutar `context build` salvo que el usuario/rol lo autorice o el flujo lo pida explícitamente; construir el grafo muta `.lufy/context/`.
@@ -59,5 +61,9 @@ context_graph_hints:
       path: <path or not_available>
       kind: <kind or not_available>
       reason: <short reason>
+      score: <ranking score or not_available>
       relevance: <why it matters>
+  token_savings: <bounded hints summary>
+  suggested_questions:
+    - <question or not_available>
 ```
