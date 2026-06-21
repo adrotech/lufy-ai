@@ -35,6 +35,7 @@ First try the exact native Lufy role. Use this mapping only when native Lufy rol
 
 - Treat `@<lufy-role>` as an explicit delegation request; do not continue in the parent thread as if the role was invoked.
 - Native delegation means a waited Codex subagent handoff: spawn the role, wait for the result, close the agent, then synthesize.
+- A waited subagent that reports `state=completed` with empty/null `task_result`, empty body, or no non-empty Result Contract/evidence is an invalid result. Recover once with the same `task_id` when available; if recovery still lacks payload, report `blocked` with the exact recovery action instead of continuing silently.
 - Never tell the user that Lufy roles were used natively when they were only emulated.
 - Pass the Lufy role instructions and minimum context into the generic Codex role prompt.
 - Preserve role permissions: read-only Lufy roles stay read-only even when mapped to a more capable generic role.
