@@ -265,6 +265,20 @@ The system SHALL define and use a canonical Result Contract envelope v1 for subs
 - **WHEN** a third-party, historical or interrupted output does not provide Result Contract envelope v1
 - **THEN** the orchestrator MAY normalize it into a minimal envelope with explicit `legacy_fallback: true` and any missing evidence marked as `not_available`
 
+#### Scenario: Completed subagent result without payload is invalid
+- **WHEN** a subagent or task reports `state=completed`
+- **AND** `task_result` is empty, null, whitespace-only, or lacks a non-empty Result Contract/evidence payload
+- **THEN** the orchestrator SHALL treat the result as invalid rather than successful completion
+- **AND** it SHALL NOT mark the todo, task, coherent block, or workflow state as `completed`, `validated`, `delivery_pending`, `delivered`, or `closed`
+
+#### Scenario: Empty completed result is recovered or blocked
+- **GIVEN** a completed subagent result has no valid payload
+- **WHEN** the tool surface provides a `task_id` or recoverable session identifier
+- **THEN** the orchestrator SHALL attempt one automatic recovery with that same identifier, requesting compact Result Contract, evidence, risks, and next action
+- **AND** if recovery returns non-empty evidence, the workflow SHALL continue from the recovered state
+- **AND** if recovery is unavailable or still returns no valid payload, the workflow SHALL return `blocked` with the failed recovery action and exact next owner/action
+- **AND** the workflow SHALL record a consultable `completed_without_payload` telemetry/log note when supported, or report telemetry as `not_available`
+
 ### Requirement: Workflow-limit decision output
 The router and orchestrator SHALL expose workflow-limit-driven decisions as structured output derived from `.lufy/config/project.yaml` top-level `workflow_limits` when that file is available.
 

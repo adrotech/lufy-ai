@@ -30,8 +30,7 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
-		filepath.Join(".lufy", "README.md"):                                               false,
-		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                   false,
+		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    false,
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
 		filepath.Join(".codex", "config.toml"):                                            false,
@@ -103,8 +102,7 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
-		filepath.Join(".lufy", "README.md"):                                               false,
-		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                   false,
+		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    false,
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
 		filepath.Join(".codex", "config.toml"):                                            false,
@@ -331,6 +329,122 @@ func TestAgentAssetsCoverT2ApprovalConversationScenarios(t *testing.T) {
 			for _, want := range scenario.want {
 				if !strings.Contains(scenario.text, want) {
 					t.Fatalf("scenario %q missing %q", scenario.name, want)
+				}
+			}
+		})
+	}
+}
+
+func TestAgentAssetsRecoverEmptyCompletedSubagentResults(t *testing.T) {
+	root := repoRoot(t)
+	read := func(rel string) string {
+		t.Helper()
+		body, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("ReadFile(%s) error = %v", rel, err)
+		}
+		return string(body)
+	}
+
+	cases := []struct {
+		name string
+		rel  string
+		want []string
+	}{
+		{
+			name: "opencode orchestrator rejects empty completed result",
+			rel:  filepath.Join(".opencode", "agents", "orchestrator.md"),
+			want: []string{
+				"state=completed",
+				"empty/null `task_result`",
+				"attempt one automatic recovery with the same `task_id`",
+				"`status: blocked`",
+				"completed_without_payload",
+			},
+		},
+		{
+			name: "embedded opencode orchestrator rejects empty completed result",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "orchestrator.md"),
+			want: []string{
+				"state=completed",
+				"empty/null `task_result`",
+				"attempt one automatic recovery with the same `task_id`",
+				"`status: blocked`",
+				"completed_without_payload",
+			},
+		},
+		{
+			name: "codex orchestrator rejects empty completed result",
+			rel:  filepath.Join(".codex", "agents", "orchestrator.toml"),
+			want: []string{
+				"state=completed",
+				"empty/null task_result",
+				"attempt one automatic recovery with the same task_id",
+				"return blocked",
+				"completed_without_payload",
+			},
+		},
+		{
+			name: "embedded codex orchestrator rejects empty completed result",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "orchestrator.toml"),
+			want: []string{
+				"state=completed",
+				"empty/null task_result",
+				"attempt one automatic recovery with the same task_id",
+				"return blocked",
+				"completed_without_payload",
+			},
+		},
+		{
+			name: "codex mapping rejects empty waited subagent result",
+			rel:  filepath.Join(".codex", "lufy-agent-mapping.md"),
+			want: []string{
+				"state=completed",
+				"empty/null `task_result`",
+				"Recover once with the same `task_id`",
+				"report `blocked`",
+			},
+		},
+		{
+			name: "embedded codex mapping rejects empty waited subagent result",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "lufy-agent-mapping.md"),
+			want: []string{
+				"state=completed",
+				"empty/null `task_result`",
+				"Recover once with the same `task_id`",
+				"report `blocked`",
+			},
+		},
+		{
+			name: "spec captures invalid completed result",
+			rel:  filepath.Join("openspec", "specs", "sdd-harness-routing", "spec.md"),
+			want: []string{
+				"Completed subagent result without payload is invalid",
+				"`task_result` is empty, null, whitespace-only",
+				"SHALL attempt one automatic recovery",
+				"SHALL return `blocked`",
+				"completed_without_payload",
+			},
+		},
+		{
+			name: "embedded spec captures invalid completed result",
+			rel:  filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", "openspec", "specs", "sdd-harness-routing", "spec.md"),
+			want: []string{
+				"Completed subagent result without payload is invalid",
+				"`task_result` is empty, null, whitespace-only",
+				"SHALL attempt one automatic recovery",
+				"SHALL return `blocked`",
+				"completed_without_payload",
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			text := read(tc.rel)
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", tc.rel, want)
 				}
 			}
 		})
@@ -607,7 +721,7 @@ func minimalSource(t *testing.T) string {
 		"AGENTS.md.template": "agents template\n",
 		"lufy-ia.harness.md": "agents template\n",
 		"tui.json":           "{}\n",
-		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                   "git delivery skill\n",
+		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    "git delivery skill\n",
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      "close skill\n",
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    "sdd skill\n",
 		filepath.Join(".codex", "README.md"):                                              "codex readme\n",

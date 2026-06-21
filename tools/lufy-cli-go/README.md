@@ -67,6 +67,16 @@ scripts/validate.sh
 | `lufy-ai memory status` | Resume estructura, notas, drafts y backlinks rotos. | `--target`, `--json` |
 | `lufy-ai memory validate` | Valida schema de notas Obsidian, decisiones y backlinks. | `--target`, `--json` |
 | `lufy-ai memory search` | Busca en `knowledge/` y `maps/` con `rg` cuando está disponible. | `--target`, `--json`, `<query>` |
+| `lufy-ai memory capture` | Crea o actualiza una nota durable y evita backlinks rotos. | `--target`, `--title`, `--type`, `--link`, `--dry-run`, `--json`, `<texto>` |
+| `lufy-ai memory connect` | Conecta dos notas existentes con backlinks seguros. | `--target`, `--bidirectional`, `--dry-run`, `--json`, `<from> <to>` |
+| `lufy-ai memory index` | Reconstruye `.lufy/memory/index/backlinks.json` desde wikilinks. | `--target`, `--dry-run`, `--json` |
+| `lufy-ai context scan` | Inspecciona fuentes soportadas y calcula conteos sin persistir el grafo completo. | `--target`, `--json` |
+| `lufy-ai context build` | Genera artefactos derivados del grafo (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, manifest/cache) bajo `context_graph.root` configurado en `.lufy/config/project.yaml`. | `--target`, `--json` |
+| `lufy-ai context status` | Reporta si el grafo está `ready`, `stale` o `not_available`. | `--target`, `--json` |
+| `lufy-ai context query` | Busca hints rankeados por término/vocabulario del grafo y muestra vecinos acotados para ahorrar lecturas iniciales. | `--target`, `--json`, `<term>` |
+| `lufy-ai context path` | Calcula un camino explicable entre dos nodos. | `--target`, `--json`, `<from> <to>` |
+| `lufy-ai context explain` | Explica por qué existe un nodo o edge. | `--target`, `--json`, `<node-or-edge>` |
+| `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base con nodos, vecinos y comunidades afectadas. | `--target`, `--json`, `--base <ref>` |
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks, surfaces y conteos operativos sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
@@ -165,7 +175,23 @@ memory:
   .gitignore
 ```
 
+`memory capture` persiste decisiones, reglas, flows, lessons y conceptos durables. Las correcciones explícitas del usuario a decisiones de la IA deben capturarse como `rule` o `lesson`, y conectarse con `memory connect` cuando existan notas relacionadas. `memory index` deriva `index/backlinks.json` desde wikilinks existentes.
+
 `doctor` reporta memoria faltante, drafts y backlinks rotos sin bloquear instalación normal. `verify --deep` valida memoria cuando existe. `sync` gestiona los comandos, skills, hooks y templates de memoria, pero no registra ni sobrescribe contenido privado dentro de `.lufy/memory/inbox` o `.lufy/memory/knowledge`.
+
+## Context Graph
+
+`lufy-ai context` construye y consulta un índice local determinístico bajo `.lufy/context/`. El flujo recomendado es:
+
+```bash
+lufy-ai context scan --target <repo>
+lufy-ai context build --target <repo>
+lufy-ai context status --target <repo> --json
+lufy-ai context query --target <repo> "auth"
+lufy-ai context diff --target <repo> --base origin/develop
+```
+
+Los agentes y skills usan este grafo solo como índice secundario para hints compactos (`context_graph_hints`). Si el grafo falta o está stale, deben degradar a `not_available`/`stale` y continuar con lectura de archivos, diff y validación normal. La semántica/LLM queda como fase futura opcional; la implementación actual es lexical/determinística y sus inferencias no son evidencia superior a archivos actuales, tests o comandos.
 
 ## Paralelismo gobernado
 

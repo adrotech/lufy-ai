@@ -57,6 +57,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance).
 - For trivial T3 work with no historical dependency, do not force memory lookup.
 - At closure or major handoff, capture only durable decisions, rules, flows, lessons, or significant outcomes in Obsidian via `lufy.mem-capture`/`lufy.mem-document`; do not save routine routing noise or duplicate notes.
+- Treat explicit user memory intent as a persistence request, not as optional context. Triggers include: "guarda esto", "recuerda esto", "esto no es correcto", "no vuelvas a", "de ahora en adelante", "la decisión correcta es", "esto es una regla" and requests to connect notes.
+- When the user corrects an AI technical decision, route or execute memory capture as `type: rule` or `type: lesson` with `lufy-ai memory capture`, then connect it to related notes with `lufy-ai memory connect` when existing notes are available. Do not leave user corrections only in chat.
+- After memory mutations, require `lufy-ai memory index`/automatic index update and `lufy-ai memory validate` evidence, or report why memory was unavailable.
 
 ## Workflow
 
@@ -104,6 +107,11 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - For fast-path OpenSpec/docs-only slices, proportional validation is `openspec validate "<change>" --strict` when a change ID exists plus static checkbox/file review; Git read-only evidence is optional unless delivery is requested or there is concrete suspicion of mixed runtime changes.
 - Preserve subagent isolation: pass only the router's `context_slice`, relevant artifact paths, and required constraints to the next agent.
 - Ask routed agents to return Result Contract envelope v1 with status, evidence, risks/follow-ups, `workflow_decision` when applicable, and recommended next action.
+- Treat a subagent/task that reports `state=completed` but returns an empty/null `task_result`, empty body, or no non-empty Result Contract/evidence as an invalid result, not as successful completion.
+- When that invalid result includes a `task_id` or recoverable session identifier, attempt one automatic recovery with the same `task_id`, asking for a compact Result Contract, evidence, risks and next action before continuing the workflow.
+- If recovery returns a non-empty contract with evidence, continue from the recovered state; if recovery is unavailable or still empty, stop with `status: blocked`, name the failed recovery action and give the exact next owner/action instead of producing a normal final answer.
+- Do not mark a todo, task, coherent block or workflow state as `completed`, `validated`, `delivery_pending`, `delivered` or `closed` until a non-empty Result Contract or equivalent minimum evidence exists.
+- When `state=completed` lacks payload, record a consultable telemetry/log note such as `completed_without_payload` in the Result Contract evidence when the tool surface exposes logging, or report telemetry as `not_available` when it does not.
 - For successful T2 SDD Lite specification or structured handoff readiness, preserve and surface the optional overview/render outcome from the Result Contract. If the selected methodology/tool adapter has no render surface, report `not_available` explicitly instead of omitting it.
 - Carry forward router `workflow_decision` fields instead of asking every downstream role to rediscover the same workflow limits from conversation history.
 - Carry forward `workflow_decision.chain_strategy`, `workload_decision_needed`, `review_slices`, `preflight_status`, `stop_rule_status`, and `delivery_batching_guidance`; do not derive proposal/review slices from delivery batching guidance.

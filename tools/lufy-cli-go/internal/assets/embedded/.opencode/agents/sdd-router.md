@@ -55,7 +55,16 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
 - If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
+- Detect explicit memory/correction triggers in the user request and include `memory_capture_required: true` in handoffs when the next role must persist a durable decision, user correction, rule, lesson, flow, or requested note. Include suggested `type` and candidate links when obvious.
+- For handoffs with `memory_capture_required: true`, require the receiving role to use `lufy-ai memory capture` and, when related notes exist, `lufy-ai memory connect`; memory validation evidence is required before reporting the capture as complete.
 - If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
+
+## Context Graph
+
+- Do not call `lufy-ai context` yourself; this role is read-only/no-shell and uses only context graph hints already provided by the orchestrator, explorer, user, or a prior handoff.
+- If provided, use `context_graph_hints` only as secondary routing context for likely files, affected surfaces, impact questions or review slices.
+- If context graph hints are unavailable, stale, or not provided, mark them as `not_available` or omit them; do not block routing.
+- Never treat graph-derived relationships or inferred impact as evidence stronger than current files, user-provided constraints, diffs, validation evidence, or repository policies.
 
 ## Governed Parallelism
 
@@ -96,6 +105,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Context Slicing
 
 - Include only the user intent, tier reason, relevant constraints, likely files or questions, acceptance criteria draft when useful, and exact next action.
+- Include compact `context_graph_hints` only when already provided and relevant; label them as secondary hints, not repository evidence.
 - Include the applicable `project_profile.surfaces` entry when available so downstream agents know whether to apply frontend, backend, fullstack, mobile, CLI, infra or library reasoning, and which architecture is detected/preferred for that surface.
 - Include `structural_acceptance` whenever the user names expected directories or conventions such as `components/`, `pages/`, `hooks/`, `utils/`, `constants/`, `services/`, `types.ts`, `index.ts`, `controllers`, `services`, `repositories`, `domain`, `usecase`, `ports` or `adapters`.
 - If the user names both `page/` and `pages/`, or another ambiguous singular/plural structure, set `structural_acceptance.normalization` to the chosen normalized directory only when it is explicit in the prompt or profile. Otherwise route to clarification before implementation.

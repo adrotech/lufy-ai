@@ -17,8 +17,8 @@ Captura únicamente memoria durable: decisiones, reglas, flows, lessons o concep
 1. Leer `.lufy/config/project.yaml` y confirmar `memory.provider: obsidian`.
 2. Si falta estructura, recomendar `lufy-ai memory init --target <repo>` y detener mutaciones.
 3. Buscar primero notas cercanas con `lufy-ai memory search --target <repo> <query>`.
-4. Si existe una nota activa suficiente, actualizarla con el menor cambio posible.
-5. Si hace falta una nota nueva, crearla bajo `.lufy/memory/knowledge/<slug>.md` con frontmatter:
+4. Si existe una nota activa suficiente, actualizarla con el menor cambio posible mediante `lufy-ai memory capture --target <repo> --title <title> --type <type> [--link <slug>] <texto>`.
+5. Si hace falta una nota nueva, crearla con el mismo comando bajo `.lufy/memory/knowledge/<slug>.md` con frontmatter:
 
 ```yaml
 ---
@@ -30,4 +30,5 @@ status: active
 ```
 
 6. Para `type: decision`, incluir una sección `**Why:**`.
-7. Ejecutar o recomendar `lufy-ai memory validate --target <repo>`.
+7. Si el usuario corrige a la IA, capturar la corrección como `type: rule` o `type: lesson` y conectarla con notas existentes mediante `lufy-ai memory connect` cuando aplique.
+8. Ejecutar o recomendar `lufy-ai memory validate --target <repo>`.
