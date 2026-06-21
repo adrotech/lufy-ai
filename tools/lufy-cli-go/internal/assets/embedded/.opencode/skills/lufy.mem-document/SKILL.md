@@ -18,6 +18,8 @@ Convierte contexto ya validado en una nota Obsidian navegable. Usar cuando el us
 - No versionar contenido privado; la política default de `.lufy/memory/.gitignore` lo ignora.
 - Mantener notas breves, fechables por contexto cuando ayude, y conectadas con backlinks existentes.
 - No usar backlinks a notas inexistentes salvo que se creen en el mismo bloque.
+- Preferir `lufy-ai memory capture` para crear/actualizar notas y `lufy-ai memory connect` para enlaces; editar Markdown manualmente solo cuando el CLI no cubra el caso.
+- Las correcciones explícitas del usuario a decisiones de la IA son memoria durable tipo `rule` o `lesson`.
 - Validar con `lufy-ai memory validate --target <repo>` cuando haya mutaciones.
 
 ## Estructura recomendada

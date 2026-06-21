@@ -7,7 +7,8 @@ description: Document decisions, rules, flows, and lessons in portable Lufy Obsi
 
 Use when a durable decision or workflow should become reusable project memory.
 
-1. Create or update a concise note with clear type, status, and evidence.
+1. Prefer `lufy-ai memory capture` to create or update a concise note with clear type, status, and evidence.
 2. Prefer facts from files, commands, PRs, or explicit user decisions.
-3. Avoid secrets, noisy logs, and speculative conclusions.
-4. Validate memory after substantive edits.
+3. Use `lufy-ai memory connect` for existing related notes; avoid broken backlinks.
+4. Avoid secrets, noisy logs, and speculative conclusions.
+5. Validate memory after substantive edits.

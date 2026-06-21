@@ -12,10 +12,24 @@ func DefaultMemoryConfig() MemoryConfig {
 	return MemoryConfig{
 		Provider:       "obsidian",
 		Root:           ".lufy/memory",
+		Vault:          ".lufy/memory",
 		GitPolicy:      "ignored",
 		SchemaVersion:  1,
 		Search:         "rg",
 		BacklinksIndex: ".lufy/memory/index/backlinks.json",
+	}
+}
+
+func DefaultContextGraphConfig() ContextGraphConfig {
+	return ContextGraphConfig{
+		Enabled:             true,
+		Root:                ".lufy/context",
+		Cache:               true,
+		Report:              ".lufy/context/GRAPH_REPORT.md",
+		SkipSensitive:       true,
+		SensitivePatterns:   []string{".env", ".env.*", "*.pem", "*.key", "*secret*", "*secrets*", "*token*", "*credentials*"},
+		MaxQueryResults:     20,
+		MaxNeighborsPerHint: 5,
 	}
 }
 

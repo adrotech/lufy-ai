@@ -58,6 +58,14 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	} else {
 		items = append(items, DriftItem{Category: "memory", Severity: "info", Path: "memory", Status: "applied", SuggestedAction: "Se agregó memoria Obsidian portable como provider canónico del proyecto."})
 	}
+	if !isZeroContextGraphConfig(current.ContextGraph) {
+		merged.ContextGraph = mergeContextGraphConfig(current.ContextGraph, detected.ContextGraph)
+		if !reflect.DeepEqual(current.ContextGraph, merged.ContextGraph) {
+			items = append(items, DriftItem{Category: "context_graph", Severity: "info", Path: "context_graph", Status: "applied", SuggestedAction: "Se completaron defaults del grafo de contexto preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "context_graph", Severity: "info", Path: "context_graph", Status: "applied", SuggestedAction: "Se agregó context_graph como configuración canónica para grafo, cache y reportes derivados."})
+	}
 	if !isZeroParallelExecutionConfig(current.ParallelExecution) {
 		merged.ParallelExecution = mergeParallelExecutionConfig(current.ParallelExecution, detected.ParallelExecution)
 		if !reflect.DeepEqual(current.ParallelExecution, merged.ParallelExecution) {
@@ -281,6 +289,9 @@ func mergeMemoryConfig(current, defaults MemoryConfig) MemoryConfig {
 	if current.Root != "" {
 		merged.Root = current.Root
 	}
+	if current.Vault != "" {
+		merged.Vault = current.Vault
+	}
 	if current.GitPolicy != "" {
 		merged.GitPolicy = current.GitPolicy
 	}
@@ -292,6 +303,36 @@ func mergeMemoryConfig(current, defaults MemoryConfig) MemoryConfig {
 	}
 	if current.BacklinksIndex != "" {
 		merged.BacklinksIndex = current.BacklinksIndex
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroContextGraphConfig(config ContextGraphConfig) bool {
+	return reflect.DeepEqual(config, ContextGraphConfig{})
+}
+
+func mergeContextGraphConfig(current, defaults ContextGraphConfig) ContextGraphConfig {
+	merged := defaults
+	merged.Enabled = current.Enabled
+	merged.Cache = current.Cache
+	merged.SkipSensitive = current.SkipSensitive
+	if current.Root != "" {
+		merged.Root = current.Root
+	}
+	if current.Report != "" {
+		merged.Report = current.Report
+	}
+	if len(current.SensitivePatterns) > 0 {
+		merged.SensitivePatterns = current.SensitivePatterns
+	}
+	if current.MaxQueryResults != 0 {
+		merged.MaxQueryResults = current.MaxQueryResults
+	}
+	if current.MaxNeighborsPerHint != 0 {
+		merged.MaxNeighborsPerHint = current.MaxNeighborsPerHint
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

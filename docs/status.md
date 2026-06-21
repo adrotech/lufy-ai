@@ -36,7 +36,8 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `upgrade` autoreemplazante con versión fija y SHA-256.
 - `version` con metadata de build.
 - `init` y `--rescan` para `.lufy/config/project.yaml` stack-aware.
-- `memory init/status/validate/search` para crear, diagnosticar, validar y buscar memoria Obsidian en repos destino.
+- `memory init/status/validate/search/capture/connect/index` para crear, diagnosticar, validar, buscar, persistir y relacionar memoria Obsidian en repos destino.
+- `context scan/build/status/query/path/explain/diff` para generar un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con cache derivado, health, reporte accionable y hints rankeados para reducir lecturas iniciales.
 
 ### Assets instalables
 
@@ -46,7 +47,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos, skills, hooks y template de memoria Obsidian: `/lufy.mem-*`, `lufy.mem-*`, `memory-*.sh` y `memory-note.md`.
 - Policy de delivery.
 - Comandos `/opsx-*`.
-- Comandos `/lufy.*` instalables según catálogo.
+- Comandos `/lufy.*` instalables según catálogo, incluyendo `/lufy.context` y `/lufy.mem-*`.
 - Agent Observatory TUI.
 - Superficie Codex core instalable con `lufy-ai install --tool codex`: custom agents Lufy bajo `.codex/agents`, multi-agent habilitado en `.codex/config.toml`, mapeo explícito native/emulated/inline y contrato `@<rol-lufy>` como delegación en `.codex/lufy-agent-mapping.md`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules` y bloque gestionado en `AGENTS.md`.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.

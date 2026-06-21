@@ -57,6 +57,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance).
 - For trivial T3 work with no historical dependency, do not force memory lookup.
 - At closure or major handoff, capture only durable decisions, rules, flows, lessons, or significant outcomes in Obsidian via `lufy.mem-capture`/`lufy.mem-document`; do not save routine routing noise or duplicate notes.
+- Treat explicit user memory intent as a persistence request, not as optional context. Triggers include: "guarda esto", "recuerda esto", "esto no es correcto", "no vuelvas a", "de ahora en adelante", "la decisión correcta es", "esto es una regla" and requests to connect notes.
+- When the user corrects an AI technical decision, route or execute memory capture as `type: rule` or `type: lesson` with `lufy-ai memory capture`, then connect it to related notes with `lufy-ai memory connect` when existing notes are available. Do not leave user corrections only in chat.
+- After memory mutations, require `lufy-ai memory index`/automatic index update and `lufy-ai memory validate` evidence, or report why memory was unavailable.
 
 ## Workflow
 

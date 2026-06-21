@@ -76,7 +76,24 @@ flowchart TD
 | `internal/config` | Merge conservador de `opencode.json`. |
 | `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
+| `internal/contextgraph` | Grafo local determinístico: extractores, almacenamiento `.lufy/context/`, consultas lexicales, path/explain y diff impact. |
 | `internal/platform` | Path safety, locks y resolución portable de targets. |
+
+## Context Graph
+
+`lufy-ai context` agrega un índice local determinístico para orientar exploración, routing y review sin depender de servicios externos. La configuración canónica vive en `.lufy/config/project.yaml` bajo `context_graph` y `memory`; los archivos bajo `context_graph.root` son artefactos derivados/regenerables:
+
+```bash
+lufy-ai context scan --target <repo>
+lufy-ai context build --target <repo>
+lufy-ai context status --target <repo> --json
+lufy-ai context query --target <repo> "service"
+lufy-ai context path --target <repo> <from> <to>
+lufy-ai context explain --target <repo> <node-or-edge>
+lufy-ai context diff --target <repo> --base origin/develop
+```
+
+Los artefactos persistidos por defecto viven bajo `.lufy/context/` (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/`). El manifest y cache no son configuración: se regeneran desde `project.yaml` y el workspace. Los agentes consumen el grafo como índice secundario para `context_graph_hints`; si falta o está stale, degradan a `not_available`/`stale` y siguen con inspección de archivos, diff y validación normal. La salida incluye ranking, comunidades determinísticas, nodos importantes, preguntas sugeridas y vecinos acotados para ahorrar lecturas/tokens iniciales. La semántica/LLM es una fase futura opcional: el comportamiento actual es conservador y local, por lo que ninguna inferencia del grafo reemplaza evidencia directa de archivos actuales, tests, logs o comandos.
 
 ## Lifecycle de assets
 

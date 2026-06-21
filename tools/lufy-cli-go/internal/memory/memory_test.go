@@ -127,6 +127,61 @@ Buscar con rg antes de duplicar notas.
 	}
 }
 
+func TestCaptureConnectAndIndexMemoryNotes(t *testing.T) {
+	target := initializedTarget(t)
+	var out bytes.Buffer
+	if err := NewService().Capture(CaptureOptions{Target: target, Title: "User Corrections", Type: "rule", Body: "Las correcciones explícitas del usuario deben persistirse como memoria durable.", Links: []string{"app-profile"}}, &out); err != nil {
+		t.Fatalf("Capture() error = %v, output=%s", err, out.String())
+	}
+	notePath := filepath.Join(target, ".lufy/memory/knowledge/user-corrections.md")
+	body := readFile(t, notePath)
+	if !strings.Contains(body, "[[app-profile]]") || !strings.Contains(body, "correcciones explícitas") {
+		t.Fatalf("captured note missing content/link:\n%s", body)
+	}
+	indexBody := readFile(t, filepath.Join(target, ".lufy/memory/index/backlinks.json"))
+	if !strings.Contains(indexBody, `"app-profile"`) || !strings.Contains(indexBody, `"user-corrections"`) {
+		t.Fatalf("index missing backlink:\n%s", indexBody)
+	}
+
+	out.Reset()
+	if err := NewService().Capture(CaptureOptions{Target: target, Title: "AI Correction Lesson", Type: "lesson", Body: "No asumir decisiones técnicas cuando el usuario ya corrigió el criterio."}, &out); err != nil {
+		t.Fatalf("Capture() second error = %v", err)
+	}
+	out.Reset()
+	if err := NewService().Connect(ConnectOptions{Target: target, From: "ai-correction-lesson", To: "user-corrections", Bidirectional: true}, &out); err != nil {
+		t.Fatalf("Connect() error = %v, output=%s", err, out.String())
+	}
+	lesson := readFile(t, filepath.Join(target, ".lufy/memory/knowledge/ai-correction-lesson.md"))
+	rule := readFile(t, notePath)
+	if !strings.Contains(lesson, "[[user-corrections]]") || !strings.Contains(rule, "[[ai-correction-lesson]]") {
+		t.Fatalf("bidirectional links missing lesson=%s rule=%s", lesson, rule)
+	}
+	out.Reset()
+	if err := NewService().Index(IndexOptions{Target: target, JSON: true}, &out); err != nil {
+		t.Fatalf("Index(JSON) error = %v", err)
+	}
+	if !strings.Contains(out.String(), `"links"`) {
+		t.Fatalf("Index(JSON) output unexpected: %s", out.String())
+	}
+	if err := NewService().Validate(Options{Target: target}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Validate() after capture/connect error = %v", err)
+	}
+}
+
+func TestCaptureRejectsBrokenLinksAndDecisionRequiresWhy(t *testing.T) {
+	target := initializedTarget(t)
+	if err := NewService().Capture(CaptureOptions{Target: target, Title: "Broken Link", Type: "lesson", Body: "No debe crear backlinks rotos.", Links: []string{"missing"}}, &bytes.Buffer{}); err == nil {
+		t.Fatalf("Capture() expected missing link error")
+	}
+	if err := NewService().Capture(CaptureOptions{Target: target, Title: "Decision Memory", Type: "decision", Body: "Persistir decisiones técnicas cuando cambian el criterio del proyecto."}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("Capture(decision) error = %v", err)
+	}
+	decision := readFile(t, filepath.Join(target, ".lufy/memory/knowledge/decision-memory.md"))
+	if !strings.Contains(decision, "**Why:**") {
+		t.Fatalf("decision note missing why:\n%s", decision)
+	}
+}
+
 func TestStatusAndValidateReportMissingMemory(t *testing.T) {
 	target := t.TempDir()
 	writeFile(t, target, "go.mod", "module example.com/app\n\ngo 1.22\n")

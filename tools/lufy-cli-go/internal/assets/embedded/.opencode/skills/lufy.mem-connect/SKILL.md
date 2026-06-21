@@ -17,8 +17,9 @@ Usar para enlazar conocimiento existente. El objetivo es mejorar navegación, no
 1. Confirmar que `.lufy/memory` existe con `lufy-ai memory status --target <repo>`.
 2. Buscar notas candidatas con `lufy-ai memory search`.
 3. Elegir enlaces que representen dependencia real, decisión relacionada, regla base o lesson aplicable.
-4. Editar solo las notas necesarias.
-5. Validar con `lufy-ai memory validate --target <repo>`.
+4. Ejecutar `lufy-ai memory connect --target <repo> [--bidirectional] <from-slug> <to-slug>` para editar solo las notas necesarias.
+5. Reconstruir índice con `lufy-ai memory index --target <repo>` cuando se editen relaciones manualmente.
+6. Validar con `lufy-ai memory validate --target <repo>`.
 
 ## Criterios
 

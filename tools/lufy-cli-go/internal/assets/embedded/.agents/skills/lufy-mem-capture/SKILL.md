@@ -9,5 +9,6 @@ Use for durable decisions, reusable gotchas, delivery outcomes, or architecture 
 
 1. Check whether `.lufy/config/project.yaml` declares Obsidian memory.
 2. Capture only durable knowledge, not routine turn summaries.
-3. Keep notes concise, private-safe, and validation-friendly.
-4. Run or recommend `lufy-ai memory validate` when memory files change.
+3. Use `lufy-ai memory capture --target <repo> --title <title> --type <decision|rule|flow|lesson|concept> [--link <slug>] <text>` instead of hand-editing Markdown when possible.
+4. Treat explicit user corrections to AI decisions as durable `rule` or `lesson` memory.
+5. Connect related existing notes with `lufy-ai memory connect` and run or recommend `lufy-ai memory validate` when memory files change.

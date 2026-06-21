@@ -209,6 +209,9 @@ func TestRunHelpBranches(t *testing.T) {
 		{"memory", "--help"},
 		{"memory", "init", "--help"},
 		{"memory", "search", "--help"},
+		{"memory", "capture", "--help"},
+		{"memory", "connect", "--help"},
+		{"memory", "index", "--help"},
 		{"init", "--help"},
 		{"scan", "--help"},
 		{"migrate-layout", "--help"},
@@ -240,6 +243,9 @@ func TestRunUsageBranches(t *testing.T) {
 		{"memory", "status", "extra"},
 		{"memory", "validate", "extra"},
 		{"memory", "search"},
+		{"memory", "capture"},
+		{"memory", "connect"},
+		{"memory", "index", "extra"},
 		{"init", "extra"},
 		{"init", "--force", "--rescan"},
 		{"scan", "extra"},
@@ -310,6 +316,30 @@ Lufy busca contexto durable.
 	}
 	if !bytes.Contains(out.Bytes(), []byte("[active] knowledge/searchable.md")) {
 		t.Fatalf("memory search output unexpected: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "capture", "--target", target, "--title", "User Corrections", "--type", "rule", "--link", "searchable", "Las correcciones del usuario se guardan como memoria durable."}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory capture expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("knowledge/user-corrections.md")) {
+		t.Fatalf("memory capture output unexpected: %s", out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "connect", "--target", target, "--bidirectional", "user-corrections", "searchable"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("memory connect expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	}
+
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"memory", "index", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK || !bytes.Contains(out.Bytes(), []byte(`"links"`)) {
+		t.Fatalf("memory index unexpected code=%d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
 
 	out.Reset()

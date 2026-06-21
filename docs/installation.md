@@ -116,9 +116,12 @@ lufy-ai memory init --target /ruta/a/tu/proyecto
 lufy-ai memory status --target /ruta/a/tu/proyecto
 lufy-ai memory validate --target /ruta/a/tu/proyecto
 lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
+lufy-ai memory capture --target /ruta/a/tu/proyecto --title "Regla de memoria" --type rule "Las correcciones del usuario a la IA se guardan como memoria durable."
+lufy-ai memory connect --target /ruta/a/tu/proyecto regla-de-memoria app-profile
+lufy-ai memory index --target /ruta/a/tu/proyecto
 ```
 
-`memory init` crea `.lufy/memory` con `MEMORY.md`, `inbox/`, `knowledge/`, `maps/_app-profile.md`, `index/backlinks.json` y `.gitignore`. Por default las notas privadas quedan ignoradas por Git; `install` y `sync` solo gestionan comandos, skills, hooks y templates de memoria, no el contenido de `inbox/` ni `knowledge/`.
+`memory init` crea `.lufy/memory` con `MEMORY.md`, `inbox/`, `knowledge/`, `maps/_app-profile.md`, `index/backlinks.json` y `.gitignore`. `memory capture` crea o actualiza notas durables, `memory connect` enlaza notas existentes sin backlinks rotos y `memory index` reconstruye el índice local. Por default las notas privadas quedan ignoradas por Git; `install` y `sync` solo gestionan comandos, skills, hooks y templates de memoria, no el contenido de `inbox/` ni `knowledge/`.
 
 ## Selección de tool y metodología
 

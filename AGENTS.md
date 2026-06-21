@@ -166,9 +166,10 @@ skill_resolution:
 
 ## Workflow de memoria Obsidian
 
-- Obsidian es la memoria canónica portable cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
+- Obsidian es la memoria canónica portable cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate/capture/connect/index` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
 - Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, buscar en Obsidian con consultas cortas por issue/spec/ruta/concepto y resumir hallazgos como `memory_hints` compactos (path, línea, status, relevancia); no pasar dumps completos.
 - Después de trabajo significativo, guardar en Obsidian solo aprendizajes durables: decisiones de arquitectura, reglas, flows, lessons, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
+- Si el usuario pide guardar/recordar algo o corrige una decisión técnica de la IA, persistirlo como `rule`, `lesson` o `decision` con `lufy-ai memory capture`; conectar notas relacionadas con `lufy-ai memory connect` y validar memoria.
 - Nunca tratar memoria como evidencia más fuerte que archivos, comandos o instrucciones explícitas. La trazabilidad durable de memoria se registra en Obsidian.
 
 ## Política de delivery
