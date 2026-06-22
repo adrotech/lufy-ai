@@ -220,6 +220,7 @@ func TestRunHelpBranches(t *testing.T) {
 		{"unpin", "--help"},
 		{"install", "--help"},
 		{"sync", "--help"},
+		{"setup", "--help"},
 		{"uninstall", "--help"},
 	}
 	for _, args := range tests {
@@ -260,6 +261,8 @@ func TestRunUsageBranches(t *testing.T) {
 		{"doctor", "extra"},
 		{"version", "extra"},
 		{"upgrade", "extra"},
+		{"setup", "extra"},
+		{"menu", "extra"},
 		{"install", "extra"},
 		{"uninstall", "extra"},
 		{"restore"},
@@ -273,6 +276,85 @@ func TestRunUsageBranches(t *testing.T) {
 				t.Fatalf("Run(%v) code=%d stdout=%s stderr=%s", args, code, out.String(), errOut.String())
 			}
 		})
+	}
+}
+
+func TestRunSetupDryRunSkipVersionCheck(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"setup", "--target", target, "--dry-run", "--skip-version-check"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("setup dry-run expected ExitOK, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Version: check omitido")) || !bytes.Contains(out.Bytes(), []byte("Modo dry-run")) {
+		t.Fatalf("unexpected setup dry-run output: %s", out.String())
+	}
+	if !bytes.HasPrefix(out.Bytes(), []byte("Setup para ")) {
+		t.Fatalf("setup should start with setup/version report, got: %s", out.String())
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy")); !os.IsNotExist(err) {
+		t.Fatalf("setup dry-run wrote .lufy: %v", err)
+	}
+}
+
+func TestRunSetupJSONDryRunSkipVersionCheck(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"setup", "--target", target, "--json", "--dry-run", "--skip-version-check"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("setup json expected ExitOK, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid setup json %q: %v", out.String(), err)
+	}
+	if decoded["targetRoot"] == "" {
+		t.Fatalf("missing targetRoot: %#v", decoded)
+	}
+}
+
+func TestRunSetupJSONRequiresYesForMutations(t *testing.T) {
+	target := t.TempDir()
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"setup", "--target", target, "--json", "--skip-version-check"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("setup json without yes expected runtime error, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("requiere --yes")) {
+		t.Fatalf("missing --yes error: %s", errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid setup json %q: %v", out.String(), err)
+	}
+}
+
+func TestCommandPaletteHelpersNonTTY(t *testing.T) {
+	var out bytes.Buffer
+	deps := Dependencies{Stdout: &out, Stderr: &out}
+	if commandPaletteAllowed(deps) {
+		t.Fatalf("palette should not be allowed with buffer stdout")
+	}
+	if commandOutput(deps) != &out {
+		t.Fatalf("commandOutput should preserve deps stdout")
+	}
+	if commandInput(deps) == nil {
+		t.Fatalf("commandInput should fallback to stdin")
+	}
+}
+
+func TestRunMenuRequiresTTY(t *testing.T) {
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"menu"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitRuntimeErr {
+		t.Fatalf("menu without tty expected runtime error, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	if !bytes.Contains(errOut.Bytes(), []byte("TTY")) {
+		t.Fatalf("expected TTY error, got %s", errOut.String())
 	}
 }
 
