@@ -177,7 +177,7 @@ memory:
 
 `memory capture` persiste decisiones, reglas, flows, lessons y conceptos durables. Las correcciones explícitas del usuario a decisiones de la IA deben capturarse como `rule` o `lesson`, y conectarse con `memory connect` cuando existan notas relacionadas. `memory index` deriva `index/backlinks.json` desde wikilinks existentes.
 
-`doctor` reporta memoria faltante, drafts y backlinks rotos sin bloquear instalación normal. `verify --deep` valida memoria cuando existe. `sync` gestiona los comandos, skills, hooks y templates de memoria, pero no registra ni sobrescribe contenido privado dentro de `.lufy/memory/inbox` o `.lufy/memory/knowledge`.
+`doctor` reporta memoria faltante, drafts, backlinks rotos, estado del context graph y presencia de hooks/plugin OpenCode de memoria. `verify --deep` valida memoria cuando existe y reporta integración de contexto/hooks. `sync` gestiona comandos, skills, hooks, plugin y templates de memoria, pero no registra ni sobrescribe contenido privado dentro de `.lufy/memory/inbox` o `.lufy/memory/knowledge`.
 
 ## Context Graph
 
@@ -191,7 +191,9 @@ lufy-ai context query --target <repo> "auth"
 lufy-ai context diff --target <repo> --base origin/develop
 ```
 
-Los agentes y skills usan este grafo solo como índice secundario para hints compactos (`context_graph_hints`). Si el grafo falta o está stale, deben degradar a `not_available`/`stale` y continuar con lectura de archivos, diff y validación normal. La semántica/LLM queda como fase futura opcional; la implementación actual es lexical/determinística y sus inferencias no son evidencia superior a archivos actuales, tests o comandos.
+Los agentes y skills usan este grafo solo como índice secundario para hints compactos (`context_graph_hints`). Si el grafo falta o está stale, deben degradar a `not_available`/`stale`, mostrar `recovery: lufy-ai context build` y continuar con lectura de archivos, diff y validación normal. La semántica/LLM queda como fase futura opcional; la implementación actual es lexical/determinística y sus inferencias no son evidencia superior a archivos actuales, tests o comandos.
+
+`context_graph.exclude` permite omitir rutas del build. Los defaults excluyen `.lufy/managed-state/backups/**` y `.lufy/managed-state/ancestors/**` para que backups/ancestors internos no dominen consultas. `context status`, `doctor` y `verify --deep` muestran `recovery: lufy-ai context build` cuando el grafo no existe o está stale.
 
 ## Paralelismo gobernado
 

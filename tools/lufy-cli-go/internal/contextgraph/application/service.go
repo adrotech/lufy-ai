@@ -283,7 +283,7 @@ func (s Service) buildGraph(root string) (domain.Graph, []string, buildMeta, pro
 	communities := buildCommunities(nodes, edges)
 	important := importantNodes(nodes, edges, 12)
 	questions := suggestedQuestions(communities, important)
-	manifest := domain.Manifest{Schema: domain.SchemaVersion, ExtractorVersion: extractors.Version, Options: map[string]string{"formats": "go,markdown,yaml,json", "config_source": projectconfig.ProjectConfigPath, "context_root": cfg.Root, "cache": fmt.Sprint(cfg.Cache)}, SourcesHash: sourcesHash(sources)}
+	manifest := domain.Manifest{Schema: domain.SchemaVersion, ExtractorVersion: extractors.Version, Options: map[string]string{"formats": "go,markdown,yaml,json", "config_source": projectconfig.ProjectConfigPath, "context_root": cfg.Root, "cache": fmt.Sprint(cfg.Cache), "exclude": strings.Join(cfg.Exclude, ",")}, SourcesHash: sourcesHash(sources)}
 	manifest.GeneratedFromHash = manifest.SourcesHash
 	graph := domain.Graph{Schema: domain.SchemaVersion, GeneratedAt: time.Now().UTC().Format(time.RFC3339), Root: domain.Root{Name: filepath.Base(root), CLIVersion: version.Current().String()}, Sources: sources, Nodes: nodes, Edges: edges, Health: health, Communities: communities, Important: important, Questions: questions, Manifest: manifest, Extensions: map[string]interface{}{"config_source": projectconfig.ProjectConfigPath}}
 	return graph, errs, meta, cfg, nil
@@ -334,6 +334,9 @@ func (s Service) config(root string) projectconfig.ContextGraphConfig {
 	if len(cfg.SensitivePatterns) == 0 {
 		cfg.SensitivePatterns = projectconfig.DefaultContextGraphConfig().SensitivePatterns
 	}
+	if len(cfg.Exclude) == 0 {
+		cfg.Exclude = projectconfig.DefaultContextGraphConfig().Exclude
+	}
 	return cfg
 }
 
@@ -349,9 +352,12 @@ func discover(root string, cfg projectconfig.ContextGraphConfig) ([]discoveredFi
 		}
 		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
-			if skipDir(rel, cfg.Root) {
+			if skipDir(rel, cfg.Root, cfg) {
 				return filepath.SkipDir
 			}
+			return nil
+		}
+		if excludedPath(rel, cfg) {
 			return nil
 		}
 		if !extractors.Supported(rel) && !looksSensitive(rel, cfg) {
@@ -369,8 +375,32 @@ func discover(root string, cfg projectconfig.ContextGraphConfig) ([]discoveredFi
 	return files, err
 }
 
-func skipDir(rel, contextRoot string) bool {
-	return rel == ".git" || rel == "node_modules" || rel == filepath.ToSlash(contextRoot) || strings.HasPrefix(rel, filepath.ToSlash(contextRoot)+"/")
+func skipDir(rel, contextRoot string, cfg projectconfig.ContextGraphConfig) bool {
+	return rel == ".git" || rel == "node_modules" || rel == filepath.ToSlash(contextRoot) || strings.HasPrefix(rel, filepath.ToSlash(contextRoot)+"/") || excludedPath(rel, cfg)
+}
+
+func excludedPath(rel string, cfg projectconfig.ContextGraphConfig) bool {
+	rel = filepath.ToSlash(rel)
+	for _, pattern := range cfg.Exclude {
+		pattern = filepath.ToSlash(strings.TrimSpace(pattern))
+		if pattern == "" {
+			continue
+		}
+		if strings.HasSuffix(pattern, "/**") {
+			prefix := strings.TrimSuffix(pattern, "/**")
+			if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+				return true
+			}
+			continue
+		}
+		if ok, _ := filepath.Match(pattern, rel); ok {
+			return true
+		}
+		if rel == pattern {
+			return true
+		}
+	}
+	return false
 }
 
 func looksSensitive(rel string, cfg projectconfig.ContextGraphConfig) bool {

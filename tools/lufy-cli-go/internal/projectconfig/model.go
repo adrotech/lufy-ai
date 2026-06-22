@@ -153,6 +153,7 @@ type ContextGraphConfig struct {
 	Report              string         `yaml:"report"`
 	SkipSensitive       bool           `yaml:"skip_sensitive"`
 	SensitivePatterns   []string       `yaml:"sensitive_patterns"`
+	Exclude             []string       `yaml:"exclude"`
 	MaxQueryResults     int            `yaml:"max_query_results"`
 	MaxNeighborsPerHint int            `yaml:"max_neighbors_per_hint"`
 	Extra               map[string]any `yaml:",inline,omitempty"`
