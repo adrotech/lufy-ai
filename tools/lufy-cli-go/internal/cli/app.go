@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,8 +23,10 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/setup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/tui/commandpalette"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/uninstaller"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -32,6 +35,18 @@ import (
 
 func Run(args []string, deps Dependencies) int {
 	if len(args) == 0 {
+		if commandPaletteAllowed(deps) {
+			result, err := commandpalette.Run(commandpalette.Options{Input: commandInput(deps), Output: commandOutput(deps)})
+			if err != nil {
+				fmt.Fprintln(deps.Stderr, err.Error())
+				return ExitRuntimeErr
+			}
+			if result.Cancelled || len(result.Args) == 0 {
+				return ExitOK
+			}
+			fmt.Fprintf(deps.Stdout, "Ejecutando: lufy-ai %s\n", strings.Join(result.Args, " "))
+			return Run(result.Args, deps)
+		}
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
@@ -71,12 +86,16 @@ func Run(args []string, deps Dependencies) int {
 		return runUnpin(args[1:], deps)
 	case "upgrade":
 		return runUpgrade(args[1:], deps)
+	case "setup":
+		return runSetup(args[1:], deps)
 	case "opsx":
 		return runOpsx(args[1:], deps)
 	case "context":
 		return runContext(args[1:], deps)
 	case "version":
 		return runVersion(args[1:], deps)
+	case "menu":
+		return runMenu(args[1:], deps)
 	case "-h", "--help", "help":
 		printGeneralHelp(deps.Stdout)
 		return ExitOK
@@ -85,6 +104,27 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runMenu(args []string, deps Dependencies) int {
+	if len(args) > 0 {
+		fmt.Fprintln(deps.Stderr, "menu no acepta argumentos posicionales")
+		return ExitUsageErr
+	}
+	if !commandPaletteAllowed(deps) {
+		fmt.Fprintln(deps.Stderr, "menu requiere una terminal interactiva (TTY)")
+		return ExitRuntimeErr
+	}
+	result, err := commandpalette.Run(commandpalette.Options{Input: commandInput(deps), Output: commandOutput(deps)})
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	if result.Cancelled || len(result.Args) == 0 {
+		return ExitOK
+	}
+	fmt.Fprintf(deps.Stdout, "Ejecutando: lufy-ai %s\n", strings.Join(result.Args, " "))
+	return Run(result.Args, deps)
 }
 
 func runContext(args []string, deps Dependencies) int {
@@ -325,10 +365,10 @@ func runOpsxRender(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/tasks/specs en un HTML offline opcional.")
 	}
 	if err := fs.Parse(args); err != nil {
-		fs.Usage()
 		if errors.Is(err, flag.ErrHelp) {
 			return ExitOK
 		}
+		fs.Usage()
 		return ExitUsageErr
 	}
 	if len(fs.Args()) > 0 {
@@ -406,10 +446,10 @@ func runMemoryInit(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "Crea .lufy/memory con política Git ignored e integra defaults en .lufy/config/project.yaml.")
 	}
 	if err := fs.Parse(args); err != nil {
-		fs.Usage()
 		if errors.Is(err, flag.ErrHelp) {
 			return ExitOK
 		}
+		fs.Usage()
 		return ExitUsageErr
 	}
 	if len(fs.Args()) > 0 {
@@ -486,10 +526,10 @@ func runMemorySearch(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai memory search [--target <dir>] [--json] <query>")
 	}
 	if err := fs.Parse(args); err != nil {
-		fs.Usage()
 		if errors.Is(err, flag.ErrHelp) {
 			return ExitOK
 		}
+		fs.Usage()
 		return ExitUsageErr
 	}
 	if len(fs.Args()) != 1 {
@@ -811,6 +851,91 @@ func runUpgrade(args []string, deps Dependencies) int {
 		return ExitRuntimeErr
 	}
 	return ExitOK
+}
+
+func runSetup(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
+	yes := fs.Bool("yes", false, "Aceptar mutaciones reales")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	skipVersionCheck := fs.Bool("skip-version-check", false, "Omitir consulta de ultima version")
+	requireLatest := fs.Bool("require-latest", false, "Fallar si existe una version estable mas nueva")
+	checkNewFeatures := fs.Bool("check-new-features", false, "Enfatizar deteccion de capacidades nuevas pendientes")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai setup [--target <dir>] [--dry-run] [--yes] [--json] [--skip-version-check] [--require-latest] [--check-new-features]")
+		fmt.Fprintln(deps.Stderr, "Verifica version de LUFY AI y orquesta install, project config, memoria, context graph y verify.")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "setup no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if *dryRun && *yes {
+		fmt.Fprintln(deps.Stderr, "setup no permite combinar --dry-run y --yes")
+		return ExitUsageErr
+	}
+	err := setup.NewService().Run(setup.Options{
+		Target:           *target,
+		DryRun:           *dryRun,
+		Yes:              *yes,
+		JSON:             *jsonOutput,
+		SkipVersionCheck: *skipVersionCheck,
+		RequireLatest:    *requireLatest,
+		CheckNewFeatures: *checkNewFeatures,
+		Interactive:      !*dryRun && !*yes && !*jsonOutput && setupInteractiveAllowed(deps),
+	}, deps.Stdout)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
+}
+
+func setupInteractiveAllowed(deps Dependencies) bool {
+	return commandPaletteAllowed(deps)
+}
+
+func commandPaletteAllowed(deps Dependencies) bool {
+	input, ok := deps.Stdin.(*os.File)
+	if !ok || input == nil {
+		input = os.Stdin
+	}
+	info, err := input.Stat()
+	if err != nil || info.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	output, ok := deps.Stdout.(*os.File)
+	if !ok || output == nil {
+		output = os.Stdout
+	}
+	outInfo, err := output.Stat()
+	if err != nil || outInfo.Mode()&os.ModeCharDevice == 0 {
+		return false
+	}
+	return true
+}
+
+func commandInput(deps Dependencies) io.Reader {
+	if deps.Stdin != nil {
+		return deps.Stdin
+	}
+	return os.Stdin
+}
+
+func commandOutput(deps Dependencies) io.Writer {
+	if deps.Stdout != nil {
+		return deps.Stdout
+	}
+	return os.Stdout
 }
 
 func runStatus(args []string, deps Dependencies) int {
@@ -1286,6 +1411,8 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  migrate-layout Migra rutas legacy al layout unificado .lufy/")
 	fmt.Fprintln(out, "  memory    Inicializa, valida, busca, captura y conecta memoria Obsidian portable")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
+	fmt.Fprintln(out, "  setup     Verifica version y configura LUFY end-to-end")
+	fmt.Fprintln(out, "  menu      Abre el command palette interactivo en TTY")
 	fmt.Fprintln(out, "  status    Resume estado instalado y drift local")
 	fmt.Fprintln(out, "  info      Muestra catálogo efectivo, manifest, stacks y surfaces")
 	fmt.Fprintln(out, "  doctor    Diagnostica project.yaml, manifest y drift sin mutar")
