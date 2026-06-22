@@ -210,6 +210,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai context` | Genera y consulta un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con reporte derivado y hints rankeados para ahorrar exploración inicial. |
+| `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en `git diff <base>...HEAD` antes de push/PR; también aparece en la command palette. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
 | `lufy-ai version` | Muestra versión, commit, build date y plataforma. |
 
@@ -308,7 +309,7 @@ Disponible e instalable:
 - OpenSpec como metodología principal.
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
-- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, upgrade y version.
+- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, `pr guard`, upgrade y version.
 - `init` y `scan` con `.lufy/config/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.

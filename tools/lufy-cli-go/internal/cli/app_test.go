@@ -206,6 +206,8 @@ func TestRunHelpBranches(t *testing.T) {
 		{"help"},
 		{"opsx", "--help"},
 		{"opsx", "render", "--help"},
+		{"pr", "--help"},
+		{"pr", "guard", "--help"},
 		{"memory", "--help"},
 		{"memory", "init", "--help"},
 		{"memory", "search", "--help"},
@@ -239,6 +241,9 @@ func TestRunUsageBranches(t *testing.T) {
 	tests := [][]string{
 		{"opsx"},
 		{"opsx", "unknown"},
+		{"pr"},
+		{"pr", "unknown"},
+		{"pr", "guard", "extra"},
 		{"memory"},
 		{"memory", "unknown"},
 		{"memory", "status", "extra"},

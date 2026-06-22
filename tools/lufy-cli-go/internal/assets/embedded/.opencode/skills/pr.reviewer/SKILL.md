@@ -53,12 +53,13 @@ Revisa un Pull Request existente y genera un reporte HTML autocontenido en espa�
 2. Contexto local mínimo:
 
    ```bash
-   git status --short
-   git diff --name-only <base>...<head>
-   git diff --stat <base>...<head>
-   ```
+    git status --short
+    git diff --name-only <base>...<head>
+    git diff --stat <base>...<head>
+    lufy-ai pr guard --base <base>
+    ```
 
-   Usa comandos de Git solo para inspección. No hagas checkout, reset, merge, commit ni push.
+    Usa comandos de Git solo para inspección. No hagas checkout, reset, merge, commit ni push. Si `lufy-ai pr guard` no está disponible, usa el fallback read-only `git diff --name-only <base>...<head> -- | git check-ignore -v --no-index --stdin` y revisa manualmente los prefijos internos `openspec/`, `.lufy/`, `.lufy-ai/`, `pr_review/`.
 
 3. Leer contexto cuando exista:
    - `AGENTS.md`
@@ -186,6 +187,7 @@ El reporte no debe ser un resumen superficial del diff. Debe leer el PR como lo 
 - Evalúa el template/body del PR cuando exista: WHY, alcance, issue/ticket, test plan, evidencias, migraciones/configuración y stacked PRs/follow-ups. Si el repo usa otro template, registra `No aplica` en vez de inventar incumplimientos.
 - Revisa comentarios/reviews previos y clasifícalos como `resuelto`, `pendiente`, `no verificable` o `no aplica`, con una acción concreta.
 - Para cada hallazgo medio/alto/crítico, incluye evidencia, impacto, escenario de reproducción o razonamiento de fallo, recomendación y criterio de aceptación.
+- Si el PR incluye paths ignorados por `.gitignore` o metadata interna sin override explícito, repórtalo como hallazgo mínimo `MEDIO` (`L3`) con evidencia de `lufy-ai pr guard` o `git check-ignore -v --no-index --stdin`. Eleva a `ALTO` (`L2`) si expone secretos, contenido privado, ruido significativo de release o contradice una política de delivery del repo.
 - Incluye al menos una sección de `Buenas prácticas observadas` cuando el PR tenga decisiones correctas; no todo el reporte debe ser punitivo.
 - El desk check debe cubrir escenarios reales del dominio del PR. Usa 5 escenarios como mínimo cuando el cambio sea funcional; si el alcance es documental o mecánico, explica por qué aplica una simulación reducida.
 - El score debe estar justificado por dimensión. No basta un número global.

@@ -603,6 +603,8 @@ func TestCodexPRReviewerSkillPreservesHTMLContract(t *testing.T) {
 			want: []string{
 				"This Codex-visible skill MUST follow the Lufy PR review contract",
 				".opencode/skills/pr.reviewer/SKILL.md",
+				"lufy-ai pr guard --base <base>",
+				"git check-ignore -v --no-index --stdin",
 				"Create `pr_review/` if it does not exist",
 				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
 				"clickable Markdown link",
@@ -619,6 +621,8 @@ func TestCodexPRReviewerSkillPreservesHTMLContract(t *testing.T) {
 			want: []string{
 				"This Codex-visible skill MUST follow the Lufy PR review contract",
 				".opencode/skills/pr.reviewer/SKILL.md",
+				"lufy-ai pr guard --base <base>",
+				"git check-ignore -v --no-index --stdin",
 				"Create `pr_review/` if it does not exist",
 				"pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html",
 				"clickable Markdown link",

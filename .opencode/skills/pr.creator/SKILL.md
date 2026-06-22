@@ -17,6 +17,7 @@ Genera contenido de Pull Request para GitHub en español: título sugerido y cue
 - `.opencode/policies/delivery.md` sigue siendo la fuente de verdad para branch safety, validación, PRs, sync y gates de delivery.
 - `pr.creator` estructura y redacta contenido; `delivery` conserva commit, push, `gh pr create`, sync remoto, branch safety, validación final y reporte.
 - No ejecutes `git`, `gh`, sync de GitHub Projects, Jira, Notion, herramientas remotas ni mutaciones de delivery.
+- Cuando `delivery` provea evidencia de `lufy-ai pr guard --base <base>`, inclúyela en el PR body. Si falta, marca `Pendiente de delivery`; no ejecutes el guardrail desde `pr.creator`.
 - No inventes evidencia, links, tickets, monitores, resultados de pruebas ni migraciones.
 - Si falta información, usa explícitamente `Pendiente de confirmar`, `No configurado` o `No aplica` y lista los datos faltantes.
 - El contenido humano debe estar en español; preserva identificadores técnicos, rutas, flags, IDs y nombres de comandos.
@@ -29,9 +30,10 @@ Usa cualquier dato disponible, en este orden de preferencia:
 2. Contenido de `openspec/changes/<change-id>/proposal.md`, especialmente secciones `Why` y `What Changes`.
 3. `tasks.md`, specs, design, resumen funcional, commits, diff o notas proporcionadas por la persona/agente.
 4. Evidencia de validación: comandos exactos, resultados, capturas, JSON, curls, salidas resumidas y limitaciones.
-5. Tarea asociada: links o IDs de Jira, GitHub Issues/Projects, Notion u otro sistema de tracking configurado/proporcionado.
-6. Monitores o dashboards: Grafana, New Relic, Datadog u otros sistemas configurados/proporcionados.
-7. Archivos modificados o diff disponible para detectar migraciones y cambios de schema.
+5. Evidencia del PR guard: salida de `lufy-ai pr guard --base <base>` o fallback `git check-ignore -v --no-index --stdin`.
+6. Tarea asociada: links o IDs de Jira, GitHub Issues/Projects, Notion u otro sistema de tracking configurado/proporcionado.
+7. Monitores o dashboards: Grafana, New Relic, Datadog u otros sistemas configurados/proporcionados.
+8. Archivos modificados o diff disponible para detectar migraciones y cambios de schema.
 
 ## Outputs
 
@@ -92,6 +94,13 @@ Si no hay herramienta configurada ni ticket provisto, usa `No configurado` o `Pe
 - Lista comandos exactos y resultado observado (`pass`, `fail`, `no disponible`, `no aplica`) solo si fueron proporcionados o ejecutados por el agente llamador.
 - Incluye capturas, JSON o curls con contexto cuando existan.
 - Si no se ejecutó validación, declara la limitación; no afirmes éxito.
+
+### Guardrail de paths ignorados/internos
+
+- Si `delivery` ejecutó `lufy-ai pr guard --base <base>`, incluye comando, resultado y notas.
+- Si el guard reportó paths ignorados o internos, marca el PR como `Pendiente de corregir` o documenta el override explícito del usuario.
+- El texto debe explicar que `.gitignore` no evita que archivos ya trackeados entren por cherry-pick, worktree o commits existentes.
+- Si el CLI no está disponible y hay fallback, registra `git diff --name-only <base>...HEAD -- | git check-ignore -v --no-index --stdin` y la revisión manual de `openspec/`, `.lufy/`, `.lufy-ai/`, `pr_review/`.
 
 ### Monitors
 
