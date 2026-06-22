@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -26,6 +27,8 @@ type Report struct {
 	Scope                 string        `json:"scope,omitempty"`
 	GlobalRoot            string        `json:"globalRoot,omitempty"`
 	Installed             bool          `json:"installed"`
+	MigrationState        string        `json:"migrationState,omitempty"`
+	Recovery              string        `json:"recovery,omitempty"`
 	SchemaVersion         int           `json:"schemaVersion,omitempty"`
 	ToolVersion           string        `json:"toolVersion,omitempty"`
 	ToolCommit            string        `json:"toolCommit,omitempty"`
@@ -82,6 +85,12 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	if !report.Installed {
 		fmt.Fprintf(stdout, "Status para %s: no instalado\n", report.TargetRoot)
+		if report.MigrationState != "" {
+			fmt.Fprintf(stdout, "Estado migracion: %s\n", report.MigrationState)
+		}
+		if report.Recovery != "" {
+			fmt.Fprintf(stdout, "Recovery: %s\n", report.Recovery)
+		}
 		return nil
 	}
 	fmt.Fprintf(stdout, "Status para %s\n", report.TargetRoot)
@@ -139,6 +148,14 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	}
 	if st == nil {
 		report.Installed = false
+		report.MigrationState = "manifest_missing"
+		report.Recovery = "lufy-ai install --target <dir> --dry-run"
+		conflicts, planErr := conflictplan.NewService().Build(conflictplan.Options{Target: resolved, Scope: scope})
+		if planErr == nil && (len(conflicts.Items) > 0 || len(conflicts.LegacyDeprecated) > 0) {
+			report.MigrationState = "migration_blocked"
+			report.ConflictsPending = len(conflicts.Items)
+			report.Recovery = "lufy-ai conflicts plan --target <dir>"
+		}
 		return report, nil
 	}
 	report.Installed = true

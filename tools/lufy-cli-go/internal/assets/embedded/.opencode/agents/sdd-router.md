@@ -69,9 +69,9 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Governed Parallelism
 
 - Read `parallel_execution` from `.lufy/config/project.yaml` when present.
-- Recommend parallelism only when `enabled: true`, the task has independent `review_slices`, each slice touches independent files, the merge plan is clear, and validation can run grouped after join.
+- Recommend parallelism only when `enabled: true`, the task has independent work units such as `review_slices` or conflict-plan `parallelGroup` categories, each unit touches independent files, the merge plan is clear, and validation can run grouped after join.
 - Block parallelism for delivery, schema/database migrations, shared generated files, shared public contracts, unresolved API decisions, security-sensitive changes, or slices that touch the same files.
-- When recommending parallelism, include `parallel_execution.recommended: true`, `max_parallel_agents`, slice ownership, merge plan and `validation_mode: grouped_after_join` in the handoff.
+- When recommending parallelism, include `parallel_execution.recommended: true`, `max_parallel_agents`, unit ownership, merge plan and `validation_mode: grouped_after_join` in the handoff.
 - When blocked, include the exact reason and route as sequential execution.
 
 ## Tier Rules

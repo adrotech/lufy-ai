@@ -1108,6 +1108,39 @@ func TestRunStatusJSON(t *testing.T) {
 	}
 }
 
+func TestRunConflictsPlanJSON(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".opencode", "agents", "orchestrator.md"), "local agent\n")
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"conflicts", "plan", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("conflicts plan expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	var decoded map[string]any
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("conflicts plan output is not JSON: %v body=%s", err, out.String())
+	}
+	items, ok := decoded["items"].([]any)
+	if !ok || len(items) == 0 {
+		t.Fatalf("expected conflict items in %#v", decoded)
+	}
+}
+
+func TestRunConflictsPlanHuman(t *testing.T) {
+	target := t.TempDir()
+	writeCLITestFile(t, filepath.Join(target, ".opencode", "package.json"), `{"local":true}`)
+	var out bytes.Buffer
+	var errOut bytes.Buffer
+	code := Run([]string{"conflicts", "plan", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK {
+		t.Fatalf("conflicts plan expected ExitOK, got %d stderr=%s", code, errOut.String())
+	}
+	if !bytes.Contains(out.Bytes(), []byte("Plan de conflictos")) || !bytes.Contains(out.Bytes(), []byte("root/config")) {
+		t.Fatalf("unexpected conflicts output: %s", out.String())
+	}
+}
+
 func TestRunStatusVerbose(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer

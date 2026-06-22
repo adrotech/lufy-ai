@@ -13,6 +13,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextstore "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
@@ -95,6 +96,8 @@ func Run(args []string, deps Dependencies) int {
 		return runPR(args[1:], deps)
 	case "context":
 		return runContext(args[1:], deps)
+	case "conflicts":
+		return runConflicts(args[1:], deps)
 	case "version":
 		return runVersion(args[1:], deps)
 	case "menu":
@@ -125,6 +128,64 @@ func runPR(args []string, deps Dependencies) int {
 		printPRHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runConflicts(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printConflictsHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "plan":
+		return runConflictsPlan(args[1:], deps)
+	case "-h", "--help", "help":
+		printConflictsHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando conflicts desconocido: %s\n\n", args[0])
+		printConflictsHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func runConflictsPlan(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("conflicts plan", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Directorio destino")
+	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	harnessFlags := addToolFlag(fs)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai conflicts plan [--target <dir>] [--scope project|global|both] [--tool <tool>] [--json]")
+		fmt.Fprintln(deps.Stderr, "Genera un plan read-only de conflictos agrupado por categoria, riesgo y recomendacion.")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "conflicts plan no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	scope, err := assets.ParseScope(*scopeValue)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	harness, err := parseHarnessFlags(harnessFlags)
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitUsageErr
+	}
+	if err := conflictplan.NewService().Run(conflictplan.Options{Target: *target, Scope: scope, Harness: harness, JSON: *jsonOutput}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runPRGuard(args []string, deps Dependencies) int {
@@ -1472,8 +1533,15 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
+	fmt.Fprintln(out, "  conflicts Planifica conflictos de install sin mutar")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
+}
+
+func printConflictsHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai conflicts <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  plan      Plan read-only de conflictos por categoria y recomendacion")
 }
 
 func printPRHelp(out io.Writer) {
