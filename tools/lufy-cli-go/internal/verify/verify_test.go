@@ -155,6 +155,7 @@ description: Review a PR or branch and generate the Lufy HTML report.
 Use .opencode/skills/pr.reviewer/SKILL.md as the canonical contract.
 Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
 Use templates/report.html when available.
+Check ignored paths with lufy-ai pr guard --base <base> or git check-ignore -v --no-index --stdin.
 Include Desk check and Scoring.
 Return:
 Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)

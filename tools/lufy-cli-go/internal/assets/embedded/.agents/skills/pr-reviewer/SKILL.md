@@ -23,6 +23,8 @@ This Codex-visible skill MUST follow the Lufy PR review contract, not a chat-onl
 - Stay read-only for source code and GitHub: do not edit code, comment on GitHub, approve, reject, merge, push, or perform delivery.
 - You may write only the HTML report under `pr_review/`.
 - Collect PR metadata, diff, comments/reviews, checks, and local context when available with read-only commands such as `gh pr view`, `gh pr diff`, `gh pr checks`, `git status`, `git diff --name-only`, and `git diff --stat`.
+- Check ignored/internal paths with `lufy-ai pr guard --base <base>` when the CLI is available. If it is not available, use `git diff --name-only <base>...HEAD -- | git check-ignore -v --no-index --stdin` and manually inspect `openspec/`, `.lufy/`, `.lufy-ai/`, `pr_review/`.
+- If a PR includes ignored paths or internal metadata without explicit override, report at least a `MEDIO` finding with concrete evidence. Explain that `.gitignore` does not prevent files already tracked in commits, worktrees or cherry-picks from entering a PR.
 - If evidence is unavailable, state `No disponible`, `No aplica`, or `Pendiente de confirmar`; do not invent checks, coverage, comments, benchmarks, monitors, or risks.
 
 ## Report Content Contract

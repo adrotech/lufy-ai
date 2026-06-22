@@ -56,6 +56,7 @@ Checklist base para revisar PRs sin depender de lenguaje o framework.
 - Nuevas variables/configs tienen defaults seguros y documentación.
 - Infra/CI/CD no rompe ambientes existentes.
 - Se evita cambiar puertos, auth defaults, rutas públicas o contratos sin autorización.
+- El PR no incluye paths ignorados por `.gitignore` ni metadata interna (`openspec/`, `.lufy/`, `.lufy-ai/`, `pr_review/`) salvo override explícito. Evidencia preferida: `lufy-ai pr guard --base <base>`; fallback: `git check-ignore -v --no-index --stdin` sobre `git diff --name-only <base>...HEAD --`.
 
 ## Mantenibilidad Y Complejidad
 
@@ -80,3 +81,4 @@ Checklist base para revisar PRs sin depender de lenguaje o framework.
 - La evidencia de pruebas no cubre el comportamiento modificado.
 - Hay comentarios previos sin resolver sobre el mismo riesgo.
 - El diff agrega lógica crítica en capas de entrada o infraestructura sin tests.
+- El diff incluye archivos ignorados o internos que llegaron por commits existentes, worktrees o cherry-pick; `.gitignore` no evita ese caso cuando el archivo ya está trackeado.

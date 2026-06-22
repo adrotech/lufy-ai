@@ -38,6 +38,13 @@
 - Estado: <`pass` / `fail` / `pending` / `no disponible` / `Pendiente de delivery`>
 - Notas/recovery: <link al PR, checks pendientes/fallidos o `No aplica`>
 
+### Guardrail de paths ignorados/internos
+
+- Comando: <`lufy-ai pr guard --base <base>` / fallback `git check-ignore -v --no-index --stdin` / `Pendiente de delivery`>
+- Estado: <`Sin hallazgos` / `Detectados` / `Pendiente de delivery`>
+- Evidencia: <paths, patrón `.gitignore`, prefijo interno, override explícito o `No aplica`>
+- Nota: `.gitignore` no impide que archivos ya trackeados entren por cherry-pick, worktree o commits existentes.
+
 ## Monitors
 
 | Sistema | Monitor/Dashboard | Link | Estado |
@@ -58,6 +65,7 @@
 
 - [ ] Branch/base revisados por `delivery` según `.opencode/policies/delivery.md`.
 - [ ] Evidencia de validación incluida o limitación declarada.
+- [ ] `lufy-ai pr guard --base <base>` ejecutado o fallback documentado; paths ignorados/internos corregidos u override explícito registrado.
 - [ ] Checks remotos del PR consultados/esperados por `delivery` antes de reportar `delivered`/`closed`, o marcados como pendientes con recovery.
 - [ ] Tarea asociada/tracking declarado o marcado como no configurado.
 - [ ] Monitors declarados o marcados como no aplica/no configurado.

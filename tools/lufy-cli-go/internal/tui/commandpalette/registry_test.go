@@ -47,7 +47,7 @@ func TestRegistryContainsSetupAndUpgrade(t *testing.T) {
 	for _, spec := range Registry() {
 		seen[spec.ID] = true
 	}
-	for _, id := range []string{"setup", "upgrade", "context-build", "memory-search"} {
+	for _, id := range []string{"setup", "upgrade", "context-build", "memory-search", "pr-guard"} {
 		if !seen[id] {
 			t.Fatalf("registry missing %s", id)
 		}

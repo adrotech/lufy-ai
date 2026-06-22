@@ -22,6 +22,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/prguard"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/setup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
@@ -90,6 +91,8 @@ func Run(args []string, deps Dependencies) int {
 		return runSetup(args[1:], deps)
 	case "opsx":
 		return runOpsx(args[1:], deps)
+	case "pr":
+		return runPR(args[1:], deps)
 	case "context":
 		return runContext(args[1:], deps)
 	case "version":
@@ -104,6 +107,54 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runPR(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printPRHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "guard":
+		return runPRGuard(args[1:], deps)
+	case "-h", "--help", "help":
+		printPRHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando pr desconocido: %s\n\n", args[0])
+		printPRHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func runPRGuard(args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("pr guard", flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	base := fs.String("base", "origin/develop", "Referencia base para diff PR")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	includeWorktree := fs.Bool("include-worktree", false, "Usar git diff <base> para incluir cambios pendientes del worktree")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai pr guard [--target <dir>] [--base <ref>] [--include-worktree] [--json]")
+		fmt.Fprintln(deps.Stderr, "Detecta paths ignorados o internos en git diff <base>...HEAD antes de push/PR.")
+	}
+	if err := fs.Parse(args); err != nil {
+		fs.Usage()
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintln(deps.Stderr, "pr guard no acepta argumentos posicionales")
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if err := prguard.NewService().Run(prguard.Options{Target: *target, Base: *base, JSON: *jsonOutput, IncludeWorktree: *includeWorktree}, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runMenu(args []string, deps Dependencies) int {
@@ -1419,9 +1470,16 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  pin       Congela un asset gestionado para preservar edits locales")
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
+	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
+}
+
+func printPRHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai pr <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  guard     Detecta paths ignorados o internos en el diff PR")
 }
 
 func printContextHelp(out io.Writer) {

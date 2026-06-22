@@ -54,3 +54,27 @@ Marca `Pendiente de confirmar` si hay señales ambiguas de persistencia sin patr
 - Nuevos campos persistentes o queries DDL/DML relevantes sin plan de migración.
 
 Marca `No detectadas` si no aparece ningún patrón y aclara: `No se detectaron migraciones; revisión heurística sobre rutas/diff disponibles`.
+
+## Paths ignorados o internos en PR
+
+La evidencia preferida para delivery es:
+
+```bash
+lufy-ai pr guard --base <base>
+```
+
+Fallback cuando el CLI no está disponible:
+
+```bash
+git diff --name-only <base>...HEAD -- | git check-ignore -v --no-index --stdin
+```
+
+Además del resultado de `.gitignore`, revisar como metadata interna los prefijos `openspec/`, `.lufy/`, `.lufy-ai/` y `pr_review/`.
+
+Estados para el PR body:
+
+- `Sin hallazgos`: el guard pasó sin paths ignorados ni internos.
+- `Detectados`: listar paths, patrón `.gitignore` o prefijo interno, y remediation/override.
+- `Pendiente de delivery`: no hay evidencia del guard todavía.
+
+Si hay hallazgos, explicar que `.gitignore` no impide que archivos ya trackeados o incluidos en commits existentes entren al PR por cherry-pick o worktree.

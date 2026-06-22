@@ -25,6 +25,7 @@ Use this skill from the `delivery` agent after explicit user authorization for c
 3. If relevant files cannot be separated from unrelated local changes, return `blocked`; do not guess.
 4. Run or verify required final validation evidence before commit. Prefer already grouped evidence from `validator`; for this repo's managed assets/Go CLI scope, prefer `scripts/validate.sh` when applicable.
 5. Before committing pending PR-bound changes, include `git diff --check origin/develop` unless the target base is explicitly different.
+6. Before push or PR creation, include the ignored/internal path guard. Prefer `lufy-ai pr guard --base origin/develop`; for pending local changes before commit, use `lufy-ai pr guard --base origin/develop --include-worktree`. If unavailable, use `git diff --name-only origin/develop...HEAD -- | git check-ignore -v --no-index --stdin` and manually review `openspec/`, `.lufy/`, `.lufy-ai/`, `pr_review/`.
 
 ## Branch Rules
 
@@ -85,6 +86,12 @@ After commit and before push, run the committed PR whitespace gate:
 
 - `git diff --check origin/develop...HEAD`
 
+Then run the committed PR ignored/internal path gate:
+
+- `lufy-ai pr guard --base origin/develop`
+
+If this command fails, do not push or create a PR unless the user explicitly confirms an override. Explain that `.gitignore` does not stop files already tracked by commits, worktrees or cherry-picks from entering a PR. Safe remediation is usually `git rm --cached <path>` followed by a corrective commit and re-running the guard.
+
 Push according to branch rules. After push, verify upstream/remote state:
 
 - `git rev-parse --abbrev-ref --symbolic-full-name @{u}`
@@ -116,6 +123,9 @@ evidence:
     - command: git diff --check origin/develop...HEAD
       result: passed | failed | blocked | not_run
       notes: <key output>
+    - command: lufy-ai pr guard --base origin/develop
+      result: passed | failed | blocked | not_run
+      notes: <ignored/internal path output or unavailable fallback>
     - command: git push...
       result: passed | failed | blocked | not_run
       notes: <key output>
