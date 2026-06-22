@@ -32,6 +32,11 @@ tools/lufy-cli-go/
   internal/config/           # merge conservador de opencode.json
   internal/projectconfig/    # init/rescan de .lufy/config/project.yaml
   internal/opsx/             # resolución OpenSpec PATH/cache/embedded
+  internal/prguard/          # guardrail PR para paths ignorados/internos
+  internal/conflictplan/     # plan read-only de conflictos de install
+  internal/setup/            # onboarding end-to-end de LUFY
+  internal/tui/commandpalette/ # command palette Bubble Tea
+  internal/contextgraph/     # grafo local determinístico
   internal/platform/         # path safety, locks y resolución portable
   internal/version/          # metadata de release
 ```
@@ -59,10 +64,12 @@ scripts/validate.sh
 
 | Comando | Propósito | Flags principales |
 | --- | --- | --- |
+| `lufy-ai setup` | Orquesta version check, layout, install, project config, memoria, context graph y verify con defaults `opencode`/`project`. | `--target`, `--dry-run`, `--yes`, `--json`, `--skip-version-check`, `--require-latest`, `--check-new-features` |
+| `lufy-ai menu` | Abre el command palette interactivo en TTY. | n/a |
 | `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
-| `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--no-engram`, `--backup` |
+| `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
-| `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--no-engram`, `--json`, `--quiet`, `--verbose`, `--deep` |
+| `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--json`, `--quiet`, `--verbose`, `--deep` |
 | `lufy-ai memory init` | Crea `.lufy/memory` y completa defaults de memoria/paralelismo en `.lufy/config/project.yaml`. | `--target`, `--json` |
 | `lufy-ai memory status` | Resume estructura, notas, drafts y backlinks rotos. | `--target`, `--json` |
 | `lufy-ai memory validate` | Valida schema de notas Obsidian, decisiones y backlinks. | `--target`, `--json` |
@@ -80,31 +87,45 @@ scripts/validate.sh
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
 | `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks, surfaces y conteos operativos sin mutar. | `--target`, `--scope`, `--json` |
 | `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest, drift y conflictos pendientes sin mutar. | `--target`, `--scope`, `--json` |
+| `lufy-ai conflicts plan` | Genera un plan read-only de conflictos agrupado por categoría, riesgo y recomendación. | `--target`, `--scope`, `--tool`, `--json` |
 | `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. | `--target`, `--reason` |
 | `lufy-ai unpin` | Remueve el freeze de un asset gestionado. | `--target` |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes`, |
+| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes` |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target`, `--accept-theirs`, `--accept-ours` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy/managed-state/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
 | `lufy-ai opsx render` | Renderiza un change OpenSpec a HTML offline/autocontenido para revisión humana. | `--target`, `--change`, `--format`, `--theme`, `--output` |
+| `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en el rango de PR. | `--target`, `--base`, `--include-worktree`, `--json` |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. | `--to`, `--dry-run` |
 | `lufy-ai version` | Muestra versión, commit, build date, GOOS y GOARCH. | n/a |
 
+## Setup y selección de harness
+
+`setup` es el flujo end-to-end para onboarding rápido:
+
+```bash
+lufy-ai setup --target <repo> --dry-run
+lufy-ai setup --target <repo> --yes
+lufy-ai setup --target <repo> --check-new-features --dry-run
+```
+
+Usa defaults `opencode` y `project`. Si necesitas `--tool codex`, `--scope global|both` o overrides `--methodology-tier`, usa `install`, `sync` y `verify` directamente.
+
 ## Selección de harness
 
-El adapter escribible actual es `opencode`.
+Los adapters escribibles actuales son `opencode` y `codex`.
 
 ```bash
 lufy-ai install --target <repo> --yes
 lufy-ai install --target <repo> --tool opencode --yes
+lufy-ai install --target <repo> --tool codex --yes
 ```
 
 Adapters no escribibles todavía:
 
-- `codex`;
 - `claude-code`.
 
-Ambos existen como dry-run/preview para modelar capabilities y superficies futuras, pero los comandos mutantes los bloquean.
+`claude-code` existe como dry-run/preview para modelar capabilities y superficies futuras, pero los comandos mutantes lo bloquean.
 
 ## Methodology por tier
 
