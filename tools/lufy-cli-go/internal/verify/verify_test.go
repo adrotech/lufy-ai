@@ -517,6 +517,9 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 
 func TestVerifyDeepValidatesInitializedMemory(t *testing.T) {
 	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-orient.sh"), "#!/usr/bin/env bash\n")
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-validate.sh"), "#!/usr/bin/env bash\n")
+	writeVerifyFile(t, filepath.Join(target, ".opencode/plugins/lufy-memory-context.ts"), "export const LufyMemoryContextPlugin = async () => ({})\n")
 	if err := memory.NewService().Init(memory.Options{Target: target}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("memory init fixture: %v", err)
 	}
@@ -536,6 +539,9 @@ Aprendizaje durable.
 	}
 	if !strings.Contains(out.String(), "memoria Obsidian schema=1 notas=1") {
 		t.Fatalf("deep memory output unexpected: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "context graph not_available") || !strings.Contains(out.String(), "OpenCode cargará plugin local") {
+		t.Fatalf("deep memory/context integration output unexpected: %s", out.String())
 	}
 }
 

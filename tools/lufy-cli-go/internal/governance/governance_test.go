@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -40,6 +41,9 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	}
 	if !doctor.OK {
 		t.Fatalf("doctor should be ok: %#v", doctor)
+	}
+	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
+		t.Fatalf("doctor should report context recovery and memory lifecycle plugin: %#v", doctor.Checks)
 	}
 
 	var infoOut bytes.Buffer
@@ -127,6 +131,27 @@ Pendiente de consolidar.
 	}
 	if !report.OK || !hasDoctorCheck(report.Checks, "info", "drafts pendientes=1") || !hasDoctorCheck(report.Checks, "ok", "memoria Obsidian ok") {
 		t.Fatalf("doctor should report memory draft without failing: %#v", report)
+	}
+}
+
+func TestDoctorReportsReadyContextGraph(t *testing.T) {
+	target := t.TempDir()
+	if err := os.WriteFile(filepath.Join(target, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("install fixture: %v", err)
+	}
+	if _, err := contextapp.NewService().Build(target); err != nil {
+		t.Fatalf("context build fixture: %v", err)
+	}
+
+	report, err := NewService().BuildDoctor(Options{Target: target, Scope: assets.ScopeProject})
+	if err != nil {
+		t.Fatalf("BuildDoctor() error = %v", err)
+	}
+	if !report.OK || !hasDoctorCheck(report.Checks, "ok", "context graph ready") {
+		t.Fatalf("doctor should report ready context graph: %#v", report.Checks)
 	}
 }
 

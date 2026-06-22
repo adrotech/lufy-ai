@@ -73,7 +73,7 @@ func validateHarnessConfig(cfg ProjectConfig) error {
 }
 
 func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
-	if cfg.ContextGraph.Root == "" && cfg.ContextGraph.Report == "" && len(cfg.ContextGraph.SensitivePatterns) == 0 {
+	if cfg.ContextGraph.Root == "" && cfg.ContextGraph.Report == "" && len(cfg.ContextGraph.SensitivePatterns) == 0 && len(cfg.ContextGraph.Exclude) == 0 {
 		cfg.ContextGraph = DefaultContextGraphConfig()
 	}
 	if cfg.ContextGraph.Root == "" {
@@ -90,6 +90,9 @@ func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
 	}
 	if len(cfg.ContextGraph.SensitivePatterns) == 0 {
 		cfg.ContextGraph.SensitivePatterns = DefaultContextGraphConfig().SensitivePatterns
+	}
+	if len(cfg.ContextGraph.Exclude) == 0 {
+		cfg.ContextGraph.Exclude = DefaultContextGraphConfig().Exclude
 	}
 	if cfg.Memory.Vault == "" {
 		cfg.Memory.Vault = cfg.Memory.Root

@@ -33,6 +33,9 @@ func TestScanDetectsGoStack(t *testing.T) {
 	if !contains(stack.ObservabilityLibs, "go.opentelemetry.io") {
 		t.Fatalf("missing observability lib: %#v", stack.ObservabilityLibs)
 	}
+	if !contains(cfg.ContextGraph.Exclude, ".lufy/managed-state/backups/**") || !contains(cfg.ContextGraph.Exclude, ".lufy/managed-state/ancestors/**") {
+		t.Fatalf("missing context graph default excludes: %#v", cfg.ContextGraph.Exclude)
+	}
 }
 
 func TestScanDetectsTypeScriptNextStack(t *testing.T) {
