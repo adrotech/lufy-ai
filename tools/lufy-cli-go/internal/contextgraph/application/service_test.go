@@ -39,13 +39,50 @@ func TestBuildWritesDeterministicArtifacts(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, ".lufy", "context", "GRAPH_REPORT.md")); err != nil {
 		t.Fatalf("report missing: %v", err)
 	}
-
 	second, err := NewService().Build(root)
 	if err != nil {
 		t.Fatalf("second Build() error = %v", err)
 	}
 	if second.Changed || second.CacheHits == 0 {
 		t.Fatalf("second build should be idempotent and use cache: %+v", second)
+	}
+}
+
+func TestBuildExcludesManagedStateByDefault(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "README.md"), "# Demo\n")
+	mustWrite(t, filepath.Join(root, ".lufy", "managed-state", "backups", "2026", "README.md"), "# Backup\n")
+	mustWrite(t, filepath.Join(root, ".lufy", "managed-state", "ancestors", "README.md"), "# Ancestor\n")
+
+	res, err := NewService().Build(root)
+	if err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	if res.Sources != 1 {
+		t.Fatalf("expected only workspace README source, got %+v", res)
+	}
+	query, err := NewService().Query(root, "Backup Ancestor")
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	for _, match := range query.Matches {
+		if strings.Contains(match.Node.Path, ".lufy/managed-state/") {
+			t.Fatalf("query returned excluded managed-state path: %+v", match)
+		}
+	}
+}
+
+func TestExcludedPathPatterns(t *testing.T) {
+	cfg := NewService().config(t.TempDir())
+	if !excludedPath(".lufy/managed-state/backups/2026/manifest.json", cfg) {
+		t.Fatal("expected default backup path exclusion")
+	}
+	cfg.Exclude = []string{"docs/private.md", "generated/*.json"}
+	if !excludedPath("docs/private.md", cfg) || !excludedPath("generated/report.json", cfg) {
+		t.Fatalf("expected exact and glob exclusions")
+	}
+	if excludedPath("docs/public.md", cfg) {
+		t.Fatal("unexpected exclusion for public path")
 	}
 }
 

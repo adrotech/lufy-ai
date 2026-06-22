@@ -40,8 +40,27 @@ whitespace_check() {
   git -C "$REPO_ROOT" diff --check
 }
 
+pr_guard_check() {
+  ensure_base_ref
+
+  if git -C "$REPO_ROOT" rev-parse --verify --quiet "origin/${BASE_REF}" >/dev/null; then
+    if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
+      log "PR guard contra origin/${BASE_REF} incluyendo worktree"
+      (cd "$CLI_ROOT" && go run ./cmd/lufy-ai pr guard --target "$REPO_ROOT" --base "origin/${BASE_REF}" --include-worktree)
+      return 0
+    fi
+
+    log "PR guard del rango PR origin/${BASE_REF}...HEAD"
+    (cd "$CLI_ROOT" && go run ./cmd/lufy-ai pr guard --target "$REPO_ROOT" --base "origin/${BASE_REF}")
+    return 0
+  fi
+
+  log "PR guard omitido: origin/${BASE_REF} no disponible"
+}
+
 main() {
   whitespace_check
+  pr_guard_check
 
   log "Action pinning"
   "$REPO_ROOT/scripts/check-actions-pinned.sh"

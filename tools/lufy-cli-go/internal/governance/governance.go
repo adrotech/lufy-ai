@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
@@ -232,6 +234,8 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		emit("ok", projectconfig.ProjectConfigPath, fmt.Sprintf("project config parseable; stacks=%d surfaces=%d", len(cfg.Stacks), len(cfg.ProjectProfile.Surfaces)))
 	}
 	reportMemoryDoctor(target, emit)
+	reportContextDoctor(target, emit)
+	reportOpenCodeMemoryHookDoctor(target, emit)
 	if st == nil {
 		emit("fail", state.Path(target), "falta manifest de instalación")
 		return report, nil
@@ -285,6 +289,48 @@ func reportMemoryDoctor(target string, emit func(level, path, message string)) {
 	if report.Status.BrokenBacklinks == 0 {
 		emit("ok", report.Root, fmt.Sprintf("memoria Obsidian ok notas=%d drafts=%d", report.Status.Notes, report.Status.Drafts))
 	}
+}
+
+func reportContextDoctor(target string, emit func(level, path, message string)) {
+	status := contextapp.NewService().Status(target)
+	path := status.GraphPath
+	if path == "" {
+		path = filepath.Join(".lufy", "context", "graph.json")
+	} else if rel, err := filepath.Rel(target, path); err == nil {
+		path = filepath.ToSlash(rel)
+	}
+	switch status.Status {
+	case "ready":
+		emit("ok", path, fmt.Sprintf("context graph ready sources=%d nodes=%d edges=%d", status.Sources, status.Nodes, status.Edges))
+	case "stale":
+		emit("warn", path, fmt.Sprintf("context graph stale: %s; recovery: %s", status.Reason, status.Recovery))
+	default:
+		emit("warn", path, fmt.Sprintf("context graph not_available: %s; recovery: %s", status.Reason, status.Recovery))
+	}
+}
+
+func reportOpenCodeMemoryHookDoctor(target string, emit func(level, path, message string)) {
+	hooks := []string{
+		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
+		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
+	}
+	for _, rel := range hooks {
+		if !regularFileForGovernance(filepath.Join(target, rel)) {
+			emit("warn", filepath.ToSlash(rel), "hook de memoria no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+			return
+		}
+	}
+	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
+	if !regularFileForGovernance(filepath.Join(target, plugin)) {
+		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+		return
+	}
+	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para orientación y validación best-effort de memoria")
+}
+
+func regularFileForGovernance(path string) bool {
+	info, err := os.Lstat(path)
+	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
 }
 
 func loadMutableAsset(targetValue, pathValue string) (string, string, *state.InstallState, func(), error) {

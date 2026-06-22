@@ -11,6 +11,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
@@ -168,7 +169,7 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		recorder.emit("fail", state.Path(target), "falta estado de instalación")
+		recorder.emit("fail", state.Path(target), "falta estado de instalación; ejecuta lufy-ai conflicts plan --target <dir> si este repo ya tiene assets LUFY/OpenCode/OpenSpec")
 		return nil
 	}
 	report.SchemaVersion = st.SchemaVersion
@@ -210,6 +211,8 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	if opts.Deep {
 		runDeepVerify(st.Tool, target, recorder.emit)
 		runDeepMemoryVerify(target, recorder.emit)
+		runDeepContextVerify(target, recorder.emit)
+		runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
@@ -326,6 +329,8 @@ func verifyCodexPRReviewerSkillContract(target string, emit func(string, string,
 		"pr-review-<number>-<yyyyMMdd-HHmm>.html",
 		".opencode/skills/pr.reviewer/SKILL.md",
 		"templates/report.html",
+		"lufy-ai pr guard --base <base>",
+		"git check-ignore -v --no-index --stdin",
 		"Desk check",
 		"Scoring",
 		"Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)",
@@ -531,6 +536,45 @@ func runDeepMemoryVerify(target string, emit func(level, path, format string, ar
 	if report.OK {
 		emit("ok", report.Root, "memoria Obsidian schema=%d notas=%d", report.Status.SchemaVersion, report.Status.Notes)
 	}
+}
+
+func runDeepContextVerify(target string, emit func(level, path, format string, args ...any)) {
+	status := contextapp.NewService().Status(target)
+	path := status.GraphPath
+	if path == "" {
+		path = filepath.Join(".lufy", "context", "graph.json")
+	} else if rel, err := filepath.Rel(target, path); err == nil {
+		path = filepath.ToSlash(rel)
+	}
+	switch status.Status {
+	case "ready":
+		emit("ok", path, "context graph ready sources=%d nodes=%d edges=%d", status.Sources, status.Nodes, status.Edges)
+	case "stale":
+		emit("warn", path, "context graph stale: %s; recovery: %s", status.Reason, status.Recovery)
+	default:
+		emit("warn", path, "context graph not_available: %s; recovery: %s", status.Reason, status.Recovery)
+	}
+}
+
+func runDeepOpenCodeMemoryHookVerify(target string, emit func(level, path, format string, args ...any)) {
+	hooks := []string{
+		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
+		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
+	}
+	for _, rel := range hooks {
+		path, err := platform.SafeJoin(target, rel)
+		if err != nil || !regularFile(path) {
+			emit("warn", filepath.ToSlash(rel), "hook de memoria no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+			return
+		}
+	}
+	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
+	path, err := platform.SafeJoin(target, plugin)
+	if err != nil || !regularFile(path) {
+		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+		return
+	}
+	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para orientación y validación best-effort de memoria")
 }
 
 func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {

@@ -328,6 +328,9 @@ func mergeContextGraphConfig(current, defaults ContextGraphConfig) ContextGraphC
 	if len(current.SensitivePatterns) > 0 {
 		merged.SensitivePatterns = current.SensitivePatterns
 	}
+	if len(current.Exclude) > 0 {
+		merged.Exclude = current.Exclude
+	}
 	if current.MaxQueryResults != 0 {
 		merged.MaxQueryResults = current.MaxQueryResults
 	}

@@ -94,6 +94,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stdout, "lufy-ai actualizado en %s\n", execPath)
+	fmt.Fprintln(stdout, "Siguiente paso recomendado: lufy-ai setup --target . --check-new-features")
 	return nil
 }
 

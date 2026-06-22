@@ -155,6 +155,7 @@ description: Review a PR or branch and generate the Lufy HTML report.
 Use .opencode/skills/pr.reviewer/SKILL.md as the canonical contract.
 Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
 Use templates/report.html when available.
+Check ignored paths with lufy-ai pr guard --base <base> or git check-ignore -v --no-index --stdin.
 Include Desk check and Scoring.
 Return:
 Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)
@@ -516,6 +517,9 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 
 func TestVerifyDeepValidatesInitializedMemory(t *testing.T) {
 	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-orient.sh"), "#!/usr/bin/env bash\n")
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-validate.sh"), "#!/usr/bin/env bash\n")
+	writeVerifyFile(t, filepath.Join(target, ".opencode/plugins/lufy-memory-context.ts"), "export const LufyMemoryContextPlugin = async () => ({})\n")
 	if err := memory.NewService().Init(memory.Options{Target: target}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("memory init fixture: %v", err)
 	}
@@ -535,6 +539,9 @@ Aprendizaje durable.
 	}
 	if !strings.Contains(out.String(), "memoria Obsidian schema=1 notas=1") {
 		t.Fatalf("deep memory output unexpected: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "context graph not_available") || !strings.Contains(out.String(), "OpenCode cargará plugin local") {
+		t.Fatalf("deep memory/context integration output unexpected: %s", out.String())
 	}
 }
 

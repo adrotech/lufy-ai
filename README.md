@@ -123,7 +123,7 @@ Para cerrar la sesión con trazabilidad local:
 | Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. |
 | Comandos OpenSpec | `.opencode/commands/opsx-*.md` | Ciclo OpenSpec: explore, propose, apply, verify, sync, archive y version. |
 | Comandos Lufy | `.opencode/commands/lufy.*.md` | Extras propios del kit: `/lufy.close`, `/lufy.pr-review`, `/lufy.timereport`, `/lufy.onboard`, `/lufy.context` y `/lufy.mem-*`. |
-| Memoria Obsidian | `.opencode/commands/lufy.mem-*.md`, `.opencode/skills/lufy.mem-*`, `.opencode/hooks/memory-*.sh` | Captura, documenta, conecta y busca memoria portable en `.lufy/memory`. |
+| Memoria Obsidian | `.opencode/commands/lufy.mem-*.md`, `.opencode/skills/lufy.mem-*`, `.opencode/hooks/memory-*.sh`, `.opencode/plugins/lufy-memory-context.ts` | Captura, documenta, conecta y busca memoria portable en `.lufy/memory`; el plugin OpenCode ejecuta orientación/validación best-effort. |
 | Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding, memoria y reportes instalables. |
 | Templates | `.opencode/templates/` | `sdd-lite.md`, `result-contract.md` y `memory-note.md` para T2, handoffs y notas validables. |
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
@@ -134,7 +134,7 @@ Para cerrar la sesión con trazabilidad local:
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas legacy; `AGENTS.md` usa bloque LUFY gestionado compacto. |
 | Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 
-`.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks y templates de memoria, pero no toca notas privadas.
+`.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks, plugin y templates de memoria, pero no toca notas privadas. `doctor` y `verify --deep` reportan estado de memoria, contexto y lifecycle hooks con comandos de recuperación.
 
 `AGENTS.md` es user-owned: la CLI solo crea o mantiene un bloque LUFY gestionado compacto y sigue reconociendo la referencia legacy `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
 
@@ -210,6 +210,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai context` | Genera y consulta un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con reporte derivado y hints rankeados para ahorrar exploración inicial. |
+| `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en `git diff <base>...HEAD` antes de push/PR; también aparece en la command palette. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
 | `lufy-ai version` | Muestra versión, commit, build date y plataforma. |
 
@@ -308,7 +309,7 @@ Disponible e instalable:
 - OpenSpec como metodología principal.
 - Lufy SDD como metodología inicial seleccionable.
 - `none` para tiers permitidos por policy, especialmente T3.
-- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, upgrade y version.
+- CLI Go con install, uninstall, verify, status, info, doctor, pin, unpin, sync, merge, backup, restore, `pr guard`, upgrade y version.
 - `init` y `scan` con `.lufy/config/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
 - Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
 - Reportes HTML offline: overview OpenSpec, PR review y time report.

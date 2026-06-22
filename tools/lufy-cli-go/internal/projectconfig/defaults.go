@@ -28,6 +28,7 @@ func DefaultContextGraphConfig() ContextGraphConfig {
 		Report:              ".lufy/context/GRAPH_REPORT.md",
 		SkipSensitive:       true,
 		SensitivePatterns:   []string{".env", ".env.*", "*.pem", "*.key", "*secret*", "*secrets*", "*token*", "*credentials*"},
+		Exclude:             []string{".lufy/managed-state/backups/**", ".lufy/managed-state/ancestors/**"},
 		MaxQueryResults:     20,
 		MaxNeighborsPerHint: 5,
 	}

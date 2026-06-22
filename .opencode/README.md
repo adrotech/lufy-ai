@@ -57,6 +57,15 @@ Templates locales:
 Hooks locales:
 
 - `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.lufy/config/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
+- `hooks/memory-orient.sh`: orientación best-effort de memoria al iniciar sesión; no bloquea si `lufy-ai` o `.lufy/config/project.yaml` no están disponibles.
+- `hooks/memory-validate.sh`: validación best-effort de `.lufy/memory` después de cambios de memoria; omite archivos fuera de memoria.
+
+Lifecycle automático de memoria/contexto:
+
+- OpenCode carga plugins locales desde `.opencode/plugins/` al inicio.
+- `plugins/lufy-memory-context.ts` ejecuta `memory-orient.sh` en `session.created` y `memory-validate.sh` cuando un evento `file.edited` toca `.lufy/memory/`.
+- `lufy-ai doctor` y `lufy-ai verify --deep` reportan si los scripts y el plugin están presentes; si faltan, muestran `lufy-ai sync --tool opencode --scope project` como recuperación.
+- Estos hooks son best-effort y no sustituyen evidencia primaria de archivos, diff, tests o comandos.
 
 Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 
@@ -134,6 +143,17 @@ lufy-ai context diff --target <repo> --json --base origin/develop
 ```
 
 Los agentes deben usarlo como índice secundario y devolver `context_graph_hints` compactos con ranking, vecinos acotados y `token_savings` cuando estén disponibles. Si el grafo no existe, está stale o la CLI falla, reportan `not_available`/`stale` y continúan con inspección normal. Las inferencias del grafo nunca superan evidencia de archivos actuales, diff, tests, logs o comandos.
+
+Por defecto el grafo excluye ruido interno regenerable de LUFY:
+
+```yaml
+context_graph:
+  exclude:
+    - .lufy/managed-state/backups/**
+    - .lufy/managed-state/ancestors/**
+```
+
+`lufy-ai context status`, `doctor` y `verify --deep` muestran `recovery: lufy-ai context build` cuando el grafo está `stale` o `not_available`.
 
 Skills opcionales de memoria, release o dominios específicos pueden agregarse en proyectos downstream. El kit base incluye lifecycle OpenSpec y extras Lufy catalogados.
 
