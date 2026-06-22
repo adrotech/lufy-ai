@@ -182,11 +182,15 @@ func TestAgentAssetsContainT2FastPathApprovalGate(t *testing.T) {
 	}{
 		{
 			path: filepath.Join(".opencode", "agents", "orchestrator.md"),
-			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer"},
+			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer", "conflict-plan `parallelGroup` categories"},
 		},
 		{
 			path: filepath.Join(".opencode", "agents", "implementer.md"),
 			want: []string{"fast_path_allowed: false", "approved implementation after seeing a visible plan", "blocked` or `needs_decision"},
+		},
+		{
+			path: filepath.Join(".opencode", "agents", "sdd-router.md"),
+			want: []string{"independent work units", "conflict-plan `parallelGroup` categories", "validation can run grouped after join"},
 		},
 		{
 			path: filepath.Join(".codex", "agents", "orchestrator.toml"),
@@ -198,11 +202,15 @@ func TestAgentAssetsContainT2FastPathApprovalGate(t *testing.T) {
 		},
 		{
 			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "orchestrator.md"),
-			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer"},
+			want: []string{"fast_path_allowed: false", "post-plan user confirmation", "next_recommended.owner: implementer", "conflict-plan `parallelGroup` categories"},
 		},
 		{
 			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "implementer.md"),
 			want: []string{"fast_path_allowed: false", "approved implementation after seeing a visible plan", "blocked` or `needs_decision"},
+		},
+		{
+			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".opencode", "agents", "sdd-router.md"),
+			want: []string{"independent work units", "conflict-plan `parallelGroup` categories", "validation can run grouped after join"},
 		},
 		{
 			path: filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded", ".codex", "agents", "orchestrator.toml"),

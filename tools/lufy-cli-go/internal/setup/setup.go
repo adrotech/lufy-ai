@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
@@ -103,6 +104,14 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		if !opts.JSON {
 			printReport(stdout, report)
 		}
+		if opts.Interactive {
+			plan, planErr := conflictplan.NewService().Build(conflictplan.Options{Target: report.TargetRoot, Scope: opts.Scope, Harness: opts.Harness})
+			if planErr == nil {
+				if err := runConflictReview(plan); err != nil {
+					return err
+				}
+			}
+		}
 		return fmt.Errorf("setup bloqueado por conflictos; revisa las acciones recovery antes de aplicar")
 	}
 	if opts.JSON {
@@ -159,11 +168,11 @@ func (s Service) BuildReport(opts Options) (Report, error) {
 		result := check()
 		report.Version = &result
 	}
-	report.Features = s.planFeatures(target)
+	report.Features = s.planFeatures(target, opts.Scope, opts.Harness)
 	return report, nil
 }
 
-func (s Service) planFeatures(target string) []FeatureAction {
+func (s Service) planFeatures(target string, scope assets.Scope, harness domain.HarnessConfig) []FeatureAction {
 	features := []FeatureAction{}
 	layoutReport, err := layout.BuildPlan(target)
 	if err != nil {
@@ -176,7 +185,11 @@ func (s Service) planFeatures(target string) []FeatureAction {
 		features = append(features, action("layout", "skip", "Layout .lufy listo", ""))
 	}
 	if _, err := state.Load(target); err != nil || !existingInstallState(target) {
-		features = append(features, action("install", "apply", "No existe manifest de instalacion", "lufy-ai install --target <dir> --yes"))
+		if plan, planErr := conflictplan.NewService().Build(conflictplan.Options{Target: target, Scope: scope, Harness: harness}); planErr == nil && len(plan.Items) > 0 {
+			features = append(features, action("install", "conflict", fmt.Sprintf("manifest ausente y %d conflicto(s) de assets no gestionados", len(plan.Items)), "lufy-ai conflicts plan --target <dir>"))
+		} else {
+			features = append(features, action("install", "apply", "No existe manifest de instalacion", "lufy-ai install --target <dir> --yes"))
+		}
 	} else {
 		features = append(features, action("install", "skip", "Manifest de instalacion presente", ""))
 	}
@@ -541,4 +554,120 @@ func runChecklist(report Report) (map[string]bool, error) {
 		}
 	}
 	return selected, nil
+}
+
+type conflictReviewModel struct {
+	plan       conflictplan.Report
+	groupIndex int
+	itemIndex  int
+	quit       bool
+	keys       conflictReviewKeys
+}
+
+type conflictReviewKeys struct {
+	Up    key.Binding
+	Down  key.Binding
+	Left  key.Binding
+	Right key.Binding
+	Quit  key.Binding
+}
+
+func newConflictReviewModel(plan conflictplan.Report) conflictReviewModel {
+	return conflictReviewModel{plan: plan, keys: conflictReviewKeys{
+		Up:    key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "item anterior")),
+		Down:  key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "item siguiente")),
+		Left:  key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "grupo anterior")),
+		Right: key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "grupo siguiente")),
+		Quit:  key.NewBinding(key.WithKeys("enter", "esc", "ctrl+c", "q"), key.WithHelp("enter/q", "salir")),
+	}}
+}
+
+func (m conflictReviewModel) Init() tea.Cmd { return nil }
+
+func (m conflictReviewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	keyMsg, ok := msg.(tea.KeyMsg)
+	if !ok {
+		return m, nil
+	}
+	switch {
+	case key.Matches(keyMsg, m.keys.Quit):
+		m.quit = true
+		return m, tea.Quit
+	case key.Matches(keyMsg, m.keys.Left):
+		if m.groupIndex > 0 {
+			m.groupIndex--
+			m.itemIndex = 0
+		}
+	case key.Matches(keyMsg, m.keys.Right):
+		if m.groupIndex < len(m.plan.Groups)-1 {
+			m.groupIndex++
+			m.itemIndex = 0
+		}
+	case key.Matches(keyMsg, m.keys.Up):
+		if m.itemIndex > 0 {
+			m.itemIndex--
+		}
+	case key.Matches(keyMsg, m.keys.Down):
+		if m.itemIndex < len(m.currentItems())-1 {
+			m.itemIndex++
+		}
+	}
+	return m, nil
+}
+
+func (m conflictReviewModel) View() string {
+	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("196")).Render("Lufy setup: conflictos detectados")
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s\n", title)
+	fmt.Fprintf(&b, "Target: %s\n", m.plan.TargetRoot)
+	fmt.Fprintf(&b, "Conflictos: %d · grupos: %d · legacy/deprecated: %d\n\n", m.plan.Summary.Conflicts, m.plan.Summary.Groups, m.plan.Summary.LegacyDeprecated)
+	if len(m.plan.Groups) == 0 {
+		fmt.Fprintln(&b, "No hay grupos de conflicto. enter/q para salir.")
+		return b.String()
+	}
+	group := m.plan.Groups[m.groupIndex]
+	fmt.Fprintf(&b, "Grupo %d/%d: %s riesgo=%s parallel_group=%s\n", m.groupIndex+1, len(m.plan.Groups), group.Category, group.Risk, group.ParallelGroup)
+	items := m.currentItems()
+	for i, item := range items {
+		cursor := " "
+		if i == m.itemIndex {
+			cursor = ">"
+		}
+		line := fmt.Sprintf("%s %s [%s] recomendacion=%s", cursor, item.Path, item.Risk, item.Recommendation)
+		if i == m.itemIndex {
+			line = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true).Render(line)
+		}
+		fmt.Fprintln(&b, line)
+	}
+	if len(items) > 0 {
+		selected := items[m.itemIndex]
+		fmt.Fprintf(&b, "\nDetalle: %s\n", selected.Reason)
+		fmt.Fprintf(&b, "Acciones disponibles: %s\n", strings.Join(selected.AvailableActions, ", "))
+	}
+	if len(m.plan.LegacyDeprecated) > 0 {
+		fmt.Fprintln(&b, "\nLegacy/deprecated: ejecutar migrate-layout antes de borrar rutas legacy.")
+	}
+	fmt.Fprintln(&b, "\nRecovery: lufy-ai conflicts plan --target <dir> --json")
+	fmt.Fprintf(&b, "%s · %s · %s · %s · %s\n", m.keys.Left.Help().Key, m.keys.Right.Help().Key, m.keys.Up.Help().Key, m.keys.Down.Help().Key, m.keys.Quit.Help().Key)
+	return b.String()
+}
+
+func (m conflictReviewModel) currentItems() []conflictplan.Item {
+	if len(m.plan.Groups) == 0 || m.groupIndex >= len(m.plan.Groups) {
+		return nil
+	}
+	category := m.plan.Groups[m.groupIndex].Category
+	items := []conflictplan.Item{}
+	for _, item := range m.plan.Items {
+		if item.Category == category {
+			items = append(items, item)
+		}
+	}
+	return items
+}
+
+func runConflictReview(plan conflictplan.Report) error {
+	model := newConflictReviewModel(plan)
+	_, err := tea.NewProgram(model).Run()
+	return err
 }

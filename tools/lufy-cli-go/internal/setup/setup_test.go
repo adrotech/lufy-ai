@@ -9,7 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/versioncheck"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestSetupDryRunDoesNotWrite(t *testing.T) {
@@ -126,5 +128,67 @@ func TestSetupApplyEndToEnd(t *testing.T) {
 				t.Fatalf("expected %s to skip after setup, got %#v", feature.ID, feature)
 			}
 		}
+	}
+}
+
+func TestSetupPlansInstallConflictRecovery(t *testing.T) {
+	target := t.TempDir()
+	writeSetupTestFile(t, filepath.Join(target, ".opencode", "agents", "orchestrator.md"), "local agent\n")
+	report, err := NewService().BuildReport(Options{Target: target, SkipVersionCheck: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, feature := range report.Features {
+		if feature.ID != "install" {
+			continue
+		}
+		found = true
+		if feature.Status != "conflict" || !strings.Contains(feature.Recovery, "conflicts plan") {
+			t.Fatalf("unexpected install conflict feature: %#v", feature)
+		}
+	}
+	if !found {
+		t.Fatalf("missing install feature: %#v", report.Features)
+	}
+}
+
+func TestConflictReviewModelRendersAndNavigates(t *testing.T) {
+	plan := conflictplan.Report{
+		TargetRoot: "/tmp/project",
+		Summary:    conflictplan.Summary{Conflicts: 2, Groups: 2, LegacyDeprecated: 1},
+		Groups: []conflictplan.Group{
+			{Category: ".opencode/agents", Risk: "medium", Count: 1, ParallelGroup: "opencode-agents"},
+			{Category: "openspec/specs", Risk: "medium", Count: 1, ParallelGroup: "openspec-specs"},
+		},
+		Items: []conflictplan.Item{
+			{Path: ".opencode/agents/orchestrator.md", Category: ".opencode/agents", Risk: "medium", Recommendation: "merge", Reason: "local", AvailableActions: []string{"keep-local", "merge"}},
+			{Path: "openspec/specs/foo/spec.md", Category: "openspec/specs", Risk: "medium", Recommendation: "merge", Reason: "spec", AvailableActions: []string{"keep-local", "merge"}},
+		},
+		LegacyDeprecated: []conflictplan.LegacyItem{{Path: ".lufy-ai/backups", Recommendation: "migrate-layout"}},
+	}
+	model := newConflictReviewModel(plan)
+	if view := model.View(); !strings.Contains(view, "Lufy setup: conflictos detectados") || !strings.Contains(view, ".opencode/agents") || !strings.Contains(view, "Legacy/deprecated") {
+		t.Fatalf("unexpected view:\n%s", view)
+	}
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRight})
+	next := updated.(conflictReviewModel)
+	if next.groupIndex != 1 || !strings.Contains(next.View(), "openspec/specs") {
+		t.Fatalf("right navigation failed: %#v\n%s", next, next.View())
+	}
+	updated, cmd := next.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	quit := updated.(conflictReviewModel)
+	if !quit.quit || cmd == nil {
+		t.Fatalf("enter should quit: %#v cmd=%v", quit, cmd)
+	}
+}
+
+func writeSetupTestFile(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

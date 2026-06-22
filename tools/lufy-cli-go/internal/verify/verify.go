@@ -168,7 +168,7 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		recorder.emit("fail", state.Path(target), "falta estado de instalación")
+		recorder.emit("fail", state.Path(target), "falta estado de instalación; ejecuta lufy-ai conflicts plan --target <dir> si este repo ya tiene assets LUFY/OpenCode/OpenSpec")
 		return nil
 	}
 	report.SchemaVersion = st.SchemaVersion
