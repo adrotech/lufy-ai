@@ -71,6 +71,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Feature and bug implementation.
 - Focused refactors with clear scope.
 - Tests and documentation tied directly to implementation.
+- When invoked as the solution writer for artifact branching, generate only the requested isolated candidate artifacts and join inputs; do not promote a candidate to canonical source of truth.
 - For T1/T2 changes with substantive test creation or revision, delegate the test-focused portion to `test-writer` when a TDD cycle is applicable, or record why TDD delegation is `not_applicable`.
 - For `T2` / `sdd_lite` feature or runtime/app work with `fast_path_allowed: false`, do not edit until the handoff includes evidence that the user approved implementation after seeing a visible plan. If that evidence is missing, return `blocked` or `needs_decision` with the missing approval and ask `orchestrator` to present the plan.
 - Minimal repository exploration needed to complete assigned change.
@@ -89,6 +90,15 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If part of the requested structure cannot be completed in the current scope, stop with `blocked` or record `needs_revision` and ask for explicit user confirmation before marking it as a follow-up.
 - Re-run targeted checks after fixes and stop when evidence is adequate for the assigned scope.
 
+## Artifact Branching Candidate Work
+
+- Use existing roles only. `implementer` may draft candidate artifacts or implement the already joined canonical artifact set, but it must not act as a new arbitrator role.
+- If asked to create a candidate, write to the isolated path supplied by `orchestrator` (OpenSpec convention: `openspec/changes/<change>/candidates/<stage>/<candidate-id>/` or adapter-equivalent non-overwriting storage). Do not overwrite `proposal.md`, `design.md`, `tasks.md`, `specs/**/spec.md` or another candidate unless the join handoff explicitly promotes that content.
+- Candidate outputs should include assumptions, trade-offs, reusable decisions, risks, validation considerations, expected join inputs, and explicit blockers for the merge plan.
+- Keep `candidate_count <= 2` and follow the requested stage: proposal branching is primary, design branching is optional after a canonical proposal, and tasks branching is exceptional for documented implementation-strategy risk.
+- Before implementation work, check the handoff for `artifact_branching.requires_join`. If multiple candidates exist and no canonical artifact set is selected or merged, return `blocked` and route to `orchestrator` for join/reviewer comparison/human decision instead of implementing from a candidate.
+- After join, use only the canonical artifact set named in the handoff; treat non-selected candidates as context, not as implementation source of truth.
+
 ## Boundaries
 
 - Keep changes focused and minimal.
@@ -99,6 +109,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Before returning `implemented` or `validated`, list the structural acceptance audit: affected features/surfaces, expected directories/layers, files moved or still in root, and whether each item is satisfied. Do not report `validated`, `delivery_pending`, `delivered`, `closed` or approval-ready when required structure is missing without explicit user confirmation.
 - If implementation discovers four or more significant files in scope and no approved plan or review slice covers that breadth, pause with `blocked` or `needs_decision` instead of continuing silently.
 - Do not commit, push, create PRs, or update GitHub Projects.
+- Do not use artifact branching to enable delivery, Git/GH work, unresolved public contract decisions, unresolved security decisions, or parallel writes to shared canonical artifacts.
 - Do not report a task/block as `closed` only because files changed or `tasks.md` checkboxes were marked; report `implemented` or validation pending unless proportional validation evidence is also included.
 - Do not run destructive shell commands, shell scripts, or network/download commands without explicit permission; commands such as `rm`, `mv`, `chmod`, `bash`, `sh`, `zsh`, `scripts/*`, `*.sh`, `curl`, `wget`, and package/download installers remain outside the normal allowlist. Basic navigation/copy commands like `ls`, `dir`, and `cp` are allowed for implementation work.
 - Do not delegate to other agents except `test-writer` for assigned T1/T2 test-focused work that requires TDD evidence.
