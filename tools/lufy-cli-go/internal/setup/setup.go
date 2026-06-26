@@ -132,8 +132,8 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		return writeJSON(stdout, report)
 	}
+	printReport(stdout, report)
 	if opts.DryRun {
-		printReport(stdout, report)
 		fmt.Fprintln(stdout, "Modo dry-run: sin mutaciones en filesystem")
 		return nil
 	}
@@ -148,9 +148,6 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		}
 		report.Features = filterSelected(report.Features, selected)
 		opts.Yes = true
-	}
-	if !opts.Interactive || !hasPendingMutations(report.Features) {
-		printReport(stdout, report)
 	}
 	if !opts.Yes && hasPendingMutations(report.Features) {
 		return fmt.Errorf("setup requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
