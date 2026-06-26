@@ -12,6 +12,7 @@ Operational guide for coding agents working in this repository.
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks
 - **Workflow limits**: Use `.lufy/config/project.yaml` top-level `workflow_limits` as the only canonical limits source; do not consume top-level `loc_budget` or `delivery_strategy` as valid limits
+- **Multi-artifact branching**: For T1 or multi-risk T2 work with high uncertainty, `sdd-router` may recommend up to 2 artifact candidates; `orchestrator` must join before design/tasks/implementation and no new roles are created
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
 - **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
@@ -90,8 +91,11 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
+- For T1 or multi-risk T2 with high uncertainty, `sdd-router` may recommend `artifact_branching` only when comparing alternatives adds real value; max 2 candidates, usually `proposal`, optional `design` after a canonical proposal, and exceptional `tasks` only for implementation-strategy risk.
+- If artifact candidates exist, `orchestrator` must coordinate `branching_candidate_generation`, isolated non-overwriting paths, a merge plan, and `join/decision`; implementation cannot start until one canonical artifact set exists, and non-selected candidates are context only.
+- Escalate candidate differences about public contract, security, product direction, significant UX, or non-objective trade-offs to the human; `reviewer` compares quality/risk/completeness/validation clarity and does not arbitrate those decisions.
 - For sizing/routing/slicing, read `workflow_limits.sizing`, `workflow_limits.routing`, and `workflow_limits.proposal_slicing_strategy`; do not confuse these with `workflow_limits.delivery_batch_strategy`.
-- For parallelism, read `parallel_execution`. Recommend parallel agents only for independent review slices with independent files, a merge plan, and grouped validation after join. Do not parallelize delivery, schema/db migrations, shared public contracts, unresolved API decisions, or slices touching the same files.
+- For parallelism, read `parallel_execution`. Recommend parallel agents only for `review_slices` or `artifact candidates` with independent files/artifacts, a merge/join plan, and grouped validation after join. Do not parallelize delivery/Git/GH, schema/db migrations, unresolved public contracts or security decisions, unresolved API decisions, or slices/candidates touching the same files or artifacts.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - When `delivery` creates a PR, it must consult or wait for remote checks with command evidence such as `gh pr checks <PR>` or `gh pr view ... statusCheckRollup/mergeStateStatus`; failed, cancelled, timed out, action-required, undocumented, or tooling-missing checks are `blocked`, while existing pending checks are `delivery_pending`; neither state may be reported as `delivered`/`closed`.
@@ -147,6 +151,17 @@ workflow_decision:
   preflight_status: passed | blocked | not_applicable | not_available
   stop_rule_status: clear | triggered | not_applicable | not_available
   delivery_batching_guidance: <guidance or not_applicable>
+  artifact_branching:
+    status: recommended | not_needed | disabled | not_applicable
+    stage: proposal | design | tasks | not_applicable
+    candidate_count: 1 | 2 | not_applicable
+    reason: <short rationale or not_applicable>
+    parallel_allowed: true | false | not_applicable
+    requires_join: true | false | not_applicable
+    candidate_isolation: <isolated path convention or not_applicable>
+    merge_plan_required: true | false | not_applicable
+    human_escalation_triggers:
+      - public_contract | security | product_direction | significant_ux | non_objective_tradeoff | not_applicable
 risks:
   - <risk/follow-up or none>
 next_recommended:
