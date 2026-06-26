@@ -21,7 +21,11 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/versioncheck"
+	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -149,12 +153,18 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return fmt.Errorf("setup requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
 	if opts.Yes {
+		if opts.Interactive && hasPendingMutations(report.Features) {
+			return s.applyInteractive(opts, &report)
+		}
 		return s.apply(opts, &report, stdout)
 	}
 	return nil
 }
 
 func (s Service) BuildReport(opts Options) (Report, error) {
+	if err := validateSetupTargetInput(opts.Target); err != nil {
+		return Report{}, err
+	}
 	target, err := platform.ResolveTargetPath(opts.Target)
 	if err != nil {
 		return Report{}, err
@@ -170,6 +180,27 @@ func (s Service) BuildReport(opts Options) (Report, error) {
 	}
 	report.Features = s.planFeatures(target, opts.Scope, opts.Harness)
 	return report, nil
+}
+
+func validateSetupTargetInput(raw string) error {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	normalized := filepath.ToSlash(filepath.Clean(strings.TrimSpace(raw)))
+	placeholders := map[string]bool{
+		"<dir>":                 true,
+		"<repo>":                true,
+		"/path/to/project":      true,
+		"/ruta/a/proyecto":      true,
+		"/ruta/a/tu/proyecto":   true,
+		"ruta/a/proyecto":       true,
+		"ruta/a/tu/proyecto":    true,
+		"/path/to/your/project": true,
+	}
+	if placeholders[normalized] {
+		return fmt.Errorf("--target apunta a un placeholder (%s); usa una ruta real, por ejemplo --target . o --target /Users/tu-usuario/proyecto", raw)
+	}
+	return nil
 }
 
 func (s Service) planFeatures(target string, scope assets.Scope, harness domain.HarnessConfig) []FeatureAction {
@@ -230,6 +261,24 @@ func (s Service) planFeatures(target string, scope assets.Scope, harness domain.
 }
 
 func (s Service) apply(opts Options, report *Report, stdout io.Writer) error {
+	for i := range report.Features {
+		err := s.applyFeature(opts, report, i, stdout)
+		if err != nil {
+			return err
+		}
+	}
+	report.Applied = true
+	return nil
+}
+
+func (s Service) applyFeature(opts Options, report *Report, index int, stdout io.Writer) error {
+	if index < 0 || index >= len(report.Features) {
+		return nil
+	}
+	feature := &report.Features[index]
+	if feature.Status != "apply" {
+		return nil
+	}
 	scope := opts.Scope
 	if scope == "" {
 		scope = assets.ScopeProject
@@ -238,50 +287,43 @@ func (s Service) apply(opts Options, report *Report, stdout io.Writer) error {
 	if harness.Tool == "" {
 		harness = domain.HarnessConfig{}.WithDefaults()
 	}
-	for i := range report.Features {
-		feature := &report.Features[i]
-		if feature.Status != "apply" {
-			continue
+	var err error
+	switch feature.ID {
+	case "layout":
+		layoutPlan, buildErr := layout.BuildPlan(report.TargetRoot)
+		if buildErr != nil {
+			err = buildErr
+		} else if len(layoutPlan.Conflicts) > 0 {
+			err = fmt.Errorf("layout bloqueado por %d conflicto(s); ejecuta lufy-ai migrate-layout --target %s --dry-run", len(layoutPlan.Conflicts), report.TargetRoot)
+		} else {
+			_, err = layout.Apply(report.TargetRoot, layoutPlan.Actions, stdout)
 		}
-		var err error
-		switch feature.ID {
-		case "layout":
-			layoutPlan, buildErr := layout.BuildPlan(report.TargetRoot)
-			if buildErr != nil {
-				err = buildErr
-			} else if len(layoutPlan.Conflicts) > 0 {
-				err = fmt.Errorf("layout bloqueado por %d conflicto(s); ejecuta lufy-ai migrate-layout --target %s --dry-run", len(layoutPlan.Conflicts), report.TargetRoot)
-			} else {
-				_, err = layout.Apply(report.TargetRoot, layoutPlan.Actions, stdout)
-			}
-		case "install":
-			err = installer.NewService().Run(installer.Options{Target: report.TargetRoot, Yes: true, Scope: scope, Harness: harness}, stdout)
-		case "project-config":
-			if fileExists(projectconfig.Path(report.TargetRoot)) {
-				feature.Status = "skip"
-				feature.Reason = "Project config creado por install"
-				continue
-			}
-			err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot}, stdout)
-		case "memory":
-			err = memory.NewService().Init(memory.Options{Target: report.TargetRoot}, stdout)
-		case "stack-profile", "sdd-methodology":
-			err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot, Rescan: true}, stdout)
-		case "context-graph":
-			_, err = contextapp.NewService().Build(report.TargetRoot)
-			if err == nil {
-				fmt.Fprintln(stdout, "Context graph generado")
-			}
-		case "verify":
-			err = verify.NewService().Run(verify.Options{Target: report.TargetRoot, Scope: scope, ExpectedTool: harness.Tool}, stdout)
+	case "install":
+		err = installer.NewService().Run(installer.Options{Target: report.TargetRoot, Yes: true, Scope: scope, Harness: harness}, stdout)
+	case "project-config":
+		if fileExists(projectconfig.Path(report.TargetRoot)) {
+			feature.Status = "skip"
+			feature.Reason = "Project config creado por install"
+			return nil
 		}
-		if err != nil {
-			feature.Error = err.Error()
-			return fmt.Errorf("setup %s fallo: %w", feature.ID, err)
+		err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot}, stdout)
+	case "memory":
+		err = memory.NewService().Init(memory.Options{Target: report.TargetRoot}, stdout)
+	case "stack-profile", "sdd-methodology":
+		err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot, Rescan: true}, stdout)
+	case "context-graph":
+		_, err = contextapp.NewService().Build(report.TargetRoot)
+		if err == nil {
+			fmt.Fprintln(stdout, "Context graph generado")
 		}
-		feature.Applied = true
+	case "verify":
+		err = verify.NewService().Run(verify.Options{Target: report.TargetRoot, Scope: scope, ExpectedTool: harness.Tool}, stdout)
 	}
-	report.Applied = true
+	if err != nil {
+		feature.Error = err.Error()
+		return fmt.Errorf("setup %s fallo: %w", feature.ID, err)
+	}
+	feature.Applied = true
 	return nil
 }
 
@@ -438,9 +480,14 @@ type checklistModel struct {
 	indexes   []int
 	selected  map[string]bool
 	cursor    int
+	width     int
+	height    int
 	done      bool
 	cancelled bool
 	keys      checklistKeys
+	spinner   spinner.Model
+	help      help.Model
+	progress  progress.Model
 }
 
 type checklistKeys struct {
@@ -451,16 +498,33 @@ type checklistKeys struct {
 	Cancel  key.Binding
 }
 
+func (k checklistKeys) ShortHelp() []key.Binding {
+	return []key.Binding{k.Up, k.Down, k.Toggle, k.Confirm, k.Cancel}
+}
+
+func (k checklistKeys) FullHelp() [][]key.Binding {
+	return [][]key.Binding{{k.Up, k.Down}, {k.Toggle, k.Confirm, k.Cancel}}
+}
+
 func newChecklistModel(report Report) checklistModel {
 	indexes := []int{}
 	selected := map[string]bool{}
 	for i, feature := range report.Features {
-		if feature.Status == "apply" {
+		if feature.Status == "apply" || feature.Status == "conflict" || feature.Status == "error" {
 			indexes = append(indexes, i)
+		}
+		if feature.Status == "apply" {
 			selected[feature.ID] = true
 		}
 	}
-	return checklistModel{report: report, indexes: indexes, selected: selected, keys: checklistKeys{
+	spin := spinner.New()
+	spin.Spinner = spinner.Dot
+	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+	helpModel := help.New()
+	helpModel.Width = 100
+	progressModel := progress.New(progress.WithWidth(24), progress.WithSolidFill("63"))
+	progressModel.EmptyColor = "240"
+	return checklistModel{report: report, indexes: indexes, selected: selected, width: 100, height: 30, spinner: spin, help: helpModel, progress: progressModel, keys: checklistKeys{
 		Up:      key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "subir")),
 		Down:    key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "bajar")),
 		Toggle:  key.NewBinding(key.WithKeys(" "), key.WithHelp("espacio", "activar/desactivar")),
@@ -469,9 +533,21 @@ func newChecklistModel(report Report) checklistModel {
 	}}
 }
 
-func (m checklistModel) Init() tea.Cmd { return nil }
+func (m checklistModel) Init() tea.Cmd { return m.spinner.Tick }
 
 func (m checklistModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if spin, ok := msg.(spinner.TickMsg); ok {
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(spin)
+		return m, cmd
+	}
+	if size, ok := msg.(tea.WindowSizeMsg); ok {
+		m.width = clampInt(size.Width, 56, 140)
+		m.height = clampInt(size.Height, 18, 60)
+		m.help.Width = contentWidth(m.width)
+		m.progress.Width = clampInt(contentWidth(m.width)/4, 12, 28)
+		return m, nil
+	}
 	keyMsg, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return m, nil
@@ -493,53 +569,469 @@ func (m checklistModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case key.Matches(keyMsg, m.keys.Toggle):
 		if len(m.indexes) > 0 {
-			id := m.report.Features[m.indexes[m.cursor]].ID
-			m.selected[id] = !m.selected[id]
+			feature := m.report.Features[m.indexes[m.cursor]]
+			if feature.Status == "apply" {
+				m.selected[feature.ID] = !m.selected[feature.ID]
+			}
 		}
 	}
 	return m, nil
 }
 
 func (m checklistModel) View() string {
-	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63")).Render("Lufy setup")
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s\n", title)
+	width := contentWidth(m.width)
+	header := m.dashboardHeader("checklist")
+	footer := m.checklistFooter(width)
+	consoleHeight := clampInt(m.height/5, 5, 8)
+	bodyHeight := clampInt(m.height-lipgloss.Height(header)-consoleHeight-lipgloss.Height(footer)-3, 7, 24)
+	console := m.consolePreview(width, consoleHeight)
+
+	sections := []string{header}
+	if m.isWide() && width >= 84 {
+		leftWidth := clampInt((width-1)*38/100, 30, 44)
+		rightWidth := maxInt(28, width-leftWidth-1)
+		body := lipgloss.JoinHorizontal(lipgloss.Top, m.planPanel(leftWidth, bodyHeight), " ", m.currentStepPanel(rightWidth, bodyHeight))
+		sections = append(sections, body)
+	} else {
+		planHeight := clampInt(bodyHeight/2+2, 6, 12)
+		detailHeight := clampInt(bodyHeight-planHeight+3, 6, 12)
+		sections = append(sections, m.planPanel(width, planHeight), m.currentStepPanel(width, detailHeight))
+	}
+	sections = append(sections, console, footer)
+	return strings.Join(sections, "\n")
+}
+
+var (
+	setupTitleStyle      = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("252"))
+	setupSectionStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
+	setupMutedStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	setupFaintStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Faint(true)
+	setupOmittedStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Faint(true).Strikethrough(true)
+	setupHelpStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	setupSelectedStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
+	setupApplyStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	setupSkipStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	setupConflictStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+	setupErrorStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+	setupDetailStyle     = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("240")).Padding(1, 2)
+	setupLogStyle        = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("63")).Padding(0, 1)
+	setupPanelStyle      = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("240")).Padding(0, 1)
+	setupHeaderBoxStyle  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("238")).Padding(0, 1)
+	setupFooterBoxStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	setupBadgeReadyStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("22")).Background(lipgloss.Color("120")).Padding(0, 1)
+	setupBadgeDoStyle    = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Background(lipgloss.Color("63")).Padding(0, 1)
+	setupBadgeSkipStyle  = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("250")).Background(lipgloss.Color("238")).Padding(0, 1)
+	setupBadgeBlockStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Background(lipgloss.Color("160")).Padding(0, 1)
+	setupBadgeErrorStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Background(lipgloss.Color("196")).Padding(0, 1)
+	setupBadgeRunStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Background(lipgloss.Color("39")).Padding(0, 1)
+)
+
+func (m checklistModel) isWide() bool { return m.width >= 90 }
+
+func contentWidth(width int) int { return clampInt(width-4, 52, 136) }
+
+func (m checklistModel) header() string {
+	return m.dashboardHeader("checklist")
+}
+
+func (m checklistModel) dashboardHeader(mode string) string {
+	versionBadge := setupMutedStyle.Render("CHECK OMITIDO")
 	if m.report.Version != nil {
-		if m.report.Version.UpdateAvailable {
-			fmt.Fprintf(&b, "Version local=%s latest=%s. Recomendado: lufy-ai upgrade --to %s\n\n", m.report.Version.CurrentVersion, m.report.Version.LatestVersion, m.report.Version.LatestVersion)
-		} else if m.report.Version.UpToDate {
-			fmt.Fprintln(&b, "Lufy AI esta al dia")
-			fmt.Fprintln(&b)
-		}
+		versionBadge = setupMutedStyle.Render(versionLabelFor(*m.report.Version))
 	}
-	if len(m.indexes) == 0 {
-		fmt.Fprintln(&b, "No hay acciones pendientes. enter para salir.")
-		return b.String()
+	width := contentWidth(m.width)
+	title := setupTitleStyle.Render("Lufy setup")
+	modeLabel := setupMutedStyle.Render(mode)
+	status := modeLabel + " " + versionBadge
+	header := truncateText(title+" · "+status, width-4)
+	target := setupMutedStyle.Render(truncateText(m.report.TargetRoot, width-4))
+	metrics := setupFaintStyle.Render(m.metricLine(mode))
+	lines := []string{header, target, metrics}
+	if m.report.CheckNewFeatures {
+		lines = append(lines, setupApplyStyle.Render("Nuevas capacidades incluidas"))
 	}
-	fmt.Fprintln(&b, "Selecciona acciones a aplicar:")
+	return renderDashboardBox("", width, 0, strings.Join(lines, "\n"), lipgloss.Color("238"), setupHeaderBoxStyle)
+}
+
+func (m checklistModel) sidebar(width int) string {
+	return m.planContent(width, 0)
+}
+
+func (m checklistModel) planPanel(width int, height int) string {
+	return renderDashboardBox("Setup plan", width, height, m.planContent(panelInnerWidth(width), height), lipgloss.Color("240"), setupPanelStyle)
+}
+
+func (m checklistModel) planContent(width int, height int) string {
+	apply, skip, conflicts := featureCounts(m.report.Features)
+	selected := m.selectedCount()
+	ready := len(m.report.Features) - apply - conflicts
+	percent := progressPercent(ready, len(m.report.Features))
+	bar := m.progress.ViewAs(percent)
+	lines := []string{}
+	rowBudget := len(m.report.Features)
+	if height > 0 {
+		rowBudget = clampInt(height-5, 1, len(m.report.Features))
+	}
+	start := visibleWindowStart(len(m.report.Features), rowBudget, m.activeFeatureIndex())
+	end := minInt(len(m.report.Features), start+rowBudget)
+	if start > 0 {
+		lines = append(lines, setupFaintStyle.Render("… pasos anteriores"))
+	}
+	for i := start; i < end; i++ {
+		feature := m.report.Features[i]
+		lines = append(lines, m.featureRow(i, feature, width))
+	}
+	if end < len(m.report.Features) {
+		lines = append(lines, setupFaintStyle.Render("… mas pasos"))
+	}
+	lines = append(lines, "")
+	lines = append(lines, setupMutedStyle.Render("Progress ")+bar+setupMutedStyle.Render(fmt.Sprintf("  %d/%d", ready, len(m.report.Features))))
+	lines = append(lines, setupFaintStyle.Render(fmt.Sprintf("%d pendientes · %d seleccionadas · %d listas · %d conflictos", apply, selected, skip, conflicts)))
+	return strings.Join(lines, "\n")
+}
+
+func (m checklistModel) featureRow(index int, feature FeatureAction, width int) string {
+	active := false
 	for pos, idx := range m.indexes {
-		feature := m.report.Features[idx]
-		cursor := " "
-		if pos == m.cursor {
-			cursor = ">"
+		if idx == index && pos == m.cursor {
+			active = true
+			break
 		}
-		checked := " "
-		if m.selected[feature.ID] {
-			checked = "x"
-		}
-		line := fmt.Sprintf("%s [%s] %s (%s) - %s", cursor, checked, feature.Name, feature.ID, feature.Reason)
-		if pos == m.cursor {
-			line = lipgloss.NewStyle().Foreground(lipgloss.Color("39")).Bold(true).Render(line)
-		}
-		fmt.Fprintln(&b, line)
 	}
-	fmt.Fprintf(&b, "\n%s · %s · %s\n", m.keys.Toggle.Help().Key, m.keys.Confirm.Help().Key, m.keys.Cancel.Help().Key)
-	return b.String()
+	selected := m.selected[feature.ID]
+	icon := featureMarker(feature, selected)
+	prefix := " "
+	if active {
+		prefix = "›"
+	}
+	label := strings.ToLower(featureStatusLabel(feature, selected))
+	if label == "hacer" {
+		label = "apply"
+	}
+	if label == "listo" {
+		label = "ready"
+	}
+	if label == "bloqueado" {
+		label = "block"
+	}
+	nameWidth := maxInt(10, width-14)
+	body := fmt.Sprintf("%s%02d %s %-*s %s", prefix, index+1, icon, nameWidth, truncateText(feature.Name, nameWidth), label)
+	if feature.Status == "apply" && !selected {
+		body = setupOmittedStyle.Render(body)
+	} else if feature.Status == "conflict" || feature.Status == "error" {
+		body = setupConflictStyle.Render(body)
+	} else if active {
+		body = setupSelectedStyle.Render(body)
+	} else if feature.Status != "apply" && feature.Status != "conflict" {
+		body = setupFaintStyle.Render(body)
+	}
+	return body
+}
+
+func (m checklistModel) detailPanel(width int) string {
+	return m.currentStepPanel(width, 0)
+}
+
+func (m checklistModel) currentStepPanel(width int, height int) string {
+	idx := m.activeFeatureIndex()
+	if idx < 0 || idx >= len(m.report.Features) {
+		body := strings.Join([]string{
+			setupApplyStyle.Render("Todo listo"),
+			setupMutedStyle.Render("No hay pasos pendientes para aplicar."),
+		}, "\n")
+		return renderDashboardBox("Current step", width, height, body, lipgloss.Color("240"), setupPanelStyle)
+	}
+	feature := m.report.Features[idx]
+	state := "no se aplicara"
+	if m.selected[feature.ID] {
+		state = "se aplicara al presionar enter"
+	}
+	inner := panelInnerWidth(width)
+	status := featureStatusLabel(feature, m.selected[feature.ID])
+	if height > 0 && height <= 8 {
+		lines := []string{
+			fmt.Sprintf("%s  %s  %s", featureMarker(feature, m.selected[feature.ID]), setupSectionStyle.Render(feature.Name), setupMutedStyle.Render(strings.ToLower(status))),
+			wrapLine(feature.Reason, inner),
+		}
+		if feature.Recovery != "" {
+			lines = append(lines, setupMutedStyle.Render("Comando"), wrapLine(feature.Recovery, inner))
+		} else {
+			lines = append(lines, setupMutedStyle.Render("Decision"), state)
+		}
+		border := lipgloss.Color("240")
+		if feature.Status == "conflict" || feature.Status == "error" {
+			border = lipgloss.Color("196")
+		} else if m.selected[feature.ID] {
+			border = lipgloss.Color("39")
+		}
+		return renderDashboardBox("Current step", width, height, limitLines(strings.Join(lines, "\n"), maxInt(1, height-2)), border, setupPanelStyle)
+	}
+	lines := []string{
+		fmt.Sprintf("%s  %s  %s", featureMarker(feature, m.selected[feature.ID]), setupSectionStyle.Render(feature.Name), setupMutedStyle.Render(strings.ToLower(status))),
+		"",
+		setupMutedStyle.Render("Qué hará"),
+		wrapLine(featureExplanation(feature.ID), inner),
+		"",
+		setupMutedStyle.Render("Impacto"),
+		wrapLine(featureEffect(feature.ID), inner),
+	}
+	if feature.Recovery != "" {
+		lines = append(lines, "", setupMutedStyle.Render("Comando"), wrapLine(feature.Recovery, inner))
+	} else {
+		lines = append(lines, "", setupMutedStyle.Render("Decision"), state)
+	}
+	lines = append(lines, "", setupMutedStyle.Render("Motivo"), wrapLine(feature.Reason, inner))
+	border := lipgloss.Color("240")
+	if feature.Status == "conflict" || feature.Status == "error" {
+		border = lipgloss.Color("196")
+	} else if m.selected[feature.ID] {
+		border = lipgloss.Color("39")
+	}
+	return renderDashboardBox("Current step", width, height, limitLines(strings.Join(lines, "\n"), maxInt(0, height-2)), border, setupPanelStyle)
+}
+
+func (m checklistModel) consolePreview(width int, height int) string {
+	selected := m.selectedCount()
+	_, _, conflicts := featureCounts(m.report.Features)
+	lines := []string{}
+	switch {
+	case conflicts > 0:
+		lines = append(lines, setupConflictStyle.Render(fmt.Sprintf("Hay %d conflicto(s). Revisa recovery antes de aplicar.", conflicts)))
+	case selected > 0:
+		lines = append(lines, setupApplyStyle.Render(fmt.Sprintf("Listo para aplicar %d acciones.", selected)))
+	default:
+		lines = append(lines, setupMutedStyle.Render("No hay acciones seleccionadas para aplicar."))
+	}
+	if idx := m.activeFeatureIndex(); idx >= 0 && idx < len(m.report.Features) {
+		feature := m.report.Features[idx]
+		lines = append(lines, setupFaintStyle.Render("Actual: "+feature.Name+" · "+feature.Reason))
+		if feature.Recovery != "" {
+			lines = append(lines, setupFaintStyle.Render("Recovery: "+feature.Recovery))
+		}
+	}
+	lines = append(lines, setupMutedStyle.Render("Enter aplica selección · espacio alterna paso · q cancela."))
+	return renderDashboardBox("Console", width, height, limitLines(strings.Join(lines, "\n"), maxInt(1, height-2)), lipgloss.Color("240"), setupPanelStyle)
+}
+
+func (m checklistModel) checklistFooter(width int) string {
+	status := "checklist"
+	if selected := m.selectedCount(); selected > 0 {
+		status = fmt.Sprintf("%d seleccionadas", selected)
+	}
+	line := "↑/↓ navegar · espacio activar/desactivar · enter aplicar · q salir"
+	return setupFooterBoxStyle.Width(width).Render(truncateText(line+" · "+status, width))
+}
+
+func (m checklistModel) activeFeatureIndex() int {
+	if len(m.indexes) == 0 {
+		return -1
+	}
+	return m.indexes[clampInt(m.cursor, 0, len(m.indexes)-1)]
+}
+
+func (m checklistModel) metricLine(mode string) string {
+	apply, skip, conflicts := featureCounts(m.report.Features)
+	selected := m.selectedCount()
+	if mode == "apply" {
+		completed, failed, pending := applyCounts(m.report.Features)
+		return fmt.Sprintf("%d ok · %d pendientes · %d errores", completed, pending, failed)
+	}
+	return fmt.Sprintf("%d pendientes · %d seleccionadas · %d listas · %d conflictos", apply, selected, skip, conflicts)
+}
+
+func (m checklistModel) selectedCount() int {
+	count := 0
+	for _, idx := range m.indexes {
+		if m.selected[m.report.Features[idx].ID] {
+			count++
+		}
+	}
+	return count
+}
+
+func featureCounts(features []FeatureAction) (apply int, skip int, conflicts int) {
+	for _, feature := range features {
+		switch feature.Status {
+		case "apply":
+			apply++
+		case "conflict":
+			conflicts++
+		default:
+			skip++
+		}
+	}
+	return apply, skip, conflicts
+}
+
+func featureMarker(feature FeatureAction, selected bool) string {
+	switch feature.Status {
+	case "apply":
+		if selected {
+			return "◆"
+		}
+		return "○"
+	case "conflict":
+		return "!"
+	case "error":
+		return "✕"
+	default:
+		return "✓"
+	}
+}
+
+func featureStatusBadge(feature FeatureAction, selected bool) string {
+	label := featureStatusLabel(feature, selected)
+	switch label {
+	case "LISTO":
+		return setupBadgeReadyStyle.Render(label)
+	case "HACER":
+		return setupBadgeDoStyle.Render(label)
+	case "OMITIDO":
+		return setupBadgeSkipStyle.Render(label)
+	case "BLOQUEADO":
+		return setupBadgeBlockStyle.Render(label)
+	case "ERROR":
+		return setupBadgeErrorStyle.Render(label)
+	default:
+		return setupBadgeSkipStyle.Render(label)
+	}
+}
+
+func featureStatusLabel(feature FeatureAction, selected bool) string {
+	switch feature.Status {
+	case "apply":
+		if selected {
+			return "HACER"
+		}
+		return "OMITIDO"
+	case "conflict":
+		return "BLOQUEADO"
+	case "error":
+		return "ERROR"
+	default:
+		return "LISTO"
+	}
+}
+
+func featureExplanation(id string) string {
+	switch id {
+	case "layout":
+		return "ordena la carpeta .lufy y migra rutas antiguas si existen."
+	case "install":
+		return "instala agentes, skills, comandos y politicas gestionadas por Lufy."
+	case "project-config":
+		return "crea .lufy/config/project.yaml, el perfil local del repositorio."
+	case "stack-profile":
+		return "detecta stacks y superficies para orientar validacion y reviews."
+	case "sdd-methodology":
+		return "configura el routing T1/T2/T3 y los limites de workflow."
+	case "memory":
+		return "prepara memoria Obsidian portable para aprendizajes durables."
+	case "context-graph":
+		return "genera un indice local para buscar contexto del proyecto."
+	case "verify":
+		return "comprueba que lo instalado quede coherente y sin drift obvio."
+	default:
+		return "capacidad local de Lufy."
+	}
+}
+
+func featureEffect(id string) string {
+	switch id {
+	case "layout":
+		return "puede escribir o mover archivos dentro de .lufy."
+	case "install":
+		return "puede escribir archivos bajo .opencode, .agents, openspec y .lufy gestionados."
+	case "project-config", "stack-profile", "sdd-methodology":
+		return "actualiza solo configuracion del proyecto bajo .lufy/config."
+	case "memory":
+		return "crea estructura de memoria bajo .lufy/memory."
+	case "context-graph":
+		return "crea o refresca datos locales bajo .lufy/context."
+	case "verify":
+		return "lee el proyecto y reporta problemas; no deberia cambiar archivos."
+	default:
+		return "aplica cambios locales relacionados con esta capacidad."
+	}
+}
+
+func progressPercent(done, total int) float64 {
+	if total <= 0 {
+		return 0
+	}
+	percent := float64(done) / float64(total)
+	if percent < 0 {
+		return 0
+	}
+	if percent > 1 {
+		return 1
+	}
+	return percent
+}
+
+func renderVersionLine(version versioncheck.Result) string {
+	if version.Error != "" {
+		return setupConflictStyle.Render("Version no verificada") + setupMutedStyle.Render(" · "+version.Error)
+	}
+	if version.UpdateAvailable {
+		return setupConflictStyle.Render(fmt.Sprintf("Version local=%s latest=%s", version.CurrentVersion, version.LatestVersion)) + setupMutedStyle.Render(" · recomendado: lufy-ai upgrade --to "+version.LatestVersion)
+	}
+	if version.UpToDate {
+		return setupApplyStyle.Render(fmt.Sprintf("Lufy AI esta al dia · %s", version.CurrentVersion))
+	}
+	return setupMutedStyle.Render(fmt.Sprintf("Version local=%s latest=%s", version.CurrentVersion, version.LatestVersion))
+}
+
+func versionBadgeFor(version versioncheck.Result) string {
+	if version.Error != "" {
+		return setupBadgeBlockStyle.Render("VERSION SIN CHECK")
+	}
+	if version.UpdateAvailable {
+		return setupBadgeBlockStyle.Render("UPDATE DISPONIBLE")
+	}
+	if version.UpToDate {
+		return setupBadgeReadyStyle.Render("VERSION OK")
+	}
+	if version.CurrentVersion != "" {
+		return setupBadgeSkipStyle.Render(version.CurrentVersion)
+	}
+	return setupBadgeSkipStyle.Render("VERSION")
+}
+
+func versionLabelFor(version versioncheck.Result) string {
+	if version.Error != "" {
+		return "VERSION SIN CHECK"
+	}
+	if version.UpdateAvailable {
+		return "UPDATE DISPONIBLE"
+	}
+	if version.UpToDate {
+		return "VERSION OK"
+	}
+	if version.CurrentVersion != "" {
+		return version.CurrentVersion
+	}
+	return "VERSION"
+}
+
+func applyStatusBadge(label string) string {
+	switch label {
+	case "LISTO":
+		return setupBadgeReadyStyle.Render(label)
+	case "EJECUTANDO":
+		return setupBadgeRunStyle.Render(label)
+	case "ERROR":
+		return setupBadgeErrorStyle.Render(label)
+	case "OMITIDO":
+		return setupBadgeSkipStyle.Render(label)
+	default:
+		return setupBadgeSkipStyle.Render(label)
+	}
 }
 
 func runChecklist(report Report) (map[string]bool, error) {
 	model := newChecklistModel(report)
-	finalModel, err := tea.NewProgram(model).Run()
+	finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run()
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +1046,604 @@ func runChecklist(report Report) (map[string]bool, error) {
 		}
 	}
 	return selected, nil
+}
+
+func (s Service) applyInteractive(opts Options, report *Report) error {
+	model := newApplyModel(s, opts, report)
+	finalModel, err := tea.NewProgram(model, tea.WithAltScreen()).Run()
+	if err != nil {
+		return err
+	}
+	result, ok := finalModel.(applyModel)
+	if !ok {
+		return nil
+	}
+	if result.err != nil {
+		return result.err
+	}
+	return nil
+}
+
+type applyModel struct {
+	service Service
+	opts    Options
+	report  *Report
+	events  chan tea.Msg
+
+	current  int
+	width    int
+	height   int
+	done     bool
+	err      error
+	started  bool
+	logText  string
+	view     viewport.Model
+	keys     applyKeys
+	spinner  spinner.Model
+	help     help.Model
+	progress progress.Model
+}
+
+type applyKeys struct {
+	Up   key.Binding
+	Down key.Binding
+	Quit key.Binding
+}
+
+func (k applyKeys) ShortHelp() []key.Binding { return []key.Binding{k.Up, k.Down, k.Quit} }
+
+func (k applyKeys) FullHelp() [][]key.Binding { return [][]key.Binding{{k.Up, k.Down}, {k.Quit}} }
+
+type applyLogMsg string
+type applyStepStartMsg int
+type applyStepDoneMsg struct {
+	index int
+	err   error
+}
+type applyFinishedMsg struct{ err error }
+type applyNoopMsg struct{}
+
+func newApplyModel(service Service, opts Options, report *Report) applyModel {
+	spin := spinner.New()
+	spin.Spinner = spinner.Dot
+	spin.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+	logView := viewport.New(96, 16)
+	logView.Style = lipgloss.NewStyle()
+	helpModel := help.New()
+	helpModel.Width = 100
+	progressModel := progress.New(progress.WithWidth(24), progress.WithSolidFill("63"))
+	progressModel.EmptyColor = "240"
+	return applyModel{
+		service:  service,
+		opts:     opts,
+		report:   report,
+		events:   make(chan tea.Msg, 64),
+		current:  -1,
+		width:    100,
+		height:   30,
+		view:     logView,
+		spinner:  spin,
+		help:     helpModel,
+		progress: progressModel,
+		keys: applyKeys{
+			Up:   key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "subir logs")),
+			Down: key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "bajar logs")),
+			Quit: key.NewBinding(key.WithKeys("esc", "ctrl+c", "q", "enter"), key.WithHelp("enter/q", "salir al terminar")),
+		},
+	}
+}
+
+func (m applyModel) Init() tea.Cmd {
+	return tea.Batch(m.spinner.Tick, m.startApply(), waitApplyEvent(m.events))
+}
+
+func (m applyModel) startApply() tea.Cmd {
+	return func() tea.Msg {
+		go m.runApply()
+		return applyNoopMsg{}
+	}
+}
+
+func waitApplyEvent(events <-chan tea.Msg) tea.Cmd {
+	return func() tea.Msg {
+		msg, ok := <-events
+		if !ok {
+			return applyFinishedMsg{}
+		}
+		return msg
+	}
+}
+
+func (m applyModel) runApply() {
+	var err error
+	defer func() {
+		m.events <- applyFinishedMsg{err: err}
+		close(m.events)
+	}()
+	for i := range m.report.Features {
+		if m.report.Features[i].Status != "apply" {
+			continue
+		}
+		m.events <- applyStepStartMsg(i)
+		stepErr := m.service.applyFeature(m.opts, m.report, i, channelWriter{events: m.events})
+		m.events <- applyStepDoneMsg{index: i, err: stepErr}
+		if stepErr != nil {
+			err = stepErr
+			return
+		}
+	}
+	m.report.Applied = true
+}
+
+type channelWriter struct{ events chan<- tea.Msg }
+
+func (w channelWriter) Write(p []byte) (int, error) {
+	if len(p) > 0 {
+		w.events <- applyLogMsg(string(p))
+	}
+	return len(p), nil
+}
+
+func (m applyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if spin, ok := msg.(spinner.TickMsg); ok {
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(spin)
+		if !m.done {
+			return m, cmd
+		}
+		return m, nil
+	}
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = clampInt(msg.Width, 56, 140)
+		m.height = clampInt(msg.Height, 18, 60)
+		m.view.Width = contentWidth(m.width)
+		m.view.Height = clampInt(m.height-15, 8, 24)
+		m.help.Width = contentWidth(m.width)
+		m.progress.Width = clampInt(contentWidth(m.width)/4, 12, 28)
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keys.Quit):
+			if m.done || m.err != nil {
+				return m, tea.Quit
+			}
+		case key.Matches(msg, m.keys.Up):
+			m.view.LineUp(1)
+		case key.Matches(msg, m.keys.Down):
+			m.view.LineDown(1)
+		}
+	case applyNoopMsg:
+		return m, waitApplyEvent(m.events)
+	case applyStepStartMsg:
+		m.started = true
+		m.current = int(msg)
+		m.appendLog(m.stepLogHeader(m.current))
+		return m, waitApplyEvent(m.events)
+	case applyLogMsg:
+		m.appendLog(string(msg))
+		return m, waitApplyEvent(m.events)
+	case applyStepDoneMsg:
+		m.current = msg.index
+		if msg.err != nil {
+			m.err = msg.err
+			m.appendLog(fmt.Sprintf("✗ Falló: %s\n", msg.err.Error()))
+		} else {
+			m.appendLog(fmt.Sprintf("✓ Completado: %s\n", m.report.Features[msg.index].Name))
+		}
+		return m, waitApplyEvent(m.events)
+	case applyFinishedMsg:
+		m.done = true
+		if msg.err != nil {
+			m.err = msg.err
+			m.appendLog("\nSetup detenido. Revisa el error y los logs antes de salir.\n")
+		} else {
+			m.appendLog("\nSetup completado. enter/q para salir.\n")
+		}
+	}
+	return m, nil
+}
+
+func (m *applyModel) appendLog(text string) {
+	m.logText += text
+	m.view.SetContent(m.logText)
+	m.view.GotoBottom()
+}
+
+func (m applyModel) stepLogHeader(index int) string {
+	if index < 0 || index >= len(m.report.Features) {
+		return "\n▶ Ejecutando paso\n"
+	}
+	separator := ""
+	if strings.TrimSpace(m.logText) != "" {
+		separator = "\n"
+	}
+	feature := m.report.Features[index]
+	return fmt.Sprintf("%s▶ Ejecutando: %s\n  estado: ejecutando · %s\n", separator, feature.Name, feature.Reason)
+}
+
+func (m applyModel) View() string {
+	width := contentWidth(m.width)
+	header := m.applyHeader()
+	footer := m.applyFooter(width)
+	consoleHeight := clampInt(m.height/3, 8, 18)
+	bodyHeight := clampInt(m.height-lipgloss.Height(header)-consoleHeight-lipgloss.Height(footer)-3, 7, 20)
+	sections := []string{header}
+	if m.width >= 90 && width >= 84 {
+		leftWidth := clampInt((width-1)*38/100, 30, 44)
+		rightWidth := maxInt(28, width-leftWidth-1)
+		body := lipgloss.JoinHorizontal(lipgloss.Top, m.applyPlanPanel(leftWidth, bodyHeight), " ", m.applyCurrentStepPanel(rightWidth, bodyHeight))
+		sections = append(sections, body)
+	} else {
+		planHeight := clampInt(bodyHeight/2+2, 6, 12)
+		detailHeight := clampInt(bodyHeight-planHeight+3, 6, 12)
+		sections = append(sections, m.applyPlanPanel(width, planHeight), m.applyCurrentStepPanel(width, detailHeight))
+	}
+	sections = append(sections, m.applyConsolePanel(width, consoleHeight), footer)
+	return strings.Join(sections, "\n")
+}
+
+func (m applyModel) applyHeader() string {
+	status := "Aplicando pasos seleccionados"
+	badge := setupMutedStyle.Render("APLICANDO")
+	if m.err != nil {
+		status = "Setup detenido por error"
+		badge = setupErrorStyle.Render("ERROR")
+	} else if m.done {
+		status = "Setup completado"
+		badge = setupApplyStyle.Render("LISTO")
+	}
+	width := contentWidth(m.width)
+	title := setupTitleStyle.Render("Lufy setup")
+	mode := setupMutedStyle.Render("apply")
+	right := mode + " " + badge
+	header := truncateText(title+" · "+right, width-4)
+	body := strings.Join([]string{header, setupMutedStyle.Render(truncateText(m.report.TargetRoot, width-4)), setupFaintStyle.Render(status + " · " + m.applyMetricLine())}, "\n")
+	return renderDashboardBox("", width, 0, body, lipgloss.Color("238"), setupHeaderBoxStyle)
+}
+
+func (m applyModel) applySummary() string {
+	completed := 0
+	failed := 0
+	pending := 0
+	for _, feature := range m.report.Features {
+		if feature.Status != "apply" {
+			continue
+		}
+		switch {
+		case feature.Error != "":
+			failed++
+		case feature.Applied:
+			completed++
+		default:
+			pending++
+		}
+	}
+	total := completed + failed + pending
+	return fmt.Sprintf("%s\n%s  %s  %s  %s",
+		setupMutedStyle.Render("Progreso de aplicacion"),
+		m.progress.ViewAs(progressPercent(completed+failed, total)),
+		setupApplyStyle.Render(fmt.Sprintf("%d ok", completed)),
+		setupConflictStyle.Render(fmt.Sprintf("%d error", failed)),
+		setupMutedStyle.Render(fmt.Sprintf("%d pendientes", pending)),
+	)
+}
+
+func (m applyModel) applyPlanPanel(width int, height int) string {
+	contentWidth := panelInnerWidth(width)
+	rows := []string{}
+	rowBudget := len(m.report.Features)
+	if height > 0 {
+		rowBudget = clampInt(height-5, 1, len(m.report.Features))
+	}
+	start := visibleWindowStart(len(m.report.Features), rowBudget, m.current)
+	end := minInt(len(m.report.Features), start+rowBudget)
+	if start > 0 {
+		rows = append(rows, setupFaintStyle.Render("… pasos anteriores"))
+	}
+	for i := start; i < end; i++ {
+		rows = append(rows, m.applyCompactRow(i, m.report.Features[i], contentWidth))
+	}
+	if end < len(m.report.Features) {
+		rows = append(rows, setupFaintStyle.Render("… mas pasos"))
+	}
+	rows = append(rows, "", m.applySummary())
+	return renderDashboardBox("Setup plan", width, height, limitLines(strings.Join(rows, "\n"), maxInt(1, height-2)), lipgloss.Color("240"), setupPanelStyle)
+}
+
+func (m applyModel) applyCurrentStepPanel(width int, height int) string {
+	idx := m.current
+	if idx < 0 || idx >= len(m.report.Features) {
+		idx = firstApplyFeature(m.report.Features)
+	}
+	if idx < 0 || idx >= len(m.report.Features) {
+		body := strings.Join([]string{setupApplyStyle.Render("Setup completado"), setupMutedStyle.Render("No quedan pasos aplicables.")}, "\n")
+		return renderDashboardBox("Current step", width, height, body, lipgloss.Color("240"), setupPanelStyle)
+	}
+	feature := m.report.Features[idx]
+	inner := panelInnerWidth(width)
+	label := "pendiente"
+	border := lipgloss.Color("240")
+	if idx == m.current && !m.done && feature.Status == "apply" && feature.Error == "" && !feature.Applied {
+		label = "ejecutando"
+		border = lipgloss.Color("39")
+	}
+	if feature.Applied {
+		label = "listo"
+		border = lipgloss.Color("42")
+	}
+	if feature.Error != "" || (m.err != nil && idx == m.current) {
+		label = "error"
+		border = lipgloss.Color("196")
+	}
+	lines := []string{
+		fmt.Sprintf("%s  %s  %s", applyMarkerFor(feature, idx == m.current && !m.done, m.spinner.View()), setupSectionStyle.Render(feature.Name), setupMutedStyle.Render(label)),
+		"",
+		setupMutedStyle.Render("Detalle"),
+		wrapLine(featureExplanation(feature.ID), inner),
+		"",
+		setupMutedStyle.Render("Motivo"),
+		wrapLine(feature.Reason, inner),
+	}
+	if feature.Error != "" {
+		lines = append(lines, "", setupMutedStyle.Render("Error"), wrapLine(feature.Error, inner))
+	}
+	return renderDashboardBox("Current step", width, height, limitLines(strings.Join(lines, "\n"), maxInt(1, height-2)), border, setupPanelStyle)
+}
+
+func (m applyModel) applyConsolePanel(width int, height int) string {
+	view := m.view
+	view.Width = panelInnerWidth(width)
+	view.Height = clampInt(height-4, 3, 14)
+	body := view.View()
+	if strings.TrimSpace(m.logText) == "" {
+		body = setupMutedStyle.Render("Consola Lufy lista. Los logs reales apareceran aqui.")
+	}
+	if m.err != nil {
+		body += "\n" + setupConflictStyle.Render("Fallo: "+m.err.Error())
+	} else if m.done {
+		body += "\n" + setupApplyStyle.Render("Resumen final: setup completado. enter/q para salir.")
+	}
+	return renderDashboardBox("Console", width, height, limitLines(body, maxInt(1, height-2)), lipgloss.Color("240"), setupPanelStyle)
+}
+
+func (m applyModel) applyFooter(width int) string {
+	line := "↑/↓ scroll logs · enter/q salir al terminar · " + m.applyMetricLine()
+	return setupFooterBoxStyle.Width(width).Render(truncateText(line, width))
+}
+
+func (m applyModel) applyMetricLine() string {
+	completed, failed, pending := applyCounts(m.report.Features)
+	return fmt.Sprintf("%d ok · %d pendientes · %d errores", completed, pending, failed)
+}
+
+func (m applyModel) applyCompactRow(index int, feature FeatureAction, width int) string {
+	running := index == m.current && !m.done && feature.Status == "apply" && feature.Error == "" && !feature.Applied
+	marker := applyMarkerFor(feature, running, m.spinner.View())
+	label := "omitido"
+	style := setupFaintStyle
+	if feature.Status == "apply" {
+		label = "pending"
+		style = setupMutedStyle
+	}
+	if running {
+		label = "running"
+		style = setupSelectedStyle
+	}
+	if feature.Applied {
+		label = "ready"
+		style = setupApplyStyle
+	}
+	if feature.Error != "" {
+		label = "error"
+		style = setupConflictStyle
+	}
+	nameWidth := maxInt(10, width-15)
+	body := fmt.Sprintf(" %02d %s %-*s %s", index+1, marker, nameWidth, truncateText(feature.Name, nameWidth), label)
+	return style.Render(body)
+}
+
+func (m applyModel) applyRow(index int, feature FeatureAction) string {
+	marker := "○"
+	label := "OMITIDO"
+	style := setupFaintStyle
+	if feature.Status == "apply" {
+		marker = "○"
+		label = "PENDIENTE"
+		style = setupMutedStyle
+		if index == m.current && !feature.Applied && feature.Error == "" && !m.done {
+			marker = m.spinner.View()
+			label = "EJECUTANDO"
+			style = setupSelectedStyle
+		}
+		if feature.Applied {
+			marker = "✓"
+			label = "LISTO"
+			style = setupApplyStyle
+		}
+		if feature.Error != "" {
+			marker = "✕"
+			label = "ERROR"
+			style = setupConflictStyle
+		}
+	}
+	if feature.Status != "apply" && reasonLooksReady(feature.Reason) {
+		label = "LISTO"
+		marker = "✓"
+	}
+	body := fmt.Sprintf("%s  %s  %s", marker, style.Render(feature.Name), setupMutedStyle.Render(label))
+	if feature.Status == "apply" || feature.Error != "" {
+		body += "\n" + setupMutedStyle.Render("   "+feature.Reason)
+	}
+	rowStyle := lipgloss.NewStyle().PaddingLeft(1)
+	if feature.Error != "" {
+		return rowStyle.Foreground(lipgloss.Color("196")).Render(body)
+	}
+	if index == m.current && !m.done {
+		return rowStyle.Foreground(lipgloss.Color("39")).Render(body)
+	}
+	return rowStyle.Render(body)
+}
+
+func reasonLooksReady(reason string) bool {
+	normalized := strings.ToLower(reason)
+	return strings.Contains(normalized, "ready") || strings.Contains(normalized, "listo") || strings.Contains(normalized, "lista")
+}
+
+func renderDashboardBox(title string, width int, height int, body string, border lipgloss.Color, base lipgloss.Style) string {
+	style := base.BorderForeground(border)
+	frameW, frameH := style.GetFrameSize()
+	innerWidth := maxInt(1, width-frameW)
+	if height > 0 {
+		style = style.Height(maxInt(1, height-frameH))
+	}
+	style = style.Width(innerWidth)
+	content := body
+	if title != "" {
+		content = setupSectionStyle.Render(title) + "\n" + body
+	}
+	return style.Render(content)
+}
+
+func panelInnerWidth(width int) int {
+	frameW, _ := setupPanelStyle.GetFrameSize()
+	return maxInt(12, width-frameW)
+}
+
+func visibleWindowStart(total, budget, active int) int {
+	if total <= 0 || budget <= 0 || budget >= total {
+		return 0
+	}
+	if active < 0 {
+		active = 0
+	}
+	if active >= total {
+		active = total - 1
+	}
+	half := budget / 2
+	start := active - half
+	if start < 0 {
+		return 0
+	}
+	if start+budget > total {
+		return total - budget
+	}
+	return start
+}
+
+func limitLines(text string, maxLines int) string {
+	if maxLines <= 0 {
+		return text
+	}
+	lines := strings.Split(text, "\n")
+	if len(lines) <= maxLines {
+		return text
+	}
+	if maxLines == 1 {
+		return truncateText(lines[0], 80)
+	}
+	trimmed := append([]string{}, lines[:maxLines-1]...)
+	trimmed = append(trimmed, setupFaintStyle.Render("…"))
+	return strings.Join(trimmed, "\n")
+}
+
+func applyCounts(features []FeatureAction) (completed int, failed int, pending int) {
+	for _, feature := range features {
+		if feature.Status != "apply" {
+			continue
+		}
+		switch {
+		case feature.Error != "":
+			failed++
+		case feature.Applied:
+			completed++
+		default:
+			pending++
+		}
+	}
+	return completed, failed, pending
+}
+
+func firstApplyFeature(features []FeatureAction) int {
+	for i, feature := range features {
+		if feature.Status == "apply" {
+			return i
+		}
+	}
+	return -1
+}
+
+func applyMarkerFor(feature FeatureAction, running bool, spinner string) string {
+	switch {
+	case feature.Error != "":
+		return "✕"
+	case feature.Applied:
+		return "✓"
+	case running:
+		return spinner
+	case feature.Status == "apply":
+		return "◆"
+	default:
+		return "✓"
+	}
+}
+
+func clampInt(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func truncateText(text string, width int) string {
+	if width <= 0 || lipgloss.Width(text) <= width {
+		return text
+	}
+	if width <= 1 {
+		return "…"
+	}
+	runes := []rune(text)
+	for len(runes) > 0 && lipgloss.Width(string(runes))+1 > width {
+		runes = runes[:len(runes)-1]
+	}
+	return string(runes) + "…"
+}
+
+func wrapLine(text string, width int) string {
+	width = maxInt(12, width)
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return ""
+	}
+	lines := []string{}
+	current := words[0]
+	for _, word := range words[1:] {
+		candidate := current + " " + word
+		if lipgloss.Width(candidate) > width {
+			lines = append(lines, current)
+			current = word
+			continue
+		}
+		current = candidate
+	}
+	lines = append(lines, current)
+	return strings.Join(lines, "\n")
 }
 
 type conflictReviewModel struct {

@@ -71,6 +71,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Provide actionable findings with severity and file/line references whenever possible.
 - Produce weighted review scoring with human severities mapped to L1-L5 and recommend merge/readiness status without modifying files.
 - Keep reviewer qualitative judgment separate from validator command evidence and delivery authorization.
+- Compare artifact candidates when routed by `orchestrator`, focusing on objective quality/risk/completeness/validation clarity while leaving product, security, public-contract and other non-objective trade-offs to the human.
 
 ## Use When
 
@@ -125,6 +126,14 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Prefer specific file/line references; if unavailable, name file and symbol/section.
 - If no issues are found, state what was reviewed and residual risk.
 
+## Artifact Candidate Comparison
+
+- When reviewing multi-artifact candidates, compare at most 2 candidates supplied by the handoff. Treat proposal branching as the normal case, design branching as optional after a canonical proposal, and tasks branching as exceptional.
+- Evaluate candidates by objective criteria: quality, coherence with OpenSpec/specs, completeness, risk reduction, validation clarity, implementation feasibility, maintainability, and consistency with workflow limits.
+- Do not act as product owner, security authority, public-contract owner, or arbitrary tie-breaker. If candidates differ on public contract, security posture, product direction, significant UX, irreversible migration, cost/benefit judgment, or another non-objective trade-off, return a human decision point with comparison evidence instead of selecting silently.
+- Verify candidate isolation when evidence is available: isolated paths, no overwrite of canonical artifacts or other candidates, merge plan present, and grouped validation expected after join rather than per-candidate completion being treated as final.
+- Recommend that `orchestrator` produce or confirm one canonical artifact set before downstream implementation. Non-selected candidates remain context only unless the join explicitly promotes them.
+
 ## Severity Model
 
 - `CRÍTICO` (`L1`): correctness, security, data loss, public contract, migration, release or delivery blocker.
@@ -139,6 +148,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - For PR HTML reviews, you may create `pr_review/` and write `pr_review/*.html` only.
 - Do not commit, push, create PRs, or update GitHub Projects.
 - Do not treat reviewer approval as Git/GH delivery authorization.
+- Do not use candidate comparison to authorize delivery, Git/GH work, unresolved security/public-contract decisions, or implementation before join.
 - Do not claim commands passed unless supplied by `validator`, user evidence or actual command output in context.
 - Keep reviews focused and actionable.
 - Default human-facing content to Spanish.

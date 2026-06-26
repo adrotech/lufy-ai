@@ -40,3 +40,9 @@ First try the exact native Lufy role. Use this mapping only when native Lufy rol
 - Pass the Lufy role instructions and minimum context into the generic Codex role prompt.
 - Preserve role permissions: read-only Lufy roles stay read-only even when mapped to a more capable generic role.
 - Include the selected `agent_execution_mode` and `role_mapping` in substantive Result Contract evidence.
+
+## Multi-Artifact Branching
+
+- Multi-artifact branching is coordination, not a new Codex/Lufy role. Keep using the existing mapping: `sdd-router` recommends `artifact_branching`, `orchestrator` coordinates candidate generation and join, `implementer`/`worker` writes isolated candidates when asked, `reviewer` compares objective quality/risk, and the human decides public-contract, security, product, UX, or non-objective trade-offs.
+- Candidate generation may be native, emulated, or inline according to the runtime statement above, but it must preserve isolated non-overwriting candidate paths, a merge plan, `candidate_count <= 2`, and a mandatory join before downstream implementation.
+- Do not use branching to authorize delivery, Git/GH work, or unresolved public-contract/security decisions.

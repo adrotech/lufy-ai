@@ -27,6 +27,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - When `.lufy/config/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
 - Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
 - When `.lufy/config/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
+- When high-uncertainty T1 or multi-risk T2 work may benefit from comparing credible planning alternatives, recommend bounded `artifact_branching` metadata for the orchestrator without creating new roles.
 - Produce Result Contract envelope v1 with execution mode, context slice, required permissions, skill status, workflow-limit decisions, review workload, review slices, and stop reason when blocked.
 - Keep routing read-only, no-shell, low-context, and proportional.
 - Do not execute shell, Git, OpenSpec, validation, package-manager, or discovery commands; use only context already provided in the prompt and route to `explorer`, `validator`, or `delivery` when repository state, evidence, validation, or Git/GH operations are needed.
@@ -73,6 +74,33 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Block parallelism for delivery, schema/database migrations, shared generated files, shared public contracts, unresolved API decisions, security-sensitive changes, or slices that touch the same files.
 - When recommending parallelism, include `parallel_execution.recommended: true`, `max_parallel_agents`, unit ownership, merge plan and `validation_mode: grouped_after_join` in the handoff.
 - When blocked, include the exact reason and route as sequential execution.
+
+## Artifact Branching Recommendation
+
+- Recommend `artifact_branching` only for T1 work or multi-risk T2 work with meaningful uncertainty across scope, architecture, product outcome, validation strategy, or review workload. If one dominant low-risk solution exists, set `artifact_branching.status: not_needed`, `candidate_count: 1`, and keep one canonical artifact path.
+- Cap `candidate_count` at 2. The default stage is `proposal`; recommend `design` branching only after a canonical proposal exists and substantive technical decisions remain; recommend `tasks` branching only for an explicit implementation-strategy risk.
+- Never treat artifact branching as a new role or agent. `sdd-router` recommends, `orchestrator` coordinates/join, `implementer` or solution writer creates candidates, `reviewer` compares objective quality/risk, and the human decides non-objective trade-offs.
+- Use only `.lufy/config/project.yaml` top-level `workflow_limits` and `parallel_execution` for slicing, branching and parallel constraints. Keep `workflow_limits.delivery_batch_strategy` separate as delivery guidance only; it never authorizes branching, Git/GH, delivery, or PR creation.
+- Set `parallel_allowed: true` only when `parallel_execution.enabled` is true, candidate artifacts are independent, each candidate has isolated non-overwriting paths, a merge plan is required, and validation can run grouped after join. Block parallelism for delivery, Git/GH, unresolved public contracts, unresolved security decisions, shared mutable canonical artifacts, or same-file writes.
+- Include this compact shape in routed handoffs when relevant:
+
+```yaml
+artifact_branching:
+  status: recommended | not_needed | disabled
+  stage: proposal | design | tasks | not_applicable
+  candidate_count: 1 | 2
+  reason: <why branching is useful or unnecessary>
+  parallel_allowed: true | false
+  requires_join: true | false
+  candidate_isolation: <isolated paths or adapter-equivalent non-overwrite guidance>
+  merge_plan_required: true | false
+  human_escalation_triggers:
+    - public_contract
+    - security
+    - product_direction
+    - significant_ux
+    - non_objective_tradeoff
+```
 
 ## Tier Rules
 
@@ -224,6 +252,17 @@ workflow_decision:
   preflight_status: not_applicable | not_available | blocked
   stop_rule_status: clear | triggered | not_applicable | not_available
   delivery_batching_guidance: <advisory guidance from workflow_limits.delivery_batch_strategy or not_available; never delivery authorization>
+  artifact_branching:
+    status: recommended | not_needed | disabled | not_applicable
+    stage: proposal | design | tasks | not_applicable
+    candidate_count: 1 | 2 | not_applicable
+    reason: <short rationale or not_applicable>
+    parallel_allowed: true | false | not_applicable
+    requires_join: true | false | not_applicable
+    candidate_isolation: <path guidance or not_applicable>
+    merge_plan_required: true | false | not_applicable
+    human_escalation_triggers:
+      - <trigger or not_applicable>
 context_slice:
   user_intent: <summary>
   constraints:

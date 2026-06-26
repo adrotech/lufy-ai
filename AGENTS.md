@@ -11,6 +11,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
 - **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
 - **Workflow limits**: `.lufy/config/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
+- **Multi-artifact branching**: para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar hasta 2 candidates de artifacts; `orchestrator` debe hacer join antes de diseño/tareas/implementación y no se crean roles nuevos.
 - **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
@@ -76,8 +77,11 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 - Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
 - Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
 - Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
+- Para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar `artifact_branching` solo si comparar alternatives aporta valor real; máximo 2 candidates, preferentemente `proposal`, `design` opcional tras proposal canónica y `tasks` excepcional por riesgo de estrategia de implementación.
+- Si existen candidates de artifacts, `orchestrator` debe coordinar `branching_candidate_generation`, paths aislados no sobrescritos, merge plan y `join/decision`; no se puede pasar a implementación hasta tener un único artifact set canónico, y candidates no seleccionados quedan solo como contexto.
+- Escalar al humano diferencias entre candidates sobre contrato público, seguridad, dirección de producto, UX significativa o trade-offs no objetivos; `reviewer` compara calidad/riesgo/completitud/claridad de validación, no arbitra esas decisiones.
 - Para sizing/routing/slicing, leer `workflow_limits.sizing`, `workflow_limits.routing` y `workflow_limits.proposal_slicing_strategy`; no confundirlo con `workflow_limits.delivery_batch_strategy`.
-- Para paralelismo, leer `parallel_execution`; recomendar agentes paralelos solo para `review_slices` independientes, archivos independientes, plan de merge y validación agrupada después del join. No paralelizar delivery, migraciones schema/db, contratos públicos compartidos, decisiones API no cerradas ni slices que tocan los mismos archivos.
+- Para paralelismo, leer `parallel_execution`; recomendar agentes paralelos solo para `review_slices` o `artifact candidates` con archivos/artifacts independientes, plan de merge/join y validación agrupada después del join. No paralelizar delivery/Git/GH, migraciones schema/db, contratos públicos o seguridad no resueltos, decisiones API no cerradas ni slices/candidates que tocan los mismos archivos o artifacts.
 - Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
 - Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
 
@@ -127,6 +131,17 @@ workflow_decision:
   preflight_status: passed | blocked | not_applicable | not_available
   stop_rule_status: clear | triggered | not_applicable | not_available
   delivery_batching_guidance: <guidance or not_applicable>
+  artifact_branching:
+    status: recommended | not_needed | disabled | not_applicable
+    stage: proposal | design | tasks | not_applicable
+    candidate_count: 1 | 2 | not_applicable
+    reason: <short rationale or not_applicable>
+    parallel_allowed: true | false | not_applicable
+    requires_join: true | false | not_applicable
+    candidate_isolation: <isolated path convention or not_applicable>
+    merge_plan_required: true | false | not_applicable
+    human_escalation_triggers:
+      - public_contract | security | product_direction | significant_ux | non_objective_tradeoff | not_applicable
 risks:
   - <risk/follow-up or none>
 next_recommended:

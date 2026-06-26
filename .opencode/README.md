@@ -44,7 +44,7 @@ El router puede reportar `program_tier`, `slice_tier` y `fast_path_allowed` para
 
 El contexto de adapter se reporta en Result Contract como:
 
-- `tool_id`: hoy `opencode` escribible; `codex` y `claude-code` quedan como dry-run/preview fuera del preset instalado.
+- `tool_id`: hoy `opencode` y `codex` son escribibles; `claude-code` queda como dry-run/preview fuera del preset instalado.
 - `methodology_id`: `openspec`, `lufy-sdd` o `none`.
 - `methodology_mode`: `full`, `lite` o `none`.
 - `execution_mode`: `full-sdd`, `sdd-lite` o `express`.
@@ -78,7 +78,7 @@ Contexto operativo del repo:
 - La CLI Go del producto vive en `../tools/lufy-cli-go`.
 - `../scripts/install.sh` es un wrapper estricto del CLI Go, sin fallback legacy.
 - Preferir validación agrupada al final de un bloque/proposal; no correr tests constantemente salvo bloqueo, cambio riesgoso o diagnóstico.
-- El lifecycle gestionado actual incluye `install`, `sync`, `uninstall`, `verify`, `status`, `backup`, `restore`, `merge`, `upgrade` y `version`.
+- El lifecycle gestionado actual incluye `setup`, `menu`, `install`, `sync`, `uninstall`, `verify`, `status`, `conflicts plan`, `pr guard`, `backup`, `restore`, `merge`, `upgrade`, memoria, contexto y `version`.
 - La arquitectura de harness debe mantenerse adapter-first: no hardcodear nuevos textos a OpenCode/OpenSpec si el contrato puede vivir en roles, skills o metodología neutral.
 
 ### Checklist para nuevos agentes

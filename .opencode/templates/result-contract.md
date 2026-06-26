@@ -57,6 +57,21 @@ workflow_decision:
   preflight_status: passed | blocked | not_applicable | not_available
   stop_rule_status: clear | triggered | not_applicable | not_available
   delivery_batching_guidance: <guidance or not_applicable>
+  artifact_branching:
+    status: recommended | not_needed | disabled | not_applicable
+    stage: proposal | design | tasks | not_applicable
+    candidate_count: 1 | 2 | not_applicable
+    reason: <short rationale or not_applicable>
+    parallel_allowed: true | false | not_applicable
+    requires_join: true | false | not_applicable
+    candidate_isolation: <isolated path convention or not_applicable>
+    merge_plan_required: true | false | not_applicable
+    human_escalation_triggers:
+      - public_contract | security | product_direction | significant_ux | non_objective_tradeoff | not_applicable
+    candidate_paths:
+      - <path or not_applicable>
+    canonical_artifact_set:
+      - <path or not_applicable>
 risks:
   - <risk/follow-up or none>
 next_recommended:
