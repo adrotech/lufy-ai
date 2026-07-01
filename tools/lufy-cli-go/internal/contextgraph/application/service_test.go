@@ -99,8 +99,11 @@ func TestQueryPathAndExplain(t *testing.T) {
 	if len(query.Matches) == 0 {
 		t.Fatal("expected query match")
 	}
-	if query.TokenSavings == "" || query.Matches[0].Score == 0 {
+	if query.TokenSavings == "" || query.Matches[0].Score == 0 || query.Matches[0].Rank != 1 || query.Matches[0].Confidence == "" {
 		t.Fatalf("expected ranked token-saving hints: %+v", query)
+	}
+	if len(query.Matches[0].MatchedSignals) == 0 || query.Matches[0].Relevance == "" || len(query.NextCommands) == 0 || query.Confidence == "" {
+		t.Fatalf("expected actionable query diagnostics: %+v", query)
 	}
 	from := "file:main.go"
 	to := "file:main.go#type:User"
@@ -122,8 +125,27 @@ func TestQueryPathAndExplain(t *testing.T) {
 
 func TestStatusNotAvailable(t *testing.T) {
 	res := NewService().Status(t.TempDir())
-	if res.Status != "not_available" || res.Recovery != "lufy-ai context build" {
+	if res.Status != "not_available" || res.Recovery != "lufy-ai context build" || len(res.NextCommands) == 0 {
 		t.Fatalf("unexpected status: %+v", res)
+	}
+}
+
+func TestQueryMarksNoisyLowConfidence(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "a.md"), "# Alpha\n")
+	mustWrite(t, filepath.Join(root, "b.md"), "# Beta\n")
+	if _, err := NewService().Build(root); err != nil {
+		t.Fatalf("Build() error = %v", err)
+	}
+	query, err := NewService().Query(root, "a")
+	if err != nil {
+		t.Fatalf("Query() error = %v", err)
+	}
+	if !query.Noise || query.Confidence != "low" || query.Reason == "" {
+		t.Fatalf("expected noisy low-confidence diagnostics: %+v", query)
+	}
+	if len(query.NextCommands) == 0 || !strings.Contains(strings.Join(query.NextCommands, "\n"), "<narrower path symbol issue spec>") {
+		t.Fatalf("expected narrowing next command: %+v", query.NextCommands)
 	}
 }
 
@@ -146,7 +168,7 @@ func TestScanStatusReadyStaleAndRecoveries(t *testing.T) {
 		t.Fatalf("Build() error = %v", err)
 	}
 	ready := NewService().Status(root)
-	if ready.Status != "ready" || ready.Recovery != "" || ready.GraphPath == "" {
+	if ready.Status != "ready" || ready.Recovery != "" || ready.GraphPath == "" || len(ready.CandidatePaths) == 0 || len(ready.NextCommands) == 0 {
 		t.Fatalf("expected ready status: %+v", ready)
 	}
 

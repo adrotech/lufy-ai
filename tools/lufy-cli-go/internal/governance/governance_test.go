@@ -42,7 +42,7 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	if !doctor.OK {
 		t.Fatalf("doctor should be ok: %#v", doctor)
 	}
-	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
+	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "info", "memoria Obsidian no inicializada") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
 		t.Fatalf("doctor should report context recovery and memory lifecycle plugin: %#v", doctor.Checks)
 	}
 

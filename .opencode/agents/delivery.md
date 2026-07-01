@@ -72,7 +72,8 @@ You handle safe delivery operations only. This file is the operational runbook f
 
 ## Obsidian Memory
 
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before staging or creating a PR: search with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as the project-memory provider before staging or creating a PR: run/consume `lufy-ai memory status/search` or `lufy.mem-search` with short queries for prior delivery outcomes, branch policy decisions, PR check blockers, issue/project sync gotchas, or release risks related to the current change.
+- Do not substitute MCP/Engram as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized; record `memory_provider_used: external_fallback:<provider>` and `fallback_reason` when fallback is used. MCP/Engram can be non-project session memory only when labeled.
 - If memory is unavailable, skip memory lookup and continue with Git/GH/policy evidence; do not block delivery for memory alone unless traceability was explicitly required and cannot be evidenced.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). After authorized delivery or a significant blocker, save a concise durable memory in Obsidian with PR/issue/branch, validation outcome, remote-check result, blocker, or recovery action when available.
 - Persist durable delivery policies, PR/check blockers, release gotchas, or explicit user corrections with `lufy-ai memory capture --type rule|lesson`; connect them to related delivery/spec notes and validate memory after mutation.
@@ -139,3 +140,4 @@ You handle safe delivery operations only. This file is the operational runbook f
 ## Required Output
 
 Return Result Contract envelope v1 with branch/workspace state, validation evidence, delivery package, project sync, remote check evidence and final status represented in `evidence`, `artifacts`, `risks` and `next_recommended`.
+Preserve diagnostics from upstream and fill only delivery-verified values for `memory_provider_used`, `context_graph_status`, `context_graph_queries`, `fallback_reason`, and `generic_discovery_before_graph`.

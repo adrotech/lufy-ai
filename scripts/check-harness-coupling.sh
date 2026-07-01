@@ -16,6 +16,13 @@ STRUCTURAL_PROFILE_TERMS=(
   "structural_expectations"
   "controller_service_repository"
 )
+MEMORY_CONTEXT_GUARDRAIL_TERMS=(
+  "memory_provider_used"
+  "context_graph_status"
+  "context_graph_queries"
+  "fallback_reason"
+  "generic_discovery_before_graph"
+)
 
 NEUTRAL_PATHS=(
   "tools/lufy-cli-go/internal/core"
@@ -68,6 +75,33 @@ STRUCTURAL_PROFILE_CONTRACT_PATHS=(
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/implementer.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/validator.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/reviewer.md"
+)
+
+MEMORY_CONTEXT_GUARDRAIL_PATHS=(
+  ".opencode/agents/sdd-router.md"
+  ".opencode/agents/orchestrator.md"
+  ".opencode/agents/explorer.md"
+  ".opencode/agents/implementer.md"
+  ".opencode/agents/validator.md"
+  ".opencode/agents/reviewer.md"
+  ".opencode/agents/delivery.md"
+  ".opencode/skills/lufy.context-search/SKILL.md"
+  ".opencode/skills/lufy.mem-search/SKILL.md"
+  ".opencode/templates/result-contract.md"
+  ".opencode/templates/sdd-lite.md"
+  ".opencode/plugins/lufy-memory-context.ts"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/sdd-router.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/orchestrator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/explorer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/implementer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/validator.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/reviewer.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/delivery.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/skills/lufy.context-search/SKILL.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/skills/lufy.mem-search/SKILL.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/result-contract.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/sdd-lite.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.opencode/plugins/lufy-memory-context.ts"
 )
 
 check_neutral_path() {
@@ -163,6 +197,31 @@ check_structural_profile_contract() {
   fi
 }
 
+check_memory_context_guardrail_contract() {
+  local rel="$1"
+  local path="$ROOT/$rel"
+  local required
+  local missing=0
+
+  [ -f "$path" ] || return 0
+
+  for required in "${MEMORY_CONTEXT_GUARDRAIL_TERMS[@]}"; do
+    if ! rg -F -q -- "$required" "$path"; then
+      printf 'Error: guardrail memoria/grafo incompleto en %s; falta: %s\n' "$rel" "$required" >&2
+      missing=1
+    fi
+  done
+
+  if rg -n 'índice secundario|secondary index|optional secondary index' "$path"; then
+    printf 'Error: guardrail memoria/grafo conserva lenguaje de índice secundario en %s; usar preflight obligatorio cuando context_graph.enabled=true\n' "$rel" >&2
+    missing=1
+  fi
+
+  if [ "$missing" -ne 0 ]; then
+    STATUS=1
+  fi
+}
+
 print_current_inventory() {
   local scope="$1"
 
@@ -191,6 +250,10 @@ done
 
 for rel in "${STRUCTURAL_PROFILE_CONTRACT_PATHS[@]}"; do
   check_structural_profile_contract "$rel"
+done
+
+for rel in "${MEMORY_CONTEXT_GUARDRAIL_PATHS[@]}"; do
+  check_memory_context_guardrail_contract "$rel"
 done
 
 print_current_inventory ".opencode/agents"

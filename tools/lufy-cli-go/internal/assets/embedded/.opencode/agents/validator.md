@@ -49,7 +49,8 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 
 ## Obsidian Memory
 
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index before diagnosing or choosing validation scope: search with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as the project-memory provider before diagnosing or choosing validation scope: run/consume `lufy-ai memory status/search` or `lufy.mem-search` with short queries for relevant prior validation blockers, flaky gates, coverage thresholds, toolchain gotchas, or delivery failures.
+- Do not substitute MCP/Engram as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized; record `memory_provider_used: external_fallback:<provider>` and `fallback_reason` when fallback is used.
 - If memory is unavailable, skip memory lookup and rely on repository/user evidence; do not block validation.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Save a memory in Obsidian only when validation discovers a durable blocker, recurring failure pattern, or important toolchain/config gotcha.
 - Persist durable validation blockers or user corrections with `lufy-ai memory capture --type lesson|rule`, connect them to existing notes when possible, and include `lufy-ai memory validate` evidence after memory changes.
@@ -57,6 +58,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 ## Workflow
 
 - Run relevant compile/test checks for assigned change.
+- When `.lufy/config/project.yaml` declares `context_graph.enabled: true` and validation requires broad file discovery, require graph preflight first (`context status`, then targeted `context query` when ready) except direct reads of config, changed files, user-named artifacts or exact handoff paths. Record fallback diagnostics when graph is unavailable/stale.
 - Inspect diffs and tests to select focused validation.
 - Diagnose failures and identify likely owner of next fix.
 - Produce validation evidence for `orchestrator`, `reviewer`, or `delivery`.
@@ -99,6 +101,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
 - For OpenSpec verification, treat checked tasks as necessary but not sufficient for archive; closure also requires validation, delivery/sync, and blocker evidence according to `.opencode/policies/delivery.md`.
 - Return Result Contract envelope v1 for validation handoffs, preserving carried-forward `workflow_decision` fields and filling `evidence.commands` with exact command results.
+- Preserve or fill `diagnostics.memory_provider_used`, `diagnostics.context_graph_status`, `diagnostics.context_graph_queries`, `diagnostics.fallback_reason` and `diagnostics.generic_discovery_before_graph`; missing diagnostics in T1/T2 readiness states are blockers/needs_revision.
 
 ## Escalation
 

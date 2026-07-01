@@ -52,7 +52,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(drift) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: drift en lufy-ia.harness.md") {
+	if !strings.Contains(out.String(), "fail: guardrail drift en lufy-ia.harness.md") {
 		t.Fatalf("drift output unexpected: %s", out.String())
 	}
 
@@ -120,6 +120,49 @@ func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("missing no-replace lufy-new check: %#v", report.Checks)
+	}
+}
+
+func TestVerifyReportsGuardrailDriftRecoveryAndDoesNotMutateUserOwnedState(t *testing.T) {
+	target := validVerifyTarget(t)
+	agentRel := filepath.Join(".opencode", "agents", "orchestrator.md")
+	writeVerifyFile(t, filepath.Join(target, agentRel), "managed orchestrator\n")
+	addVerifyManagedAsset(t, target, agentRel, "managed")
+	agentsBefore := readVerifyFile(t, filepath.Join(target, "AGENTS.md"))
+	memoryPath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
+	contextPath := filepath.Join(target, ".lufy", "context", "graph.json")
+	writeVerifyFile(t, memoryPath, "private memory\n")
+	writeVerifyFile(t, contextPath, "{\"graph\":true}\n")
+	memoryBefore := readVerifyFile(t, memoryPath)
+	contextBefore := readVerifyFile(t, contextPath)
+
+	writeVerifyFile(t, filepath.Join(target, agentRel), "local guardrail drift\n")
+	var out bytes.Buffer
+	err := NewService().Run(Options{Target: target, JSON: true}, &out)
+	if err == nil {
+		t.Fatalf("Run(JSON guardrail drift) expected error, output=%s", out.String())
+	}
+	var report Report
+	if json.Unmarshal(out.Bytes(), &report) != nil {
+		t.Fatalf("invalid JSON report: %s", out.String())
+	}
+	found := false
+	for _, check := range report.Checks {
+		if check.Path == filepath.ToSlash(agentRel) && check.RecommendedAction == "lufy-ai sync --target <dir>" && strings.Contains(check.Message, "guardrail drift") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing guardrail drift recovery in report: %#v", report.Checks)
+	}
+	if got := readVerifyFile(t, filepath.Join(target, "AGENTS.md")); string(got) != string(agentsBefore) {
+		t.Fatalf("verify mutated AGENTS.md: before=%q after=%q", agentsBefore, got)
+	}
+	if got := readVerifyFile(t, memoryPath); string(got) != string(memoryBefore) {
+		t.Fatalf("verify mutated memory: before=%q after=%q", memoryBefore, got)
+	}
+	if got := readVerifyFile(t, contextPath); string(got) != string(contextBefore) {
+		t.Fatalf("verify mutated context graph: before=%q after=%q", contextBefore, got)
 	}
 }
 
@@ -613,6 +656,31 @@ func refreshVerifyAssetHash(t *testing.T, target, rel string) {
 	if err := state.WriteAtomic(target, *st); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func addVerifyManagedAsset(t *testing.T, target, rel, policy string) {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash, err := assets.FileSHA256(filepath.Join(target, rel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Assets = append(st.Assets, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readVerifyFile(t *testing.T, path string) []byte {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
 }
 
 func writeVerifyDirs(t *testing.T, target string) {

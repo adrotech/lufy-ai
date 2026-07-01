@@ -15,6 +15,7 @@ Convierte contexto ya validado en una nota Obsidian navegable. Usar cuando el us
 ## Reglas
 
 - Escribir en `.lufy/memory/knowledge/` salvo que sea perfil de app, que vive en `.lufy/memory/maps/_app-profile.md`.
+- Confirmar `memory.provider: obsidian`; no documentar memoria de proyecto en Engram/MCP cuando Obsidian está configurado salvo fallback explícito/non-project con `fallback_reason`.
 - No versionar contenido privado; la política default de `.lufy/memory/.gitignore` lo ignora.
 - Mantener notas breves, fechables por contexto cuando ayude, y conectadas con backlinks existentes.
 - No usar backlinks a notas inexistentes salvo que se creen en el mismo bloque.

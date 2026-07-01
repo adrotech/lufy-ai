@@ -213,6 +213,8 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		runDeepMemoryVerify(target, recorder.emit)
 		runDeepContextVerify(target, recorder.emit)
 		runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
+	} else {
+		runMemoryContextDiagnostics(target, recorder.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
@@ -296,6 +298,10 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		if actual != asset.TargetSHA256 {
 			if asset.Policy == string(assets.PolicyNoReplace) && regularFile(path+".lufy-new") {
 				recorder.emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
+				continue
+			}
+			if isGuardrailAsset(clean) {
+				recorder.emitAsset("fail", clean, asset.Policy, "lufy-ai sync --target <dir>", "guardrail drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 				continue
 			}
 			recorder.emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
@@ -538,6 +544,22 @@ func runDeepMemoryVerify(target string, emit func(level, path, format string, ar
 	}
 }
 
+func runMemoryContextDiagnostics(target string, emit func(level, path, format string, args ...any)) {
+	report, err := memory.NewService().BuildStatus(memory.Options{Target: target})
+	if err != nil {
+		emit("warn", projectconfig.ProjectConfigPath, "memoria no evaluable: %s", err.Error())
+	} else if !report.Status.Initialized {
+		recovery := report.Status.Recovery
+		if recovery == "" {
+			recovery = "lufy-ai memory init --target <repo>"
+		}
+		emit("warn", report.Root, "memory provider=%s initialized=false availability=%s; recovery: %s", report.Provider, report.Status.Availability, recovery)
+	} else {
+		emit("ok", report.Root, "memory provider=%s initialized=true schema=%d notes=%d", report.Provider, report.Status.SchemaVersion, report.Status.Notes)
+	}
+	runDeepContextVerify(target, emit)
+}
+
 func runDeepContextVerify(target string, emit func(level, path, format string, args ...any)) {
 	status := contextapp.NewService().Status(target)
 	path := status.GraphPath
@@ -554,6 +576,17 @@ func runDeepContextVerify(target string, emit func(level, path, format string, a
 	default:
 		emit("warn", path, "context graph not_available: %s; recovery: %s", status.Reason, status.Recovery)
 	}
+}
+
+func isGuardrailAsset(rel string) bool {
+	rel = filepath.ToSlash(rel)
+	guardrailPrefixes := []string{".opencode/agents/", ".opencode/skills/", ".opencode/templates/", ".opencode/plugins/", ".opencode/policies/", ".agents/skills/"}
+	for _, prefix := range guardrailPrefixes {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return rel == "lufy-ia.harness.md"
 }
 
 func runDeepOpenCodeMemoryHookVerify(target string, emit func(level, path, format string, args ...any)) {

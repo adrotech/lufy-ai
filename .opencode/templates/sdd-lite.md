@@ -86,6 +86,12 @@ Use only when slicing reduces reviewer cognitive load or risk.
 - Objective:
 - Actions performed:
 - Evidence:
+- Diagnostics:
+  - `memory_provider_used`: `obsidian`, `obsidian:not_available`, `external_fallback:<provider>`, `not_applicable` or `not_available`.
+  - `context_graph_status`: `ready`, `stale`, `not_available`, `disabled`, `not_applicable` or `not_run`.
+  - `context_graph_queries`: query/status summaries or `not_applicable`.
+  - `fallback_reason`: explicit reason/recovery when Obsidian or context graph fallback was used.
+  - `generic_discovery_before_graph`: `true`, `false`, `not_applicable` or `not_available`.
 - Structural acceptance audit:
   - <feature/surface>: <satisfied/missing/blocked details>
 - Optional overview/render: offered_pending | generated | skipped_by_user | not_available; include command/path only when the selected methodology and tool adapter provide one. When generated, show the path as a clickable Markdown link and keep `open <path>` as fallback. Use skipped_by_user only after an explicit user decline.
