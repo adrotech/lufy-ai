@@ -55,7 +55,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Memory Context
 
 - Do not call memory tools yourself; this role is read-only/no-shell and uses only context already provided.
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, prefer Obsidian hints from `lufy-ai memory search` or `lufy.mem-search` in `context_slice` using path, line, status and relevance; mark them as memory context, not repository evidence.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, require Obsidian as project-memory context in upstream/downstream handoffs. Use already provided `lufy-ai memory status/search` or `lufy.mem-search` hints using path, line, status and relevance; mark missing hints as `obsidian:not_available` rather than substituting MCP/Engram silently.
+- MCP/Engram may appear only as non-project session memory or explicit fallback when Obsidian is unavailable/uninitialized; require `memory_provider_used` and `fallback_reason` diagnostics when forwarding that fallback.
 - Detect explicit memory/correction triggers in the user request and include `memory_capture_required: true` in handoffs when the next role must persist a durable decision, user correction, rule, lesson, flow, or requested note. Include suggested `type` and candidate links when obvious.
 - For handoffs with `memory_capture_required: true`, require the receiving role to use `lufy-ai memory capture` and, when related notes exist, `lufy-ai memory connect`; memory validation evidence is required before reporting the capture as complete.
 - If memory is unavailable or not provided, leave memory context as `not_available` or omitted.
@@ -63,8 +64,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Context Graph
 
 - Do not call `lufy-ai context` yourself; this role is read-only/no-shell and uses only context graph hints already provided by the orchestrator, explorer, user, or a prior handoff.
-- If provided, use `context_graph_hints` only as secondary routing context for likely files, affected surfaces, impact questions or review slices.
-- If context graph hints are unavailable, stale, or not provided, mark them as `not_available` or omit them; do not block routing.
+- If `.lufy/config/project.yaml` declares `context_graph.enabled: true`, route broad discovery through graph preflight first: status plus targeted query when available. Direct config/user-named path reads remain allowed. If hints are unavailable, stale, or not provided, set diagnostics to `not_available`/`stale` and include fallback recovery instead of omitting them silently.
+- If provided, use `context_graph_hints` as required preflight context for likely files, affected surfaces, impact questions or review slices, not as replacement evidence.
 - Never treat graph-derived relationships or inferred impact as evidence stronger than current files, user-provided constraints, diffs, validation evidence, or repository policies.
 
 ## Governed Parallelism
@@ -213,6 +214,13 @@ evidence:
       notes: sdd-router is read-only/no-shell
   static:
     - <routing evidence from provided context>
+diagnostics:
+  memory_provider_used: <obsidian | obsidian:not_available | external_fallback:<provider> | not_available | not_applicable>
+  context_graph_status: <ready | stale | not_available | disabled | not_run | not_applicable>
+  context_graph_queries:
+    - <query/status summary or not_applicable>
+  fallback_reason: <explicit fallback/recovery reason or not_applicable>
+  generic_discovery_before_graph: true | false | not_available | not_applicable
 workflow_decision:
   tier: T1 | T2 | T3
   program_tier: T1 | T2 | T3 | not_applicable

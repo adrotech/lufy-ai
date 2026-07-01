@@ -51,14 +51,16 @@ type BuildResult struct {
 }
 
 type StatusResult struct {
-	Status    string        `json:"status"`
-	Reason    string        `json:"reason,omitempty"`
-	Recovery  string        `json:"recovery,omitempty"`
-	Sources   int           `json:"sources,omitempty"`
-	Nodes     int           `json:"nodes,omitempty"`
-	Edges     int           `json:"edges,omitempty"`
-	GraphPath string        `json:"graph_path,omitempty"`
-	Health    domain.Health `json:"health,omitempty"`
+	Status         string        `json:"status"`
+	Reason         string        `json:"reason,omitempty"`
+	Recovery       string        `json:"recovery,omitempty"`
+	NextCommands   []string      `json:"next_commands,omitempty"`
+	Sources        int           `json:"sources,omitempty"`
+	Nodes          int           `json:"nodes,omitempty"`
+	Edges          int           `json:"edges,omitempty"`
+	GraphPath      string        `json:"graph_path,omitempty"`
+	CandidatePaths []string      `json:"candidate_paths,omitempty"`
+	Health         domain.Health `json:"health,omitempty"`
 }
 
 type QueryResult struct {
@@ -67,13 +69,21 @@ type QueryResult struct {
 	TokenSavings  string   `json:"token_savings"`
 	Matches       []Match  `json:"matches"`
 	Questions     []string `json:"suggested_questions,omitempty"`
+	NextCommands  []string `json:"next_commands,omitempty"`
+	Noise         bool     `json:"noise"`
+	Confidence    string   `json:"confidence"`
+	Reason        string   `json:"reason,omitempty"`
 }
 
 type Match struct {
-	Node      domain.Node   `json:"node"`
-	Score     int           `json:"score"`
-	Reason    string        `json:"reason"`
-	Neighbors []domain.Edge `json:"neighbors,omitempty"`
+	Node           domain.Node   `json:"node"`
+	Rank           int           `json:"rank"`
+	Score          int           `json:"score"`
+	Confidence     string        `json:"confidence"`
+	Reason         string        `json:"reason"`
+	Relevance      string        `json:"relevance"`
+	MatchedSignals []string      `json:"matched_signals,omitempty"`
+	Neighbors      []domain.Edge `json:"neighbors,omitempty"`
 }
 
 type PathResult struct {
@@ -147,18 +157,18 @@ func (s Service) Status(root string) StatusResult {
 	cfg := s.config(root)
 	graph, err := s.store.LoadGraph(root, cfg.Root)
 	if err != nil {
-		return StatusResult{Status: "not_available", Reason: err.Error(), Recovery: "lufy-ai context build"}
+		return StatusResult{Status: "not_available", Reason: err.Error(), Recovery: "lufy-ai context build", NextCommands: []string{"lufy-ai context build --target " + shellQuote(root), "lufy-ai context status --target " + shellQuote(root) + " --json"}}
 	}
 	currentHash, err := s.currentSourcesHash(root, cfg)
 	if err != nil {
-		return StatusResult{Status: "stale", Reason: err.Error(), Recovery: "lufy-ai context build", GraphPath: adapters.GraphPathFor(root, cfg.Root)}
+		return StatusResult{Status: "stale", Reason: err.Error(), Recovery: "lufy-ai context build", GraphPath: adapters.GraphPathFor(root, cfg.Root), NextCommands: []string{"lufy-ai context build --target " + shellQuote(root), "lufy-ai context status --target " + shellQuote(root) + " --json"}}
 	}
 	status := "ready"
 	reason := ""
 	if currentHash != graph.Manifest.SourcesHash || graph.Manifest.ExtractorVersion != extractors.Version {
 		status, reason = "stale", "inputs or extractor version changed"
 	}
-	return StatusResult{Status: status, Reason: reason, Recovery: recoveryIf(status), Sources: len(graph.Sources), Nodes: len(graph.Nodes), Edges: len(graph.Edges), GraphPath: adapters.GraphPathFor(root, cfg.Root), Health: graph.Health}
+	return StatusResult{Status: status, Reason: reason, Recovery: recoveryIf(status), NextCommands: statusNextCommands(root, status), Sources: len(graph.Sources), Nodes: len(graph.Nodes), Edges: len(graph.Edges), GraphPath: adapters.GraphPathFor(root, cfg.Root), CandidatePaths: candidatePaths(graph, 5), Health: graph.Health}
 }
 
 func (s Service) Query(root, term string) (QueryResult, error) {
@@ -169,7 +179,9 @@ func (s Service) Query(root, term string) (QueryResult, error) {
 	}
 	terms := expandTerms(term, graph)
 	matches := rankedMatches(graph, terms, cfg.MaxQueryResults, cfg.MaxNeighborsPerHint)
-	return QueryResult{Term: term, ExpandedTerms: terms, TokenSavings: savingsSummary(len(matches), len(graph.Nodes)), Matches: matches, Questions: graph.Questions}, nil
+	annotateMatches(matches)
+	noise, confidence, reason := queryQuality(term, terms, matches)
+	return QueryResult{Term: term, ExpandedTerms: terms, TokenSavings: savingsSummary(len(matches), len(graph.Nodes)), Matches: matches, Questions: graph.Questions, NextCommands: nextCommands(root, matches, noise), Noise: noise, Confidence: confidence, Reason: reason}, nil
 }
 
 func (s Service) Path(root, from, to string) (PathResult, error) {
@@ -444,6 +456,37 @@ func recoveryIf(status string) string {
 	return "lufy-ai context build"
 }
 
+func statusNextCommands(root, status string) []string {
+	if status == "ready" {
+		return []string{"lufy-ai context query --target " + shellQuote(root) + " --json \"<term>\""}
+	}
+	return []string{"lufy-ai context build --target " + shellQuote(root), "lufy-ai context status --target " + shellQuote(root) + " --json"}
+}
+
+func candidatePaths(graph domain.Graph, limit int) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, important := range graph.Important {
+		if important.Path != "" && !seen[important.Path] {
+			seen[important.Path] = true
+			out = append(out, important.Path)
+		}
+		if len(out) >= limit {
+			return out
+		}
+	}
+	for _, node := range graph.Nodes {
+		if node.Path != "" && !seen[node.Path] {
+			seen[node.Path] = true
+			out = append(out, node.Path)
+		}
+		if len(out) >= limit {
+			return out
+		}
+	}
+	return out
+}
+
 func sortedGraphParts(nodeMap map[string]domain.Node, edgeMap map[string]domain.Edge) ([]domain.Node, []domain.Edge) {
 	nodes := make([]domain.Node, 0, len(nodeMap))
 	for _, node := range nodeMap {
@@ -638,11 +681,96 @@ func rankedMatches(graph domain.Graph, terms []string, limit, neighborLimit int)
 		if score == 0 {
 			continue
 		}
-		score += nodeDegree(graph, node.ID)
-		matches = append(matches, Match{Node: node, Score: score, Reason: "lexical match plus graph degree", Neighbors: neighbors(graph, node.ID, neighborLimit)})
+		degree := nodeDegree(graph, node.ID)
+		score += degree
+		matches = append(matches, Match{Node: node, Score: score, Reason: "lexical match plus graph degree", Relevance: "candidate selected by deterministic lexical/path/type signals and graph connectivity", MatchedSignals: matchSignals(node, terms, degree), Neighbors: neighbors(graph, node.ID, neighborLimit)})
 	}
 	sortMatches(matches)
 	return limitMatches(matches, limit)
+}
+
+func annotateMatches(matches []Match) {
+	for i := range matches {
+		matches[i].Rank = i + 1
+		matches[i].Confidence = confidenceForScore(matches[i].Score)
+		if matches[i].Relevance == "" {
+			matches[i].Relevance = "deterministic graph hint; verify against current files before reporting readiness"
+		}
+	}
+}
+
+func confidenceForScore(score int) string {
+	switch {
+	case score >= 25:
+		return "high"
+	case score >= 12:
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func matchSignals(node domain.Node, terms []string, degree int) []string {
+	textParts := map[string]string{"id": node.ID, "label": node.Label, "type": node.Type, "path": node.Path}
+	signals := []string{}
+	for _, term := range terms {
+		for field, value := range textParts {
+			if strings.Contains(strings.ToLower(value), term) {
+				signals = append(signals, field+":"+term)
+			}
+		}
+	}
+	if degree > 0 {
+		signals = append(signals, fmt.Sprintf("graph_degree:%d", degree))
+	}
+	sort.Strings(signals)
+	return dedupeStrings(signals)
+}
+
+func queryQuality(term string, terms []string, matches []Match) (bool, string, string) {
+	if len(matches) == 0 {
+		return true, "low", "no candidates matched; narrow terms or build graph if stale"
+	}
+	if len(strings.TrimSpace(term)) < 4 || len(terms) <= 1 && len(matches) > 8 {
+		return true, "low", "query is too broad or generic; use narrower path, symbol, issue or spec terms"
+	}
+	best := matches[0].Score
+	if best < 12 {
+		return true, "low", "weak lexical and graph signals; verify with focused file reads"
+	}
+	return false, confidenceForScore(best), "ranked by deterministic lexical/path/type signals plus graph degree"
+}
+
+func nextCommands(root string, matches []Match, noise bool) []string {
+	commands := []string{"lufy-ai context status --target " + shellQuote(root) + " --json"}
+	if len(matches) > 0 && matches[0].Node.Path != "" {
+		commands = append(commands, "read "+matches[0].Node.Path)
+		commands = append(commands, "lufy-ai context explain --target "+shellQuote(root)+" --json "+shellQuote(matches[0].Node.ID))
+	}
+	if noise {
+		commands = append(commands, "lufy-ai context query --target "+shellQuote(root)+" --json \"<narrower path symbol issue spec>\"")
+	}
+	return commands
+}
+
+func shellQuote(value string) string {
+	if value == "" || strings.ContainsAny(value, " \t\n\"'") {
+		return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
+	}
+	return value
+}
+
+func dedupeStrings(values []string) []string {
+	seen := map[string]bool{}
+	out := []string{}
+	for _, value := range values {
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
 }
 
 func anyTerm(text string, terms []string) bool {

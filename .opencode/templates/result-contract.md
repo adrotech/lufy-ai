@@ -19,6 +19,13 @@ evidence:
       notes: <key output or reason>
   static:
     - <manual/static evidence or not_applicable>
+diagnostics:
+  memory_provider_used: <obsidian | obsidian:not_available | external_fallback:<provider> | not_applicable | not_available>
+  context_graph_status: <ready | stale | not_available | disabled | not_applicable | not_run>
+  context_graph_queries:
+    - <query/status summary or not_applicable>
+  fallback_reason: <why fallback/discovery/external memory was used, or not_applicable>
+  generic_discovery_before_graph: true | false | not_applicable | not_available
 structural_acceptance:
   source: user_prompt | project_profile | spec | mixed | not_available
   expected_directories:
