@@ -166,6 +166,21 @@ func TestVerifyReportsGuardrailDriftRecoveryAndDoesNotMutateUserOwnedState(t *te
 	}
 }
 
+func TestReportRecorderUsesStableSlashPaths(t *testing.T) {
+	report := Report{}
+	recorder := reportRecorder{report: &report}
+
+	recorder.emit("ok", `.opencode\agents\orchestrator.md`, "path estable")
+	recorder.emitAsset("fail", `.opencode\skills\sdd-workflow\SKILL.md`, "managed", "lufy-ai sync --target <dir>", "asset con drift")
+
+	if report.Checks[0].Path != ".opencode/agents/orchestrator.md" {
+		t.Fatalf("emit path not normalized: %#v", report.Checks[0])
+	}
+	if report.Checks[1].Path != ".opencode/skills/sdd-workflow/SKILL.md" || report.Checks[1].RecommendedAction == "" {
+		t.Fatalf("emitAsset path/policy fields unexpected: %#v", report.Checks[1])
+	}
+}
+
 func TestVerifyDetectsCodexPRReviewerMissingHTMLContract(t *testing.T) {
 	target := validVerifyTarget(t)
 	skillRel := filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md")

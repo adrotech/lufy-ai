@@ -353,14 +353,21 @@ func verifyCodexPRReviewerSkillContract(target string, emit func(string, string,
 
 func (e reportRecorder) emit(level, path, format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Message: message})
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: stableReportPath(path), Message: message})
 	e.count(level)
 }
 
 func (e reportRecorder) emitAsset(level, path, policy, recommendedAction, format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: stableReportPath(path), Policy: policy, RecommendedAction: recommendedAction, Message: message})
 	e.count(level)
+}
+
+func stableReportPath(path string) string {
+	if path == "" {
+		return ""
+	}
+	return strings.ReplaceAll(filepath.ToSlash(path), "\\", "/")
 }
 
 func (e reportRecorder) count(level string) {
