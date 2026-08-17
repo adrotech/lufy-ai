@@ -66,9 +66,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 
 ## Pendiente o futuro
 
-- Promover `develop` a `main` y publicar la próxima release estable desde tag `v*`.
 - Plugin marketplace, Observatory y reporting avanzado para Codex.
-- Adapter escribible real para Claude Code.
 - Lufy SDD full como alternativa completa a OpenSpec.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
@@ -84,7 +82,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Los adapters escribibles actuales son `opencode` y `codex`; `opencode` sigue siendo el default efectivo.
 - El skill registry es derivado y local: contiene paths exactos del entorno, se mantiene idempotentemente con `skills ensure` y no debe tratarse como reemplazo del `SKILL.md` original. Codex usa ensure en lifecycle/primer uso hasta que exista un contrato nativo de hook de inicio verificado.
 - Algunas sesiones Codex pueden exponer solo roles genéricos (`default`, `explorer`, `worker`); Lufy debe usar roles nativos cuando tool discovery los expone y degradar explícitamente a `emulated`/`inline` cuando no.
-- `claude-code` no debe documentarse como instalable real; sigue dry-run/preview.
+- `claude-code` no forma parte del backlog activo y no debe documentarse como instalable real; se conserva únicamente como dry-run/preview.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
 - `AGENTS.md`, `opencode.json` y `.lufy/config/project.yaml` son user-owned o user-managed.
 - No existe suite Node/TS global en la raíz.

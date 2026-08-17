@@ -13,28 +13,29 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
-### Added
-
-- `lufy-ai memory capture/connect/index` para persistir decisiones, correcciones del usuario y backlinks Obsidian con validación determinística.
-
-### Changed
-
-- Agentes y skills de memoria ahora tratan correcciones explícitas del usuario como memoria durable (`rule`/`lesson`) y usan el CLI para capturar/conectar notas.
-
 ## [v0.6.22] - 2026-08-17
 
 ### Added
 
+- `lufy-ai memory capture/connect/index` para persistir decisiones, correcciones del usuario y backlinks Obsidian con validación determinística.
+- Registry portable `.lufy/skill-registry.json` con precedencia project-over-global, raíces por adapter y paths exactos a los `SKILL.md` fuente.
+- Comandos `lufy-ai skills ensure/refresh/status` para mantener y diagnosticar el índice sin modificar skills user-owned.
 - Setter y pruebas aisladas para mantener alineadas la versión canónica y las referencias copiables.
 - Verificación de la versión embebida en artifacts construidos y publicados.
 
 ### Changed
 
+- Agentes y skills de memoria ahora tratan correcciones explícitas del usuario como memoria durable (`rule`/`lesson`) y usan el CLI para capturar/conectar notas.
+- El routing prioriza memoria Obsidian y el grafo de contexto configurados, exige fallbacks explícitos y devuelve hints compactos en lugar de dumps amplios.
+- `install`, `setup` y `sync` aseguran el skill registry en modo best-effort; OpenCode repite el ensure al crear una sesión y Codex conserva un fallback explícito de lifecycle/primer uso.
+- `doctor` y `verify --deep` incorporan el estado read-only del skill registry con recuperación accionable.
 - Los workflows de tag y release ahora exigen consistencia entre `RELEASE_VERSION`, tag calculado y changelog.
 - `actions/setup-go` usa el `go.sum` del módulo anidado para resolver el cache sin warnings.
 
 ### Fixed
 
+- Comparaciones de paths del registry compatibles con repositorios movidos y normalización de rutas en macOS/Windows.
+- Paridad entre assets fuente y embebidos para hooks, skills, agentes y documentación operativa.
 - El gate documental ya no queda verde cuando falta la versión canónica o el source tree está atrasado respecto del release planificado.
 
 ## [v0.6.11] - 2026-06-09

@@ -28,6 +28,14 @@ Capacidades ya existentes que afectan la planificación:
 | Harness hexagonal | Foundation implementada en `abstract-harness-tool-methodology-adapters`: core neutral, registry de adapters, methodology por tier, renderer neutral y manifest v2 con ownership. | Los próximos adapters Codex/Claude Code deben implementarse como adapters escribibles validados, no como forks de agentes o skills OpenCode. |
 | Uninstall gestionado | Implementado como `lufy-ai uninstall` con dry-run, backup, drift guard y preservación de archivos user-owned. | El lifecycle install/sync/uninstall/reinstall ya es parte del contrato operativo y debe cubrirse en docs/smokes futuros. |
 
+## Corte de backlog para `v0.6.22`
+
+- `LUFY-0` a `LUFY-9` y `LUFY-11` a `LUFY-16` están entregados en el source tree; sus trackers históricos no representan trabajo pendiente.
+- `LUFY-13` ya tiene walkthrough end-to-end y `/lufy.onboard`; el issue #81 se cierra como housekeeping de esta release.
+- Los guardrails de memoria Obsidian y grafo de contexto del issue #188 fueron entregados por PR #190; el issue se cierra como completado.
+- `LUFY-10`, `LUFY-17` y `LUFY-18` siguen siendo capacidades futuras aunque sus issues históricos estén cerrados; requieren una proposal/tracker nuevo antes de implementación.
+- Claude Code queda fuera del backlog activo. El adapter preview/dry-run se conserva solo como límite explícito de compatibilidad.
+
 ## Prioridades
 
 - **P0**: bloquea adopción seria o desbloquea la mayoría del backlog.
@@ -99,7 +107,7 @@ Effort estimado:
 
 ### LUFY-2 - Reviewer L1-L5 ponderado y HTML capability-aware
 
-**Estado:** completado, archivado y delivered local/remoto mediante `add-scored-stack-aware-reviewer`. El slice actual cubre el reviewer ponderado stack-aware; la skill HTML opcional queda fuera de este slice.
+**Estado:** entregado. El reviewer ponderado stack-aware y la salida HTML autocontenida están disponibles mediante el agent reviewer y la skill `pr.reviewer`.
 
 **Problema:** el reviewer debe producir evaluación consistente, exportable y adaptada al stack.
 
@@ -134,7 +142,7 @@ Effort estimado:
 
 ### LUFY-4 - `/lufy.onboard` con dry-run y demo stack-aware
 
-**Estado:** pendiente; trazado en #74.
+**Estado:** entregado; issue #74 cerrado como completado.
 
 **Issue:** #74 - https://github.com/adrotech/lufy-ai/issues/74
 
@@ -166,7 +174,7 @@ Effort estimado:
 
 ### LUFY-7 - Hook PostToolUse de formato dinámico
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #75.
+**Estado:** entregado; issue #75 cerrado como completado.
 
 **Issue:** #75 - https://github.com/adrotech/lufy-ai/issues/75
 
@@ -178,7 +186,7 @@ Effort estimado:
 
 ### LUFY-8 - CLI `merge` 3-way refinado
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #76.
+**Estado:** entregado en su alcance zero-deps; issue #76 cerrado. El motor text 3-way/TUI avanzado permanece opcional.
 
 **Issue:** #76 - https://github.com/adrotech/lufy-ai/issues/76
 
@@ -192,7 +200,7 @@ Effort estimado:
 
 ### LUFY-9 - CLI governance: `pin`, `unpin`, `doctor`, `info`, `status`
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #77.
+**Estado:** entregado; issue #77 cerrado como completado.
 
 **Issue:** #77 - https://github.com/adrotech/lufy-ai/issues/77
 
@@ -204,7 +212,7 @@ Effort estimado:
 
 ### LUFY-10 - Planner 8-state
 
-**Estado:** pendiente; trazado en #78.
+**Estado:** futuro sin tracker activo. El issue histórico #78 está cerrado, pero el planner unificado de ocho estados no forma parte del contrato instalable actual.
 
 **Issue:** #78 - https://github.com/adrotech/lufy-ai/issues/78
 
@@ -218,7 +226,7 @@ Effort estimado:
 
 ### LUFY-11 - Lessons learned versionado
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #79.
+**Estado:** entregado; issue #79 cerrado como completado.
 
 **Issue:** #79 - https://github.com/adrotech/lufy-ai/issues/79
 
@@ -230,7 +238,7 @@ Effort estimado:
 
 ### LUFY-12 - Namespace dual `/opsx-*` + `/lufy.*`
 
-**Estado:** validado localmente; pendiente de delivery para cerrar #80.
+**Estado:** entregado y documentado; issue #80 cerrado como completado.
 
 **Issue:** #80 - https://github.com/adrotech/lufy-ai/issues/80
 
@@ -242,7 +250,7 @@ Effort estimado:
 
 ### LUFY-13 - README walkthrough end-to-end
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #81.
+**Estado:** entregado en README junto con `/lufy.onboard --demo --dry-run`; issue #81 cerrado durante el housekeeping de `v0.6.22`.
 
 **Issue:** #81 - https://github.com/adrotech/lufy-ai/issues/81
 
@@ -254,7 +262,7 @@ Effort estimado:
 
 ### LUFY-14 - Verificación activa post-spec
 
-**Estado:** implementado localmente; pendiente de validación/delivery para cerrar #82.
+**Estado:** entregado; issue #82 cerrado como completado.
 
 **Issue:** #82 - https://github.com/adrotech/lufy-ai/issues/82
 
@@ -287,7 +295,7 @@ Effort estimado:
 
 ### LUFY-17 - Templates stack-specific por capability
 
-**Estado:** pendiente; trazado en #83.
+**Estado:** futuro sin tracker activo. El issue histórico #83 está cerrado; los paquetes instalables por stack todavía no existen como capability completa.
 
 **Issue:** #83 - https://github.com/adrotech/lufy-ai/issues/83
 
@@ -299,7 +307,7 @@ Effort estimado:
 
 ### LUFY-18 - Domain-specific subagents
 
-**Estado:** pendiente; trazado en #84.
+**Estado:** futuro sin tracker activo. El issue histórico #84 está cerrado; cada subagente deberá abrir su propia proposal y validación end-to-end.
 
 **Issue:** #84 - https://github.com/adrotech/lufy-ai/issues/84
 
@@ -337,7 +345,9 @@ LUFY-5 stop rules y LUFY-14 post-spec verification son independientes.
 LUFY-11, LUFY-12 y LUFY-13 son documentales/operativos y paralelizables.
 ```
 
-## Plan de implementación recomendado
+## Plan histórico de implementación
+
+Las releases A-E documentan el orden original y no representan el backlog restante de `v0.6.22`. Los estados de cada item y el corte anterior son la fuente vigente.
 
 ### Release A - Foundation genérica (`v0.4.0`)
 
@@ -393,7 +403,7 @@ Objetivo: sumar valor especializado una vez estable el foundation genérico.
 | E1 | LUFY-17 primer stack | `add-stack-specific-capability-pack-go` o `...-typescript-next` | Alto | Assets reales, manifest, smokes en repo fixture |
 | E2 | LUFY-18 primer subagent | `add-api-contract-reviewer-agent` | Alto | Fixtures de OpenAPI/consumers y contrato de salida |
 
-## Orden operativo sugerido
+## Orden operativo histórico
 
 1. Empezar por `add-stack-aware-project-init`.
 2. Cerrar `project.yaml` y `--rescan` antes de tocar agentes que dependan de esa config.
@@ -427,7 +437,7 @@ Para cada proposal derivada:
 - Reportar limitaciones reales si no hay toolchain disponible.
 - No afirmar soporte de stack o comando si no existe asset, scanner, test o doc correspondiente.
 
-## Resumen de esfuerzo
+## Estimación original de esfuerzo
 
 | Prioridad | Items | Effort total aproximado |
 | --- | --- | --- |
@@ -436,4 +446,4 @@ Para cada proposal derivada:
 | P2 | LUFY-11 a LUFY-16 | 4 a 9 días |
 | P3 | LUFY-17 a LUFY-18 | 2+ semanas |
 
-P0+P1+P2 equivale a 21 a 48 días secuenciales. Con proposals paralelizables después de LUFY-0/LUFY-15, el calendario real puede reducirse si se separan PRs por slice y se evita mezclar CLI, agentes y docs en una sola entrega.
+Esta estimación corresponde al backlog original y no debe usarse como esfuerzo remanente. Para trabajo nuevo se deben reestimar únicamente `LUFY-10`, `LUFY-17`, `LUFY-18` o las iniciativas vigentes de `docs/status.md` mediante proposals separadas.
