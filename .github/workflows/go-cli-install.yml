@@ -11,6 +11,8 @@ on:
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
       - "scripts/check-doc-release-version.sh"
+      - "scripts/set-release-version.sh"
+      - "scripts/test-release-version.sh"
       - "scripts/check-shell.sh"
       - "scripts/quality-go.sh"
       - "RELEASE_VERSION"
@@ -30,6 +32,8 @@ on:
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
       - "scripts/check-doc-release-version.sh"
+      - "scripts/set-release-version.sh"
+      - "scripts/test-release-version.sh"
       - "scripts/check-shell.sh"
       - "scripts/quality-go.sh"
       - "RELEASE_VERSION"
@@ -53,14 +57,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Install validation tools
         run: sudo apt-get update && sudo apt-get install -y shellcheck ripgrep
@@ -83,14 +88,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Go tests
         working-directory: tools/lufy-cli-go
@@ -110,14 +116,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Build local wrapper binary
         working-directory: tools/lufy-cli-go

@@ -27,6 +27,8 @@ const (
 	OpenSpecCache       = ".lufy/cache/openspec"
 	LegacyOpenSpecCache = ".lufy-ai/openspec-cache"
 
+	SkillRegistry = ".lufy/skill-registry.json"
+
 	LufySDD       = ".lufy/workflows/sdd"
 	LegacyLufySDD = ".lufy/sdd"
 )

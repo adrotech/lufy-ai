@@ -11,6 +11,7 @@ import (
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -42,7 +43,7 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	if !doctor.OK {
 		t.Fatalf("doctor should be ok: %#v", doctor)
 	}
-	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
+	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "info", "memoria Obsidian no inicializada") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
 		t.Fatalf("doctor should report context recovery and memory lifecycle plugin: %#v", doctor.Checks)
 	}
 
@@ -62,6 +63,43 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	}
 	if !strings.Contains(doctorOut.String(), "Doctor OK") {
 		t.Fatalf("Doctor() output unexpected: %s", doctorOut.String())
+	}
+}
+
+func TestDoctorReportsStaleSkillRegistryWithoutMutatingIt(t *testing.T) {
+	target := t.TempDir()
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("install fixture: %v", err)
+	}
+	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
+	before, err := os.ReadFile(registryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	skillPath := filepath.Join(target, ".opencode", "skills", "doctor-stale", "SKILL.md")
+	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(skillPath, []byte("---\nname: doctor-stale\ndescription: stale fixture\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	report, err := NewService().BuildDoctor(Options{Target: target, Scope: assets.ScopeProject})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK || !hasDoctorCheck(report.Checks, "warn", "skill registry stale") {
+		t.Fatalf("doctor should warn without failing: %#v", report)
+	}
+	after, err := os.ReadFile(registryPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("doctor mutated stale skill registry")
+	}
+	status, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target})
+	if err != nil || status.Status != "stale" {
+		t.Fatalf("registry should remain stale: report=%#v err=%v", status, err)
 	}
 }
 

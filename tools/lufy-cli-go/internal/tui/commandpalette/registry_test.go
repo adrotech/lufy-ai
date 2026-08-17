@@ -47,9 +47,22 @@ func TestRegistryContainsSetupAndUpgrade(t *testing.T) {
 	for _, spec := range Registry() {
 		seen[spec.ID] = true
 	}
-	for _, id := range []string{"setup", "upgrade", "context-build", "memory-search", "pr-guard"} {
+	for _, id := range []string{"setup", "upgrade", "context-build", "memory-search", "skills-refresh", "skills-status", "pr-guard"} {
 		if !seen[id] {
 			t.Fatalf("registry missing %s", id)
+		}
+	}
+}
+
+func TestSkillsCommandsOnlyOfferWritableSkillAdapters(t *testing.T) {
+	for _, spec := range Registry() {
+		if spec.ID != "skills-refresh" && spec.ID != "skills-status" {
+			continue
+		}
+		for _, param := range spec.Params {
+			if param.Name == "tool" && !reflect.DeepEqual(param.Choices, []string{"opencode", "codex"}) {
+				t.Fatalf("%s tool choices = %v", spec.ID, param.Choices)
+			}
 		}
 	}
 }

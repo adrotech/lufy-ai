@@ -2,6 +2,7 @@ package assets
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -10,6 +11,26 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
+
+func TestSkillsEnsureHookToleratesMissingCLI(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("bash no disponible: %v", err)
+	}
+	target := t.TempDir()
+	configPath := filepath.Join(target, ".lufy", "config", "project.yaml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, []byte("tool: opencode\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(bash, filepath.Join(repoRoot(t), ".opencode", "hooks", "skills-ensure.sh"))
+	cmd.Env = []string{"PATH=" + filepath.Dir(bash), "LUFY_PROJECT_ROOT=" + target}
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("hook should be best-effort without lufy-ai: err=%v output=%s", err, output)
+	}
+}
 
 func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
 	source := minimalSource(t)
@@ -169,6 +190,7 @@ func TestEmbeddedCatalogMatchesRepositoryAssets(t *testing.T) {
 	}
 	rootAssets := comparableAssets(rootCatalog)
 	embeddedAssets := comparableAssets(embeddedCatalog)
+	rootAssets = withoutLocalOpenSpecOnlyAssets(rootAssets, embeddedAssets)
 	if !reflect.DeepEqual(rootAssets, embeddedAssets) {
 		t.Fatalf("root and embedded catalogs drifted\nroot=%#v\nembedded=%#v", rootAssets, embeddedAssets)
 	}
@@ -692,6 +714,26 @@ func comparableAssets(c Catalog) []comparableAsset {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].TargetRel < out[j].TargetRel })
 	return out
+}
+
+func withoutLocalOpenSpecOnlyAssets(rootAssets, embeddedAssets []comparableAsset) []comparableAsset {
+	embeddedTargets := map[string]bool{}
+	for _, asset := range embeddedAssets {
+		embeddedTargets[asset.TargetRel] = true
+	}
+	out := make([]comparableAsset, 0, len(rootAssets))
+	for _, asset := range rootAssets {
+		if !embeddedTargets[asset.TargetRel] && localOpenSpecOnlyAsset(asset.TargetRel) {
+			continue
+		}
+		out = append(out, asset)
+	}
+	return out
+}
+
+func localOpenSpecOnlyAsset(targetRel string) bool {
+	targetRel = filepath.ToSlash(targetRel)
+	return strings.HasPrefix(targetRel, "openspec/changes/") || strings.HasPrefix(targetRel, "openspec/specs/")
 }
 
 func expectedTool(targetRel string) domain.ToolID {

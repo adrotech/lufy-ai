@@ -45,7 +45,11 @@ case "$archive" in
   *) fail "artifact no soportado: $archive" ;;
 esac
 
-"$bin" version
+version_output="$("$bin" version)"
+printf '%s\n' "$version_output"
+if [ "${version_output%%$'\n'*}" != "lufy-ai $TAG" ]; then
+  fail "artifact publicado no reporta el tag esperado $TAG: $version_output"
+fi
 "$bin" install --target "$target" --dry-run --yes
 "$bin" install --target "$target" --yes
 "$bin" verify --target "$target"

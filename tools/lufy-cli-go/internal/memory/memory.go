@@ -62,6 +62,9 @@ type Report struct {
 type Status struct {
 	Configured       bool     `json:"configured"`
 	Initialized      bool     `json:"initialized"`
+	Availability     string   `json:"availability"`
+	Reason           string   `json:"reason,omitempty"`
+	Recovery         string   `json:"recovery,omitempty"`
 	SchemaVersion    int      `json:"schemaVersion"`
 	Notes            int      `json:"notes"`
 	Drafts           int      `json:"drafts"`
@@ -575,7 +578,7 @@ func memoryRoot(target string, cfg projectconfig.MemoryConfig) (string, error) {
 }
 
 func collectStatus(target, root string, cfg projectconfig.MemoryConfig, strict bool, checks *[]Check) Status {
-	status := Status{Configured: true, SchemaVersion: cfg.SchemaVersion}
+	status := Status{Configured: true, Availability: "ready", SchemaVersion: cfg.SchemaVersion}
 	if cfg.SchemaVersion != 1 {
 		*checks = append(*checks, Check{Level: "fail", Path: projectconfig.ProjectConfigPath, Message: "memory.schema_version debe ser 1"})
 	}
@@ -585,6 +588,9 @@ func collectStatus(target, root string, cfg projectconfig.MemoryConfig, strict b
 			level = "fail"
 		}
 		*checks = append(*checks, Check{Level: level, Path: cfg.Root, Message: "memoria no inicializada"})
+		status.Availability = "not_available"
+		status.Reason = "obsidian memory root is not initialized"
+		status.Recovery = "lufy-ai memory init --target <repo>"
 		return status
 	}
 	status.Initialized = true

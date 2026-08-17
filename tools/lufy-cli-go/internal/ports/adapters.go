@@ -30,6 +30,16 @@ type Target struct {
 
 type Env map[string]string
 
+type SkillRoot struct {
+	Path     string
+	Scope    string
+	Priority int
+}
+
+type SkillRootProvider interface {
+	SkillRoots(Target, Env) []SkillRoot
+}
+
 type HarnessModel struct {
 	Tool              domain.ToolID
 	MethodologyByTier domain.MethodologyByTier

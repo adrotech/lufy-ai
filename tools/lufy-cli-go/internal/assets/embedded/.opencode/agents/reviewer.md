@@ -92,7 +92,8 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 
 ## Obsidian Memory
 
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as a compact index: search with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian first as the project-memory provider: run/consume `lufy-ai memory status/search` or `lufy.mem-search` with short queries for prior decisions, architecture tradeoffs, recurring defects, review findings, delivery risks, or project-specific conventions related to the changed files or objective.
+- Do not substitute MCP/Engram as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized; record `memory_provider_used: external_fallback:<provider>` and `fallback_reason` when fallback is used.
 - When review establishes a reusable project rule, recurring defect pattern, or user correction to review criteria, persist it with `lufy-ai memory capture --type rule|lesson` and connect it to related active notes. Do not persist one-off stylistic comments.
 - If memory is unavailable, skip memory lookup and continue the review without penalty.
 - Return compact `memory_hints` (path or id, line when available, status, relevance), not full memory dumps.
@@ -100,8 +101,8 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 
 ## Context Graph
 
-- When `lufy-ai context` is available and permitted by the invocation, use it as an optional secondary index for impacted files, paths between symbols/docs and review desk-check ideas.
-- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, continue review with `context_graph_hints.status: not_available` or `stale`; do not penalize the change solely for absent graph data.
+- When `.lufy/config/project.yaml` declares `context_graph.enabled: true` and review needs broad discovery beyond changed/user-named files, require graph preflight first (`context status`, then targeted `context query` when ready). Direct diff files, config and exact handoff paths remain allowed.
+- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, continue review with `context_graph_hints.status: not_available` or `stale`, `fallback_reason` and recovery; do not penalize the change solely for absent graph data.
 - Return compact `context_graph_hints` when useful. Findings still require current diff/file/line, validation evidence, logs or explicit acceptance criteria; graph inference alone is not a finding.
 
 ## Workflow
@@ -160,6 +161,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Distinguish review findings from missing validation.
 - Include release-impact rationale for any L1 or L2 finding.
 - Return Result Contract envelope v1 for substantive review results, preserving carried-forward `workflow_decision` and reporting findings, residual risk, score breakdown, stack context and merge recommendation in `risks` and `evidence.static`.
+- Include or preserve diagnostics `memory_provider_used`, `context_graph_status`, `context_graph_queries`, `fallback_reason`, and `generic_discovery_before_graph`; missing diagnostics in T1/T2 readiness are at least `needs_revision`.
 
 ## Escalation
 

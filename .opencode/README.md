@@ -59,15 +59,16 @@ Hooks locales:
 - `hooks/format-dispatch.sh`: dispatcher silencioso para PostToolUse que lee `.lufy/config/project.yaml`, matchea extensiones y ejecuta el formatter/autofix configurado del stack cuando aplica.
 - `hooks/memory-orient.sh`: orientación best-effort de memoria al iniciar sesión; no bloquea si `lufy-ai` o `.lufy/config/project.yaml` no están disponibles.
 - `hooks/memory-validate.sh`: validación best-effort de `.lufy/memory` después de cambios de memoria; omite archivos fuera de memoria.
+- `hooks/skills-ensure.sh`: asegura best-effort `.lufy/skill-registry.json` al iniciar sesión; es silencioso si falta la CLI o el proyecto no está inicializado.
 
-Lifecycle automático de memoria/contexto:
+Lifecycle automático de skills/memoria/contexto:
 
 - OpenCode carga plugins locales desde `.opencode/plugins/` al inicio.
-- `plugins/lufy-memory-context.ts` ejecuta `memory-orient.sh` en `session.created` y `memory-validate.sh` cuando un evento `file.edited` toca `.lufy/memory/`.
+- `plugins/lufy-memory-context.ts` ejecuta `skills-ensure.sh` y `memory-orient.sh` en `session.created`, y `memory-validate.sh` cuando un evento `file.edited` toca `.lufy/memory/`.
 - `lufy-ai doctor` y `lufy-ai verify --deep` reportan si los scripts y el plugin están presentes; si faltan, muestran `lufy-ai sync --tool opencode --scope project` como recuperación.
 - Estos hooks son best-effort y no sustituyen evidencia primaria de archivos, diff, tests o comandos.
 
-Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
+Skill resolution es local-first: `.lufy/skill-registry.json` selecciona paths exactos a `SKILL.md` cuando está ready; `.opencode/skills` y `AGENTS.md` mantienen prioridad sobre fuentes externas. `install`, `setup`, `sync` y el inicio de sesión OpenCode ejecutan un ensure idempotente; si el índice falta o está stale, `lufy-ai skills ensure --target <repo>` lo regenera sin modificar skills. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 
 Subagent isolation: cada subagente recibe solo el `context_slice`, rutas y constraints necesarios para su rol. La revisión se dimensiona como `none`, `focused` o `full` según tier, superficie modificada y riesgo.
 

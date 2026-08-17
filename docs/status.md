@@ -10,6 +10,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Result Contract envelope v1 para handoffs, evidencia, riesgos y siguiente acción.
 - Review Workload Harness con `review_slices` para T1/T2 con varios riesgos.
 - Skill resolution local-first con AutoSkills solo como bootstrap opcional y autorizado.
+- Registry portable de skills en `.lufy/skill-registry.json`, con raíces declaradas por adapters OpenCode/Codex, precedencia project-over-global y paths exactos a los `SKILL.md` fuente.
 - Memoria Obsidian portable como fuente canónica cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`.
 - Paralelismo gobernado para `review_slices` independientes con plan de merge y validación agrupada.
 - Core neutral con separación inicial de tool adapters y methodology adapters.
@@ -38,6 +39,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `init` y `--rescan` para `.lufy/config/project.yaml` stack-aware.
 - `memory init/status/validate/search/capture/connect/index` para crear, diagnosticar, validar, buscar, persistir y relacionar memoria Obsidian en repos destino.
 - `context scan/build/status/query/path/explain/diff` para generar un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con cache derivado, health, reporte accionable y hints rankeados para reducir lecturas iniciales.
+- `skills ensure/refresh/status` para mantener y diagnosticar un índice no destructivo de skills sin reescribir fuentes user-owned; install/setup/sync hacen ensure best-effort y OpenCode lo repite en `session.created`.
 
 ### Assets instalables
 
@@ -64,9 +66,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 
 ## Pendiente o futuro
 
-- Promover `develop` a `main` y publicar la próxima release estable desde tag `v*`.
 - Plugin marketplace, Observatory y reporting avanzado para Codex.
-- Adapter escribible real para Claude Code.
 - Lufy SDD full como alternativa completa a OpenSpec.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
@@ -80,8 +80,9 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Límites actuales
 
 - Los adapters escribibles actuales son `opencode` y `codex`; `opencode` sigue siendo el default efectivo.
+- El skill registry es derivado y local: contiene paths exactos del entorno, se mantiene idempotentemente con `skills ensure` y no debe tratarse como reemplazo del `SKILL.md` original. Codex usa ensure en lifecycle/primer uso hasta que exista un contrato nativo de hook de inicio verificado.
 - Algunas sesiones Codex pueden exponer solo roles genéricos (`default`, `explorer`, `worker`); Lufy debe usar roles nativos cuando tool discovery los expone y degradar explícitamente a `emulated`/`inline` cuando no.
-- `claude-code` no debe documentarse como instalable real; sigue dry-run/preview.
+- `claude-code` no forma parte del backlog activo y no debe documentarse como instalable real; se conserva únicamente como dry-run/preview.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.
 - `AGENTS.md`, `opencode.json` y `.lufy/config/project.yaml` son user-owned o user-managed.
 - No existe suite Node/TS global en la raíz.

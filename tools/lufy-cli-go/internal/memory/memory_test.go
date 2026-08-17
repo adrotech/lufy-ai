@@ -127,6 +127,18 @@ Buscar con rg antes de duplicar notas.
 	}
 }
 
+func TestStatusConfiguredButUninitializedReportsRecovery(t *testing.T) {
+	target := t.TempDir()
+	writeFile(t, target, ".lufy/config/project.yaml", "memory:\n  provider: obsidian\n  root: .lufy/memory\n  schema_version: 1\n")
+	report, err := NewService().BuildStatus(Options{Target: target})
+	if err != nil {
+		t.Fatalf("BuildStatus() error = %v", err)
+	}
+	if report.Provider != "obsidian" || report.Status.Initialized || report.Status.Availability != "not_available" || report.Status.Recovery == "" {
+		t.Fatalf("expected configured-but-uninitialized diagnostics: %+v", report)
+	}
+}
+
 func TestCaptureConnectAndIndexMemoryNotes(t *testing.T) {
 	target := initializedTarget(t)
 	var out bytes.Buffer

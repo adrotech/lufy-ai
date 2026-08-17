@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -52,7 +53,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(drift) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: drift en lufy-ia.harness.md") {
+	if !strings.Contains(out.String(), "fail: guardrail drift en lufy-ia.harness.md") {
 		t.Fatalf("drift output unexpected: %s", out.String())
 	}
 
@@ -120,6 +121,64 @@ func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("missing no-replace lufy-new check: %#v", report.Checks)
+	}
+}
+
+func TestVerifyReportsGuardrailDriftRecoveryAndDoesNotMutateUserOwnedState(t *testing.T) {
+	target := validVerifyTarget(t)
+	agentRel := filepath.Join(".opencode", "agents", "orchestrator.md")
+	writeVerifyFile(t, filepath.Join(target, agentRel), "managed orchestrator\n")
+	addVerifyManagedAsset(t, target, agentRel, "managed")
+	agentsBefore := readVerifyFile(t, filepath.Join(target, "AGENTS.md"))
+	memoryPath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
+	contextPath := filepath.Join(target, ".lufy", "context", "graph.json")
+	writeVerifyFile(t, memoryPath, "private memory\n")
+	writeVerifyFile(t, contextPath, "{\"graph\":true}\n")
+	memoryBefore := readVerifyFile(t, memoryPath)
+	contextBefore := readVerifyFile(t, contextPath)
+
+	writeVerifyFile(t, filepath.Join(target, agentRel), "local guardrail drift\n")
+	var out bytes.Buffer
+	err := NewService().Run(Options{Target: target, JSON: true}, &out)
+	if err == nil {
+		t.Fatalf("Run(JSON guardrail drift) expected error, output=%s", out.String())
+	}
+	var report Report
+	if json.Unmarshal(out.Bytes(), &report) != nil {
+		t.Fatalf("invalid JSON report: %s", out.String())
+	}
+	found := false
+	for _, check := range report.Checks {
+		if check.Path == filepath.ToSlash(agentRel) && check.RecommendedAction == "lufy-ai sync --target <dir>" && strings.Contains(check.Message, "guardrail drift") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing guardrail drift recovery in report: %#v", report.Checks)
+	}
+	if got := readVerifyFile(t, filepath.Join(target, "AGENTS.md")); string(got) != string(agentsBefore) {
+		t.Fatalf("verify mutated AGENTS.md: before=%q after=%q", agentsBefore, got)
+	}
+	if got := readVerifyFile(t, memoryPath); string(got) != string(memoryBefore) {
+		t.Fatalf("verify mutated memory: before=%q after=%q", memoryBefore, got)
+	}
+	if got := readVerifyFile(t, contextPath); string(got) != string(contextBefore) {
+		t.Fatalf("verify mutated context graph: before=%q after=%q", contextBefore, got)
+	}
+}
+
+func TestReportRecorderUsesStableSlashPaths(t *testing.T) {
+	report := Report{}
+	recorder := reportRecorder{report: &report}
+
+	recorder.emit("ok", `.opencode\agents\orchestrator.md`, "path estable")
+	recorder.emitAsset("fail", `.opencode\skills\sdd-workflow\SKILL.md`, "managed", "lufy-ai sync --target <dir>", "asset con drift")
+
+	if report.Checks[0].Path != ".opencode/agents/orchestrator.md" {
+		t.Fatalf("emit path not normalized: %#v", report.Checks[0])
+	}
+	if report.Checks[1].Path != ".opencode/skills/sdd-workflow/SKILL.md" || report.Checks[1].RecommendedAction == "" {
+		t.Fatalf("emitAsset path/policy fields unexpected: %#v", report.Checks[1])
 	}
 }
 
@@ -203,7 +262,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid structure) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "skills")) {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/skills") {
 		t.Fatalf("missing directory output unexpected: %s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: asset clave no está en manifest: tui.json") {
@@ -236,7 +295,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(missing templates) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "templates")) {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/templates") {
 		t.Fatalf("missing templates output unexpected: %s", out.String())
 	}
 }
@@ -388,7 +447,7 @@ func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err != nil {
 		t.Fatalf("Run() error = %v, output=%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: "+filepath.Join(".opencode", "agents", "local-agent.md")) {
+	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: .opencode/agents/local-agent.md") {
 		t.Fatalf("extra managed dir file not reported: %s", out.String())
 	}
 }
@@ -515,8 +574,24 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	}
 }
 
+func TestVerifyDeepReportsMissingRegistryWithoutRepairingIt(t *testing.T) {
+	target := validVerifyTarget(t)
+	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
+	if err := os.Remove(registryPath); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
+		t.Fatalf("deep verify should fail for missing registry: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "skill registry not_available") || !os.IsNotExist(statError(registryPath)) {
+		t.Fatalf("deep verify should report without repairing registry: %s", out.String())
+	}
+}
+
 func TestVerifyDeepValidatesInitializedMemory(t *testing.T) {
 	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/skills-ensure.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-orient.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-validate.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/plugins/lufy-memory-context.ts"), "export const LufyMemoryContextPlugin = async () => ({})\n")
@@ -582,7 +657,15 @@ func validVerifyTarget(t *testing.T) string {
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
+	if err := skillregistry.NewService().Ensure(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
 	return target
+}
+
+func statError(path string) error {
+	_, err := os.Stat(path)
+	return err
 }
 
 func containsString(values []string, want string) bool {
@@ -613,6 +696,31 @@ func refreshVerifyAssetHash(t *testing.T, target, rel string) {
 	if err := state.WriteAtomic(target, *st); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func addVerifyManagedAsset(t *testing.T, target, rel, policy string) {
+	t.Helper()
+	st, err := state.Load(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash, err := assets.FileSHA256(filepath.Join(target, rel))
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Assets = append(st.Assets, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
+	if err := state.WriteAtomic(target, *st); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func readVerifyFile(t *testing.T, path string) []byte {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
 }
 
 func writeVerifyDirs(t *testing.T, target string) {

@@ -48,15 +48,16 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/config/project.yaml` for
 
 ## Obsidian Memory
 
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the first memory index before broad exploration when historical context is likely: short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian`, use Obsidian as the project-memory gate before broad exploration when historical context is likely: run/consume `lufy-ai memory status/search` or `lufy.mem-search` with short searches by objective, issue/spec/change ID, likely files, prior decisions, recurring bugs, or validation blockers.
+- Do not use MCP/Engram as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized; if fallback is used, record `memory_provider_used: external_fallback:<provider>` and `fallback_reason` with evidence and lower confidence. MCP/Engram can be labeled as non-project session memory only.
 - If exploration uncovers a durable architecture fact, recurring gotcha, or user-corrected assumption that should guide future work, recommend or perform `lufy-ai memory capture` through the appropriate role; use `memory connect` for related existing notes.
 - If memory is unavailable, report it only when relevant as `not_available`; do not block exploration.
 - Return compact `memory_hints` (path or id, line when available, status, relevance). Treat memory as a hint for targeted reads and risk discovery, not as authoritative evidence over current repository files.
 
 ## Context Graph
 
-- When `lufy-ai context` is available and graph context is relevant, use it only as a secondary index after or alongside targeted repository discovery: `context status`, then `context query`, `context diff --base <ref>` or `context explain` when permitted.
-- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, report `context_graph_hints.status: not_available` (or `stale`) with recovery `lufy-ai context build`; do not block exploration.
+- When `.lufy/config/project.yaml` declares `context_graph.enabled: true`, run/consume graph preflight before broad generic discovery: `lufy-ai context status --target <repo> --json` and, when ready, `lufy-ai context query --target <repo> --json <term>` before broad `glob`/`grep`/exploratory reads. Direct reads of config, user-named artifacts and exact handoff paths are allowed.
+- If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, report `context_graph_hints.status: not_available` (or `stale`) with recovery `lufy-ai context build` and set `fallback_reason`; do not block exploration.
 - Return compact `context_graph_hints` (node/path/kind/reason/relevance). Treat graph output as hints for where to read next, never as evidence stronger than current files, diffs, validation commands, logs or explicit user instructions.
 
 ## Workflow
@@ -99,3 +100,4 @@ Use `AGENTS.md` for project-wide conventions and `.lufy/config/project.yaml` for
 ## Required Output
 
 Return Result Contract envelope v1. Include relevant files, patterns, interconnections, structure/behavior risks and implementer handoff in `evidence.static`, `risks` and `next_recommended`.
+Include `diagnostics.memory_provider_used`, `diagnostics.context_graph_status`, `diagnostics.context_graph_queries`, `diagnostics.fallback_reason` and `diagnostics.generic_discovery_before_graph` for T1/T2 or configured memory/graph projects.

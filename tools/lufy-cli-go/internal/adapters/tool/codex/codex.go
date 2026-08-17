@@ -2,6 +2,8 @@ package codex
 
 import (
 	"context"
+	"path/filepath"
+	"runtime"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
@@ -34,6 +36,17 @@ func (Adapter) Capabilities() domain.ToolCapabilities {
 
 func (Adapter) Detect(context.Context, ports.Env) ports.DetectionResult {
 	return ports.DetectionResult{Detected: true, Reason: "codex project adapter"}
+}
+
+func (Adapter) SkillRoots(target ports.Target, env ports.Env) []ports.SkillRoot {
+	roots := []ports.SkillRoot{{Path: filepath.Join(target.Root, ".agents", "skills"), Scope: "project", Priority: 0}}
+	if env["HOME"] != "" {
+		roots = append(roots, ports.SkillRoot{Path: filepath.Join(env["HOME"], ".agents", "skills"), Scope: "global", Priority: 10})
+	}
+	if runtime.GOOS != "windows" {
+		roots = append(roots, ports.SkillRoot{Path: filepath.Join(string(filepath.Separator), "etc", "codex", "skills"), Scope: "global", Priority: 20})
+	}
+	return roots
 }
 
 func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {

@@ -49,14 +49,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión estable actual: `v0.6.11`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión de release preparada en el source tree: `v0.6.22`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.22/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.22 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan end-to-end sobre tu repo
@@ -222,6 +222,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai context` | Genera y consulta un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con reporte derivado y hints rankeados para ahorrar exploración inicial. |
+| `lufy-ai skills` | Asegura, refresca y diagnostica `.lufy/skill-registry.json` con precedencia project-over-global y paths exactos a los skills de OpenCode/Codex. |
 | `lufy-ai memory` | Inicializa, valida, busca, captura, conecta e indexa memoria Obsidian portable bajo `.lufy/memory`. |
 | `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en `git diff <base>...HEAD` antes de push/PR; también aparece en la command palette. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |

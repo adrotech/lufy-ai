@@ -24,16 +24,16 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - name: Setup Go from go.mod
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
-          cache-dependency-path: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Resolve release metadata
         id: meta
@@ -83,6 +83,11 @@ jobs:
             exit 2
           fi
 
+      - name: Guard release version consistency
+        env:
+          RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+        run: scripts/check-doc-release-version.sh --expected "$RELEASE_VERSION" --require-changelog
+
       - name: Go tests
         working-directory: tools/lufy-cli-go
         run: go test ./...
@@ -99,6 +104,10 @@ jobs:
           LUFY_AI_BUILD_DATE: ${{ steps.meta.outputs.build_date }}
           LUFY_AI_DIST_DIR: dist
         run: scripts/build-release-artifacts.sh "${{ steps.meta.outputs.version }}"
+
+      - name: Verify release artifact version
+        working-directory: tools/lufy-cli-go
+        run: scripts/verify-release-artifact-version.sh "${{ steps.meta.outputs.version }}" dist
 
       - name: Generate release SBOM and provenance
         working-directory: tools/lufy-cli-go
@@ -167,7 +176,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release assets
-        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ steps.meta.outputs.version }}
           generate_release_notes: true

@@ -18,6 +18,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 )
@@ -210,9 +211,12 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	}
 	if opts.Deep {
 		runDeepVerify(st.Tool, target, recorder.emit)
+		runDeepSkillRegistryVerify(st.Tool, target, recorder.emit)
 		runDeepMemoryVerify(target, recorder.emit)
 		runDeepContextVerify(target, recorder.emit)
 		runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
+	} else {
+		runMemoryContextDiagnostics(target, recorder.emit)
 	}
 	projectConfigFile, err := toolruntime.ProjectConfigFile(st.Tool)
 	if err != nil {
@@ -298,6 +302,10 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 				recorder.emitAsset("warn", clean, asset.Policy, "review-lufy-new", "drift no-replace con nueva versión en %s", clean+".lufy-new")
 				continue
 			}
+			if isGuardrailAsset(clean) {
+				recorder.emitAsset("fail", clean, asset.Policy, "lufy-ai sync --target <dir>", "guardrail drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
+				continue
+			}
 			recorder.emit("fail", "", "drift en %s expected=%s actual=%s", clean, shortHash(asset.TargetSHA256), shortHash(actual))
 			continue
 		}
@@ -306,6 +314,22 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	reportExtraManagedDirFiles(target, requiredDirs, assetMap, recorder.emit)
 
 	return nil
+}
+
+func runDeepSkillRegistryVerify(tool domain.ToolID, target string, emit func(level, path, format string, args ...any)) {
+	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: tool})
+	if err != nil {
+		emit("fail", ".lufy/skill-registry.json", "skill registry no evaluable: %s; recovery: lufy-ai skills ensure --target <repo> --tool %s", err.Error(), tool)
+		return
+	}
+	if report.Status == "ready" {
+		emit("ok", ".lufy/skill-registry.json", "skill registry ready skills=%d roots=%d warnings=%d", report.SkillCount, report.RootCount, len(report.Warnings))
+	} else {
+		emit("fail", ".lufy/skill-registry.json", "skill registry %s; recovery: %s", report.Status, report.Recovery)
+	}
+	for _, warning := range report.Warnings {
+		emit("warn", warning.Path, "skill registry: %s", warning.Message)
+	}
 }
 
 func verifyCodexPRReviewerSkillContract(target string, emit func(string, string, string, ...any)) {
@@ -347,14 +371,21 @@ func verifyCodexPRReviewerSkillContract(target string, emit func(string, string,
 
 func (e reportRecorder) emit(level, path, format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Message: message})
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: stableReportPath(path), Message: message})
 	e.count(level)
 }
 
 func (e reportRecorder) emitAsset(level, path, policy, recommendedAction, format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
-	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: path, Policy: policy, RecommendedAction: recommendedAction, Message: message})
+	e.report.Checks = append(e.report.Checks, Check{Level: level, Path: stableReportPath(path), Policy: policy, RecommendedAction: recommendedAction, Message: message})
 	e.count(level)
+}
+
+func stableReportPath(path string) string {
+	if path == "" {
+		return ""
+	}
+	return strings.ReplaceAll(filepath.ToSlash(path), "\\", "/")
 }
 
 func (e reportRecorder) count(level string) {
@@ -538,6 +569,22 @@ func runDeepMemoryVerify(target string, emit func(level, path, format string, ar
 	}
 }
 
+func runMemoryContextDiagnostics(target string, emit func(level, path, format string, args ...any)) {
+	report, err := memory.NewService().BuildStatus(memory.Options{Target: target})
+	if err != nil {
+		emit("warn", projectconfig.ProjectConfigPath, "memoria no evaluable: %s", err.Error())
+	} else if !report.Status.Initialized {
+		recovery := report.Status.Recovery
+		if recovery == "" {
+			recovery = "lufy-ai memory init --target <repo>"
+		}
+		emit("warn", report.Root, "memory provider=%s initialized=false availability=%s; recovery: %s", report.Provider, report.Status.Availability, recovery)
+	} else {
+		emit("ok", report.Root, "memory provider=%s initialized=true schema=%d notes=%d", report.Provider, report.Status.SchemaVersion, report.Status.Notes)
+	}
+	runDeepContextVerify(target, emit)
+}
+
 func runDeepContextVerify(target string, emit func(level, path, format string, args ...any)) {
 	status := contextapp.NewService().Status(target)
 	path := status.GraphPath
@@ -556,25 +603,37 @@ func runDeepContextVerify(target string, emit func(level, path, format string, a
 	}
 }
 
+func isGuardrailAsset(rel string) bool {
+	rel = filepath.ToSlash(rel)
+	guardrailPrefixes := []string{".opencode/agents/", ".opencode/skills/", ".opencode/templates/", ".opencode/plugins/", ".opencode/policies/", ".agents/skills/"}
+	for _, prefix := range guardrailPrefixes {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return rel == "lufy-ia.harness.md"
+}
+
 func runDeepOpenCodeMemoryHookVerify(target string, emit func(level, path, format string, args ...any)) {
 	hooks := []string{
+		filepath.Join(".opencode", "hooks", "skills-ensure.sh"),
 		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
 		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
 	}
 	for _, rel := range hooks {
 		path, err := platform.SafeJoin(target, rel)
 		if err != nil || !regularFile(path) {
-			emit("warn", filepath.ToSlash(rel), "hook de memoria no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+			emit("warn", filepath.ToSlash(rel), "hook lifecycle OpenCode no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
 			return
 		}
 	}
 	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
 	path, err := platform.SafeJoin(target, plugin)
 	if err != nil || !regularFile(path) {
-		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de skills/memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
 		return
 	}
-	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para orientación y validación best-effort de memoria")
+	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
 }
 
 func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {

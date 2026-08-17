@@ -16,6 +16,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -92,7 +93,9 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	chdirForTest(t, source)
 	target := installedTarget(t)
 	notePath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
+	contextPath := filepath.Join(target, ".lufy", "context", "graph.json")
 	writeFile(t, notePath, "private memory\n")
+	writeFile(t, contextPath, "{\"graph\":true}\n")
 
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
@@ -100,9 +103,32 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	if got := string(readFile(t, notePath)); got != "private memory\n" {
 		t.Fatalf("sync rewrote user-owned memory note: %q", got)
 	}
+	if got := string(readFile(t, contextPath)); got != "{\"graph\":true}\n" {
+		t.Fatalf("sync rewrote user-owned context graph: %q", got)
+	}
 	st := stateMustLoadForSyncTest(t, target)
 	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "memory")) {
 		t.Fatalf("sync manifest should not register memory notes: %#v", st.Assets)
+	}
+	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "context")) {
+		t.Fatalf("sync manifest should not register context graph: %#v", st.Assets)
+	}
+}
+
+func TestRunEnsuresMissingSkillRegistryEvenWithoutManagedChanges(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
+	if err := os.Remove(registryPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault})
+	if err != nil || report.Status != "ready" {
+		t.Fatalf("sync should ensure skill registry: report=%#v err=%v", report, err)
 	}
 }
 
