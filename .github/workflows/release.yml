@@ -33,7 +33,7 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
-          cache-dependency-path: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Resolve release metadata
         id: meta
@@ -83,6 +83,11 @@ jobs:
             exit 2
           fi
 
+      - name: Guard release version consistency
+        env:
+          RELEASE_VERSION: ${{ steps.meta.outputs.version }}
+        run: scripts/check-doc-release-version.sh --expected "$RELEASE_VERSION" --require-changelog
+
       - name: Go tests
         working-directory: tools/lufy-cli-go
         run: go test ./...
@@ -99,6 +104,10 @@ jobs:
           LUFY_AI_BUILD_DATE: ${{ steps.meta.outputs.build_date }}
           LUFY_AI_DIST_DIR: dist
         run: scripts/build-release-artifacts.sh "${{ steps.meta.outputs.version }}"
+
+      - name: Verify release artifact version
+        working-directory: tools/lufy-cli-go
+        run: scripts/verify-release-artifact-version.sh "${{ steps.meta.outputs.version }}" dist
 
       - name: Generate release SBOM and provenance
         working-directory: tools/lufy-cli-go

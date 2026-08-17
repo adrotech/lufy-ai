@@ -11,6 +11,8 @@ on:
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
       - "scripts/check-doc-release-version.sh"
+      - "scripts/set-release-version.sh"
+      - "scripts/test-release-version.sh"
       - "scripts/check-shell.sh"
       - "scripts/quality-go.sh"
       - "RELEASE_VERSION"
@@ -30,6 +32,8 @@ on:
       - "scripts/validate.sh"
       - "scripts/check-actions-pinned.sh"
       - "scripts/check-doc-release-version.sh"
+      - "scripts/set-release-version.sh"
+      - "scripts/test-release-version.sh"
       - "scripts/check-shell.sh"
       - "scripts/quality-go.sh"
       - "RELEASE_VERSION"
@@ -61,6 +65,7 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Install validation tools
         run: sudo apt-get update && sudo apt-get install -y shellcheck ripgrep
@@ -91,6 +96,7 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Go tests
         working-directory: tools/lufy-cli-go
@@ -118,6 +124,7 @@ jobs:
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: tools/lufy-cli-go/go.mod
+          cache-dependency-path: tools/lufy-cli-go/go.sum
 
       - name: Build local wrapper binary
         working-directory: tools/lufy-cli-go

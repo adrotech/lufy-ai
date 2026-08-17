@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión estable objetivo: `v0.6.11`.
+Versión de release preparada en el source tree: `v0.6.22`.
 
 ## Requisitos
 
@@ -24,9 +24,9 @@ El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario 
 Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.22/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.11 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.22 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap:
@@ -40,8 +40,8 @@ El bootstrap:
 Atajo directo, solo si ya revisaste el script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.11/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.11 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.22/scripts/bootstrap.sh \
+  | bash -s -- --version v0.6.22 --install-dir "$HOME/.local/bin"
 ```
 
 ## PATH por shell
@@ -68,12 +68,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo
 
-1. Descarga `lufy-ai_v0.6.11_windows_amd64.zip` o `lufy-ai_v0.6.11_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.11_checksums.txt`.
+1. Descarga `lufy-ai_v0.6.22_windows_amd64.zip` o `lufy-ai_v0.6.22_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.6.22_checksums.txt`.
 3. Verifica el hash:
 
    ```powershell
-   Get-FileHash .\lufy-ai_v0.6.11_windows_amd64.zip -Algorithm SHA256
+   Get-FileHash .\lufy-ai_v0.6.22_windows_amd64.zip -Algorithm SHA256
    ```
 
 4. Extrae `lufy-ai.exe` en un directorio de usuario.
@@ -327,8 +327,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 `upgrade` requiere versión fija.
 
 ```bash
-lufy-ai upgrade --to v0.6.11 --dry-run
-lufy-ai upgrade --to v0.6.11
+lufy-ai upgrade --to v0.6.22 --dry-run
+lufy-ai upgrade --to v0.6.22
 ```
 
 Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.

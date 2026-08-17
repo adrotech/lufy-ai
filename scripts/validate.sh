@@ -68,6 +68,9 @@ main() {
   log "Doc release version"
   "$REPO_ROOT/scripts/check-doc-release-version.sh"
 
+  log "Release version tests"
+  "$REPO_ROOT/scripts/test-release-version.sh"
+
   log "Workflow YAML"
   (cd "$CLI_ROOT" && go run ./cmd/check-workflows-yaml --root "$REPO_ROOT")
 

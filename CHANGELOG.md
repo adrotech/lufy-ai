@@ -21,6 +21,22 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 - Agentes y skills de memoria ahora tratan correcciones explícitas del usuario como memoria durable (`rule`/`lesson`) y usan el CLI para capturar/conectar notas.
 
+## [v0.6.22] - 2026-08-17
+
+### Added
+
+- Setter y pruebas aisladas para mantener alineadas la versión canónica y las referencias copiables.
+- Verificación de la versión embebida en artifacts construidos y publicados.
+
+### Changed
+
+- Los workflows de tag y release ahora exigen consistencia entre `RELEASE_VERSION`, tag calculado y changelog.
+- `actions/setup-go` usa el `go.sum` del módulo anidado para resolver el cache sin warnings.
+
+### Fixed
+
+- El gate documental ya no queda verde cuando falta la versión canónica o el source tree está atrasado respecto del release planificado.
+
 ## [v0.6.11] - 2026-06-09
 
 ### Added
