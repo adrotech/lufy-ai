@@ -2,6 +2,7 @@ package opencode
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
@@ -33,6 +34,24 @@ func (Adapter) Capabilities() domain.ToolCapabilities {
 
 func (Adapter) Detect(context.Context, ports.Env) ports.DetectionResult {
 	return ports.DetectionResult{Detected: true, Reason: "default adapter"}
+}
+
+func (Adapter) SkillRoots(target ports.Target, env ports.Env) []ports.SkillRoot {
+	roots := []ports.SkillRoot{
+		{Path: filepath.Join(target.Root, ".opencode", "skills"), Scope: "project", Priority: 0},
+		{Path: filepath.Join(target.Root, ".agents", "skills"), Scope: "project", Priority: 10},
+	}
+	configHome := env["XDG_CONFIG_HOME"]
+	if configHome == "" && env["HOME"] != "" {
+		configHome = filepath.Join(env["HOME"], ".config")
+	}
+	if configHome != "" {
+		roots = append(roots, ports.SkillRoot{Path: filepath.Join(configHome, "opencode", "skills"), Scope: "global", Priority: 20})
+	}
+	if env["HOME"] != "" {
+		roots = append(roots, ports.SkillRoot{Path: filepath.Join(env["HOME"], ".agents", "skills"), Scope: "global", Priority: 30})
+	}
+	return roots
 }
 
 func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {

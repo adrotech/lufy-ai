@@ -10,6 +10,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Result Contract envelope v1 para handoffs, evidencia, riesgos y siguiente acción.
 - Review Workload Harness con `review_slices` para T1/T2 con varios riesgos.
 - Skill resolution local-first con AutoSkills solo como bootstrap opcional y autorizado.
+- Registry portable de skills en `.lufy/skill-registry.json`, con raíces declaradas por adapters OpenCode/Codex, precedencia project-over-global y paths exactos a los `SKILL.md` fuente.
 - Memoria Obsidian portable como fuente canónica cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`.
 - Paralelismo gobernado para `review_slices` independientes con plan de merge y validación agrupada.
 - Core neutral con separación inicial de tool adapters y methodology adapters.
@@ -38,6 +39,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - `init` y `--rescan` para `.lufy/config/project.yaml` stack-aware.
 - `memory init/status/validate/search/capture/connect/index` para crear, diagnosticar, validar, buscar, persistir y relacionar memoria Obsidian en repos destino.
 - `context scan/build/status/query/path/explain/diff` para generar un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con cache derivado, health, reporte accionable y hints rankeados para reducir lecturas iniciales.
+- `skills refresh/status` para materializar y diagnosticar un índice no destructivo de skills sin reescribir fuentes user-owned.
 
 ### Assets instalables
 
@@ -80,6 +82,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Límites actuales
 
 - Los adapters escribibles actuales son `opencode` y `codex`; `opencode` sigue siendo el default efectivo.
+- El skill registry es derivado y local: contiene paths exactos del entorno, se regenera con `skills refresh` y no debe tratarse como reemplazo del `SKILL.md` original.
 - Algunas sesiones Codex pueden exponer solo roles genéricos (`default`, `explorer`, `worker`); Lufy debe usar roles nativos cuando tool discovery los expone y degradar explícitamente a `emulated`/`inline` cuando no.
 - `claude-code` no debe documentarse como instalable real; sigue dry-run/preview.
 - `none` no es metodología universal: T1/T2 siguen protegidos por policy.

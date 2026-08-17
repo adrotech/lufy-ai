@@ -16,6 +16,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextstore "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
@@ -26,6 +27,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/prguard"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/setup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/tui/commandpalette"
@@ -74,6 +76,8 @@ func Run(args []string, deps Dependencies) int {
 		return runMigrateLayout(args[1:], deps)
 	case "memory":
 		return runMemory(args[1:], deps)
+	case "skills":
+		return runSkills(args[1:], deps)
 	case "sync":
 		return runSync(args[1:], deps)
 	case "status":
@@ -110,6 +114,67 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runSkills(args []string, deps Dependencies) int {
+	if len(args) == 0 {
+		printSkillsHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+	switch args[0] {
+	case "refresh":
+		return runSkillsCommand("refresh", args[1:], deps)
+	case "status":
+		return runSkillsCommand("status", args[1:], deps)
+	case "-h", "--help", "help":
+		printSkillsHelp(deps.Stdout)
+		return ExitOK
+	default:
+		fmt.Fprintf(deps.Stderr, "Subcomando skills desconocido: %s\n\n", args[0])
+		printSkillsHelp(deps.Stderr)
+		return ExitUsageErr
+	}
+}
+
+func runSkillsCommand(command string, args []string, deps Dependencies) int {
+	fs := flag.NewFlagSet("skills "+command, flag.ContinueOnError)
+	fs.SetOutput(deps.Stderr)
+	target := fs.String("target", ".", "Repositorio target")
+	toolValue := fs.String("tool", "", "Tool adapter efectivo; por default usa project.yaml u opencode")
+	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
+	fs.Usage = func() {
+		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai skills %s [--target <dir>] [--tool %s] [--json]\n", command, writableToolUsage())
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		fs.Usage()
+		return ExitUsageErr
+	}
+	if len(fs.Args()) > 0 {
+		fmt.Fprintf(deps.Stderr, "skills %s no acepta argumentos posicionales\n", command)
+		fs.Usage()
+		return ExitUsageErr
+	}
+	tool := domain.ToolID(strings.TrimSpace(*toolValue))
+	if tool != "" && !writableToolSupported(tool) {
+		fmt.Fprintf(deps.Stderr, "tool adapter no soportado para skills registry: %s; disponibles: %s\n", tool, writableToolList())
+		return ExitUsageErr
+	}
+	opts := skillregistry.Options{Target: *target, Tool: tool, JSON: *jsonOutput}
+	service := skillregistry.NewService()
+	var err error
+	if command == "refresh" {
+		err = service.Refresh(opts, deps.Stdout)
+	} else {
+		err = service.Status(opts, deps.Stdout)
+	}
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runPR(args []string, deps Dependencies) int {
@@ -1522,6 +1587,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
 	fmt.Fprintln(out, "  migrate-layout Migra rutas legacy al layout unificado .lufy/")
 	fmt.Fprintln(out, "  memory    Inicializa, valida, busca, captura y conecta memoria Obsidian portable")
+	fmt.Fprintln(out, "  skills    Refresca y diagnostica el registry portable de skills")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
 	fmt.Fprintln(out, "  setup     Verifica version y configura LUFY end-to-end")
 	fmt.Fprintln(out, "  menu      Abre el command palette interactivo en TTY")
@@ -1536,6 +1602,13 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  conflicts Planifica conflictos de install sin mutar")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
+}
+
+func printSkillsHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai skills <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  refresh   Escanea raíces del adapter y actualiza .lufy/skill-registry.json")
+	fmt.Fprintln(out, "  status    Reporta ready, stale o not_available sin modificar archivos")
 }
 
 func printConflictsHelp(out io.Writer) {

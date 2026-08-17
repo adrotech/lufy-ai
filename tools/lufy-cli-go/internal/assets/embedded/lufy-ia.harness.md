@@ -89,7 +89,7 @@ Methodology is tier-aware:
 
 ## Skill Resolution
 
-- Prefer local `.opencode/skills` and this `AGENTS.md` over external skills.
+- Prefer exact `SKILL.md` paths from `.lufy/skill-registry.json` when ready, then the active adapter's project-local skills and this `AGENTS.md`, over external skills. If the registry is missing or stale, report `lufy-ai skills refresh --target <repo>` as recovery.
 - AutoSkills may be used only as optional bootstrap/fallback discovery, starting with `npx autoskills --dry-run`.
 - Do not run mutating external skill installation commands without explicit user authorization.
 

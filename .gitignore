@@ -3,3 +3,4 @@
 # Artefactos regenerables del grafo de contexto nativo.
 # No ignorar .lufy/config ni managed-state: solo el output cacheable.
 .lufy/context/
+.lufy/skill-registry.json
