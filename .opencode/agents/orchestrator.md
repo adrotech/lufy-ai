@@ -53,7 +53,10 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Memory Gate
 
-- Treat Obsidian as the canonical portable memory when `.lufy/config/project.yaml` has `memory.provider: obsidian`; use `lufy-ai memory status`, `lufy-ai memory search`, and the `lufy.mem-*` skills before relying on any optional MCP memory.
+- Treat Obsidian as the project-memory provider when `.lufy/config/project.yaml` has `memory.provider: obsidian`; use `lufy-ai memory status`, `lufy-ai memory search`, and the `lufy.mem-*` skills before relying on any optional MCP/Engram memory.
+- Do not pass MCP/Engram observations as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized and the handoff records `memory_provider_used: external_fallback:<provider>` plus an explicit `fallback_reason` and lower confidence. MCP/Engram may still be non-project session memory when labeled as such.
+- When `.lufy/config/project.yaml` has `context_graph.enabled: true`, require graph preflight before broad generic discovery: direct reads of config, user-named artifacts or exact handoff paths are allowed; otherwise route/ask for `lufy-ai context status --target <repo> --json` and, when ready, at least one `lufy-ai context query --target <repo> --json <term>` before `glob`/`grep`/broad reads. If status is `not_available`/`stale`, carry recovery and `fallback_reason`.
+- Carry top-level `diagnostics` in routed Result Contracts: `memory_provider_used`, `context_graph_status`, `context_graph_queries`, `fallback_reason`, and `generic_discovery_before_graph`. Downstream roles update only diagnostics they actually verified or changed.
 - Before routing non-trivial T1/T2 work, or T3 work with likely historical context, ask the next capable role to search Obsidian with short queries by issue/spec/path/concept and pass compact `memory_hints` (path, line, status, relevance).
 - For trivial T3 work with no historical dependency, do not force memory lookup.
 - At closure or major handoff, capture only durable decisions, rules, flows, lessons, or significant outcomes in Obsidian via `lufy.mem-capture`/`lufy.mem-document`; do not save routine routing noise or duplicate notes.

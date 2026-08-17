@@ -92,7 +92,9 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	chdirForTest(t, source)
 	target := installedTarget(t)
 	notePath := filepath.Join(target, ".lufy", "memory", "knowledge", "private.md")
+	contextPath := filepath.Join(target, ".lufy", "context", "graph.json")
 	writeFile(t, notePath, "private memory\n")
+	writeFile(t, contextPath, "{\"graph\":true}\n")
 
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("Run(sync) error = %v", err)
@@ -100,9 +102,15 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	if got := string(readFile(t, notePath)); got != "private memory\n" {
 		t.Fatalf("sync rewrote user-owned memory note: %q", got)
 	}
+	if got := string(readFile(t, contextPath)); got != "{\"graph\":true}\n" {
+		t.Fatalf("sync rewrote user-owned context graph: %q", got)
+	}
 	st := stateMustLoadForSyncTest(t, target)
 	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "memory")) {
 		t.Fatalf("sync manifest should not register memory notes: %#v", st.Assets)
+	}
+	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "context")) {
+		t.Fatalf("sync manifest should not register context graph: %#v", st.Assets)
 	}
 }
 

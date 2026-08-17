@@ -61,7 +61,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 ## Obsidian Memory
 
-- If `.lufy/config/project.yaml` declares `memory.provider: obsidian` and no memory context was carried forward for non-trivial T1/T2 work, use Obsidian first as a compact index before editing: short searches for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns.
+- If `.lufy/config/project.yaml` declares `memory.provider: obsidian` and no memory context was carried forward for non-trivial T1/T2 work, use Obsidian first as the project-memory provider before editing: `lufy-ai memory status/search` or `lufy.mem-search` with short searches for relevant prior decisions, bug fixes, specs, files, validation blockers, or implementation patterns.
+- Do not use MCP/Engram observations as project memory when Obsidian is configured unless Obsidian is unavailable/uninitialized; if fallback is used, record `memory_provider_used: external_fallback:<provider>` plus `fallback_reason`. Label MCP/Engram as non-project session memory when applicable.
 - If memory is unavailable, skip memory work and continue with repository evidence; do not block implementation for memory alone.
 - Carry compact `memory_hints` (path or id, line when available, status, relevance), not full dumps. After significant implementation, save only durable learnings in Obsidian: bug root cause/fix, architectural or workflow decision, reusable pattern, config change, gotcha, or meaningful session summary. Do not save routine edits or duplicate status.
 - If the user explicitly asks to remember/save a decision, or corrects a technical choice made by the agent, persist it with `lufy-ai memory capture --type rule|lesson|decision` and connect it to existing notes with `lufy-ai memory connect` when applicable. Validate memory before reporting success.
@@ -75,6 +76,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - For T1/T2 changes with substantive test creation or revision, delegate the test-focused portion to `test-writer` when a TDD cycle is applicable, or record why TDD delegation is `not_applicable`.
 - For `T2` / `sdd_lite` feature or runtime/app work with `fast_path_allowed: false`, do not edit until the handoff includes evidence that the user approved implementation after seeing a visible plan. If that evidence is missing, return `blocked` or `needs_decision` with the missing approval and ask `orchestrator` to present the plan.
 - Minimal repository exploration needed to complete assigned change.
+- When `.lufy/config/project.yaml` declares `context_graph.enabled: true`, require context graph preflight before broad generic discovery: direct reads of config, user-named artifacts or exact handoff paths are allowed; otherwise run/consume `lufy-ai context status --target <repo> --json` and a targeted query when ready before broad `glob`/`grep`/exploratory reads. If unavailable/stale, record `context_graph_status`, recovery and `fallback_reason` before fallback discovery.
 - Inspect only the files needed to understand the local pattern.
 - Reuse initial analysis/handoffs for old files; do not reread old files repeatedly during normal implementation.
 - Edit with the smallest safe patch.
@@ -119,6 +121,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If delivery is required but not authorized, report `delivery_pending`/`blocked` and the exact next role; never infer delivery authorization from tier, completion, or validation.
 - Default human-facing artifacts to Spanish while preserving technical identifiers.
 - Return Result Contract envelope v1 for substantive routed work; include `workflow_decision` fields received from router/orchestrator and update only status/evidence/risks that the implementation step actually changed.
+- Include top-level `diagnostics` fields for substantive T1/T2 or configured memory/graph projects: `memory_provider_used`, `context_graph_status`, `context_graph_queries`, `fallback_reason`, and `generic_discovery_before_graph`.
 
 ## Validation / Evidence
 

@@ -14,7 +14,7 @@ Usar para enlazar conocimiento existente. El objetivo es mejorar navegación, no
 
 ## Flujo
 
-1. Confirmar que `.lufy/memory` existe con `lufy-ai memory status --target <repo>`.
+1. Confirmar que `.lufy/config/project.yaml` declara `memory.provider: obsidian` y que `.lufy/memory` existe con `lufy-ai memory status --target <repo> --json`.
 2. Buscar notas candidatas con `lufy-ai memory search`.
 3. Elegir enlaces que representen dependencia real, decisión relacionada, regla base o lesson aplicable.
 4. Ejecutar `lufy-ai memory connect --target <repo> [--bidirectional] <from-slug> <to-slug>` para editar solo las notas necesarias.
