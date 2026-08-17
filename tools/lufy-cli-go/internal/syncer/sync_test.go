@@ -16,6 +16,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -111,6 +112,23 @@ func TestRunPreservesUserOwnedMemoryNotes(t *testing.T) {
 	}
 	if hasSyncedTargetPrefix(st, filepath.Join(".lufy", "context")) {
 		t.Fatalf("sync manifest should not register context graph: %#v", st.Assets)
+	}
+}
+
+func TestRunEnsuresMissingSkillRegistryEvenWithoutManagedChanges(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := installedTarget(t)
+	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
+	if err := os.Remove(registryPath); err != nil {
+		t.Fatal(err)
+	}
+	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault})
+	if err != nil || report.Status != "ready" {
+		t.Fatalf("sync should ensure skill registry: report=%#v err=%v", report, err)
 	}
 }
 

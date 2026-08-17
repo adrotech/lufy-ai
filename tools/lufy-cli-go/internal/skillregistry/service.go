@@ -29,6 +29,7 @@ type StatusReport struct {
 	RootCount  int           `json:"rootCount"`
 	Warnings   []Warning     `json:"warnings,omitempty"`
 	Recovery   string        `json:"recovery,omitempty"`
+	Updated    bool          `json:"updated,omitempty"`
 }
 
 type Service struct {
@@ -65,13 +66,27 @@ func (s Service) Refresh(opts Options, out io.Writer) error {
 }
 
 func (s Service) Status(opts Options, out io.Writer) error {
-	index, path, err := s.build(opts)
+	report, err := s.Inspect(opts)
 	if err != nil {
 		return err
 	}
+	return presentStatus(report, opts.JSON, out)
+}
+
+// Inspect returns the current registry state without mutating the filesystem.
+func (s Service) Inspect(opts Options) (StatusReport, error) {
+	report, _, err := s.inspect(opts)
+	return report, err
+}
+
+func (s Service) inspect(opts Options) (StatusReport, []byte, error) {
+	index, path, err := s.build(opts)
+	if err != nil {
+		return StatusReport{}, nil, err
+	}
 	expected, err := Marshal(index)
 	if err != nil {
-		return err
+		return StatusReport{}, nil, err
 	}
 	report := StatusReport{Status: "ready", Path: path, Tool: index.Tool, SkillCount: len(index.Skills), RootCount: len(index.Roots), Warnings: index.Warnings}
 	current, err := os.ReadFile(path)
@@ -79,12 +94,33 @@ func (s Service) Status(opts Options, out io.Writer) error {
 		report.Status = "not_available"
 		report.Recovery = recoveryCommand(opts.Target, index.Tool)
 	} else if err != nil {
-		return fmt.Errorf("leer registry de skills: %w", err)
+		return StatusReport{}, nil, fmt.Errorf("leer registry de skills: %w", err)
 	} else if !bytes.Equal(current, expected) {
 		report.Status = "stale"
 		report.Recovery = recoveryCommand(opts.Target, index.Tool)
 	}
-	if opts.JSON {
+	return report, expected, nil
+}
+
+// Ensure refreshes an absent or stale registry and leaves a ready registry untouched.
+func (s Service) Ensure(opts Options, out io.Writer) error {
+	report, expected, err := s.inspect(opts)
+	if err != nil {
+		return err
+	}
+	if report.Status != "ready" {
+		if err := platform.WriteFileAtomic(report.Path, expected, 0o644); err != nil {
+			return fmt.Errorf("escribir registry de skills: %w", err)
+		}
+		report.Status = "ready"
+		report.Recovery = ""
+		report.Updated = true
+	}
+	return presentStatus(report, opts.JSON, out)
+}
+
+func presentStatus(report StatusReport, jsonOutput bool, out io.Writer) error {
+	if jsonOutput {
 		data, err := json.MarshalIndent(report, "", "  ")
 		if err != nil {
 			return err
@@ -94,6 +130,9 @@ func (s Service) Status(opts Options, out io.Writer) error {
 	}
 	fmt.Fprintf(out, "Skill registry: %s\n", report.Status)
 	fmt.Fprintf(out, "Path: %s\nTool: %s; skills: %d; roots: %d; warnings: %d\n", report.Path, report.Tool, report.SkillCount, report.RootCount, len(report.Warnings))
+	if report.Updated {
+		fmt.Fprintln(out, "Acción: registry actualizado")
+	}
 	if report.Recovery != "" {
 		fmt.Fprintf(out, "Recovery: %s\n", report.Recovery)
 	}
@@ -104,7 +143,7 @@ func recoveryCommand(target string, tool domain.ToolID) string {
 	if target == "" {
 		target = "."
 	}
-	return fmt.Sprintf("lufy-ai skills refresh --target %s --tool %s", target, tool)
+	return fmt.Sprintf("lufy-ai skills ensure --target \"%s\" --tool %s", target, tool)
 }
 
 func (s Service) build(opts Options) (Index, string, error) {

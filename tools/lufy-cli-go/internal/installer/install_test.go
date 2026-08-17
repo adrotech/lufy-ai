@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
 )
@@ -714,6 +716,26 @@ func TestInstallAndVerifyIntegration(t *testing.T) {
 	if !strings.Contains(out.String(), "ok: verify estructural completo") {
 		t.Fatalf("verify output unexpected: %s", out.String())
 	}
+	registry, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault})
+	if err != nil || registry.Status != "ready" {
+		t.Fatalf("install should ensure skill registry: report=%#v err=%v", registry, err)
+	}
+}
+
+func TestInstallSkillRegistryFailureIsBestEffort(t *testing.T) {
+	svc := NewService()
+	svc.skillRegistry = failingSkillRegistry{}
+	var out bytes.Buffer
+	svc.ensureSkillRegistry(Plan{TargetRoot: "repo", Harness: domain.DefaultHarnessConfig()}, &out)
+	if !strings.Contains(out.String(), "[warn] no se pudo asegurar skill registry") || !strings.Contains(out.String(), "skills ensure") {
+		t.Fatalf("missing best-effort warning and recovery: %s", out.String())
+	}
+}
+
+type failingSkillRegistry struct{}
+
+func (failingSkillRegistry) Ensure(skillregistry.Options, io.Writer) error {
+	return errors.New("registry unavailable")
 }
 
 func TestApplyInstallRemovesNewStateWhenPostVerifyFails(t *testing.T) {

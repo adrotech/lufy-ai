@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -573,8 +574,24 @@ func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
 	}
 }
 
+func TestVerifyDeepReportsMissingRegistryWithoutRepairingIt(t *testing.T) {
+	target := validVerifyTarget(t)
+	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
+	if err := os.Remove(registryPath); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
+		t.Fatalf("deep verify should fail for missing registry: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "skill registry not_available") || !os.IsNotExist(statError(registryPath)) {
+		t.Fatalf("deep verify should report without repairing registry: %s", out.String())
+	}
+}
+
 func TestVerifyDeepValidatesInitializedMemory(t *testing.T) {
 	target := validVerifyTarget(t)
+	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/skills-ensure.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-orient.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/hooks/memory-validate.sh"), "#!/usr/bin/env bash\n")
 	writeVerifyFile(t, filepath.Join(target, ".opencode/plugins/lufy-memory-context.ts"), "export const LufyMemoryContextPlugin = async () => ({})\n")
@@ -640,7 +657,15 @@ func validVerifyTarget(t *testing.T) string {
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
+	if err := skillregistry.NewService().Ensure(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault}, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
 	return target
+}
+
+func statError(path string) error {
+	_, err := os.Stat(path)
+	return err
 }
 
 func containsString(values []string, want string) bool {

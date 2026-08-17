@@ -65,7 +65,7 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 16. Mantener aislamiento de subagentes: pasar contexto mínimo, permisos mínimos y contrato de salida claro.
 17. En Codex, `@orchestrator` o `@<rol-lufy>` es una solicitud de delegación: usar subagent tooling con spawn/wait/close cuando esté disponible; no responder como ese rol en el mismo hilo para luego seguir ejecutando.
 18. Si Codex no expone subagent tooling para una delegación solicitada o requerida, reportar el bloqueo y no convertir silenciosamente la solicitud en ejecución inline.
-19. Resolver skills local-first desde `.lufy/skill-registry.json` cuando esté ready y pasar paths exactos a `SKILL.md`; si falta o está stale, usar la raíz del adapter como fallback y recomendar `lufy-ai skills refresh --target <repo>`. AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
+19. Resolver skills local-first desde `.lufy/skill-registry.json` cuando esté ready y pasar paths exactos a `SKILL.md`; si falta o está stale, usar la raíz del adapter como fallback y recomendar `lufy-ai skills ensure --target <repo>`. AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
 20. Aplicar Review Workload Harness en T1 y T2 con varios riesgos: pensar en el reviewer humano, dividir features grandes en slices revisables y entregar por partes cuando reduzca carga cognitiva; no fragmentar T3 artificialmente.
 
 ## Routing SDD proporcional
