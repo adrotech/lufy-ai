@@ -88,7 +88,18 @@ func TestEnsureIsIdempotentAndRepairsMovedRepository(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := filepath.Join(moved, ".agents", "skills", "reviewer", "SKILL.md")
-	if len(index.Skills) != 1 || filepath.Clean(index.Skills[0].Path) != filepath.Clean(want) {
+	if len(index.Skills) != 1 {
 		t.Fatalf("moved registry paths not repaired: %+v", index.Skills)
+	}
+	indexedInfo, err := os.Stat(index.Skills[0].Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantInfo, err := os.Stat(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(indexedInfo, wantInfo) {
+		t.Fatalf("moved registry path points to another file: got=%s want=%s", index.Skills[0].Path, want)
 	}
 }
