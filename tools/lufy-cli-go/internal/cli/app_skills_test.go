@@ -37,3 +37,18 @@ func TestSkillsRejectsUnsupportedTool(t *testing.T) {
 		t.Fatalf("code=%d stderr=%s", code, errOut.String())
 	}
 }
+
+func TestSkillsEnsureReportsWhetherItUpdated(t *testing.T) {
+	target := t.TempDir()
+	var out, errOut bytes.Buffer
+	code := Run([]string{"skills", "ensure", "--target", target, "--tool", "codex", "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK || !strings.Contains(out.String(), `"status": "ready"`) || !strings.Contains(out.String(), `"updated": true`) {
+		t.Fatalf("first ensure code=%d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+	out.Reset()
+	errOut.Reset()
+	code = Run([]string{"skills", "ensure", "--target", target, "--tool", "codex", "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitOK || strings.Contains(out.String(), `"updated": true`) {
+		t.Fatalf("ready ensure code=%d stdout=%s stderr=%s", code, out.String(), errOut.String())
+	}
+}

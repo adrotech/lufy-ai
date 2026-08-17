@@ -122,6 +122,8 @@ func runSkills(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	switch args[0] {
+	case "ensure":
+		return runSkillsCommand("ensure", args[1:], deps)
 	case "refresh":
 		return runSkillsCommand("refresh", args[1:], deps)
 	case "status":
@@ -165,7 +167,9 @@ func runSkillsCommand(command string, args []string, deps Dependencies) int {
 	opts := skillregistry.Options{Target: *target, Tool: tool, JSON: *jsonOutput}
 	service := skillregistry.NewService()
 	var err error
-	if command == "refresh" {
+	if command == "ensure" {
+		err = service.Ensure(opts, deps.Stdout)
+	} else if command == "refresh" {
 		err = service.Refresh(opts, deps.Stdout)
 	} else {
 		err = service.Status(opts, deps.Stdout)
@@ -1607,6 +1611,7 @@ func printGeneralHelp(out io.Writer) {
 func printSkillsHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai skills <subcomando> [flags]")
 	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  ensure    Actualiza el registry solamente si falta o está stale")
 	fmt.Fprintln(out, "  refresh   Escanea raíces del adapter y actualiza .lufy/skill-registry.json")
 	fmt.Fprintln(out, "  status    Reporta ready, stale o not_available sin modificar archivos")
 }

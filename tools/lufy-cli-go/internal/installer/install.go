@@ -18,6 +18,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify"
@@ -78,6 +79,10 @@ type projectConfigEnsurer interface {
 	Ensure(string) (bool, error)
 }
 
+type skillRegistryEnsurer interface {
+	Ensure(skillregistry.Options, io.Writer) error
+}
+
 type PlanBuilder struct{}
 
 type ActionExecutor struct{}
@@ -86,6 +91,7 @@ type Service struct {
 	planBuilder    planBuilder
 	actionExecutor actionExecutor
 	projectConfig  projectConfigEnsurer
+	skillRegistry  skillRegistryEnsurer
 }
 
 func NewService() Service {
@@ -93,6 +99,7 @@ func NewService() Service {
 		planBuilder:    PlanBuilder{},
 		actionExecutor: ActionExecutor{},
 		projectConfig:  projectconfig.NewService(),
+		skillRegistry:  skillregistry.NewService(),
 	}
 }
 
@@ -142,8 +149,18 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err := s.applyInstall(plan, stdout); err != nil {
 		return err
 	}
+	s.ensureSkillRegistry(plan, stdout)
 	fmt.Fprintln(stdout, "Install real completado")
 	return nil
+}
+
+func (s Service) ensureSkillRegistry(plan Plan, stdout io.Writer) {
+	err := s.skillRegistry.Ensure(skillregistry.Options{Target: plan.TargetRoot, Tool: plan.Harness.Tool}, stdout)
+	if err == nil {
+		return
+	}
+	fmt.Fprintf(stdout, "- [warn] no se pudo asegurar skill registry: %s\n", err.Error())
+	fmt.Fprintf(stdout, "  Recovery: lufy-ai skills ensure --target \"%s\" --tool %s\n", plan.TargetRoot, plan.Harness.Tool)
 }
 
 func (s Service) BuildPlan(opts Options) (Plan, error) {

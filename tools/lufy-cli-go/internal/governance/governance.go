@@ -16,6 +16,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 )
@@ -236,6 +237,14 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 	reportMemoryDoctor(target, emit)
 	reportContextDoctor(target, emit)
 	reportOpenCodeMemoryHookDoctor(target, emit)
+	tool := domain.ToolInitialDefault
+	if cfg != nil && cfg.Tool != "" {
+		tool = cfg.Tool
+	}
+	if st != nil && st.Tool != "" {
+		tool = st.Tool
+	}
+	reportSkillRegistryDoctor(target, tool, emit)
 	if st == nil {
 		emit("fail", state.Path(target), "falta manifest de instalación")
 		return report, nil
@@ -262,6 +271,22 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		emit("fail", "", fmt.Sprintf("conflictos pendientes .lufy-new=%d; ejecuta lufy-ai merge", statusReport.ConflictsPending))
 	}
 	return report, nil
+}
+
+func reportSkillRegistryDoctor(target string, tool domain.ToolID, emit func(level, path, message string)) {
+	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: tool})
+	if err != nil {
+		emit("warn", ".lufy/skill-registry.json", fmt.Sprintf("skill registry no evaluable: %s; recovery: lufy-ai skills ensure --target <repo> --tool %s", err.Error(), tool))
+		return
+	}
+	if report.Status == "ready" {
+		emit("ok", ".lufy/skill-registry.json", fmt.Sprintf("skill registry ready skills=%d roots=%d warnings=%d", report.SkillCount, report.RootCount, len(report.Warnings)))
+	} else {
+		emit("warn", ".lufy/skill-registry.json", fmt.Sprintf("skill registry %s; recovery: %s", report.Status, report.Recovery))
+	}
+	for _, warning := range report.Warnings {
+		emit("warn", warning.Path, "skill registry: "+warning.Message)
+	}
 }
 
 func reportMemoryDoctor(target string, emit func(level, path, message string)) {
@@ -311,21 +336,22 @@ func reportContextDoctor(target string, emit func(level, path, message string)) 
 
 func reportOpenCodeMemoryHookDoctor(target string, emit func(level, path, message string)) {
 	hooks := []string{
+		filepath.Join(".opencode", "hooks", "skills-ensure.sh"),
 		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
 		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
 	}
 	for _, rel := range hooks {
 		if !regularFileForGovernance(filepath.Join(target, rel)) {
-			emit("warn", filepath.ToSlash(rel), "hook de memoria no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+			emit("warn", filepath.ToSlash(rel), "hook lifecycle OpenCode no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
 			return
 		}
 	}
 	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
 	if !regularFileForGovernance(filepath.Join(target, plugin)) {
-		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
+		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de skills/memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
 		return
 	}
-	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para orientación y validación best-effort de memoria")
+	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
 }
 
 func regularFileForGovernance(path string) bool {

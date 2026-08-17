@@ -2,6 +2,7 @@ package assets
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -10,6 +11,26 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 )
+
+func TestSkillsEnsureHookToleratesMissingCLI(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("bash no disponible: %v", err)
+	}
+	target := t.TempDir()
+	configPath := filepath.Join(target, ".lufy", "config", "project.yaml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, []byte("tool: opencode\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(bash, filepath.Join(repoRoot(t), ".opencode", "hooks", "skills-ensure.sh"))
+	cmd.Env = []string{"PATH=" + filepath.Dir(bash), "LUFY_PROJECT_ROOT=" + target}
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("hook should be best-effort without lufy-ai: err=%v output=%s", err, output)
+	}
+}
 
 func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
 	source := minimalSource(t)

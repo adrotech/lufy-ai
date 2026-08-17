@@ -85,6 +85,7 @@ scripts/validate.sh
 | `lufy-ai context path` | Calcula un camino explicable entre dos nodos. | `--target`, `--json`, `<from> <to>` |
 | `lufy-ai context explain` | Explica por qué existe un nodo o edge. | `--target`, `--json`, `<node-or-edge>` |
 | `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base con nodos, vecinos y comunidades afectadas. | `--target`, `--json`, `--base <ref>` |
+| `lufy-ai skills ensure` | Mantiene el índice si está `ready` y lo actualiza solamente si falta o está `stale`. | `--target`, `--tool`, `--json` |
 | `lufy-ai skills refresh` | Escanea las raíces declaradas por OpenCode/Codex y actualiza `.lufy/skill-registry.json` sin modificar skills. | `--target`, `--tool`, `--json` |
 | `lufy-ai skills status` | Reporta `ready`, `stale` o `not_available` comparando el índice con las fuentes actuales. | `--target`, `--tool`, `--json` |
 | `lufy-ai status` | Resume instalación, drift, faltantes, frozen assets y `.lufy-new` pendiente. | `--target`, `--scope`, `--json`, `--verbose` |
@@ -132,15 +133,15 @@ Adapters no escribibles todavía:
 
 ## Registry portable de skills
 
-`lufy-ai skills refresh` crea un índice derivado y legible por agentes en `.lufy/skill-registry.json`. El tool se toma de `--tool`, luego de `.lufy/config/project.yaml`, y finalmente usa `opencode` como default.
+`lufy-ai skills ensure` mantiene un índice derivado y legible por agentes en `.lufy/skill-registry.json`: no reescribe un estado `ready` y actualiza uno ausente o `stale`. El tool se toma de `--tool`, luego de `.lufy/config/project.yaml`, y finalmente usa `opencode` como default. `refresh` continúa disponible para forzar una reconstrucción.
 
 ```bash
-lufy-ai skills refresh --target <repo>
+lufy-ai skills ensure --target <repo>
 lufy-ai skills status --target <repo> --json
-lufy-ai skills refresh --target <repo> --tool codex
+lufy-ai skills ensure --target <repo> --tool codex
 ```
 
-OpenCode declara `.opencode/skills`, `.agents/skills` y sus equivalentes globales bajo `XDG_CONFIG_HOME`/`~/.config` y `~/.agents`; Codex declara `.agents/skills`, `~/.agents/skills` y `/etc/codex/skills`. Cuando hay nombres duplicados, el skill del proyecto gana; dentro del mismo scope se respeta la prioridad del adapter y `shadowedPaths` conserva la evidencia descartada. El refresh solo lee metadata YAML y escribe el índice: nunca resume ni modifica el `SKILL.md`, que sigue siendo la fuente de verdad. Como el índice contiene paths exactos del entorno, es local/regenerable y conviene mantenerlo fuera de Git.
+OpenCode declara `.opencode/skills`, `.agents/skills` y sus equivalentes globales bajo `XDG_CONFIG_HOME`/`~/.config` y `~/.agents`; Codex declara `.agents/skills`, `~/.agents/skills` y `/etc/codex/skills`. Cuando hay nombres duplicados, el skill del proyecto gana; dentro del mismo scope se respeta la prioridad del adapter y `shadowedPaths` conserva la evidencia descartada. El ensure solo lee metadata YAML y escribe el índice: nunca resume ni modifica el `SKILL.md`, que sigue siendo la fuente de verdad. `install`, `setup` y `sync` lo ejecutan best-effort; OpenCode también lo ejecuta en `session.created`. Codex usa el lifecycle y la instrucción de primer uso hasta disponer de un contrato nativo de hook verificado. Como el índice contiene paths exactos del entorno, es local/regenerable y conviene mantenerlo fuera de Git.
 
 ## Methodology por tier
 

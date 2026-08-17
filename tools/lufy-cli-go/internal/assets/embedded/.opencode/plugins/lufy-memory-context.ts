@@ -26,6 +26,10 @@ export const LufyMemoryContextPlugin: Plugin = async ({ $, directory, worktree }
   let warnedDiscovery = false;
   let warnedExternalMemory = false;
 
+  const ensureSkills = async () => {
+    await $`LUFY_PROJECT_ROOT=${root} bash ${root}/.opencode/hooks/skills-ensure.sh`.quiet().nothrow();
+  };
+
   const orient = async () => {
     if (oriented) return;
     oriented = true;
@@ -40,6 +44,7 @@ export const LufyMemoryContextPlugin: Plugin = async ({ $, directory, worktree }
     event: async ({ event }) => {
       const body = JSON.stringify(event ?? {});
       if (event?.type === 'session.created') {
+        await ensureSkills();
         await orient();
         return;
       }
