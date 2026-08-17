@@ -222,6 +222,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
 | `lufy-ai context` | Genera y consulta un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con reporte derivado y hints rankeados para ahorrar exploración inicial. |
+| `lufy-ai skills` | Refresca y diagnostica `.lufy/skill-registry.json` con precedencia project-over-global y paths exactos a los skills de OpenCode/Codex. |
 | `lufy-ai memory` | Inicializa, valida, busca, captura, conecta e indexa memoria Obsidian portable bajo `.lufy/memory`. |
 | `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en `git diff <base>...HEAD` antes de push/PR; también aparece en la command palette. |
 | `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |

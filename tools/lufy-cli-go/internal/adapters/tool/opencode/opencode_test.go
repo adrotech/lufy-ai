@@ -2,6 +2,7 @@ package opencode
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -16,6 +17,23 @@ func TestAdapterCapabilities(t *testing.T) {
 	caps := New().Capabilities()
 	if !caps.Subagents || !caps.SlashCommands || !caps.Skills || !caps.TUI {
 		t.Fatalf("expected opencode capabilities to include subagents, commands, skills and TUI: %+v", caps)
+	}
+}
+
+func TestSkillRootsDeclareProjectAndGlobalLocations(t *testing.T) {
+	target := t.TempDir()
+	roots := New().SkillRoots(ports.Target{Root: target}, ports.Env{"HOME": "/home/tester"})
+	if len(roots) != 4 || roots[0].Scope != "project" || roots[0].Path != filepath.Join(target, ".opencode", "skills") || roots[0].Priority != 0 {
+		t.Fatalf("project root = %+v", roots)
+	}
+	if roots[1].Path != filepath.Join(target, ".agents", "skills") || roots[1].Priority <= roots[0].Priority {
+		t.Fatalf("compatible project root = %+v", roots)
+	}
+	if roots[2].Scope != "global" || roots[2].Path != filepath.Join("/home/tester", ".config", "opencode", "skills") {
+		t.Fatalf("global root = %+v", roots)
+	}
+	if roots[3].Path != filepath.Join("/home/tester", ".agents", "skills") {
+		t.Fatalf("compatible global root = %+v", roots)
 	}
 }
 

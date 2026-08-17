@@ -2,6 +2,8 @@ package codex
 
 import (
 	"context"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,6 +21,24 @@ func TestAdapterCapabilitiesAreWritableProjectSurface(t *testing.T) {
 	}
 	if caps.SlashCommands || caps.TUI || caps.GlobalConfig {
 		t.Fatalf("codex capabilities overpromise native tool support: %+v", caps)
+	}
+}
+
+func TestSkillRootsDeclareProjectAndGlobalLocations(t *testing.T) {
+	target := t.TempDir()
+	roots := New().SkillRoots(ports.Target{Root: target}, ports.Env{"HOME": "/home/tester"})
+	wantRoots := 3
+	if runtime.GOOS == "windows" {
+		wantRoots = 2
+	}
+	if len(roots) != wantRoots || roots[0].Scope != "project" || roots[0].Path != filepath.Join(target, ".agents", "skills") {
+		t.Fatalf("project root = %+v", roots)
+	}
+	if roots[1].Scope != "global" || roots[1].Path != filepath.Join("/home/tester", ".agents", "skills") {
+		t.Fatalf("global root = %+v", roots)
+	}
+	if runtime.GOOS != "windows" && roots[2].Path != filepath.Join(string(filepath.Separator), "etc", "codex", "skills") {
+		t.Fatalf("admin root = %+v", roots)
 	}
 }
 

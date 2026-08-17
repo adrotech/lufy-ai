@@ -87,6 +87,8 @@ next_recommended:
 skill_resolution:
   local_skills_used:
     - <skill or none>
+  selected_skill_paths:
+    - <exact path to SKILL.md or none>
   bootstrap_recommended: true | false
   notes: <notes or none>
 ```

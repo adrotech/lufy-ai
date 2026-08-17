@@ -124,6 +124,8 @@ artifact_branching:
 
 ## Skill Resolution
 
+- Prefer `.lufy/skill-registry.json` when present and ready. Record the exact `path` for every relevant selected skill so downstream roles can read the original `SKILL.md`; never replace that source contract with a compact summary.
+- If the registry is absent or stale, record `lufy-ai skills refresh --target <repo>` as recovery and inspect the active adapter's project-local skill root as the read-only fallback.
 - Check whether local `.opencode/skills` cover the requested workflow before recommending external bootstrap.
 - If local skills are sufficient, set `bootstrap_recommended: false`.
 - If local skills are missing or insufficient, you may recommend `npx autoskills --dry-run` as a first non-mutating discovery command.
@@ -292,6 +294,9 @@ context_slice:
 skill_status:
   local_skills_found:
     - <skill or none>
+  selected_skill_paths:
+    - <exact path to SKILL.md or none>
+  registry_status: ready | stale | not_available | unknown
   stack_detected:
     - <stack or unknown>
   local_coverage: sufficient | partial | missing | unknown

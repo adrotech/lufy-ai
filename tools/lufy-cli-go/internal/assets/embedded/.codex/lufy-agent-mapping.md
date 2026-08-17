@@ -38,6 +38,7 @@ First try the exact native Lufy role. Use this mapping only when native Lufy rol
 - A waited subagent that reports `state=completed` with empty/null `task_result`, empty body, or no non-empty Result Contract/evidence is an invalid result. Recover once with the same `task_id` when available; if recovery still lacks payload, report `blocked` with the exact recovery action instead of continuing silently.
 - Never tell the user that Lufy roles were used natively when they were only emulated.
 - Pass the Lufy role instructions and minimum context into the generic Codex role prompt.
+- Prefer `.lufy/skill-registry.json` when ready. Pass exact selected skill paths to delegated roles and require them to read each original `SKILL.md`; if the registry is missing or stale, report `lufy-ai skills refresh --target <repo> --tool codex` as recovery and fall back to `.agents/skills`.
 - Preserve role permissions: read-only Lufy roles stay read-only even when mapped to a more capable generic role.
 - Include the selected `agent_execution_mode` and `role_mapping` in substantive Result Contract evidence.
 

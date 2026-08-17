@@ -67,7 +67,7 @@ Lifecycle automático de memoria/contexto:
 - `lufy-ai doctor` y `lufy-ai verify --deep` reportan si los scripts y el plugin están presentes; si faltan, muestran `lufy-ai sync --tool opencode --scope project` como recuperación.
 - Estos hooks son best-effort y no sustituyen evidencia primaria de archivos, diff, tests o comandos.
 
-Skill resolution es local-first: `.opencode/skills` y `AGENTS.md` tienen prioridad. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
+Skill resolution es local-first: `.lufy/skill-registry.json` selecciona paths exactos a `SKILL.md` cuando está ready; `.opencode/skills` y `AGENTS.md` mantienen prioridad sobre fuentes externas. Si el índice falta o está stale, `lufy-ai skills refresh --target <repo>` lo regenera sin modificar skills. Si falta cobertura local, el router puede sugerir AutoSkills solo como bootstrap opcional, empezando por `npx autoskills --dry-run` y requiriendo autorización explícita antes de cualquier comando mutante.
 
 Subagent isolation: cada subagente recibe solo el `context_slice`, rutas y constraints necesarios para su rol. La revisión se dimensiona como `none`, `focused` o `full` según tier, superficie modificada y riesgo.
 
