@@ -261,7 +261,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid structure) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "skills")) {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/skills") {
 		t.Fatalf("missing directory output unexpected: %s", out.String())
 	}
 	if !strings.Contains(out.String(), "fail: asset clave no está en manifest: tui.json") {
@@ -294,7 +294,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(missing templates) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: "+filepath.Join(".opencode", "templates")) {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/templates") {
 		t.Fatalf("missing templates output unexpected: %s", out.String())
 	}
 }
@@ -446,7 +446,7 @@ func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err != nil {
 		t.Fatalf("Run() error = %v, output=%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: "+filepath.Join(".opencode", "agents", "local-agent.md")) {
+	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: .opencode/agents/local-agent.md") {
 		t.Fatalf("extra managed dir file not reported: %s", out.String())
 	}
 }
