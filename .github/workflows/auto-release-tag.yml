@@ -166,9 +166,43 @@ jobs:
             done | sort -V | tail -n 1
           }
 
+          validate_source_release() {
+            local expected_tag="$1"
+            local source_version
+            local expected_heading="## [${expected_tag}]"
+            local changelog_found="false"
+
+            if ! source_version="$(git show "${MERGE_COMMIT_SHA}:RELEASE_VERSION" 2>/dev/null | tr -d '[:space:]')"; then
+              echo "El merge commit ${MERGE_COMMIT_SHA} no contiene RELEASE_VERSION." >&2
+              return 2
+            fi
+            if [[ ! "$source_version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "RELEASE_VERSION inválido en ${MERGE_COMMIT_SHA}: ${source_version}" >&2
+              return 2
+            fi
+            if [[ "$source_version" != "$expected_tag" ]]; then
+              echo "Tag calculado ${expected_tag} no coincide con RELEASE_VERSION ${source_version} en ${MERGE_COMMIT_SHA}." >&2
+              return 2
+            fi
+
+            while IFS= read -r line; do
+              if [[ "$line" == "$expected_heading" || "$line" == "$expected_heading "* ]]; then
+                changelog_found="true"
+                break
+              fi
+            done < <(git show "${MERGE_COMMIT_SHA}:CHANGELOG.md")
+            if [[ "$changelog_found" != "true" ]]; then
+              echo "CHANGELOG.md no contiene un heading para ${expected_tag} en ${MERGE_COMMIT_SHA}." >&2
+              return 2
+            fi
+
+            echo "Source de release consistente: ${expected_tag}."
+          }
+
           next_tag="$NEXT_TAG"
           for attempt in 1 2 3; do
             git fetch --tags origin
+            validate_source_release "$next_tag"
             if git rev-parse -q --verify "refs/tags/${next_tag}" >/dev/null || git ls-remote --exit-code --tags origin "refs/tags/${next_tag}" >/dev/null 2>&1; then
               next_tag="$(calculate_next_tag "$(latest_stable_tag)" "$BUMP")"
               echo "Tag existente detectado; reintentando con ${next_tag}."
