@@ -97,6 +97,51 @@ func TestInternalFilesAllowsOnlyUserOwnedLufySDDArtifacts(t *testing.T) {
 	}
 }
 
+func TestInternalFilesAllowsOpenSpecArchiveAndCanonicalSpecs(t *testing.T) {
+	files := []string{
+		"openspec/specs/native-context-graph/spec.md",
+		"openspec/changes/archive/2026-08-18-add-native-context-graph/tasks.md",
+		"openspec/changes/add-native-context-graph/tasks.md",
+		"openspec/README.md",
+	}
+	matches := internalFiles(files)
+	want := []string{
+		"openspec/changes/add-native-context-graph/tasks.md",
+		"openspec/README.md",
+	}
+	if len(matches) != len(want) {
+		t.Fatalf("internal matches = %#v", matches)
+	}
+	for index, path := range want {
+		if matches[index].Path != path || matches[index].Pattern != "openspec/" {
+			t.Fatalf("match %d = %#v want %s", index, matches[index], path)
+		}
+	}
+}
+
+func TestGuardAllowsOpenSpecArchivePattern(t *testing.T) {
+	repo := initRepo(t)
+	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
+	writeFile(t, filepath.Join(repo, "openspec", "changes", "demo", "tasks.md"), "- [x] done\n")
+	git(t, repo, "add", "README.md", "openspec/changes/demo/tasks.md")
+	git(t, repo, "commit", "-m", "base")
+	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
+
+	git(t, repo, "rm", "openspec/changes/demo/tasks.md")
+	writeFile(t, filepath.Join(repo, "openspec", "changes", "archive", "2026-08-18-demo", "tasks.md"), "- [x] done\n")
+	writeFile(t, filepath.Join(repo, "openspec", "specs", "demo", "spec.md"), "### Requirement: Demo\n")
+	git(t, repo, "add", "openspec/changes/archive/2026-08-18-demo/tasks.md", "openspec/specs/demo/spec.md")
+	git(t, repo, "commit", "-m", "archive demo")
+
+	report, err := NewService().Build(Options{Target: repo, Base: base})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.OK || len(report.InternalMatches) != 0 {
+		t.Fatalf("OpenSpec archive pattern should pass: %#v", report)
+	}
+}
+
 func TestGuardStillBlocksExplicitlyIgnoredLufySDDArtifact(t *testing.T) {
 	repo := initRepo(t)
 	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/\n")

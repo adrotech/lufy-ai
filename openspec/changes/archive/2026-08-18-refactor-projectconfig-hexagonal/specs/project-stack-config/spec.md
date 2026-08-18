@@ -1,4 +1,4 @@
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Project config implementation boundaries
 La implementacion de `.lufy/config/project.yaml` SHALL keep model, scanning, rescan merge, persistence and CLI prompting responsibilities separated enough to preserve SOLID boundaries while keeping the public YAML schema stable.

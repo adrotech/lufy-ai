@@ -1,6 +1,5 @@
 ## Purpose
 Definir `.lufy/config/project.yaml` como configuración project-local editable para stacks detectados, metadata operacional y preferencias preservadas por `lufy-ai init`.
-
 ## Requirements
 ### Requirement: Project stack configuration file
 `lufy-ai init` SHALL create `.lufy/config/project.yaml` as the editable project-local configuration file for detected stacks, project surfaces and operational rules.
@@ -15,35 +14,22 @@ Definir `.lufy/config/project.yaml` como configuración project-local editable p
 #### Scenario: Surface profile is generated from detectable evidence
 - **WHEN** `lufy-ai init --target <dir>` detects frontend, backend, mobile, CLI, infra, library or fullstack evidence
 - **THEN** `.lufy/config/project.yaml` includes `project_profile.surfaces` entries with `id`, `type`, `roots`, `stacks`, `frameworks` and `agent_lens`
-- **AND** `agent_lens` includes `structural_expectations` when the surface has expected folder, layer or boundary conventions
 
-#### Scenario: Surface profile can be adjusted interactively
+#### Scenario: Surface profile can be adjusted with a TUI
 - **WHEN** the user runs `lufy-ai init --target <dir> --interactive` or `lufy-ai scan --target <dir>` in an interactive terminal
-- **THEN** the CLI prompts for the primary project surface and writes the selected `agent_lens`
-- **AND** when the selected surface is `backend`, the CLI writes `architecture.preferred`, `architecture.options` and `architecture.structural_expectations` for the selected backend architecture
+- **THEN** the CLI opens a Bubble Tea/Charm TUI for reviewing detected surfaces before writing `.lufy/config/project.yaml`
+- **THEN** the user can select a surface and adjust its `type` among supported surface types
+- **THEN** the written surface uses the selected `type` and matching `agent_lens`
 
-#### Scenario: Frontend profile records feature-driven structure
-- **WHEN** `lufy-ai init` or `lufy-ai scan` writes a `frontend` or frontend side of a `fullstack` surface
-- **THEN** the surface records structural expectations for feature-driven colocation such as `src/features/<feature>/components`, `hooks`, `services`, `types.ts`, `index.ts` public barrels and routing/layout pages outside feature internals
-
-#### Scenario: Backend profile records selected architecture structure
-- **WHEN** `lufy-ai init` or `lufy-ai scan` writes a `backend` surface
-- **THEN** the surface records the selected backend architecture as `controller_service_repository`, `clean_architecture` or `hexagonal`
-- **AND** `architecture.structural_expectations` records the concrete layer or boundary checks that implementer, validator and reviewer must audit before approval
+#### Scenario: TUI cancellation is non-mutating
+- **WHEN** the user cancels the project profile TUI before confirming
+- **THEN** the CLI exits non-zero with an actionable cancellation message
+- **THEN** the CLI MUST NOT write or partially rewrite `.lufy/config/project.yaml`
 
 #### Scenario: Surface profile is automation-safe
 - **WHEN** the CLI runs in a non-interactive environment
 - **THEN** it preserves the automatically detected surface profile and does not block waiting for input
 - **THEN** the CLI MUST NOT create top-level `loc_budget` or top-level `delivery_strategy`
-
-#### Scenario: Existing project config is not overwritten by default
-- **WHEN** the user runs `lufy-ai init --target <dir>` and `<dir>/.lufy/config/project.yaml` already exists
-- **THEN** the CLI exits non-zero with an actionable message and MUST NOT overwrite the file unless `--force` or `--rescan` is used
-
-#### Scenario: Force replaces generated project config
-- **WHEN** the user runs `lufy-ai init --target <dir> --force` and `<dir>/.lufy/config/project.yaml` already exists
-- **THEN** the CLI writes a freshly detected configuration to `.lufy/config/project.yaml` with `workflow_limits` as the only workflow-limit block
-- **THEN** the freshly detected configuration MUST NOT include top-level `loc_budget` or top-level `delivery_strategy`
 
 ### Requirement: Canonical workflow limits block
 `.lufy/config/project.yaml` SHALL define workflow sizing, routing, slicing, delivery batching, stop rules and preflight controls only under top-level `workflow_limits`.
@@ -213,3 +199,31 @@ The installed harness SHALL provide a local format-dispatch hook that uses `.luf
 #### Scenario: Invalid existing config fails without mutation
 - **WHEN** `.lufy/config/project.yaml` exists but is not parseable as the supported configuration format and the user runs `lufy-ai init --target <dir> --rescan`
 - **THEN** the CLI exits non-zero, reports an actionable parse error and MUST NOT overwrite the existing file
+
+### Requirement: Project config implementation boundaries
+La implementacion de `.lufy/config/project.yaml` SHALL keep model, scanning, rescan merge, persistence and CLI prompting responsibilities separated enough to preserve SOLID boundaries while keeping the public YAML schema stable.
+
+#### Scenario: Service orchestrates without owning detector details
+- **WHEN** `lufy-ai init`, `lufy-ai init --rescan` or `lufy-ai scan` builds a project config
+- **THEN** the application service SHALL coordinate scanning, merge, optional profile prompting and persistence without embedding stack-specific detector logic in the service method
+
+#### Scenario: Detectors are independently extensible
+- **WHEN** a future stack or surface detector is added
+- **THEN** it SHALL be possible to add it through a detector strategy or registry without rewriting unrelated detector implementations
+
+#### Scenario: Public YAML remains compatible
+- **WHEN** projectconfig internals are refactored
+- **THEN** `.lufy/config/project.yaml` schema version 1, field names, defaults and preserved unknown fields SHALL remain compatible with the current behavior
+
+### Requirement: Project profile TUI adapter boundary
+The interactive project profile UI SHALL be implemented as a CLI adapter over `projectconfig.ProfilePrompt` and SHALL NOT move Bubble Tea dependencies into `internal/projectconfig`.
+
+#### Scenario: Projectconfig remains UI-independent
+- **WHEN** project profile TUI support is added
+- **THEN** `internal/projectconfig` imports no Bubble Tea, Bubbles or Lip Gloss packages
+- **THEN** `internal/projectconfig` remains usable by non-interactive tests and automation without terminal dependencies
+
+#### Scenario: CLI wires TUI through ProfilePrompt
+- **WHEN** `lufy-ai init --interactive` or interactive `lufy-ai scan` needs user input
+- **THEN** `internal/cli` wires a TUI-backed `projectconfig.ProfilePrompt` into `projectconfig.Service`
+- **THEN** the service continues to coordinate scan, rescan merge, optional profile prompting and persistence through the existing port
