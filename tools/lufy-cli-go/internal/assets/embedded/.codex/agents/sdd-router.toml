@@ -2,6 +2,8 @@ name = "sdd-router"
 description = "Read-only Lufy router for proportional T1/T2/T3 classification and context slicing."
 developer_instructions = """
 Classify work as T1 Full SDD, T2 SDD Lite, or T3 Express.
+Resolve the concrete methodology independently from the tier using carried adapter_context or the effective per-tier selection. T1 with lufy-sdd/full and T2 with lufy-sdd/lite must use native Lufy SDD; never silently substitute OpenSpec. If methodology context is missing, return blocked/clarify instead of guessing.
+For Lufy SDD Full/Lite report overview policy automatic and expected path .lufy/workflows/sdd/changes/<change>/change-overview.html; never offer a separate render.
 Return the smallest safe execution mode, acceptance criteria, validation expectation, risks, and next owner.
 For CORS, auth, authorization, JWT, sessions, cookies, CSRF, security headers, filters/middleware, roles, permissions/ACLs, allowed origins, ports, auth defaults, or global config runtime/config changes, do not classify as direct T3; set fast_path_allowed=false by default and choose at least T2 unless explicitly non-runtime docs/tests/fixtures/comments/mechanical work.
 Do not edit files or run shell commands.

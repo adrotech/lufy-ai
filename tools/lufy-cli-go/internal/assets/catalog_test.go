@@ -44,19 +44,25 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
+		filepath.Join(".opencode", "commands", "lufy.sdd-propose.md"):                    false,
 		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):                         false,
 		filepath.Join(".opencode", "skills", "git-delivery", "SKILL.md"):                  false,
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join(".opencode", "skills", "lufy-sdd-workflow", "propose", "SKILL.md"):  false,
 		filepath.Join(".opencode", "templates", "result-contract.md"):                     false,
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    false,
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"):               false,
+		filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"):                false,
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
 		filepath.Join(".codex", "config.toml"):                                            false,
 		filepath.Join(".codex", "agents", "implementer.toml"):                             false,
 		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
+		filepath.Join(".lufy", "workflows", "sdd", "config.yaml"):                        false,
+		filepath.Join(".lufy", "workflows", "sdd", "actions", "propose.md"):             false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
 	for _, asset := range catalog.Assets {
@@ -102,6 +108,38 @@ func TestBuildCatalogRejectsSourceSymlink(t *testing.T) {
 	}
 }
 
+func TestBuildCatalogClassifiesCodexSDDSkillsByMethodology(t *testing.T) {
+	catalog, err := BuildCatalog(minimalSource(t))
+	if err != nil {
+		t.Fatalf("BuildCatalog() error = %v", err)
+	}
+
+	want := map[string]struct {
+		methodology domain.MethodologyID
+		component   string
+	}{
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):      {domain.MethodologyNone, "instruction-surface"},
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"):  {domain.MethodologySpecWorkflow, "methodology-skill"},
+		filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"): {domain.MethodologyLufyWorkflow, "methodology-skill"},
+	}
+	found := map[string]bool{}
+	for _, asset := range catalog.Assets {
+		expected, ok := want[asset.TargetRel]
+		if !ok {
+			continue
+		}
+		found[asset.TargetRel] = true
+		if asset.Tool != domain.ToolCodex || asset.Methodology != expected.methodology || asset.Component != expected.component {
+			t.Fatalf("asset %s ownership = tool:%s methodology:%s component:%s", asset.TargetRel, asset.Tool, asset.Methodology, asset.Component)
+		}
+	}
+	for target := range want {
+		if !found[target] {
+			t.Fatalf("catalog missing %s", target)
+		}
+	}
+}
+
 func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *testing.T) {
 	catalog, err := BuildEmbeddedCatalog()
 	if err != nil {
@@ -116,19 +154,25 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".opencode", "agents", "orchestrator.md"):                           false,
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            false,
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         false,
+		filepath.Join(".opencode", "commands", "lufy.sdd-propose.md"):                    false,
 		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):                         false,
 		filepath.Join(".opencode", "skills", "git-delivery", "SKILL.md"):                  false,
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): false,
+		filepath.Join(".opencode", "skills", "lufy-sdd-workflow", "propose", "SKILL.md"):  false,
 		filepath.Join(".opencode", "templates", "result-contract.md"):                     false,
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            false,
 		filepath.Join("openspec", "config.yaml"):                                          false,
 		filepath.Join("openspec", "UPSTREAM.json"):                                        false,
 		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    false,
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      false,
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"):               false,
+		filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"):                false,
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    false,
 		filepath.Join(".codex", "config.toml"):                                            false,
 		filepath.Join(".codex", "agents", "implementer.toml"):                             false,
 		filepath.Join(".lufy", "workflows", "sdd", "README.md"):                           false,
+		filepath.Join(".lufy", "workflows", "sdd", "config.yaml"):                        false,
+		filepath.Join(".lufy", "workflows", "sdd", "actions", "propose.md"):             false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                 false,
 	}
 	for _, asset := range catalog.Assets {
@@ -257,6 +301,60 @@ func TestAgentAssetsContainT2FastPathApprovalGate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAgentAssetsRouteNativeLufySDDFullAndLite(t *testing.T) {
+	root := repoRoot(t)
+	read := func(rel string) string {
+		t.Helper()
+		body, err := os.ReadFile(filepath.Join(root, rel))
+		if err != nil {
+			t.Fatalf("ReadFile(%s) error = %v", rel, err)
+		}
+		return string(body)
+	}
+
+	embedded := filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded")
+	cases := []struct {
+		rels []string
+		want []string
+	}{
+		{
+			rels: []string{filepath.Join(".opencode", "agents", "sdd-router.md"), filepath.Join(embedded, ".opencode", "agents", "sdd-router.md")},
+			want: []string{"T1 + `lufy-sdd/full`", "T2 + `lufy-sdd/lite`", "do not silently default to OpenSpec", "`overview.policy: automatic`"},
+		},
+		{
+			rels: []string{filepath.Join(".opencode", "agents", "orchestrator.md"), filepath.Join(embedded, ".opencode", "agents", "orchestrator.md")},
+			want: []string{"`lufy-sdd-explore`", "After invoking any Lufy SDD lifecycle command", "Never ask the user whether to generate a Lufy overview"},
+		},
+		{
+			rels: []string{filepath.Join(".opencode", "templates", "result-contract.md"), filepath.Join(embedded, ".opencode", "templates", "result-contract.md")},
+			want: []string{"policy: automatic", "trigger: new | validate | sync | archive | status_read_only"},
+		},
+		{
+			rels: []string{filepath.Join(".codex", "agents", "sdd-router.toml"), filepath.Join(embedded, ".codex", "agents", "sdd-router.toml")},
+			want: []string{"T1 with lufy-sdd/full", "T2 with lufy-sdd/lite", "never silently substitute OpenSpec", "overview policy automatic"},
+		},
+		{
+			rels: []string{"AGENTS.md.template", filepath.Join(embedded, "AGENTS.md.template")},
+			want: []string{"## Lufy SDD Workflow", "configured Lite adapter", "policy: automatic"},
+		},
+		{
+			rels: []string{"lufy-ia.harness.md", filepath.Join(embedded, "lufy-ia.harness.md")},
+			want: []string{"native `lufy-ai sdd` lifecycle", "automatically maintain `change-overview.html`", "silently substitute the selected adapter"},
+		},
+	}
+
+	for _, tc := range cases {
+		for _, rel := range tc.rels {
+			text := read(rel)
+			for _, want := range tc.want {
+				if !strings.Contains(text, want) {
+					t.Fatalf("%s missing %q", rel, want)
+				}
+			}
+		}
 	}
 }
 
@@ -777,6 +875,8 @@ func minimalSource(t *testing.T) string {
 		"tui.json":           "{}\n",
 		filepath.Join(".agents", "skills", "git-delivery", "SKILL.md"):                    "git delivery skill\n",
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):                      "close skill\n",
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"):               "openspec propose\n",
+		filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"):                "lufy sdd propose\n",
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):                    "sdd skill\n",
 		filepath.Join(".codex", "README.md"):                                              "codex readme\n",
 		filepath.Join(".codex", "config.toml"):                                            "project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n",
@@ -792,10 +892,12 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".opencode", "commands", "opsx-apply.md"):                           "apply\n",
 		filepath.Join(".opencode", "commands", "opsx-sync.md"):                            "sync\n",
 		filepath.Join(".opencode", "commands", "opsx-version.md"):                         "version\n",
+		filepath.Join(".opencode", "commands", "lufy.sdd-propose.md"):                    "propose\n",
 		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):                         "hook\n",
 		filepath.Join(".opencode", "skills", "git-delivery", "SKILL.md"):                  "git delivery skill\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):                      "skill\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"): "sync skill\n",
+		filepath.Join(".opencode", "skills", "lufy-sdd-workflow", "propose", "SKILL.md"):  "lufy sdd propose\n",
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                            "lite\n",
 		filepath.Join(".opencode", "templates", "result-contract.md"):                     "result\n",
 		filepath.Join(".opencode", "policies", "delivery.md"):                             "delivery\n",
@@ -807,6 +909,8 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
 		filepath.Join(".lufy", "README.md"):                                               "layout\n",
 		filepath.Join(".lufy", "sdd", "README.md"):                                        "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "config.yaml"):                                      "version: 1\nworkflow: lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "actions", "propose.md"):                           "propose\n",
 		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                              "",
 		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                            "",
 		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                                "",

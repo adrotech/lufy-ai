@@ -96,6 +96,8 @@ func Run(args []string, deps Dependencies) int {
 		return runSetup(args[1:], deps)
 	case "opsx":
 		return runOpsx(args[1:], deps)
+	case "sdd":
+		return runSDD(args[1:], deps)
 	case "pr":
 		return runPR(args[1:], deps)
 	case "context":
@@ -1601,6 +1603,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  pin       Congela un asset gestionado para preservar edits locales")
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
+	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
 	fmt.Fprintln(out, "  conflicts Planifica conflictos de install sin mutar")
@@ -1644,6 +1647,16 @@ func printOpsxHelp(out io.Writer) {
 	fmt.Fprintln(out, "Uso: lufy-ai opsx <subcomando> [flags]")
 	fmt.Fprintln(out, "Subcomandos:")
 	fmt.Fprintln(out, "  render    Renderiza un change OpenSpec a HTML offline")
+}
+
+func printSDDHelp(out io.Writer) {
+	fmt.Fprintln(out, "Uso: lufy-ai sdd <subcomando> [flags]")
+	fmt.Fprintln(out, "Subcomandos:")
+	fmt.Fprintln(out, "  new       Crea un change Lufy SDD Full o Lite con overview HTML")
+	fmt.Fprintln(out, "  status    Resume artifacts, tareas y gates locales")
+	fmt.Fprintln(out, "  validate  Valida artifacts y refresca el overview HTML")
+	fmt.Fprintln(out, "  sync      Aplica deltas validados a specs activas")
+	fmt.Fprintln(out, "  archive   Archiva un change con gates locales completos")
 }
 
 func printMemoryHelp(out io.Writer) {

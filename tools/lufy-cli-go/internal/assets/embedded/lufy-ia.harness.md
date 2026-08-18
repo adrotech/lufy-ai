@@ -71,7 +71,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync` and
 
 Methodology is tier-aware:
 
-- `openspec/full` or future `lufy-sdd/full` for T1.
+- `openspec/full` or native `lufy-sdd/full` for T1.
 - `openspec/lite` or `lufy-sdd/lite` for T2.
 - `none` is acceptable for T3 when the task is truly express.
 
@@ -80,12 +80,14 @@ Methodology is tier-aware:
 - **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full methodology.
 - **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use lite methodology, `.opencode/templates/sdd-lite.md`, or a structured handoff with observable WHEN/THEN criteria.
 - **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough; methodology may be `none`.
+- Resolve methodology from the effective tier selection. Never use `full_sdd`/`sdd_lite` as aliases for OpenSpec or silently substitute the selected adapter.
+- `lufy-sdd/full` and `lufy-sdd/lite` use the native `lufy-ai sdd` lifecycle and automatically maintain `change-overview.html`; no extra command, skill or user prompt is required.
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
 - Escalate T2 to T1 when architecture, cross-cutting impact, public contracts, security, or high uncertainty appears.
 - For T1 and multi-risk T2, define review slices with objective, expected files, WHEN/THEN criteria, validation, risk, and PR guidance.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
-- Include adapter context in substantive handoffs when useful: `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required`, and `execution_mode`.
+- Include adapter context in substantive handoffs: `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required`, and `execution_mode`. For Lufy SDD also carry overview `policy`, `status`, refresh trigger and path.
 
 ## Skill Resolution
 

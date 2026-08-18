@@ -42,6 +42,7 @@ First try the exact native Lufy role. Use this mapping only when native Lufy rol
 - Prefer `.lufy/skill-registry.json` when ready. Pass exact selected skill paths to delegated roles and require them to read each original `SKILL.md`; if the registry is missing or stale, report `lufy-ai skills ensure --target <repo> --tool codex` as recovery and fall back to `.agents/skills`.
 - Preserve role permissions: read-only Lufy roles stay read-only even when mapped to a more capable generic role.
 - Include the selected `agent_execution_mode` and `role_mapping` in substantive Result Contract evidence.
+- Preserve `adapter_context` across native/emulated/inline execution. Tier and execution mode do not override the configured methodology: route `lufy-sdd/full|lite` through native Lufy SDD skills and carry the automatic overview path/status without a render prompt.
 
 ## Multi-Artifact Branching
 

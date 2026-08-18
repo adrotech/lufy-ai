@@ -139,7 +139,7 @@ Para cerrar la sesión con trazabilidad local:
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | Codex core | `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | Roles, skills, hooks, reglas y config project-locales cuando se instala con `--tool codex`. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
-| Lufy SDD | `.lufy/workflows/sdd/` | Superficie inicial opcional cuando se selecciona `lufy-sdd`. |
+| Lufy SDD | `.lufy/workflows/sdd/` | Superficie opcional Full/Lite con lifecycle nativo, routing por tier y `change-overview.html` automático; permanece pendiente la validación Go/CI y el delivery del candidate. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas legacy; `AGENTS.md` usa bloque LUFY gestionado compacto. |
 | Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 
@@ -162,7 +162,7 @@ flowchart TD
     Tool --> CC["claude-code: dry-run preview"]
 
     Meth --> OS["openspec: full/lite"]
-    Meth --> LS["lufy-sdd: full/lite inicial"]
+    Meth --> LS["lufy-sdd: full/lite; Full candidate en validación"]
     Meth --> NN["none: permitido solo donde la policy lo acepta"]
 
     Assets --> Target[".opencode / .agents / .codex / openspec / .lufy / lufy-ia.harness.md"]
@@ -177,8 +177,8 @@ Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
 
 | Tier | Cuándo aplica | Metodología típica | Resultado |
 | --- | --- | --- | --- |
-| T1 Full SDD | Arquitectura, contratos públicos, seguridad, cambios transversales o alta incertidumbre. | `openspec/full` o futuro `lufy-sdd/full`. | Proposal, design, specs, tasks, validación agrupada, optional overview/render y archive. |
-| T2 SDD Lite | Cambio funcional acotado, bug relevante, agente/skill o refactor controlado. | `openspec/lite`, `lufy-sdd/lite` o mini-spec. | Criterios `WHEN`/`THEN`, handoff recuperable, optional overview/render y review enfocada. |
+| T1 Full SDD | Arquitectura, contratos públicos, seguridad, cambios transversales o alta incertidumbre. | `openspec/full`; `lufy-sdd/full` queda como candidate pendiente de validación/delivery. | Proposal, design, specs, tasks, overview HTML automático, validación agrupada y archive. |
+| T2 SDD Lite | Cambio funcional acotado, bug relevante, agente/skill o refactor controlado. | `openspec/lite`, `lufy-sdd/lite` o mini-spec. | Proposal, tasks, overview HTML automático, handoff recuperable y review enfocada. |
 | T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
 
 La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/config/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
@@ -196,6 +196,8 @@ lufy-ai install --target <repo> --methodology-tier T3:none --yes
 lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
 ```
+
+El change `complete-lufy-sdd-full-workflow` agrega el namespace nativo `lufy-ai sdd new|status|validate|sync|archive`, modes Full/Lite, deltas `ADDED|MODIFIED|REMOVED`, overview HTML integrado, backup/rollback y archive con gates. El overview se crea y refresca automáticamente sin comando o skill adicional. No debe anunciarse como disponible en una release hasta que pasen Go/CI, merge y tag correspondientes.
 
 Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool claude-code`. `opencode` sigue siendo el default; `codex` ya instala una superficie project-local core con `.agents/skills`, `.codex/agents`, hooks/rules/config y `AGENTS.md` gestionado.
 
@@ -221,6 +223,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai backup` | Crea backup multiasset bajo `.lufy/managed-state/backups/<timestamp>/`. |
 | `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
 | `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
+| `lufy-ai sdd` | Ejecuta el lifecycle Lufy SDD Full/Lite y materializa `change-overview.html` automáticamente. |
 | `lufy-ai context` | Genera y consulta un grafo local determinístico configurado desde `.lufy/config/project.yaml`, con reporte derivado y hints rankeados para ahorrar exploración inicial. |
 | `lufy-ai skills` | Asegura, refresca y diagnostica `.lufy/skill-registry.json` con precedencia project-over-global y paths exactos a los skills de OpenCode/Codex. |
 | `lufy-ai memory` | Inicializa, valida, busca, captura, conecta e indexa memoria Obsidian portable bajo `.lufy/memory`. |
@@ -269,7 +272,7 @@ lufy-ai pr guard --target <repo> --base origin/main --include-worktree
 
 `conflicts plan` no muta archivos: agrupa conflictos por categoría (`.opencode/agents`, `.opencode/skills`, `openspec/specs`, `.codex`, `.lufy`, `root/config`, etc.), asigna riesgo, recomienda `merge` o `block` y lista acciones disponibles como `keep-local`, `accept-managed`, `merge`, `backup-and-replace` o `block`.
 
-`pr guard` revisa el rango `git diff <base>...HEAD` o `git diff <base>` con `--include-worktree`. Bloquea si entran paths ignorados por `.gitignore` o metadata interna conocida: `openspec/`, `.lufy/`, `.lufy-ai/` y `pr_review/`. Esto cubre el caso que `.gitignore` no evita: archivos ya trackeados o cherry-picks que entran al PR.
+`pr guard` revisa el rango `git diff <base>...HEAD` o `git diff <base>` con `--include-worktree`. Bloquea si entran paths ignorados por `.gitignore` o metadata interna conocida: `openspec/`, `.lufy/`, `.lufy-ai/` y `pr_review/`. Los artifacts declarados user-owned de Lufy SDD bajo `changes/`, `specs/`, `decisions/`, `verification/` y `archive/` no disparan el prefijo interno genérico, aunque un `.gitignore` explícito todavía bloquea. Esto cubre el caso que `.gitignore` no evita: archivos ya trackeados o cherry-picks que entran al PR.
 
 ### Overview/render de propuestas
 
@@ -296,6 +299,7 @@ La versión actual instala tres superficies de reporte offline/autocontenido con
 | Reporte | Cómo se genera | Uso |
 | --- | --- | --- |
 | Proposal overview | `lufy-ai opsx render --change <change> --format html --theme notion-dark` | Revisar artifacts OpenSpec generados antes de aplicar. |
+| Lufy SDD overview | Automático durante `sdd new`, `validate`, `sync` y `archive` | Revisar Full/Lite sin comando o skill de render separado. |
 | PR review | `/lufy.pr-review` | Generar un review HTML en español para un PR existente. |
 | Time report | `/lufy.timereport` | Resumir tiempo, actividad, fases, herramientas, subagentes, skills, ROI y limitaciones desde fuentes locales. |
 
@@ -405,7 +409,7 @@ No disponible como feature escribible todavía:
 - instalación real en Claude Code;
 - templates por stack;
 - subagentes de dominio adicionales;
-- Lufy SDD full como reemplazo completo de OpenSpec;
+- promoción y release de Lufy SDD Full después de validar el candidate actual;
 - instalación automática de skills externas.
 - configuración directa de `--tool`/`--scope` desde `lufy-ai setup`; usar comandos individuales para esos casos.
 
