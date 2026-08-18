@@ -164,7 +164,7 @@ func TestValidateRejectsSymlinkOverview(t *testing.T) {
 	if err := os.Symlink(outside, overviewPath); err != nil {
 		t.Skipf("symlink no soportado: %v", err)
 	}
-	if _, err := service.Validate(target, "linked-overview", true); err == nil || !strings.Contains(err.Error(), "overview no es un archivo regular") {
+	if _, err := service.Validate(target, "linked-overview", true); err == nil || !strings.Contains(err.Error(), "symlink no permitido") {
 		t.Fatalf("expected overview symlink rejection, got %v", err)
 	}
 	if got := mustRead(t, outside); got != "outside\n" {

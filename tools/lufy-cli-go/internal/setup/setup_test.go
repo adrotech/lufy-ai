@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/versioncheck"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -406,6 +407,129 @@ func TestApplyModelErrorRowsAndMarkers(t *testing.T) {
 		if !strings.Contains(view, want) {
 			t.Fatalf("apply helper view missing %q:\n%s", want, view)
 		}
+	}
+}
+
+func TestSetupPlanningHelpers(t *testing.T) {
+	if got := featureSpec("custom-feature"); got.ID != "custom-feature" || got.Name != "custom-feature" || got.Since != "" {
+		t.Fatalf("unexpected fallback feature spec: %#v", got)
+	}
+	if got := action("layout", "skip", "ready", ""); got.Name != "Layout .lufy" || got.Since == "" {
+		t.Fatalf("action did not enrich known feature: %#v", got)
+	}
+
+	actions := []layout.Action{
+		{Kind: "noop", Target: ".lufy/ignored"},
+		{Kind: "migrate-copy", Target: ".lufy/config/project.yaml"},
+		{Kind: "write-readme", Target: ".lufy/README.md"},
+	}
+	if !hasLayoutMutations(actions) {
+		t.Fatalf("expected layout mutations")
+	}
+	summary := layoutSummary(actions)
+	for _, want := range []string{"migrate-copy:.lufy/config/project.yaml", "write-readme:.lufy/README.md"} {
+		if !strings.Contains(summary, want) {
+			t.Fatalf("layout summary missing %q: %q", want, summary)
+		}
+	}
+	if hasLayoutMutations([]layout.Action{{Kind: "noop", Target: ".lufy/ignored"}}) {
+		t.Fatalf("noop action should not count as layout mutation")
+	}
+	if got := layoutSummary(nil); got != "Layout .lufy listo" {
+		t.Fatalf("empty layout summary = %q", got)
+	}
+
+	features := []FeatureAction{
+		{ID: "install", Status: "apply", Reason: "pendiente"},
+		{ID: "verify", Status: "apply", Reason: "pendiente"},
+		{ID: "layout", Status: "conflict", Reason: "bloqueado"},
+	}
+	filtered := filterSelected(features, map[string]bool{"verify": true})
+	if filtered[0].Status != "skip" || filtered[0].Reason != "Omitido por seleccion interactiva" {
+		t.Fatalf("unselected apply feature should be skipped: %#v", filtered[0])
+	}
+	if filtered[1].Status != "apply" || filtered[2].Status != "conflict" {
+		t.Fatalf("selected/conflict features should be preserved: %#v", filtered)
+	}
+}
+
+func TestChecklistModelHelpersAndKeyPaths(t *testing.T) {
+	report := Report{TargetRoot: "/tmp/project", Features: []FeatureAction{
+		{ID: "install", Name: "Assets gestionados", Status: "apply", Reason: "No existe manifest", Recovery: "lufy-ai install --target <dir> --yes"},
+		{ID: "verify", Name: "Verify final", Status: "apply", Reason: "Validar instalacion", Recovery: "lufy-ai verify --target <dir>"},
+		{ID: "layout", Name: "Layout .lufy", Status: "skip", Reason: "Layout listo"},
+	}}
+	model := newChecklistModel(report)
+	if len(model.keys.ShortHelp()) != 5 || len(model.keys.FullHelp()) != 2 {
+		t.Fatalf("unexpected checklist help bindings")
+	}
+	if got := model.header(); !strings.Contains(got, "Lufy setup") {
+		t.Fatalf("header missing setup title:\n%s", got)
+	}
+	if got := model.sidebar(72); !strings.Contains(got, "Assets gestionados") {
+		t.Fatalf("sidebar missing plan row:\n%s", got)
+	}
+	if got := model.detailPanel(72); !strings.Contains(got, "Current step") {
+		t.Fatalf("detail panel missing title:\n%s", got)
+	}
+	if got := model.metricLine("checklist"); !strings.Contains(got, "pendientes") || !strings.Contains(got, "seleccionadas") {
+		t.Fatalf("unexpected checklist metrics: %q", got)
+	}
+	if apply, skip, conflicts := featureCounts(report.Features); apply != 2 || skip != 1 || conflicts != 0 {
+		t.Fatalf("feature counts mismatch: apply=%d skip=%d conflicts=%d", apply, skip, conflicts)
+	}
+
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyDown})
+	model = updated.(checklistModel)
+	updated, _ = model.Update(tea.KeyMsg{Type: tea.KeyUp})
+	model = updated.(checklistModel)
+	if model.cursor != 0 {
+		t.Fatalf("up/down navigation should return to first item, cursor=%d", model.cursor)
+	}
+	updated, cmd := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model = updated.(checklistModel)
+	if !model.done || cmd == nil {
+		t.Fatalf("enter should finish checklist: done=%v cmd=%v", model.done, cmd)
+	}
+	model = newChecklistModel(report)
+	updated, cmd = model.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	model = updated.(checklistModel)
+	if !model.cancelled || cmd == nil {
+		t.Fatalf("esc should cancel checklist: cancelled=%v cmd=%v", model.cancelled, cmd)
+	}
+}
+
+func TestApplyModelEventHelpers(t *testing.T) {
+	report := Report{TargetRoot: "/tmp/project", Features: []FeatureAction{
+		{ID: "layout", Name: "Layout .lufy", Status: "skip", Reason: "Layout listo"},
+	}}
+	model := newApplyModel(NewService(), Options{}, &report)
+	if len(model.keys.ShortHelp()) != 3 || len(model.keys.FullHelp()) != 2 {
+		t.Fatalf("unexpected apply help bindings")
+	}
+	if cmd := model.Init(); cmd == nil {
+		t.Fatalf("apply init should return batched command")
+	}
+	if msg := model.startApply()(); msg != (applyNoopMsg{}) {
+		t.Fatalf("startApply returned %#v", msg)
+	}
+	finished, ok := (<-model.events).(applyFinishedMsg)
+	if !ok || finished.err != nil {
+		t.Fatalf("expected clean finished event, got %#v", finished)
+	}
+
+	events := make(chan tea.Msg, 2)
+	writer := channelWriter{events: events}
+	n, err := writer.Write([]byte("log line\n"))
+	if err != nil || n != len("log line\n") {
+		t.Fatalf("writer returned n=%d err=%v", n, err)
+	}
+	if msg := waitApplyEvent(events)(); msg != applyLogMsg("log line\n") {
+		t.Fatalf("waitApplyEvent returned %#v", msg)
+	}
+	close(events)
+	if msg := waitApplyEvent(events)(); msg != (applyFinishedMsg{}) {
+		t.Fatalf("closed event channel returned %#v", msg)
 	}
 }
 

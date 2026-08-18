@@ -133,7 +133,7 @@ func walkRoot(root Root, candidates *[]candidate, warnings *[]Warning) {
 			return nil
 		}
 		*candidates = append(*candidates, candidate{
-			Skill: Skill{Name: metadata.Name, Description: metadata.Description, Scope: root.Scope, Path: filepath.Clean(path)},
+			Skill:    Skill{Name: metadata.Name, Description: metadata.Description, Scope: root.Scope, Path: filepath.Clean(path)},
 			priority: effectivePriority(root.Scope, root.Priority),
 		})
 		return nil

@@ -17,6 +17,7 @@ import (
 var defaultInternalPrefixes = []string{"openspec/", ".lufy/", ".lufy-ai/", "pr_review/"}
 
 var userOwnedLufySDDPrefixes = []string{
+	".lufy/sdd/",
 	".lufy/workflows/sdd/changes/",
 	".lufy/workflows/sdd/specs/",
 	".lufy/workflows/sdd/decisions/",
