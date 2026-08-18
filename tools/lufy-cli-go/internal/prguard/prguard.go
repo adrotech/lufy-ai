@@ -51,6 +51,11 @@ type Violation struct {
 	Pattern string `json:"pattern"`
 }
 
+type changedFile struct {
+	Path   string
+	Status string
+}
+
 type Service struct{}
 
 func NewService() Service { return Service{} }
@@ -84,15 +89,16 @@ func (s Service) Build(opts Options) (Report, error) {
 	if base == "" {
 		base = "origin/develop"
 	}
-	files, diffRange, err := changedFiles(target, base, opts.IncludeWorktree)
+	entries, diffRange, err := changedFiles(target, base, opts.IncludeWorktree)
 	if err != nil {
 		return Report{}, err
 	}
+	files := changedFilePaths(entries)
 	ignored, err := ignoredFiles(target, files)
 	if err != nil {
 		return Report{}, err
 	}
-	internal := internalFiles(files)
+	internal := internalFileEntries(entries)
 	report := Report{OK: len(ignored) == 0 && len(internal) == 0, TargetRoot: target, Base: base, Range: diffRange, ChangedFiles: files, IgnoredMatches: ignored, InternalMatches: internal}
 	if !report.OK {
 		report.Remediation = []string{
@@ -104,19 +110,19 @@ func (s Service) Build(opts Options) (Report, error) {
 	return report, nil
 }
 
-func changedFiles(target, base string, includeWorktree bool) ([]string, string, error) {
+func changedFiles(target, base string, includeWorktree bool) ([]changedFile, string, error) {
 	diffRange := base + "...HEAD"
-	args := []string{"diff", "--name-only", diffRange, "--"}
+	args := []string{"diff", "--name-status", diffRange, "--"}
 	if includeWorktree {
 		diffRange = base
-		args = []string{"diff", "--name-only", base, "--"}
+		args = []string{"diff", "--name-status", base, "--"}
 	}
 	stdout, stderr, err := runGit(target, args...)
 	if err != nil {
-		return nil, "", fmt.Errorf("git diff --name-only %s -- fallo: %s", diffRange, strings.TrimSpace(stderr))
+		return nil, "", fmt.Errorf("git diff --name-status %s -- fallo: %s", diffRange, strings.TrimSpace(stderr))
 	}
-	files := splitLines(stdout)
-	sort.Strings(files)
+	files := parseNameStatus(stdout)
+	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
 	return files, diffRange, nil
 }
 
@@ -142,9 +148,20 @@ func ignoredFiles(target string, files []string) ([]Violation, error) {
 }
 
 func internalFiles(files []string) []Violation {
+	entries := make([]changedFile, 0, len(files))
+	for _, file := range files {
+		entries = append(entries, changedFile{Path: file, Status: "M"})
+	}
+	return internalFileEntries(entries)
+}
+
+func internalFileEntries(files []changedFile) []Violation {
 	var out []Violation
 	for _, file := range files {
-		slash := filepath.ToSlash(file)
+		slash := filepath.ToSlash(file.Path)
+		if isAllowedOpenSpecPath(changedFile{Path: slash, Status: file.Status}) {
+			continue
+		}
 		if hasAnyPrefix(slash, userOwnedLufySDDPrefixes) {
 			continue
 		}
@@ -154,6 +171,47 @@ func internalFiles(files []string) []Violation {
 				break
 			}
 		}
+	}
+	return out
+}
+
+func isAllowedOpenSpecPath(file changedFile) bool {
+	slash := filepath.ToSlash(file.Path)
+	switch {
+	case strings.HasPrefix(slash, "openspec/specs/"):
+		return true
+	case strings.HasPrefix(slash, "openspec/changes/archive/"):
+		return true
+	case strings.HasPrefix(slash, "openspec/changes/") && strings.HasPrefix(file.Status, "D"):
+		return true
+	default:
+		return false
+	}
+}
+
+func changedFilePaths(files []changedFile) []string {
+	out := make([]string, 0, len(files))
+	for _, file := range files {
+		out = append(out, file.Path)
+	}
+	return out
+}
+
+func parseNameStatus(output string) []changedFile {
+	var out []changedFile
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.Split(line, "\t")
+		if len(parts) < 2 {
+			continue
+		}
+		out = append(out, changedFile{
+			Status: parts[0],
+			Path:   filepath.ToSlash(parts[len(parts)-1]),
+		})
 	}
 	return out
 }
