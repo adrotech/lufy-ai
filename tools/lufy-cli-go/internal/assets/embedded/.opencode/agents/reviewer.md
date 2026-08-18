@@ -88,6 +88,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 ## Inputs Expected
 
 - Diff or branch context, change objective, validation evidence, and any known acceptance criteria.
+- Carried `adapter_context`, source artifact paths and overview policy/status for SDD work.
 - Relevant `.lufy/config/project.yaml` context when available: affected stacks, `project_profile.surfaces`, coverage thresholds, anti-patterns, observability libraries and workflow limits.
 
 ## Obsidian Memory
@@ -106,6 +107,9 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Return compact `context_graph_hints` when useful. Findings still require current diff/file/line, validation evidence, logs or explicit acceptance criteria; graph inference alone is not a finding.
 
 ## Workflow
+
+- Respect the selected methodology. For Lufy SDD review proposal/design/tasks/specs according to mode and treat `change-overview.html` as a derived review surface, never as the source of truth.
+- Confirm that Lufy Full/Lite handoffs report the automatic overview path and that Lite does not inherit Full-only sync/spec gates. Missing or stale overview is a workflow finding; behavioral findings must still cite Markdown, code, tests or validation evidence.
 
 - Load `.lufy/config/project.yaml` when available and use affected stack data for anti-patterns, coverage expectations and observability libraries.
 - Use `project_profile.surfaces[*].agent_lens.primary_concerns` to adapt review scoring: frontend findings should consider UX states/accessibility/responsive behavior and feature-driven colocation with `index.ts` public barrels, backend findings contracts/domain/auth/persistence/observability, fullstack findings cross-layer contracts, rollout and frontend feature boundaries, and CLI/infra/mobile/library findings their declared concerns.
@@ -130,7 +134,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 ## Artifact Candidate Comparison
 
 - When reviewing multi-artifact candidates, compare at most 2 candidates supplied by the handoff. Treat proposal branching as the normal case, design branching as optional after a canonical proposal, and tasks branching as exceptional.
-- Evaluate candidates by objective criteria: quality, coherence with OpenSpec/specs, completeness, risk reduction, validation clarity, implementation feasibility, maintainability, and consistency with workflow limits.
+- Evaluate candidates by objective criteria: quality, coherence with the selected methodology/specs, completeness, risk reduction, validation clarity, implementation feasibility, maintainability, and consistency with workflow limits.
 - Do not act as product owner, security authority, public-contract owner, or arbitrary tie-breaker. If candidates differ on public contract, security posture, product direction, significant UX, irreversible migration, cost/benefit judgment, or another non-objective trade-off, return a human decision point with comparison evidence instead of selecting silently.
 - Verify candidate isolation when evidence is available: isolated paths, no overwrite of canonical artifacts or other candidates, merge plan present, and grouped validation expected after join rather than per-candidate completion being treated as final.
 - Recommend that `orchestrator` produce or confirm one canonical artifact set before downstream implementation. Non-selected candidates remain context only unless the join explicitly promotes them.

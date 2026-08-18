@@ -16,6 +16,15 @@ import (
 
 var defaultInternalPrefixes = []string{"openspec/", ".lufy/", ".lufy-ai/", "pr_review/"}
 
+var userOwnedLufySDDPrefixes = []string{
+	".lufy/sdd/",
+	".lufy/workflows/sdd/changes/",
+	".lufy/workflows/sdd/specs/",
+	".lufy/workflows/sdd/decisions/",
+	".lufy/workflows/sdd/verification/",
+	".lufy/workflows/sdd/archive/",
+}
+
 type Options struct {
 	Target          string
 	Base            string
@@ -136,6 +145,9 @@ func internalFiles(files []string) []Violation {
 	var out []Violation
 	for _, file := range files {
 		slash := filepath.ToSlash(file)
+		if hasAnyPrefix(slash, userOwnedLufySDDPrefixes) {
+			continue
+		}
 		for _, prefix := range defaultInternalPrefixes {
 			if strings.HasPrefix(slash, prefix) {
 				out = append(out, Violation{Path: slash, Kind: "internal", Pattern: prefix})
@@ -144,6 +156,15 @@ func internalFiles(files []string) []Violation {
 		}
 	}
 	return out
+}
+
+func hasAnyPrefix(path string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(path, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseCheckIgnore(output string) []Violation {

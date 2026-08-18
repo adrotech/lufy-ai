@@ -61,7 +61,7 @@ No son capacidades instalables actuales:
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
 - instalación real/escribible sobre Claude Code y superficies avanzadas de Codex.
-- Lufy SDD full como reemplazo completo de OpenSpec.
+- Lufy SDD Full/Lite tiene candidate nativo con overview HTML integrado en `complete-lufy-sdd-full-workflow`; sigue fuera de la release instalable hasta completar validación Go/CI y delivery.
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.
 

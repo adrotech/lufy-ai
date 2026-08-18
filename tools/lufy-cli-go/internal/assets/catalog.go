@@ -256,14 +256,23 @@ func withOwnership(asset Asset) Asset {
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/sdd-workflow/") || filepath.ToSlash(asset.TargetRel) == ".opencode/skills/sdd-workflow":
 		asset.Methodology = domain.MethodologySpecWorkflow
 		asset.Component = "methodology-skill"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/lufy-sdd-workflow/") || filepath.ToSlash(asset.TargetRel) == ".opencode/skills/lufy-sdd-workflow":
+		asset.Methodology = domain.MethodologyLufyWorkflow
+		asset.Component = "methodology-skill"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/opsx-"):
 		asset.Methodology = domain.MethodologySpecWorkflow
+		asset.Component = "methodology-command"
+	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/lufy.sdd-"):
+		asset.Methodology = domain.MethodologyLufyWorkflow
 		asset.Component = "methodology-command"
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/") || filepath.ToSlash(asset.TargetRel) == ".agents/skills":
 		asset.Tool = domain.ToolCodex
 		asset.Component = "instruction-surface"
-		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/sdd-workflow") {
+		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/openspec-") {
 			asset.Methodology = domain.MethodologySpecWorkflow
+			asset.Component = "methodology-skill"
+		} else if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/lufy-sdd-") {
+			asset.Methodology = domain.MethodologyLufyWorkflow
 			asset.Component = "methodology-skill"
 		}
 	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".codex/") || filepath.ToSlash(asset.TargetRel) == ".codex":

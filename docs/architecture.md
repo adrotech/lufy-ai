@@ -22,7 +22,7 @@ La tool debe ser un adapter:
 La metodología también debe ser un adapter:
 
 - `openspec` es la metodología principal actual;
-- `lufy-sdd` existe como superficie inicial seleccionable;
+- `lufy-sdd` existe como superficie seleccionable y su lifecycle Full/Lite nativo, con overview HTML derivado, está implementado como candidate pendiente de validación/delivery;
 - `none` es válido solo donde la policy lo permite, típicamente T3.
 
 ## Capas
@@ -61,7 +61,8 @@ flowchart TD
 | `internal/adapters/tool/codex` | Adapter escribible core para Codex con `.agents/skills`, custom agents en `.codex/agents`, `.codex/lufy-agent-mapping.md`, hooks/rules/config y `AGENTS.md` gestionado. |
 | `internal/adapters/tool/claudecode` | Adapter dry-run para capabilities y preview conceptual de Claude Code. |
 | `internal/adapters/methodology/openspec` | Adapter OpenSpec para superficie full/lite. |
-| `internal/adapters/methodology/lufysdd` | Adapter inicial para `.lufy/workflows/sdd`. |
+| `internal/adapters/methodology/lufysdd` | Adapter instalable para `.lufy/workflows/sdd`. |
+| `internal/lufysdd` | Lifecycle Full/Lite, parser delta, sync/archive seguro y renderer HTML integrado. |
 | `internal/adapters/methodology/none` | Adapter explícito para tiers sin metodología. |
 | `internal/instructions/registry` | Contratos neutrales de roles, skills y bindings. |
 | `internal/instructions/render` | Render de superficies de instrucción sin paths hardcodeados al dominio. |
@@ -128,7 +129,7 @@ Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults com
 | --- | --- | --- |
 | `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins` | Managed | Se copian/sincronizan por catálogo y SHA-256. |
 | `openspec/` | Managed por metodología `openspec` | Se instala cuando la metodología lo requiere. |
-| `.lufy/workflows/sdd/` | Managed por metodología `lufy-sdd` | Se instala según mode full/lite. |
+| `.lufy/workflows/sdd/` | Bootstrap managed y changes user-owned por metodología `lufy-sdd` | Se instala según mode full/lite; cada change materializa un overview HTML derivado. |
 | `lufy-ia.harness.md` | Managed | Se actualiza por manifest y hash. |
 | `tui.json` | Managed/no-replace según policy | Se preserva ante drift y puede generar `.lufy-new`. |
 | `AGENTS.md` | User-owned con bloque gestionado | `install` agrega el bloque LUFY gestionado y reconoce la referencia legacy `@lufy-ia.harness.md`; `uninstall` remueve solo esa integración. |

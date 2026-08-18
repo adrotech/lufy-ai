@@ -1,6 +1,6 @@
 # Result Contract Envelope V1
 
-Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. For successful proposal/specification readiness handoffs from any methodology or tool adapter, preserve the optional overview/render outcome in `evidence.static` as `generated`, `offered_pending`, `skipped_by_user` or `not_available`, including the exact render command/path only when one exists. When a render is generated, expose the path as a clickable Markdown link and keep `open <path>` as fallback in user-facing output. Use `skipped_by_user` only after an explicit user decline; do not use bare `skipped` except when normalizing legacy output.
+Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. Preserve the adapter-specific overview contract: OpenSpec render remains `optional`, while Lufy SDD Full/Lite is `automatic` and must report the materialized/refreshed path without asking the user or invoking another render command. When an overview exists, expose its path as a clickable Markdown link and keep `open <path>` as fallback in user-facing output. Use `skipped_by_user` only for an optional render after explicit decline; never use it for Lufy SDD.
 
 ```yaml
 schema_version: result-contract/v1
@@ -12,6 +12,11 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+overview:
+  policy: automatic | optional | none | not_available | not_applicable
+  status: generated | refreshed | preserved | offered_pending | skipped_by_user | not_available | not_applicable
+  trigger: new | validate | sync | archive | status_read_only | user_choice | not_applicable
+  path: <path or not_available>
 evidence:
   commands:
     - command: <command or none>
@@ -45,7 +50,7 @@ workflow_decision:
   slice_tier: T1 | T2 | T3 | not_applicable
   fast_path_allowed: true | false | not_applicable
   adapter_context:
-    tool_id: opencode | not_applicable
+    tool_id: opencode | codex | not_applicable
     methodology_id: openspec | lufy-sdd | none | not_applicable
     methodology_mode: full | lite | none | not_applicable
     methodology_required: true | false | not_applicable

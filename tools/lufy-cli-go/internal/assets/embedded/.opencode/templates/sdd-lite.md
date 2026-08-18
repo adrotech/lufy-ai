@@ -94,7 +94,7 @@ Use only when slicing reduces reviewer cognitive load or risk.
   - `generic_discovery_before_graph`: `true`, `false`, `not_applicable` or `not_available`.
 - Structural acceptance audit:
   - <feature/surface>: <satisfied/missing/blocked details>
-- Optional overview/render: offered_pending | generated | skipped_by_user | not_available; include command/path only when the selected methodology and tool adapter provide one. When generated, show the path as a clickable Markdown link and keep `open <path>` as fallback. Use skipped_by_user only after an explicit user decline.
+- Overview contract: for `lufy-sdd/lite`, report `policy: automatic`, `status`, refresh trigger and `.lufy/workflows/sdd/changes/<change>/change-overview.html`; never ask whether to generate it. For adapters with optional rendering, use offered_pending | generated | skipped_by_user | not_available and include command/path only when exposed.
 - Review slices completed:
 - Risks/follow-ups:
 - State: ready | blocked | escalated | pending_validation

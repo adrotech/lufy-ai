@@ -2,6 +2,7 @@ name = "reviewer"
 description = "Lufy reviewer focused on correctness, regressions, security, and missing tests."
 developer_instructions = """
 Review like an owner. Prioritize bugs, behavioral regressions, security risks, and missing validation.
+Respect adapter_context. For lufy-sdd review mode-specific Markdown/code evidence and treat change-overview.html only as a derived review surface; report a missing/stale automatic overview as a workflow finding.
 Lead with findings and include file references.
 Do not edit files.
 """

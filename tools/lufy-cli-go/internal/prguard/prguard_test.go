@@ -68,6 +68,57 @@ func TestGuardPassesWithoutIgnoredOrInternalPaths(t *testing.T) {
 	}
 }
 
+func TestInternalFilesAllowsOnlyUserOwnedLufySDDArtifacts(t *testing.T) {
+	files := []string{
+		".lufy/sdd/config.yaml",
+		".lufy/sdd/actions/propose.md",
+		".lufy/workflows/sdd/changes/add-audit/proposal.md",
+		".lufy/workflows/sdd/specs/audit/spec.md",
+		".lufy/workflows/sdd/decisions/0001-audit.md",
+		".lufy/workflows/sdd/verification/add-audit/report.md",
+		".lufy/workflows/sdd/archive/2026-08-18-add-audit/change-overview.html",
+		".lufy/workflows/sdd/config.yaml",
+		".lufy/managed-state/install-state.json",
+		".lufy/context/graph.json",
+	}
+	matches := internalFiles(files)
+	want := []string{
+		".lufy/workflows/sdd/config.yaml",
+		".lufy/managed-state/install-state.json",
+		".lufy/context/graph.json",
+	}
+	if len(matches) != len(want) {
+		t.Fatalf("internal matches = %#v", matches)
+	}
+	for index, path := range want {
+		if matches[index].Path != path || matches[index].Pattern != ".lufy/" {
+			t.Fatalf("match %d = %#v want %s", index, matches[index], path)
+		}
+	}
+}
+
+func TestGuardStillBlocksExplicitlyIgnoredLufySDDArtifact(t *testing.T) {
+	repo := initRepo(t)
+	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/\n")
+	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
+	git(t, repo, "add", ".gitignore", "README.md")
+	git(t, repo, "commit", "-m", "base")
+	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
+
+	path := filepath.Join(repo, ".lufy", "workflows", "sdd", "changes", "demo", "proposal.md")
+	writeFile(t, path, "# Proposal\n")
+	git(t, repo, "add", "-f", ".lufy/workflows/sdd/changes/demo/proposal.md")
+	git(t, repo, "commit", "-m", "add ignored sdd artifact")
+
+	report, err := NewService().Build(Options{Target: repo, Base: base})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OK || len(report.IgnoredMatches) != 1 || len(report.InternalMatches) != 0 {
+		t.Fatalf("explicit ignore must block without internal false positive: %#v", report)
+	}
+}
+
 func TestGuardIncludeWorktreeDetectsPendingIgnoredFile(t *testing.T) {
 	repo := initRepo(t)
 	writeFile(t, filepath.Join(repo, ".gitignore"), "openspec/\n")

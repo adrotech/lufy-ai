@@ -1,0 +1,38 @@
+version: 1
+workflow: lufy-sdd
+profile: core
+
+specs:
+  path: specs
+  entry: spec.md
+
+changes:
+  path: changes
+  archive: archive
+  naming: kebab-case
+
+overview:
+  enabled: true
+  file: change-overview.html
+  derivedFromMarkdown: true
+  refreshOn:
+    - new
+    - validate
+    - sync
+    - archive
+
+verification:
+  path: verification
+  evidenceRequiredForArchive: true
+
+delta:
+  markers:
+    - ADDED
+    - MODIFIED
+    - REMOVED
+  scenarioClauses:
+    required:
+      - WHEN
+      - THEN
+    optional:
+      - GIVEN
