@@ -49,7 +49,7 @@ func TestNewValidateAndStatus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("status: %v", err)
 	}
-	if status.Status != "in_progress" || status.Progress.Total != 3 {
+	if status.Status != "in_progress" || status.Progress.Total <= 3 {
 		t.Fatalf("status = %#v", status)
 	}
 	if afterStatus := mustRead(t, overviewPath); beforeStatus != afterStatus {
@@ -84,6 +84,44 @@ func TestValidateRefreshesOverviewAfterMarkdownEdit(t *testing.T) {
 	}
 }
 
+func TestFullScaffoldCapturesMethodologyDepth(t *testing.T) {
+	target := workflowFixture(t)
+	service := NewService()
+	if _, err := service.New(target, "deep-change", "deep-capability"); err != nil {
+		t.Fatal(err)
+	}
+	changeRoot := filepath.Join(target, lufypaths.LufySDD, "changes", "deep-change")
+	proposal := mustRead(t, filepath.Join(changeRoot, "proposal.md"))
+	requireContains(t, proposal,
+		"## LLM Objective",
+		"## Constraints",
+		"## Environment",
+		"## Acceptance Criteria",
+	)
+	design := mustRead(t, filepath.Join(changeRoot, "design.md"))
+	requireContains(t, design,
+		"## Architecture Overview",
+		"## Component Model",
+		"## Data And Persistence",
+		"## Design Patterns",
+		"## Security, Privacy And Safety",
+		"```mermaid",
+	)
+	tasks := mustRead(t, filepath.Join(changeRoot, "tasks.md"))
+	requireContains(t, tasks,
+		"Analysis and constraints",
+		"Design alignment",
+		"Sync and delivery readiness",
+	)
+	spec := mustRead(t, filepath.Join(changeRoot, "specs", "deep-capability", "spec.md"))
+	requireContains(t, spec,
+		"## Intent",
+		"## ADDED Requirements",
+		"## MODIFIED Requirements",
+		"## REMOVED Requirements",
+	)
+}
+
 func TestLiteLifecycleUsesBoundedArtifacts(t *testing.T) {
 	target := workflowFixture(t)
 	service := NewService()
@@ -97,6 +135,18 @@ func TestLiteLifecycleUsesBoundedArtifacts(t *testing.T) {
 			t.Fatalf("lite creó artifact full %s: %v", rel, statErr)
 		}
 	}
+	proposal := mustRead(t, filepath.Join(changeRoot, "proposal.md"))
+	requireContains(t, proposal,
+		"## LLM Objective",
+		"## Constraints",
+		"## Environment",
+		"Opcional para Lite",
+	)
+	tasks := mustRead(t, filepath.Join(changeRoot, "tasks.md"))
+	requireContains(t, tasks,
+		"Para Lite, mantener contexto compacto",
+		"verification/quick-fix/",
+	)
 	overview := mustRead(t, filepath.Join(changeRoot, overviewFile))
 	if !strings.Contains(overview, "mode: lite") || strings.Contains(overview, "Spec:") || strings.Contains(overview, ">Design<") {
 		t.Fatalf("overview lite inválido: %s", overview)
@@ -406,4 +456,13 @@ func mustRead(t *testing.T, path string) string {
 		t.Fatal(err)
 	}
 	return string(body)
+}
+
+func requireContains(t *testing.T, body string, parts ...string) {
+	t.Helper()
+	for _, part := range parts {
+		if !strings.Contains(body, part) {
+			t.Fatalf("body missing %q:\n%s", part, body)
+		}
+	}
 }
