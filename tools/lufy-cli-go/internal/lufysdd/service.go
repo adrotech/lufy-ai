@@ -82,15 +82,15 @@ func (s Service) NewWithMode(target, change, capability string, mode Mode) (Repo
 		body string
 	}
 	files := []scaffoldFile{
-		{rel: "change.yaml", body: fmt.Sprintf("schemaVersion: 1\nid: %s\nmode: %s\nstatus: proposed\nsyncedDigest: \"\"\n", change, mode)},
-		{rel: "proposal.md", body: fmt.Sprintf("# Proposal: %s\n\n## Why\n\nDescribe el problema y el outcome esperado.\n\n## What Changes\n\n- Describe el alcance.\n\n## Non-Goals\n\n- Describe lo que queda fuera.\n", change)},
+		{rel: "change.yaml", body: metadataScaffold(change, mode)},
+		{rel: "proposal.md", body: proposalScaffold(change, mode)},
 	}
 	if mode == ModeFull {
-		files = append(files, scaffoldFile{rel: "design.md", body: fmt.Sprintf("# Design: %s\n\n## Context\n\nDescribe el contexto técnico.\n\n## Decisions\n\nDescribe las decisiones y tradeoffs.\n\n## Risks\n\nDescribe riesgos y mitigaciones.\n", change)})
+		files = append(files, scaffoldFile{rel: "design.md", body: designScaffold(change)})
 	}
-	files = append(files, scaffoldFile{rel: "tasks.md", body: fmt.Sprintf("# Tasks: %s\n\n- [ ] Implementar el cambio.\n- [ ] Ejecutar validación proporcional.\n- [ ] Registrar evidencia en `.lufy/workflows/sdd/verification/%s/`.\n", change, change)})
+	files = append(files, scaffoldFile{rel: "tasks.md", body: tasksScaffold(change)})
 	if mode == ModeFull {
-		files = append(files, scaffoldFile{rel: filepath.Join("specs", capability, "spec.md"), body: fmt.Sprintf("# %s Specification Delta\n\n## ADDED Requirements\n\n### Requirement: Describe the required behavior\n\nEl sistema SHALL describir un comportamiento verificable.\n\n#### Scenario: Describe the expected outcome\n\n- **WHEN** ocurre una condición concreta\n- **THEN** ocurre un resultado observable\n", capability)})
+		files = append(files, scaffoldFile{rel: filepath.Join("specs", capability, "spec.md"), body: specScaffold(capability)})
 	}
 	for _, file := range files {
 		rel, body := file.rel, file.body
@@ -113,6 +113,257 @@ func (s Service) NewWithMode(target, change, capability string, mode Mode) (Repo
 		return Report{}, err
 	}
 	return Report{Schema: ReportSchema, Action: "new", Change: change, Mode: mode, Status: "proposed", Root: root, Progress: Progress{}, Diagnostics: []Diagnostic{}}, nil
+}
+
+func metadataScaffold(change string, mode Mode) string {
+	return fmt.Sprintf("schemaVersion: 1\nid: %s\nmode: %s\nstatus: proposed\nsyncedDigest: \"\"\n", change, mode)
+}
+
+func proposalScaffold(change string, mode Mode) string {
+	diagramGuidance := "Usa esta sección solo si reduce ambigüedad. En `full`, los diagramas completos viven en `design.md`."
+	if mode == ModeLite {
+		diagramGuidance = "Opcional para Lite: incluye un diagrama compacto solo si aclara flujo, componentes o datos."
+	}
+	return fmt.Sprintf(`# Proposal: %[1]s
+
+## LLM Objective
+
+Describe el resultado observable que debe alcanzar el LLM.
+
+- Outcome principal:
+- Usuario, sistema o rol beneficiado:
+- Señal objetiva de éxito:
+- Tradeoff que no debe optimizarse accidentalmente:
+
+## Problem
+
+Describe el problema actual, su impacto y por qué debe resolverse ahora.
+
+## Current Behavior
+
+- Comportamiento actual:
+- Archivos, módulos o flujos afectados:
+- Evidencia disponible:
+
+## Target Behavior
+
+- Comportamiento esperado:
+- Contratos públicos o internos que cambian:
+- Estados, errores o bordes esperados:
+
+## Scope
+
+### In Scope
+
+-
+
+### Out of Scope
+
+-
+
+## Constraints
+
+- No cambiar contratos públicos, seguridad, esquema de datos, puertos o defaults salvo autorización explícita en este proposal.
+- Preservar trabajo local no relacionado y assets user-owned.
+- Mantener cambios mínimos y alineados con patrones existentes.
+- Registrar cualquier desviación como riesgo antes de implementar.
+
+## Environment
+
+- Runtime/toolchain esperado:
+- Comandos reales de validación:
+- Dependencias o servicios externos:
+- Variables/configuración necesarias:
+
+## Acceptance Criteria
+
+- **WHEN** ocurre una condición observable
+- **THEN** el sistema produce un resultado verificable
+
+## Diagrams
+
+%[2]s
+
+`+"```mermaid"+`
+flowchart TD
+  A["Input / trigger"] --> B["Change behavior"]
+  B --> C["Validated outcome"]
+`+"```"+`
+
+## Risks
+
+-
+
+## Open Questions
+
+-
+`, change, diagramGuidance)
+}
+
+func designScaffold(change string) string {
+	return fmt.Sprintf(`# Design: %[1]s
+
+## Context
+
+Resume el sistema existente, dependencias relevantes, ownership de módulos y límites que condicionan el diseño.
+
+## Goals And Non-Goals
+
+### Goals
+
+-
+
+### Non-Goals
+
+-
+
+## Architecture Overview
+
+Describe la arquitectura objetivo y cómo se integra con la estructura actual.
+
+`+"```mermaid"+`
+flowchart LR
+  User["Actor / caller"] --> Surface["Public surface"]
+  Surface --> Service["Application service"]
+  Service --> Domain["Domain rules"]
+  Service --> Port["Port / adapter"]
+`+"```"+`
+
+## Component Model
+
+| Component | Responsibility | Inputs | Outputs | Owner/Boundary |
+| --- | --- | --- | --- | --- |
+| <component> | <responsibility> | <inputs> | <outputs> | <boundary> |
+
+`+"```mermaid"+`
+graph TD
+  A["Component A"] --> B["Component B"]
+  B --> C["Component C"]
+`+"```"+`
+
+## Data And Persistence
+
+Completar si el cambio toca persistencia, archivos, cache, eventos o estructuras durables. Si no aplica, indicar `+"`not_applicable`"+` y justificar.
+
+`+"```mermaid"+`
+erDiagram
+  ENTITY_A {
+    string id
+  }
+  ENTITY_B {
+    string id
+  }
+  ENTITY_A ||--o{ ENTITY_B : relates_to
+`+"```"+`
+
+## Workflow
+
+`+"```mermaid"+`
+sequenceDiagram
+  participant Caller
+  participant Service
+  participant Adapter
+  Caller->>Service: request
+  Service->>Adapter: side effect
+  Adapter-->>Service: result
+  Service-->>Caller: response
+`+"```"+`
+
+## Design Patterns
+
+- Pattern(s) selected:
+- Why these patterns fit:
+- Alternatives rejected:
+- Existing local patterns reused:
+
+## Security, Privacy And Safety
+
+- Auth/authz impact:
+- Secret handling:
+- User data impact:
+- File/system boundary impact:
+- Abuse or failure mode:
+
+## Operational Concerns
+
+- Performance:
+- Observability:
+- Migration/backfill:
+- Rollback:
+- Compatibility:
+
+## Decisions
+
+### Decision: <title>
+
+- Context:
+- Decision:
+- Consequences:
+
+## Validation Strategy
+
+- Unit/integration tests:
+- Static checks:
+- Manual/static review:
+- Cross-platform concerns:
+
+## Risks
+
+-
+`, change)
+}
+
+func tasksScaffold(change string) string {
+	return fmt.Sprintf(`# Tasks: %[1]s
+
+- [ ] 1. Analysis and constraints
+  - [ ] 1.1 Revisar archivos existentes, dependencias, ownership y patrones locales.
+  - [ ] 1.2 Confirmar alcance, non-goals, restricciones y entorno real.
+  - [ ] 1.3 Identificar riesgos, decisiones pendientes y necesidad de escalar Lite -> Full.
+
+- [ ] 2. Design alignment
+  - [ ] 2.1 Para Full, completar arquitectura, componentes, datos, seguridad, operaciones y diagramas.
+  - [ ] 2.2 Para Lite, mantener contexto compacto y agregar diagramas solo si reducen ambigüedad.
+  - [ ] 2.3 Confirmar criterios WHEN/THEN observables antes de implementar.
+
+- [ ] 3. Implementation
+  - [ ] 3.1 Implementar por bloques coherentes, sin mezclar cambios no relacionados.
+  - [ ] 3.2 Preservar contratos públicos, seguridad, datos y defaults salvo autorización explícita.
+  - [ ] 3.3 Actualizar tests/docs ligados al cambio.
+
+- [ ] 4. Validation
+  - [ ] 4.1 Ejecutar validación proporcional real.
+  - [ ] 4.2 Registrar comandos, resultados y limitaciones bajo `+"`verification/%[1]s/`"+`.
+  - [ ] 4.3 Verificar que `+"`change-overview.html`"+` fue refrescado por el lifecycle.
+
+- [ ] 5. Sync and delivery readiness
+  - [ ] 5.1 Para Full, ejecutar sync cuando los deltas estén validados.
+  - [ ] 5.2 Revisar estado de gates: implemented, validated, delivery_pending, delivered o closed.
+  - [ ] 5.3 No archivar ni reportar cierre sin evidencia de validación, sync y delivery cuando aplique.
+`, change)
+}
+
+func specScaffold(capability string) string {
+	return fmt.Sprintf(`# %[1]s Specification Delta
+
+## Intent
+
+Define los cambios observables del capability. Cada requirement debe ser testeable o verificable por revisión estática concreta.
+
+Usa `+"`## ADDED Requirements`"+`, `+"`## MODIFIED Requirements`"+` o `+"`## REMOVED Requirements`"+` según corresponda. No mantengas secciones vacías.
+
+## ADDED Requirements
+
+### Requirement: Describe the required behavior
+
+El sistema SHALL describir un comportamiento verificable, con inputs, outputs, límites y errores esperados cuando aplique.
+
+#### Scenario: Describe the expected outcome
+
+- **GIVEN** un estado inicial relevante
+- **WHEN** ocurre una condición concreta
+- **THEN** ocurre un resultado observable
+`, capability)
 }
 
 func (s Service) Validate(target, change string, strict bool) (Report, error) {

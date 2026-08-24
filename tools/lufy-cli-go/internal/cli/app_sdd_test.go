@@ -38,7 +38,7 @@ func TestSDDNewStatusValidateLifecycle(t *testing.T) {
 	out.Reset()
 	errOut.Reset()
 	code = Run([]string{"sdd", "status", "--target", target, "--change", "add-audit-log"}, deps)
-	if code != ExitOK || !strings.Contains(out.String(), "tasks: 0/3") {
+	if code != ExitOK || !strings.Contains(out.String(), "tasks: 0/20") {
 		t.Fatalf("status code=%d stdout=%s stderr=%s", code, out.String(), errOut.String())
 	}
 }

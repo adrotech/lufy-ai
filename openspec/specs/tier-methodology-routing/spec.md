@@ -108,11 +108,13 @@ El sistema SHALL proveer una fundacion de adapter para `lufy-sdd` con modos `lit
 #### Scenario: Lufy SDD full renders conceptual structure
 - **WHEN** se renderiza `lufy-sdd/full`
 - **THEN** la salida SHALL describir assets conceptuales bajo `.lufy/workflows/sdd/changes`, `.lufy/workflows/sdd/specs`, `.lufy/workflows/sdd/decisions` y `.lufy/workflows/sdd/verification`
+- **AND** SHALL instalar templates que guien objetivos del LLM, restricciones, entorno, patrones, arquitectura, componentes, datos, diagramas, validacion y delivery readiness
 
 #### Scenario: Lufy SDD lite renders bounded structure
 - **WHEN** se renderiza `lufy-sdd/lite`
 - **THEN** la salida SHALL describir assets conceptuales bajo `.lufy/workflows/sdd/changes`, `.lufy/workflows/sdd/decisions` y `.lufy/workflows/sdd/verification`
 - **AND** SHALL NOT requerir `.lufy/workflows/sdd/specs`
+- **AND** SHALL instalar templates compactos que capturen objetivos, restricciones, contexto minimo, aceptacion, validacion proporcional y riesgos
 
 #### Scenario: Mutating CLI accepts Lufy SDD selection
 - **WHEN** el usuario ejecuta `lufy-ai install --methodology-tier T2:lufy-sdd/lite --target <repo> --yes`
