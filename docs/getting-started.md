@@ -87,6 +87,8 @@ Para usar Lufy SDD Lite en T2:
 lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
+Lufy SDD Full/Lite está implementándose como lifecycle nativo (`new`, `status`, `validate`, `sync`, `archive`) en el change `complete-lufy-sdd-full-workflow`, incluyendo un overview HTML automático derivado de los Markdown. Hasta completar validación Go/CI y delivery, usa OpenSpec Full para trabajo T1 productivo.
+
 Para combinar OpenSpec Lite en T2 y T3 Express sin spec:
 
 ```bash

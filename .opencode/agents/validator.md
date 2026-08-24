@@ -58,6 +58,8 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 ## Workflow
 
 - Run relevant compile/test checks for assigned change.
+- Honor the carried methodology adapter. For Lufy SDD run `lufy-ai sdd validate --change <change> --strict`, verify `mode` and required source artifacts, and confirm `change-overview.html` exists and reflects the current Markdown after validation.
+- For Lufy Full, inspect `sdd status`/sync digest before archive readiness. For Lufy Lite, accept `sync: not_applicable` and do not require specs or a digest. Treat overview generation as automatic evidence, not an optional user decision.
 - When `.lufy/config/project.yaml` declares `context_graph.enabled: true` and validation requires broad file discovery, require graph preflight first (`context status`, then targeted `context query` when ready) except direct reads of config, changed files, user-named artifacts or exact handoff paths. Record fallback diagnostics when graph is unavailable/stale.
 - Inspect diffs and tests to select focused validation.
 - Diagnose failures and identify likely owner of next fix.
@@ -100,6 +102,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For installer validation, account for `tools/lufy-cli-go` as the CLI Go path and `scripts/install.sh` as a wrapper estricto without legacy fallback.
 - For OpenSpec verification, treat incomplete tasks as blockers for archive; `migrate-installer-to-go-cli` must not be archived while incomplete, and current focus is `install-managed-assets-with-hash-idempotency`.
 - For OpenSpec verification, treat checked tasks as necessary but not sufficient for archive; closure also requires validation, delivery/sync, and blocker evidence according to `.opencode/policies/delivery.md`.
+- For Lufy SDD verification, apply the same separation of gates using mode-aware CLI state: checked tasks are necessary but Full sync/Lite not-applicable, evidence, delivery and archive readiness remain distinct.
 - Return Result Contract envelope v1 for validation handoffs, preserving carried-forward `workflow_decision` fields and filling `evidence.commands` with exact command results.
 - Preserve or fill `diagnostics.memory_provider_used`, `diagnostics.context_graph_status`, `diagnostics.context_graph_queries`, `diagnostics.fallback_reason` and `diagnostics.generic_discovery_before_graph`; missing diagnostics in T1/T2 readiness states are blockers/needs_revision.
 

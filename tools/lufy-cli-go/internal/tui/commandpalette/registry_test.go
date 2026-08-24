@@ -66,3 +66,21 @@ func TestSkillsCommandsOnlyOfferWritableSkillAdapters(t *testing.T) {
 		}
 	}
 }
+
+func TestSDDNewOffersFullAndLiteModes(t *testing.T) {
+	for _, spec := range Registry() {
+		if spec.ID != "sdd-new" {
+			continue
+		}
+		for _, param := range spec.Params {
+			if param.Name == "mode" {
+				if param.Default != "full" || !reflect.DeepEqual(param.Choices, []string{"full", "lite"}) {
+					t.Fatalf("sdd-new mode = %#v", param)
+				}
+				return
+			}
+		}
+		t.Fatal("sdd-new missing mode parameter")
+	}
+	t.Fatal("registry missing sdd-new")
+}

@@ -24,6 +24,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - Classify the user's request as T1 Full SDD, T2 SDD Lite, or T3 Express.
 - Recommend the smallest workflow that can complete the request safely.
+- Resolve the concrete methodology adapter from the effective tier selection; never use the tier or execution mode as a synonym for OpenSpec.
 - When `.lufy/config/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
 - Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
 - When `.lufy/config/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
@@ -36,7 +37,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 
 - A request is non-trivial, ambiguous, cross-cutting, risky, or may need multiple agents.
 - The request asks what remains, what is pending, how specs/backlog/roadmap/OpenSpec state relate, or whether work should continue/verify/archive/deliver.
-- The orchestrator needs to decide between OpenSpec, SDD Lite, Express implementation, validation, review, or delivery.
+- The orchestrator needs to decide between the configured OpenSpec/Lufy SDD adapter, Express implementation, validation, review, or delivery.
 - Local skill coverage is unclear and a safe bootstrap recommendation may be useful.
 
 ## Do Not Use When
@@ -114,13 +115,22 @@ artifact_branching:
 
 ## Execution Modes
 
-- `full_sdd`: use OpenSpec proposal/design/spec/tasks before implementation.
-- `sdd_lite`: create or maintain a compact SDD Lite artifact or structured handoff before implementation completes.
+- `full_sdd`: use the effective Full adapter before implementation. `openspec/full` uses OpenSpec artifacts; `lufy-sdd/full` uses the native Lufy proposal/design/tasks/spec lifecycle.
+- `sdd_lite`: use the effective Lite adapter before implementation. `lufy-sdd/lite` creates a native proposal/tasks change; an OpenSpec Lite selection keeps its own contract.
 - `express`: allow direct bounded implementation with proportional validation.
 - `clarify`: ask a short blocking question before routing.
 - `explore_only`: send to `explorer` for focused impact analysis.
 - `verify_only`: send to `validator` for evidence or failure diagnosis.
 - `delivery_pending`: stop before Git/GH operations until explicit user authorization exists.
+
+## Methodology Resolution
+
+- Read the effective tier selection from carried `adapter_context`, `methodologyByTier`, install state, or project configuration supplied by the orchestrator. Keep `tier`, `execution_mode`, `methodology_id`, and `methodology_mode` as separate fields.
+- T1 + `lufy-sdd/full` routes to `lufy-sdd-propose|apply|verify|sync|archive` and `lufy-ai sdd ... --mode full`.
+- T2 + `lufy-sdd/lite` routes to the same lifecycle with `--mode lite`; sync is expected to report `not_applicable`.
+- OpenSpec selections route to their concrete `openspec-*` skills and commands.
+- T1/T2 + `none` is blocked for mutating work. If the effective selection is unavailable, return `blocked`/`clarify` with the exact missing context; do not silently default to OpenSpec.
+- For Lufy SDD Full and Lite set `overview.policy: automatic`. The expected active path is `.lufy/workflows/sdd/changes/<change>/change-overview.html`; do not emit `offered_pending` or ask whether it should be generated.
 
 ## Skill Resolution
 
@@ -231,6 +241,14 @@ workflow_decision:
   confidence: high | medium | low
   reason: <short rationale>
   execution_mode: full_sdd | sdd_lite | express | clarify | explore_only | verify_only | delivery_pending
+  adapter_context:
+    tool_id: opencode | codex | not_available | not_applicable
+    methodology_id: openspec | lufy-sdd | none | not_available | not_applicable
+    methodology_mode: full | lite | none | not_available | not_applicable
+    methodology_required: true | false | not_applicable
+    overview:
+      policy: automatic | optional | none | not_available | not_applicable
+      expected_path: <path or not_available>
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available
@@ -318,4 +336,5 @@ When recommending a next agent, ask it to return:
 - Result Contract envelope v1.
 - Evidence produced, including commands only when actually run.
 - The carried-forward `workflow_decision` fields that are relevant to that role.
+- The concrete adapter context and overview policy; Lufy SDD overview generation is automatic in both modes.
 - Risks, follow-ups, exact state, and recommended next action.

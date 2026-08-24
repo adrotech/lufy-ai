@@ -74,6 +74,10 @@ Run from repository root.
 
 Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` for spec-driven development.
 
+## Lufy SDD Workflow
+
+When the effective tier selects `lufy-sdd`, use `lufy-sdd-explore|propose|apply|verify|sync|archive` and `lufy-ai sdd`. Full uses proposal/design/tasks/specs; Lite uses proposal/tasks. Both automatically create and refresh `change-overview.html` during new/validate/sync/archive. Treat Markdown and `change.yaml` as source of truth; never ask for or invoke a separate HTML render.
+
 ## Obsidian Memory Workflow
 
 - Obsidian is the canonical portable memory when `.lufy/config/project.yaml` declares `memory.provider: obsidian`; use `lufy-ai memory status/search/validate/capture/connect/index` and the local `lufy.mem-*` skills when memory context matters.
@@ -84,8 +88,8 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 
 ## Proportional SDD Routing
 
-- **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use full OpenSpec.
-- **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use `.opencode/templates/sdd-lite.md` or a structured handoff with observable WHEN/THEN criteria.
+- **T1 Full SDD**: new capabilities, cross-cutting changes, architecture, public contracts, security, delivery policy, or high uncertainty. Use the configured Full adapter (`openspec/full` or `lufy-sdd/full`).
+- **T2 SDD Lite**: bounded behavior change, relevant bug, agent/skill update, or controlled refactor. Use the configured Lite adapter; `lufy-sdd/lite` has a native change lifecycle and should not degrade to an informal handoff.
 - **T3 Express**: trivial, mechanical, documentary, or local change with low risk. Direct bounded implementation and proportional validation are enough.
 - **OpenSpec/docs-only fast path**: if the global program is T1 but the next micro-slice touches only 1-2 OpenSpec/docs artifacts, has no runtime changes, no delivery request, and clear acceptance criteria, classify the slice as T2/T3 with `fast_path_allowed: true`; expected validation is `openspec validate "<change>" --strict` when applicable plus static file/checklist review.
 - Escalate T3 to T2 when behavior, acceptance criteria, or scope becomes unclear.
@@ -98,6 +102,7 @@ Use `opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-archive` 
 - For parallelism, read `parallel_execution`. Recommend parallel agents only for `review_slices` or `artifact candidates` with independent files/artifacts, a merge/join plan, and grouped validation after join. Do not parallelize delivery/Git/GH, schema/db migrations, unresolved public contracts or security decisions, unresolved API decisions, or slices/candidates touching the same files or artifacts.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
+- Keep tier, execution mode and methodology adapter separate. Never replace a configured `lufy-sdd` selection with OpenSpec because the route is T1/T2.
 - When `delivery` creates a PR, it must consult or wait for remote checks with command evidence such as `gh pr checks <PR>` or `gh pr view ... statusCheckRollup/mergeStateStatus`; failed, cancelled, timed out, action-required, undocumented, or tooling-missing checks are `blocked`, while existing pending checks are `delivery_pending`; neither state may be reported as `delivered`/`closed`.
 - Task/block states: `implemented` means edits are applied; `validated` means proportional evidence exists; `delivery_pending` means authorized Git/GH, existing pending remote PR checks, or sync still remains; `delivered` means authorized delivery ran and required remote PR checks passed with evidence; `closed` requires all implementation, validation, delivery/checks/sync, and traceability gates.
 
@@ -115,6 +120,11 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+overview:
+  policy: automatic | optional | none | not_available | not_applicable
+  status: generated | refreshed | preserved | offered_pending | skipped_by_user | not_available | not_applicable
+  trigger: new | validate | sync | archive | status_read_only | user_choice | not_applicable
+  path: <path or not_available>
 evidence:
   commands:
     - command: <command or none>
@@ -137,6 +147,12 @@ workflow_decision:
   program_tier: T1 | T2 | T3 | not_applicable
   slice_tier: T1 | T2 | T3 | not_applicable
   fast_path_allowed: true | false | not_applicable
+  adapter_context:
+    tool_id: opencode | codex | not_applicable
+    methodology_id: openspec | lufy-sdd | none | not_available | not_applicable
+    methodology_mode: full | lite | none | not_available | not_applicable
+    methodology_required: true | false | not_applicable
+    execution_mode: full-sdd | sdd-lite | express | not_applicable
   workflow_limits_source: workflow_limits | not_available
   workflow_limits_paths:
     sizing: workflow_limits.sizing | not_available

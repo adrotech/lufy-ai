@@ -32,6 +32,7 @@ tools/lufy-cli-go/
   internal/config/           # merge conservador de opencode.json
   internal/projectconfig/    # init/rescan de .lufy/config/project.yaml
   internal/opsx/             # resolución OpenSpec PATH/cache/embedded
+  internal/lufysdd/          # lifecycle Full/Lite y overview HTML integrado
   internal/prguard/          # guardrail PR para paths ignorados/internos
   internal/conflictplan/     # plan read-only de conflictos de install
   internal/setup/            # onboarding end-to-end de LUFY
@@ -156,7 +157,7 @@ lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 Reglas actuales:
 
 - `openspec` puede instalar superficie full/lite;
-- `lufy-sdd` instala `.lufy/workflows/sdd/` como superficie inicial;
+- `lufy-sdd` instala `.lufy/workflows/sdd/`; el candidate Full/Lite agrega `lufy-ai sdd new|status|validate|sync|archive` y overview HTML automático, pendiente de validación Go/CI y delivery;
 - `none` se permite donde la policy lo habilita;
 - `T1:none` y `T2:none` están bloqueados en comandos mutantes.
 

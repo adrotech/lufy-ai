@@ -44,7 +44,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 ## Use When
 
 - A concrete bounded change is requested.
-- OpenSpec tasks are ready for implementation.
+- OpenSpec or Lufy SDD tasks are ready for implementation.
 - Documentation/configuration needs direct updates tied to the task.
 
 ## Do Not Use When
@@ -82,6 +82,8 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Edit with the smallest safe patch.
 - Run grouped validation only at the end of all assigned tasks when available; use static/manual review when no toolchain exists.
 - Treat assigned work as a coherent task/block gate: implementation can reach `implemented`; validation and delivery are separate states unless explicitly completed by the proper role.
+- Honor the carried methodology adapter. For `lufy-sdd`, read `change.yaml` and the mode-specific Markdown sources, never treat `change-overview.html` as authoritative, and execute or request `lufy-ai sdd validate --change <change> --strict` at the grouped block boundary so the integrated overview is refreshed. Report its automatic path/status in the Result Contract.
+- For Lufy Full, preserve proposal/design/tasks/spec deltas and route successful implementation toward validate then sync. For Lufy Lite, preserve proposal/tasks and treat sync as `not_applicable`; do not invent design/spec artifacts.
 - Prefer validación agrupada at the end of the current block/proposal, including tests/coverage only when real commands exist; do not run tests constantly unless blocked, risky, or diagnosing a failure.
 - Inherit project-local validation permissions from `.lufy/config/project.yaml` when `validation.allowed_commands.implementer` is present; those commands are scoped to grouped validation and must still match the detected toolchain.
 - When `.lufy/config/project.yaml` provides `project_profile.surfaces`, apply the affected surface's `agent_lens`: frontend changes must account for UX states, accessibility, responsive behavior and feature-driven structure with feature colocation plus `index.ts` public barrels; backend changes for contracts, domain invariants, persistence/auth and observability; fullstack changes for cross-layer contracts, rollout/rollback and the same feature-driven frontend boundaries; mobile, CLI, infra and library changes for their declared concerns.
@@ -146,7 +148,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Keep transactional scopes narrow.
 - Do not change ports, auth defaults, database schema unless task explicitly authorizes it.
 - For installer work, remember the CLI Go lives in `tools/lufy-cli-go` and `scripts/install.sh` is a wrapper estricto with no legacy fallback.
-- Current OpenSpec focus is `install-managed-assets-with-hash-idempotency`: managed assets, SHA-256, manifest, idempotency, backup/restore, structural verify.
+- When `methodology_id: openspec`, follow the carried OpenSpec focus/change. When `methodology_id: lufy-sdd`, follow the native change under `.lufy/workflows/sdd/changes/<change>/`.
 - Do not mark/archive `migrate-installer-to-go-cli` complete while tasks remain incomplete.
 
 ## Required Output

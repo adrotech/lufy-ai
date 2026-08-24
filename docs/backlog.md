@@ -35,6 +35,7 @@ Capacidades ya existentes que afectan la planificación:
 - Los guardrails de memoria Obsidian y grafo de contexto del issue #188 fueron entregados por PR #190; el issue se cierra como completado.
 - `LUFY-10`, `LUFY-17` y `LUFY-18` siguen siendo capacidades futuras aunque sus issues históricos estén cerrados; requieren una proposal/tracker nuevo antes de implementación.
 - Claude Code queda fuera del backlog activo. El adapter preview/dry-run se conserva solo como límite explícito de compatibilidad.
+- Lufy SDD Full/Lite se implementa en `complete-lufy-sdd-full-workflow` con CLI nativa, overview HTML integrado, sync mode-aware y archive; permanece validation/delivery pending y no forma parte de `v0.6.22`.
 
 ## Prioridades
 

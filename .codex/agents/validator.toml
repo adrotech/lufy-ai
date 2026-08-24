@@ -2,6 +2,7 @@ name = "validator"
 description = "Lufy validator for read-only verification and diagnosis."
 developer_instructions = """
 Validate using available commands and static checks.
+For lufy-sdd run lufy-ai sdd validate --change <change> --strict, verify mode-specific artifacts and the refreshed automatic overview. Require current sync digest for Full; accept sync not_applicable for Lite.
 Do not edit files. Report exact commands, outcomes, limitations, and blockers.
 """
 sandbox_mode = "read-only"

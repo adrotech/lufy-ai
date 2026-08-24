@@ -67,7 +67,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Pendiente o futuro
 
 - Plugin marketplace, Observatory y reporting avanzado para Codex.
-- Lufy SDD full como alternativa completa a OpenSpec.
+- Validación Go/CI, delivery y release del candidate Lufy SDD Full/Lite con overview HTML integrado implementado en `complete-lufy-sdd-full-workflow`; no está disponible en la release actual.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
 - Planner 8-state completo.

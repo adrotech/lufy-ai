@@ -54,8 +54,17 @@ func TestEffectiveLufySDDLiteOmitsOpenSpecAndSpecs(t *testing.T) {
 	if hasTarget(effective, filepath.Join(".opencode", "commands", "opsx-apply.md")) {
 		t.Fatalf("lufy-sdd catalog includes openspec command")
 	}
+	if !hasTarget(effective, filepath.Join(".opencode", "commands", "lufy.sdd-propose.md")) {
+		t.Fatalf("lufy-sdd catalog missing methodology command")
+	}
+	if !hasTarget(effective, filepath.Join(".opencode", "skills", "lufy-sdd-workflow", "propose", "SKILL.md")) {
+		t.Fatalf("lufy-sdd catalog missing methodology skill")
+	}
 	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "README.md")) {
 		t.Fatalf("lufy-sdd catalog missing readme")
+	}
+	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "config.yaml")) {
+		t.Fatalf("lufy-sdd catalog missing config")
 	}
 	if !hasTarget(effective, filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep")) {
 		t.Fatalf("lufy-sdd lite catalog missing changes")
@@ -99,6 +108,7 @@ func TestEffectiveCodexIncludesCodexSurfaceAndOmitsOpenCode(t *testing.T) {
 	for _, target := range []string{
 		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"),
 		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"),
 		filepath.Join(".codex", "config.toml"),
 		filepath.Join(".codex", "lufy-agent-mapping.md"),
 		filepath.Join(".codex", "agents", "implementer.toml"),
@@ -113,6 +123,38 @@ func TestEffectiveCodexIncludesCodexSurfaceAndOmitsOpenCode(t *testing.T) {
 	}
 	if hasTarget(effective, "tui.json") {
 		t.Fatalf("codex effective catalog includes opencode tui")
+	}
+}
+
+func TestEffectiveCodexLufySDDUsesNeutralRouterAndLufySkillsOnly(t *testing.T) {
+	harness := domain.HarnessConfig{
+		Tool: domain.ToolCodex,
+		MethodologyByTier: domain.MethodologyByTier{
+			domain.TierT1: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeFull, Required: true},
+			domain.TierT2: {ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true},
+			domain.TierT3: {ID: domain.MethodologyNone, Mode: domain.MethodologyModeNone, Required: false},
+		},
+	}
+	effective, err := Effective(testCatalog(), harness)
+	if err != nil {
+		t.Fatalf("effective catalog: %v", err)
+	}
+
+	for _, target := range []string{
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"),
+	} {
+		if !hasTarget(effective, target) {
+			t.Fatalf("codex lufy-sdd effective catalog missing %s", target)
+		}
+	}
+	for _, target := range []string{
+		filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"),
+		filepath.Join("openspec", "config.yaml"),
+	} {
+		if hasTarget(effective, target) {
+			t.Fatalf("codex lufy-sdd effective catalog includes OpenSpec asset %s", target)
+		}
 	}
 }
 
@@ -156,15 +198,20 @@ func testCatalog() assets.Catalog {
 		{TargetRel: "lufy-ia.harness.md", Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyNone, Component: "harness-reference"},
 		{TargetRel: filepath.Join(".opencode", "agents", "orchestrator.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".opencode", "commands", "opsx-apply.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-command"},
+		{TargetRel: filepath.Join(".opencode", "commands", "lufy.sdd-propose.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-command"},
 		{TargetRel: filepath.Join(".opencode", "skills", "sdd-workflow", "openspec-sync", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-skill"},
+		{TargetRel: filepath.Join(".opencode", "skills", "lufy-sdd-workflow", "propose", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-skill"},
 		{TargetRel: filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
-		{TargetRel: filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-skill"},
+		{TargetRel: filepath.Join(".agents", "skills", "openspec-propose", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-skill"},
+		{TargetRel: filepath.Join(".agents", "skills", "lufy-sdd-propose", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-skill"},
+		{TargetRel: filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".codex", "config.toml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".codex", "lufy-agent-mapping.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join(".codex", "agents", "implementer.toml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Tool: domain.ToolCodex, Methodology: domain.MethodologyNone, Component: "instruction-surface"},
 		{TargetRel: filepath.Join("openspec", "config.yaml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologySpecWorkflow, Component: "methodology-surface"},
 		{TargetRel: "tui.json", Kind: assets.KindFile, Policy: assets.PolicyNoReplace, Scope: assets.ScopeProject, Methodology: domain.MethodologyNone, Component: "tool-ui"},
 		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "README.md"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
+		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "config.yaml"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
 		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
 		{TargetRel: filepath.Join(".lufy", "workflows", "sdd", "specs", ".gitkeep"), Kind: assets.KindFile, Policy: assets.PolicyManaged, Scope: assets.ScopeProject, Methodology: domain.MethodologyLufyWorkflow, Component: "methodology-surface"},
 	}}

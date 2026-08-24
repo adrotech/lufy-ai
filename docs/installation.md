@@ -148,6 +148,18 @@ lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodolog
 lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
+`T1:lufy-sdd/full` ya tiene un candidate de lifecycle nativo en el change `complete-lufy-sdd-full-workflow`, pero todavía requiere validación Go/CI y delivery antes de considerarse disponible en una release. El flujo previsto es:
+
+```bash
+lufy-ai sdd new --change <name> --mode full --capability <name>
+lufy-ai sdd new --change <name> --mode lite
+lufy-ai sdd validate --change <name> --strict
+lufy-ai sdd sync --change <name>
+lufy-ai sdd archive --change <name>
+```
+
+Cada scaffold incluye `change-overview.html`. `validate`, `sync` y `archive` lo refrescan automáticamente desde los Markdown; no se edita ni invoca mediante un renderer separado. En Lite, `sync` devuelve `not_applicable` y archive no exige digest.
+
 Restricciones actuales:
 
 - `T1:none` está bloqueado para comandos mutantes;
