@@ -13,6 +13,22 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
+## [v0.6.23] - 2026-08-25
+
+### Added
+
+- Lufy SDD Full y Lite como metodología nativa instalable, con templates más completos para objetivos del LLM, restricciones, entorno, arquitectura, datos, patrones y diagramas.
+- Comandos y skills `lufy.sdd-*` para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios Lufy SDD desde el harness.
+
+### Changed
+
+- Assets fuente y embebidos sincronizados para distribuir Lufy SDD Full/Lite desde el CLI Go.
+- Specs OpenSpec de routing actualizadas para exigir mayor profundidad metodológica, criterios verificables y guía explícita de validación.
+
+### Fixed
+
+- `pr guard` permite archives OpenSpec versionables y sigue bloqueando changes activos internos en PRs normales.
+
 ## [v0.6.22] - 2026-08-17
 
 ### Added
