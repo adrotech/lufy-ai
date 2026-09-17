@@ -82,6 +82,58 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 	}
 }
 
+func TestProjectSurfaceCapabilitiesRoundTripAndSurviveRescan(t *testing.T) {
+	current := ProjectConfig{ProjectProfile: ProjectProfile{Surfaces: []ProjectSurface{{
+		ID:           "web-app",
+		Type:         "frontend",
+		Roots:        []string{"web"},
+		Capabilities: []string{"realtime", "rendering", "offline"},
+	}}}}
+	detected := ProjectConfig{ProjectProfile: ProjectProfile{Surfaces: []ProjectSurface{{ID: "web-app", Type: "frontend", Roots: []string{"web"}, Capabilities: []string{"desktop-shell"}}}}}
+
+	merged := MergeRescan(current, detected)
+	data, err := Marshal(merged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "capabilities:") || !strings.Contains(string(data), "realtime") {
+		t.Fatalf("capabilities missing from yaml: %s", data)
+	}
+	path := filepath.Join(t.TempDir(), "project.yaml")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if surface := requireSurface(t, loaded, "web-app"); !contains(surface.Capabilities, "realtime") || !contains(surface.Capabilities, "offline") || !contains(surface.Capabilities, "desktop-shell") {
+		t.Fatalf("capabilities did not round-trip: %#v", surface.Capabilities)
+	}
+}
+
+func TestScanDetectsInteractiveApplicationCapabilities(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "package.json", `{"dependencies":{"react":"19.0.0","phaser":"3.90.0","dexie":"4.0.0","@tauri-apps/api":"2.0.0"},"devDependencies":{"typescript":"5.0.0","vite-plugin-pwa":"1.0.0"}}`)
+	writeFile(t, root, "tsconfig.json", "{}")
+	writeFile(t, root, "go.mod", "module example.com/interactive\n\ngo 1.24\n")
+	writeFile(t, root, "api/openapi.yaml", "openapi: 3.0.0\n")
+
+	cfg, err := Scan(root, fixedTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	surface := requireSurface(t, cfg, "web-app")
+	for _, capability := range []string{"desktop-shell", "offline", "persistent-state", "realtime", "rendering"} {
+		if !contains(surface.Capabilities, capability) {
+			t.Fatalf("missing capability %s: %#v", capability, surface.Capabilities)
+		}
+		if fullstack := requireSurface(t, cfg, "fullstack-flow"); !contains(fullstack.Capabilities, capability) {
+			t.Fatalf("fullstack did not inherit capability %s: %#v", capability, fullstack.Capabilities)
+		}
+	}
+}
+
 func TestScanDetectsJavaScriptToolingFromScripts(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "package.json", `{"scripts":{"test":"vitest run","lint":"eslint .","format":"prettier --write ."}}`)

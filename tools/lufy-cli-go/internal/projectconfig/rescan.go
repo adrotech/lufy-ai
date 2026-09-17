@@ -236,8 +236,9 @@ func mergeProjectProfile(current, detected ProjectProfile) ProjectProfile {
 	}
 	byID := map[string]bool{}
 	for i, surface := range merged.Surfaces {
-		if isZeroArchitecture(surface.Architecture) {
-			if fresh, ok := detectedByID[surface.ID]; ok && !isZeroArchitecture(fresh.Architecture) {
+		if fresh, ok := detectedByID[surface.ID]; ok {
+			surface.Capabilities = unique(append(surface.Capabilities, fresh.Capabilities...))
+			if isZeroArchitecture(surface.Architecture) && !isZeroArchitecture(fresh.Architecture) {
 				surface.Architecture = fresh.Architecture
 			}
 		}

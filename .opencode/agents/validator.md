@@ -62,6 +62,7 @@ Use `AGENTS.md` for project-wide validation commands and `.opencode/policies/del
 - For Lufy Full, inspect `sdd status`/sync digest before archive readiness. For Lufy Lite, accept `sync: not_applicable` and do not require specs or a digest. Treat overview generation as automatic evidence, not an optional user decision.
 - When `.lufy/config/project.yaml` declares `context_graph.enabled: true` and validation requires broad file discovery, require graph preflight first (`context status`, then targeted `context query` when ready) except direct reads of config, changed files, user-named artifacts or exact handoff paths. Record fallback diagnostics when graph is unavailable/stale.
 - Inspect diffs and tests to select focused validation.
+- Run or consume `lufy-ai plan --target <repo> --json` when surface scope is ambiguous or cross-surface, and use required rule IDs to build the validation matrix. The plan itself is read-only planning evidence; each required rule still needs real command or manual evidence.
 - Diagnose failures and identify likely owner of next fix.
 - Produce validation evidence for `orchestrator`, `reviewer`, or `delivery`.
 - Evaluate the coherent task/block/review-slice gate, not every micro-checkbox, and report whether the next state is `validated`, `delivery_pending`, `blocked`, or an equivalent explicit state.

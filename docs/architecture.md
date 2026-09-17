@@ -76,6 +76,7 @@ flowchart TD
 | `internal/backup` | Backup/restore multiasset con manifest. |
 | `internal/config` | Merge conservador de `opencode.json`. |
 | `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
+| `internal/surfaceplan` | Resuelve superficies activas y compone contratos/validaciones read-only mediante Strategy, Factory y adapters de config/Git. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
 | `internal/contextgraph` | Grafo local determinístico: extractores, almacenamiento `.lufy/context/`, consultas lexicales, path/explain y diff impact. |
 | `internal/platform` | Path safety, locks y resolución portable de targets. |
@@ -95,6 +96,24 @@ lufy-ai context diff --target <repo> --base origin/develop
 ```
 
 Los artefactos persistidos por defecto viven bajo `.lufy/context/` (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/`). El manifest y cache no son configuración: se regeneran desde `project.yaml` y el workspace. Los agentes consumen el grafo como índice secundario para `context_graph_hints`; si falta o está stale, degradan a `not_available`/`stale` y siguen con inspección de archivos, diff y validación normal. La salida incluye ranking, comunidades determinísticas, nodos importantes, preguntas sugeridas y vecinos acotados para ahorrar lecturas/tokens iniciales. La semántica/LLM es una fase futura opcional: el comportamiento actual es conservador y local, por lo que ninguna inferencia del grafo reemplaza evidencia directa de archivos actuales, tests, logs o comandos.
+
+## Surface-aware execution plans
+
+`lufy-ai plan` transforma `project_profile.surfaces` en un contrato operativo `surface-execution-plan/v1`. La selección explícita tiene precedencia; en modo automático se comparan los archivos del diff con las roots más específicas y se usa la composición `fullstack` declarada cuando el alcance cruza superficies o modifica un contrato conectado.
+
+```mermaid
+flowchart LR
+    Input["--surface / --files / git diff"] --> Resolver["SurfaceResolverStrategy"]
+    Config["project.yaml"] --> Adapter["ProjectConfigAdapter"]
+    Adapter --> Resolver
+    Resolver --> Active["single o composed"]
+    Active --> Factory["ValidationPlanFactory"]
+    Stacks["stack commands"] --> Factory
+    Capabilities["realtime / rendering / offline / persistence / desktop"] --> Factory
+    Factory --> Plan["surface-execution-plan/v1"]
+```
+
+El plan registra decisiones, evidencias, conexiones frontend/backend y reglas tipadas. Los comandos encontrados en la configuración se reportan como sugerencias; planificar nunca implica autorización ni ejecución. Las capacidades son ortogonales al tipo de producto, de modo que un juego, editor o dashboard en tiempo real puede compartir políticas sin agregar ramas específicas al dominio.
 
 ## Lifecycle de assets
 

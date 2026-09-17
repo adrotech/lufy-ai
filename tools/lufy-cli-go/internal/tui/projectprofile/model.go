@@ -82,6 +82,7 @@ func copySurfaces(cfg projectconfig.ProjectConfig) []projectconfig.ProjectSurfac
 		surfaces[i].Stacks = append([]string{}, surfaces[i].Stacks...)
 		surfaces[i].Frameworks = append([]string{}, surfaces[i].Frameworks...)
 		surfaces[i].Connects = append([]string{}, surfaces[i].Connects...)
+		surfaces[i].Capabilities = append([]string{}, surfaces[i].Capabilities...)
 		surfaces[i].Architecture.Detected = append([]string{}, surfaces[i].Architecture.Detected...)
 		surfaces[i].Architecture.Options = append([]string{}, surfaces[i].Architecture.Options...)
 		surfaces[i].Architecture.StructuralExpectations = append([]string{}, surfaces[i].Architecture.StructuralExpectations...)
@@ -195,6 +196,9 @@ func (m Model) View() string {
 	}
 	if len(m.surfaces) > 0 {
 		selected := m.surfaces[m.cursor]
+		if len(selected.Capabilities) > 0 {
+			fmt.Fprintf(&b, "\nCapacidades: %s\n", strings.Join(selected.Capabilities, ", "))
+		}
 		if selected.Architecture.Preferred != "" {
 			fmt.Fprintf(&b, "\nArquitectura: preferred=%s detected=%s options=%s\n", selected.Architecture.Preferred, strings.Join(selected.Architecture.Detected, ","), strings.Join(selected.Architecture.Options, ","))
 			fmt.Fprintf(&b, "Estructura arquitectura: %s\n", strings.Join(selected.Architecture.StructuralExpectations, ", "))
