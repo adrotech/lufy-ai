@@ -31,6 +31,15 @@ diagnostics:
     - <query/status summary or not_applicable>
   fallback_reason: <why fallback/discovery/external memory was used, or not_applicable>
   generic_discovery_before_graph: true | false | not_applicable | not_available
+surface_execution:
+  schema_version: surface-execution-plan/v1 | not_available | not_applicable
+  source: explicit | files | git_diff | carried_handoff | not_available | not_applicable
+  primary_surface: <surface id or not_available>
+  mode: single | composed | not_available | not_applicable
+  active_surfaces:
+    - <surface id or not_applicable>
+  validation_rule_ids:
+    - <rule id or not_applicable>
 structural_acceptance:
   source: user_prompt | project_profile | spec | mixed | not_available
   expected_directories:

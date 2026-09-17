@@ -13,6 +13,7 @@ Operational guide for coding agents working in this repository.
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/workflows/sdd/` when selected
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks, with methodology chosen by tier
 - **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile` structural expectations are acceptance criteria, not optional style guidance
+- **Surface execution**: Prefer a supplied `surface-execution-plan/v1`, or generate it read-only with `lufy-ai plan`, before interpreting frontend/backend/fullstack scope manually
 
 ## Source Layout
 

@@ -90,6 +90,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - Diff or branch context, change objective, validation evidence, and any known acceptance criteria.
 - Carried `adapter_context`, source artifact paths and overview policy/status for SDD work.
 - Relevant `.lufy/config/project.yaml` context when available: affected stacks, `project_profile.surfaces`, coverage thresholds, anti-patterns, observability libraries and workflow limits.
+- A carried `surface-execution-plan/v1` when available: review its decisions, active surfaces, cross-surface contracts and required validation rule IDs against the actual diff rather than inferring the switch between frontend and backend again.
 
 ## Obsidian Memory
 
