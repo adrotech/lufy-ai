@@ -13,6 +13,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Workflow limits**: `.lufy/config/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
 - **Multi-artifact branching**: para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar hasta 2 candidates de artifacts; `orchestrator` debe hacer join antes de diseño/tareas/implementación y no se crean roles nuevos.
 - **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
+- **Surface execution**: preferir `lufy-ai plan --target <repo> --json` como fuente read-only de superficies frontend/backend/fullstack, contratos conectados y reglas de validación; el alcance explícito del usuario conserva precedencia.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
 - **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
@@ -106,6 +107,15 @@ evidence:
       notes: <key output or reason>
   static:
     - <manual/static evidence or not_applicable>
+surface_execution:
+  schema_version: surface-execution-plan/v1 | not_available | not_applicable
+  source: explicit | files | git_diff | carried_handoff | not_available | not_applicable
+  primary_surface: <surface id or not_available>
+  mode: single | composed | not_available | not_applicable
+  active_surfaces:
+    - <surface id or not_applicable>
+  validation_rule_ids:
+    - <rule id or not_applicable>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
   program_tier: T1 | T2 | T3 | not_applicable

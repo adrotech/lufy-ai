@@ -16,6 +16,7 @@ Operational guide for coding agents working in this repository.
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
 - **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
+- **Surface execution**: When available, consume `lufy-ai plan --target <repo> --json` as the canonical read-only resolution of active surfaces, cross-surface contracts and validation evidence; an explicit user scope still has precedence
 
 ## Source Layout
 

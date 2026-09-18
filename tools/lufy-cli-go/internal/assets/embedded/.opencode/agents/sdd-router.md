@@ -26,6 +26,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Recommend the smallest workflow that can complete the request safely.
 - Resolve the concrete methodology adapter from the effective tier selection; never use the tier or execution mode as a synonym for OpenSpec.
 - When `.lufy/config/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
+- If a `surface-execution-plan/v1` is already provided, treat its active surfaces, contracts, decisions and validation rule IDs as the canonical surface resolution. This no-shell role must not fabricate or execute the plan command; route read-only repository resolution to `explorer` when the plan is absent and ambiguity matters.
 - Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
 - When `.lufy/config/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
 - When high-uncertainty T1 or multi-risk T2 work may benefit from comparing credible planning alternatives, recommend bounded `artifact_branching` metadata for the orchestrator without creating new roles.

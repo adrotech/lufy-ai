@@ -42,6 +42,7 @@ type ProjectSurface struct {
 	Stacks       []string            `yaml:"stacks"`
 	Frameworks   []string            `yaml:"frameworks"`
 	Connects     []string            `yaml:"connects,omitempty"`
+	Capabilities []string            `yaml:"capabilities,omitempty"`
 	Architecture ArchitectureProfile `yaml:"architecture,omitempty"`
 	AgentLens    AgentLens           `yaml:"agent_lens"`
 	Extra        map[string]any      `yaml:",inline,omitempty"`

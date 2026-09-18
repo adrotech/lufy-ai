@@ -61,6 +61,8 @@ func Run(args []string, deps Dependencies) int {
 		return runInit(args[1:], deps)
 	case "scan":
 		return runScan(args[1:], deps)
+	case "plan":
+		return runPlan(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
 	case "uninstall":
@@ -1607,6 +1609,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Comandos:")
 	fmt.Fprintln(out, "  init      Genera .lufy/config/project.yaml stack-aware")
 	fmt.Fprintln(out, "  scan      Escanea stacks/superficies y actualiza project.yaml")
+	fmt.Fprintln(out, "  plan      Resuelve superficies y validaciones para un cambio")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")

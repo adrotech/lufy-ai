@@ -78,6 +78,16 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --scope project --d
 
 `init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
 
+Antes de implementar, `plan` convierte esas superficies en un alcance ejecutable y explicable:
+
+```bash
+lufy-ai plan --target /ruta/a/tu/proyecto --base origin/develop
+lufy-ai plan --target /ruta/a/tu/proyecto --files web/src/App.tsx,api/openapi.yaml --json
+lufy-ai plan --target /ruta/a/tu/proyecto --surface web-app --capabilities realtime,rendering,offline,persistent-state,desktop-shell
+```
+
+El comando es read-only: resuelve la superficie activa, eleva contratos conectados a una composición fullstack y propone evidencia de validación, pero no ejecuta comandos. `project_profile.surfaces[*].capabilities` permite declarar políticas portables para aplicaciones interactivas sin hardcodear un tipo de producto.
+
 `memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. La configuracion canonica de memoria/vault vive en `.lufy/config/project.yaml`; el contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter/backlinks, busca notas y persiste conocimiento con `lufy-ai memory validate|search|capture|connect|index`.
 
 ### 3. Instalar y verificar
@@ -210,6 +220,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai menu` | Abre un command palette Bubble Tea en TTY; también aparece cuando ejecutas `lufy-ai` sin argumentos en una terminal interactiva. |
 | `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
+| `lufy-ai plan` | Genera un plan read-only y determinístico de superficies, contratos, capacidades y validaciones desde selección explícita, archivos o Git diff. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
