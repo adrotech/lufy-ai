@@ -68,15 +68,38 @@ type MethodologySelection struct {
 
 type MethodologyByTier map[Tier]MethodologySelection
 
+type HarnessSource string
+
+const (
+	HarnessSourceExplicit      HarnessSource = "explicit"
+	HarnessSourceProjectConfig HarnessSource = "project-config"
+	HarnessSourceInstallState  HarnessSource = "install-state"
+	HarnessSourceDefault       HarnessSource = "default"
+)
+
+type HarnessProvenance struct {
+	Tool              HarnessSource          `json:"tool" yaml:"tool"`
+	MethodologyByTier map[Tier]HarnessSource `json:"methodologyByTier" yaml:"methodology_by_tier"`
+}
+
 type HarnessConfig struct {
 	Tool              ToolID
 	MethodologyByTier MethodologyByTier
+	Provenance        HarnessProvenance
 }
 
 func DefaultHarnessConfig() HarnessConfig {
 	return HarnessConfig{
 		Tool:              ToolInitialDefault,
 		MethodologyByTier: DefaultMethodologyByTier(),
+		Provenance: HarnessProvenance{
+			Tool: HarnessSourceDefault,
+			MethodologyByTier: map[Tier]HarnessSource{
+				TierT1: HarnessSourceDefault,
+				TierT2: HarnessSourceDefault,
+				TierT3: HarnessSourceDefault,
+			},
+		},
 	}
 }
 
@@ -136,7 +159,40 @@ func (c HarnessConfig) WithDefaults() HarnessConfig {
 	if len(c.MethodologyByTier) > 0 {
 		defaults.MethodologyByTier = c.MethodologyByTier.WithDefaults()
 	}
+	if c.Provenance.Tool != "" {
+		defaults.Provenance.Tool = c.Provenance.Tool
+	}
+	for tier, source := range c.Provenance.MethodologyByTier {
+		if source != "" {
+			defaults.Provenance.MethodologyByTier[tier] = source
+		}
+	}
 	return defaults
+}
+
+func (c HarnessConfig) ToolIsExplicit() bool {
+	if c.Provenance.Tool == HarnessSourceExplicit {
+		return true
+	}
+	if c.Provenance.Tool == "" {
+		return c.Tool != ""
+	}
+	return c.Provenance.Tool == HarnessSourceDefault && c.Tool != "" && c.Tool != DefaultHarnessConfig().Tool
+}
+
+func (c HarnessConfig) TierIsExplicit(tier Tier) bool {
+	if c.Provenance.MethodologyByTier[tier] == HarnessSourceExplicit {
+		return true
+	}
+	selection, present := c.MethodologyByTier[tier]
+	if !present {
+		return false
+	}
+	source := c.Provenance.MethodologyByTier[tier]
+	if source == "" {
+		return true
+	}
+	return source == HarnessSourceDefault && selection != DefaultMethodologyByTier()[tier]
 }
 
 func (c HarnessConfig) ValidateSupported() error {

@@ -54,14 +54,14 @@ STRUCTURAL_ACCEPTANCE_CONTRACT_PATHS=(
   ".opencode/agents/validator.md"
   ".opencode/agents/reviewer.md"
   ".opencode/templates/sdd-lite.md"
-  ".opencode/templates/result-contract.md"
+  ".lufy/contracts/result-contract.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/sdd-router.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/orchestrator.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/implementer.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/validator.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/reviewer.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/sdd-lite.md"
-  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/result-contract.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.lufy/contracts/result-contract.md"
 )
 
 STRUCTURAL_PROFILE_CONTRACT_PATHS=(
@@ -87,7 +87,7 @@ MEMORY_CONTEXT_GUARDRAIL_PATHS=(
   ".opencode/agents/delivery.md"
   ".opencode/skills/lufy.context-search/SKILL.md"
   ".opencode/skills/lufy.mem-search/SKILL.md"
-  ".opencode/templates/result-contract.md"
+  ".lufy/contracts/result-contract.md"
   ".opencode/templates/sdd-lite.md"
   ".opencode/plugins/lufy-memory-context.ts"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/sdd-router.md"
@@ -99,7 +99,7 @@ MEMORY_CONTEXT_GUARDRAIL_PATHS=(
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/agents/delivery.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/skills/lufy.context-search/SKILL.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/skills/lufy.mem-search/SKILL.md"
-  "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/result-contract.md"
+  "tools/lufy-cli-go/internal/assets/embedded/.lufy/contracts/result-contract.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/templates/sdd-lite.md"
   "tools/lufy-cli-go/internal/assets/embedded/.opencode/plugins/lufy-memory-context.ts"
 )

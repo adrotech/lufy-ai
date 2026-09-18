@@ -1,0 +1,6 @@
+interface:
+  display_name: "Lufy Git Delivery"
+  short_description: "Entrega Git/GitHub con autorización y trazabilidad."
+  default_prompt: "Ejecuta solo el delivery autorizado, conserva branch safety y devuelve evidencia verificable."
+policy:
+  allow_implicit_invocation: false

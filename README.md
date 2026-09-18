@@ -25,7 +25,7 @@
 
 `lufy-ai` es un harness instalable. No reemplaza tu stack, no genera una app y no fuerza una metodología única. Agrega una capa operativa sobre un repositorio para coordinar agentes, reglas de workflow, specs, validación, delivery, memoria local, grafo de contexto y assets gestionados.
 
-La versión actual instala el preset productivo **OpenCode + OpenSpec**. El core ya está orientado a arquitectura hexagonal: tiers, roles, Result Contract, policies, validación y managed assets viven como dominio neutral; OpenCode, OpenSpec y Lufy SDD son adapters seleccionables o modelados alrededor de ese dominio.
+La versión publicada mantiene **OpenCode + OpenSpec** como preset productivo principal. El source tree ya valida también una instalación Codex project-local autocontenida. El core sigue una arquitectura hexagonal: tiers, roles, Result Contract, policies, validación y managed assets viven como dominio neutral; OpenCode, Codex, OpenSpec y Lufy SDD se seleccionan como adapters.
 
 El objetivo de producto es que Lufy sea el harness y que la tool sea reemplazable: hoy OpenCode es el preset productivo principal, Codex ya tiene adapter core escribible project-local y Claude Code sigue como preview dry-run hasta que exista una superficie validada.
 
@@ -138,8 +138,9 @@ Para cerrar la sesión con trazabilidad local:
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | Codex core | `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | Roles, skills, hooks, reglas y config project-locales cuando se instala con `--tool codex`. |
+| Contratos neutrales | `.lufy/contracts/` | Delivery, Result Contract y recursos de PR review compartidos; cada adapter conserva sólo su overlay. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
-| Lufy SDD | `.lufy/workflows/sdd/` | Superficie opcional Full/Lite con lifecycle nativo, routing por tier y `change-overview.html` automático; permanece pendiente la validación Go/CI y el delivery del candidate. |
+| Lufy SDD | `.lufy/workflows/sdd/` | Superficie opcional Full/Lite con lifecycle nativo, routing por tier y `change-overview.html` automático; validada localmente y pendiente de delivery/release. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas legacy; `AGENTS.md` usa bloque LUFY gestionado compacto. |
 | Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 

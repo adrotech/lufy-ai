@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexsurface"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
@@ -34,18 +36,20 @@ type PinOptions struct {
 }
 
 type InfoReport struct {
-	TargetRoot            string   `json:"targetRoot"`
-	Installed             bool     `json:"installed"`
-	Tool                  string   `json:"tool"`
-	MethodologyByTier     any      `json:"methodologyByTier,omitempty"`
-	CatalogAssets         int      `json:"catalogAssets"`
-	ManifestAssets        int      `json:"manifestAssets,omitempty"`
-	Pinned                int      `json:"pinned,omitempty"`
-	ConflictsPending      int      `json:"conflictsPending,omitempty"`
-	SourceRootFingerprint string   `json:"sourceRootFingerprint,omitempty"`
-	ProjectConfig         string   `json:"projectConfig"`
-	Stacks                []string `json:"stacks,omitempty"`
-	Surfaces              []string `json:"surfaces,omitempty"`
+	TargetRoot            string                   `json:"targetRoot"`
+	Installed             bool                     `json:"installed"`
+	Tool                  string                   `json:"tool"`
+	MethodologyByTier     any                      `json:"methodologyByTier,omitempty"`
+	CatalogAssets         int                      `json:"catalogAssets"`
+	ManifestAssets        int                      `json:"manifestAssets,omitempty"`
+	Pinned                int                      `json:"pinned,omitempty"`
+	ConflictsPending      int                      `json:"conflictsPending,omitempty"`
+	SourceRootFingerprint string                   `json:"sourceRootFingerprint,omitempty"`
+	ProjectConfig         string                   `json:"projectConfig"`
+	Stacks                []string                 `json:"stacks,omitempty"`
+	Surfaces              []string                 `json:"surfaces,omitempty"`
+	HarnessProvenance     domain.HarnessProvenance `json:"harnessProvenance,omitempty"`
+	HarnessDrift          []string                 `json:"harnessDrift,omitempty"`
 }
 
 type DoctorReport struct {
@@ -85,6 +89,9 @@ func (s Service) Info(opts Options, stdout io.Writer) error {
 		fmt.Fprintf(stdout, "Fingerprint catalogo: %s\n", short(report.SourceRootFingerprint))
 	}
 	fmt.Fprintf(stdout, "Project config: %s\n", report.ProjectConfig)
+	for _, drift := range report.HarnessDrift {
+		fmt.Fprintf(stdout, "Harness drift: %s\n", drift)
+	}
 	if len(report.Stacks) > 0 {
 		fmt.Fprintf(stdout, "Stacks: %s\n", strings.Join(report.Stacks, ", "))
 	}
@@ -182,7 +189,11 @@ func (s Service) BuildInfo(opts Options) (InfoReport, error) {
 	if err != nil {
 		return InfoReport{}, err
 	}
-	harness := harnessFromContext(cfg, st)
+	resolution, err := harnessconfig.ResolveLoaded(domain.DefaultHarnessConfig(), cfg, st, false)
+	if err != nil {
+		return InfoReport{}, err
+	}
+	harness := resolution.Config
 	catalogAssets, err := effectiveCatalogAssets(harness)
 	if err != nil {
 		return InfoReport{}, err
@@ -193,6 +204,10 @@ func (s Service) BuildInfo(opts Options) (InfoReport, error) {
 		MethodologyByTier: harness.MethodologyByTier,
 		CatalogAssets:     catalogAssets,
 		ProjectConfig:     cfgStatus,
+		HarnessProvenance: harness.Provenance,
+	}
+	for _, drift := range resolution.Drifts {
+		report.HarnessDrift = append(report.HarnessDrift, harnessconfig.RecoveryMessage(drift))
 	}
 	if st != nil {
 		report.Installed = true
@@ -234,9 +249,6 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 	} else {
 		emit("ok", projectconfig.ProjectConfigPath, fmt.Sprintf("project config parseable; stacks=%d surfaces=%d", len(cfg.Stacks), len(cfg.ProjectProfile.Surfaces)))
 	}
-	reportMemoryDoctor(target, emit)
-	reportContextDoctor(target, emit)
-	reportOpenCodeMemoryHookDoctor(target, emit)
 	tool := domain.ToolInitialDefault
 	if cfg != nil && cfg.Tool != "" {
 		tool = cfg.Tool
@@ -244,10 +256,20 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 	if st != nil && st.Tool != "" {
 		tool = st.Tool
 	}
+	reportMemoryDoctor(target, emit)
+	reportContextDoctor(target, emit)
+	reportToolLifecycleDoctor(target, tool, emit)
 	reportSkillRegistryDoctor(target, tool, emit)
 	if st == nil {
 		emit("fail", state.Path(target), "falta manifest de instalación")
 		return report, nil
+	}
+	if cfg != nil {
+		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}
+		installedHarness := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}
+		for _, drift := range harnessconfig.Compare(&projectHarness, &installedHarness) {
+			emit("fail", projectconfig.ProjectConfigPath, harnessconfig.RecoveryMessage(drift))
+		}
 	}
 	emit("ok", ".lufy/managed-state/install-state.json", fmt.Sprintf("manifest schema=%d assets=%d", st.SchemaVersion, len(st.Assets)))
 	statusReport, err := status.NewService().Build(target, false, opts.Scope)
@@ -354,6 +376,19 @@ func reportOpenCodeMemoryHookDoctor(target string, emit func(level, path, messag
 	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
 }
 
+func reportToolLifecycleDoctor(target string, tool domain.ToolID, emit func(level, path, message string)) {
+	switch tool {
+	case domain.ToolCodex:
+		for _, check := range codexsurface.Validate(target) {
+			emit(check.Level, check.Path, check.Message)
+		}
+	case domain.ToolInitialDefault:
+		reportOpenCodeMemoryHookDoctor(target, emit)
+	default:
+		emit("info", "", fmt.Sprintf("tool %s sin lifecycle profundo gestionado", tool))
+	}
+}
+
 func regularFileForGovernance(path string) bool {
 	info, err := os.Lstat(path)
 	return err == nil && info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0
@@ -414,16 +449,6 @@ func loadContext(target string) (string, *projectconfig.ProjectConfig, string, *
 		return "", nil, "", nil, err
 	}
 	return resolved, cfg, cfgStatus, st, nil
-}
-
-func harnessFromContext(cfg *projectconfig.ProjectConfig, st *state.InstallState) domain.HarnessConfig {
-	if st != nil {
-		return domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}.WithDefaults()
-	}
-	if cfg != nil {
-		return domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}.WithDefaults()
-	}
-	return domain.DefaultHarnessConfig()
 }
 
 func effectiveCatalogAssets(harness domain.HarnessConfig) (int, error) {

@@ -1,6 +1,7 @@
 package projectconfig
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -1003,6 +1004,103 @@ func TestProjectConfigHelpers(t *testing.T) {
 	}
 	if stackSummary(nil) != "ninguno" || !strings.Contains(stackSummary([]Stack{{ID: "old", Deprecated: true}}), "deprecated") {
 		t.Fatalf("stackSummary unexpected")
+	}
+}
+
+func TestMergeHarnessSelectionPreservesProjectFieldsAndCanRollback(t *testing.T) {
+	target := t.TempDir()
+	path := Path(target)
+	writeFile(t, target, ProjectConfigPath, `schema_version: 1
+tool: opencode
+methodology_by_tier:
+  T1: {id: openspec, mode: full, required: true}
+  T2: {id: openspec, mode: lite, required: true}
+  T3: {id: none, mode: none, required: false}
+stacks:
+  - id: go
+    supported: true
+    frameworks: []
+    custom_stack_key: keep-stack
+workflow_limits:
+  sizing:
+    loc_budget: 321
+  routing:
+    strategy: proportional
+  proposal_slicing_strategy: review-slices
+  delivery_batch_strategy: bounded
+  stop_rules: [stop]
+  preflight: [preflight]
+  custom_limit_key: keep-limit
+memory:
+  provider: obsidian
+  root: .lufy/memory
+  vault: .lufy/memory
+  schema_version: 1
+context_graph:
+  enabled: true
+  root: .lufy/context
+  report: .lufy/context/report.md
+custom_root_key: keep-root
+`)
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	harness := domain.DefaultHarnessConfig()
+	harness.Tool = domain.ToolCodex
+	harness.MethodologyByTier[domain.TierT2] = domain.MethodologySelection{ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true}
+
+	merge, err := NewService().MergeHarnessSelection(target, harness)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !merge.Changed {
+		t.Fatal("expected harness merge")
+	}
+	merged, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.Tool != domain.ToolCodex || merged.MethodologyByTier[domain.TierT2].ID != domain.MethodologyLufyWorkflow {
+		t.Fatalf("harness selection not merged: %#v", merged)
+	}
+	if merged.WorkflowLimits.Sizing.LOCBudget != 321 || merged.Extra["custom_root_key"] != "keep-root" || merged.WorkflowLimits.Extra["custom_limit_key"] != "keep-limit" || merged.Stacks[0].Extra["custom_stack_key"] != "keep-stack" {
+		t.Fatalf("user-managed fields were not preserved: %#v", merged)
+	}
+	if err := merge.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatalf("rollback did not restore original config\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+func TestMergeHarnessSelectionCreatesCanonicalProjectConfig(t *testing.T) {
+	target := t.TempDir()
+	harness := domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	merge, err := NewService().MergeHarnessSelection(target, harness)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !merge.Changed || !merge.Created {
+		t.Fatalf("expected created merge: %#v", merge)
+	}
+	cfg, err := Load(Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != domain.ToolCodex {
+		t.Fatalf("tool = %s", cfg.Tool)
+	}
+	if err := merge.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("created config survived rollback: %v", err)
 	}
 }
 

@@ -12,5 +12,5 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) int {
-	return cli.Run(args, cli.Dependencies{Stdout: stdout, Stderr: stderr})
+	return cli.Run(args, cli.Dependencies{Stdin: os.Stdin, Stdout: stdout, Stderr: stderr})
 }

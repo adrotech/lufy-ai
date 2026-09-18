@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
@@ -154,6 +155,60 @@ func TestEffectiveCodexLufySDDUsesNeutralRouterAndLufySkillsOnly(t *testing.T) {
 	} {
 		if hasTarget(effective, target) {
 			t.Fatalf("codex lufy-sdd effective catalog includes OpenSpec asset %s", target)
+		}
+	}
+}
+
+func TestCodexEffectiveCatalogIsSelfContained(t *testing.T) {
+	base, err := assets.BuildEmbeddedCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	effective, err := Effective(base, domain.HarnessConfig{
+		Tool: domain.ToolCodex,
+		MethodologyByTier: domain.MethodologyByTier{
+			domain.TierT1: {ID: domain.MethodologySpecWorkflow, Mode: domain.MethodologyModeFull, Required: true},
+			domain.TierT2: {ID: domain.MethodologySpecWorkflow, Mode: domain.MethodologyModeLite, Required: true},
+			domain.TierT3: {ID: domain.MethodologyNone, Mode: domain.MethodologyModeNone, Required: false},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := map[string]string{
+		filepath.ToSlash(filepath.Join(".lufy", "contracts", "delivery.md")):                                     "",
+		filepath.ToSlash(filepath.Join(".lufy", "contracts", "result-contract.md")):                              "",
+		filepath.ToSlash(filepath.Join(".agents", "skills", "pr-reviewer", "references", "review-framework.md")): filepath.ToSlash(filepath.Join(".lufy", "contracts", "pr-review", "review-framework.md")),
+		filepath.ToSlash(filepath.Join(".agents", "skills", "pr-reviewer", "assets", "report.html")):             filepath.ToSlash(filepath.Join(".lufy", "contracts", "pr-review", "report.html")),
+		filepath.ToSlash(filepath.Join(".agents", "skills", "pr-reviewer", "agents", "openai.yaml")):             "",
+		filepath.ToSlash(filepath.Join(".agents", "skills", "git-delivery", "agents", "openai.yaml")):            "",
+	}
+	found := map[string]bool{}
+	for _, asset := range effective.Assets {
+		target := filepath.ToSlash(asset.TargetRel)
+		if strings.HasPrefix(target, ".opencode/") {
+			t.Fatalf("Codex-only catalog leaked OpenCode asset %s", target)
+		}
+		if expectedSource, ok := want[target]; ok {
+			found[target] = true
+			if expectedSource != "" && filepath.ToSlash(asset.SourceRel) != expectedSource {
+				t.Fatalf("generated asset %s source=%s want=%s", target, asset.SourceRel, expectedSource)
+			}
+		}
+		if strings.HasPrefix(target, ".agents/skills/") && strings.HasSuffix(target, "/SKILL.md") {
+			body, readErr := assets.ReadSourceFile(effective.SourceRoot, asset.SourceRel)
+			if readErr != nil {
+				t.Fatalf("read %s: %v", asset.SourceRel, readErr)
+			}
+			if strings.Contains(string(body), ".opencode/") {
+				t.Fatalf("Codex skill %s has mandatory OpenCode reference", target)
+			}
+		}
+	}
+	for target := range want {
+		if !found[target] {
+			t.Fatalf("Codex-only catalog missing %s", target)
 		}
 	}
 }

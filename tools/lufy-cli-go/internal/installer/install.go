@@ -14,6 +14,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
@@ -75,8 +76,8 @@ type actionExecutor interface {
 	Apply(Plan, io.Writer) error
 }
 
-type projectConfigEnsurer interface {
-	Ensure(string) (bool, error)
+type projectConfigManager interface {
+	MergeHarnessSelection(string, domain.HarnessConfig) (projectconfig.HarnessMerge, error)
 }
 
 type skillRegistryEnsurer interface {
@@ -90,7 +91,7 @@ type ActionExecutor struct{}
 type Service struct {
 	planBuilder    planBuilder
 	actionExecutor actionExecutor
-	projectConfig  projectConfigEnsurer
+	projectConfig  projectConfigManager
 	skillRegistry  skillRegistryEnsurer
 }
 
@@ -130,24 +131,30 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if len(plan.Conflicts) > 0 {
 		return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
 	}
-	if !opts.Yes && requiresConfirmation(plan.Actions) {
+	configNeedsMerge, err := projectconfig.HarnessSelectionNeedsMerge(plan.TargetRoot, plan.Harness)
+	if err != nil {
+		return err
+	}
+	if !opts.Yes && (requiresConfirmation(plan.Actions) || configNeedsMerge) {
 		return fmt.Errorf("install requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
-	if created, err := s.projectConfig.Ensure(plan.TargetRoot); err != nil {
+	configMerge, err := s.projectConfig.MergeHarnessSelection(plan.TargetRoot, plan.Harness)
+	if err != nil {
 		return err
-	} else if created {
+	}
+	if configMerge.Changed {
 		fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
 		plan, err = s.BuildPlan(opts)
 		if err != nil {
-			return err
+			return rollbackProjectConfig(configMerge, err)
 		}
 		if len(plan.Conflicts) > 0 {
-			return fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts))
+			return rollbackProjectConfig(configMerge, fmt.Errorf("install bloqueado por %d conflicto(s); resuelve manualmente y reintenta", len(plan.Conflicts)))
 		}
 	}
 
 	if err := s.applyInstall(plan, stdout); err != nil {
-		return err
+		return rollbackProjectConfig(configMerge, err)
 	}
 	s.ensureSkillRegistry(plan, stdout)
 	fmt.Fprintln(stdout, "Install real completado")
@@ -176,13 +183,11 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
-	harness := opts.Harness.WithDefaults()
-	if err := harness.ValidateSupported(); err != nil {
+	resolution, err := harnessconfig.Resolve(harnessconfig.Options{Target: target, Requested: opts.Harness, BlockOnMismatch: true})
+	if err != nil {
 		return Plan{}, err
 	}
-	if err := harness.MethodologyByTier.ValidateRoutingPolicy(domain.RoutingPolicyOptions{}); err != nil {
-		return Plan{}, err
-	}
+	harness := resolution.Config
 	globalRoot := ""
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
 		globalRoot, err = toolruntime.GlobalRoot(harness.Tool)
@@ -526,13 +531,20 @@ func installRecoveryError(err error, targetRoot string, recoveryBackup string, a
 	return fmt.Errorf("install falló después de crear backup de recovery en %s; acciones aplicadas=%d; rollback automático restauró %d archivo(s): %w", recoveryBackup, applied, restored, err)
 }
 
+func rollbackProjectConfig(merge projectconfig.HarnessMerge, installErr error) error {
+	if err := merge.Rollback(); err != nil {
+		return fmt.Errorf("%w; además falló restaurar %s: %v", installErr, projectconfig.ProjectConfigPath, err)
+	}
+	return installErr
+}
+
 func harnessConfigChanged(previous *state.InstallState, current domain.HarnessConfig) bool {
 	if previous == nil {
 		return true
 	}
 	prev := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
 	next := current.WithDefaults()
-	return !reflect.DeepEqual(prev, next)
+	return prev.Tool != next.Tool || !reflect.DeepEqual(prev.MethodologyByTier, next.MethodologyByTier)
 }
 
 func hasConflictForPath(conflicts []Conflict, path string) bool {

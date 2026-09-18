@@ -129,7 +129,10 @@ type entry struct {
 var allowedEntries = []entry{
 	{sourceRel: lufypaths.Readme, targetRel: lufypaths.Readme, kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".lufy/sdd", targetRel: lufypaths.LufySDD, kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".lufy/contracts", targetRel: ".lufy/contracts", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".agents/skills", targetRel: ".agents/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".lufy/contracts/pr-review/review-framework.md", targetRel: ".agents/skills/pr-reviewer/references/review-framework.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
+	{sourceRel: ".lufy/contracts/pr-review/report.html", targetRel: ".agents/skills/pr-reviewer/assets/report.html", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".codex", targetRel: ".codex", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},

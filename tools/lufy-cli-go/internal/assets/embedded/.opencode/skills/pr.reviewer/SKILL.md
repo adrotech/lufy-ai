@@ -120,7 +120,7 @@ Para cada cambio funcional relevante, registra:
 
 ## Framework de revisión
 
-Aplica `references/review-framework.md` como checklist base. Prioriza hallazgos con evidencia concreta de diff, código, PR, checks o comentarios previos.
+Aplica `.lufy/contracts/pr-review/review-framework.md` como checklist base neutral. Prioriza hallazgos con evidencia concreta de diff, código, PR, checks o comentarios previos.
 
 Severidades unificadas:
 
@@ -199,7 +199,7 @@ El reporte no debe ser un resumen superficial del diff. Debe leer el PR como lo 
 - Escribir el reporte en `pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html`.
 - Si el PR no tiene número, usar `pr_review/pr-review-<slug>-<yyyyMMdd-HHmm>.html`.
 - No sobrescribir archivos existentes; si colisiona, agrega sufijo `-2`, `-3`, etc.
-- Usar `templates/report.html` como estructura visual canónica y adaptar contenido real.
+- Usar `.lufy/contracts/pr-review/report.html` como estructura visual canónica y adaptar contenido real.
 - El HTML debe ser autocontenido: CSS inline, sin dependencias externas, sin JS requerido.
 - Incluir link al PR arriba cuando exista URL.
 - Todas las secciones deben estar dentro de cards/containers para evitar overflow.
@@ -208,7 +208,7 @@ El reporte no debe ser un resumen superficial del diff. Debe leer el PR como lo 
 
 El reporte debe mantener la estética unificada del overview OpenSpec `notion-dark`:
 
-- Usar el hero navy/deep navy con título grande, contenedor central `1180px`, fondo `surface`, cards blancas con borde `hairline`, radio `12px`, sombras suaves y variables CSS compatibles con `templates/report.html`.
+- Usar el hero navy/deep navy con título grande, contenedor central `1180px`, fondo `surface`, cards blancas con borde `hairline`, radio `12px`, sombras suaves y variables CSS compatibles con `.lufy/contracts/pr-review/report.html`.
 - No generar una plantilla ad hoc gris/azul ni cards con radio mayor a `12px`.
 - No cambiar la escala visual principal salvo para responsive. En desktop, el título principal debe conservar la jerarquía de hero y el gauge debe aparecer dentro de una card destacada.
 - Mantener badges, tablas, `details`, código y findings con estilos de la plantilla base.

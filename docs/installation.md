@@ -194,7 +194,11 @@ En scope `project`, la CLI gestiona:
 
 La CLI sigue reconociendo la referencia legacy `@lufy-ia.harness.md` para compatibilidad. `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
 
-En Codex, `lufy-ai install --tool codex` instala archivos `.codex/agents/*.toml` como custom agents para roles Lufy y habilita `features.multi_agent` en `.codex/config.toml`. La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
+En Codex, `lufy-ai install --tool codex` instala ocho custom agents en `.codex/agents/*.toml`, habilita `features.multi_agent` y configura lifecycle project-local para `SessionStart`, `SubagentStop`, `Stop` y `SessionEnd`. Los hooks son best-effort, respetan el trust gate de Codex y no leen transcripts ni contenido privado. `doctor` y `verify --deep` validan esta superficie sin exigir plugins o hooks OpenCode.
+
+Los skills Codex son autocontenidos: sus contratos compartidos viven en `.lufy/contracts/`, el PR reviewer recibe `references/review-framework.md` y `assets/report.html`, y la metadata opcional de discovery vive en `agents/openai.yaml`. Una instalación `--tool codex` no crea `.opencode/`.
+
+La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
 
 
 
