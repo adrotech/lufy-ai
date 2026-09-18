@@ -16,7 +16,8 @@ import (
 
 var defaultInternalPrefixes = []string{"openspec/", ".lufy/", ".lufy-ai/", "pr_review/"}
 
-var userOwnedLufySDDPrefixes = []string{
+var versionableLufyPrefixes = []string{
+	".lufy/contracts/",
 	".lufy/sdd/",
 	".lufy/workflows/sdd/changes/",
 	".lufy/workflows/sdd/specs/",
@@ -162,7 +163,7 @@ func internalFileEntries(files []changedFile) []Violation {
 		if isAllowedOpenSpecPath(changedFile{Path: slash, Status: file.Status}) {
 			continue
 		}
-		if hasAnyPrefix(slash, userOwnedLufySDDPrefixes) {
+		if hasAnyPrefix(slash, versionableLufyPrefixes) {
 			continue
 		}
 		for _, prefix := range defaultInternalPrefixes {
