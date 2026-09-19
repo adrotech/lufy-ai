@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -267,10 +268,42 @@ func TestRunInstallsCodexManagedSurface(t *testing.T) {
 	if st.Tool != domain.ToolCodex {
 		t.Fatalf("install state tool = %s", st.Tool)
 	}
+	cfg, err := projectconfig.Load(projectconfig.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.MethodologyByTier, st.MethodologyByTier) {
+		t.Fatalf("project config and install state diverged: config=%#v state=%#v", cfg, st)
+	}
 	if _, ok := st.AssetMap()[filepath.Join(".codex", "config.toml")]; !ok {
 		t.Fatalf("install state missing codex config asset")
 	}
 }
+
+func TestInstallRollsBackHarnessConfigWhenApplyFails(t *testing.T) {
+	source := minimalInstallerSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	if _, err := projectconfig.NewService().MergeHarnessSelection(target, domain.DefaultHarnessConfig()); err != nil {
+		t.Fatal(err)
+	}
+	before := readFileForTest(t, projectconfig.Path(target))
+
+	svc := NewService()
+	svc.actionExecutor = failingInstallActionExecutor{err: errors.New("apply failed")}
+	err := svc.Run(Options{Target: target, Yes: true, Harness: domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}}, &bytes.Buffer{})
+	if err == nil || !strings.Contains(err.Error(), "apply failed") {
+		t.Fatalf("expected apply failure, got %v", err)
+	}
+	after := readFileForTest(t, projectconfig.Path(target))
+	if !bytes.Equal(before, after) {
+		t.Fatalf("project config was not rolled back\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+type failingInstallActionExecutor struct{ err error }
+
+func (f failingInstallActionExecutor) Apply(Plan, io.Writer) error { return f.err }
 
 func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	source := minimalInstallerSource(t)
@@ -862,41 +895,46 @@ func minimalInstallerSource(t *testing.T) string {
 		"lufy-ia.harness.md":                "harness template\n",
 		"tui.json":                          "{}\n",
 		filepath.Join(".lufy", "README.md"): "layout\n",
-		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):        "close skill\n",
-		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):      "sdd skill\n",
-		filepath.Join(".codex", "README.md"):                                "codex readme\n",
-		filepath.Join(".codex", "config.toml"):                              "project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n",
-		filepath.Join(".codex", "lufy-agent-mapping.md"):                    "agent_execution_mode\n",
-		filepath.Join(".codex", "agents", "implementer.toml"):               "name = \"implementer\"\n",
-		filepath.Join(".codex", "hooks.json"):                               "{\"hooks\":{}}\n",
-		filepath.Join(".codex", "rules", "lufy.rules"):                      "# rules\n",
-		filepath.Join(".opencode", ".gitignore"):                            "node_modules\n",
-		filepath.Join(".opencode", "README.md"):                             "readme\n",
-		filepath.Join(".opencode", "package.json"):                          "{}\n",
-		filepath.Join(".opencode", "package-lock.json"):                     "{}\n",
-		filepath.Join(".opencode", "agents", "orchestrator.md"):             "orchestrator\n",
-		filepath.Join(".opencode", "commands", "opsx-apply.md"):             "apply\n",
-		filepath.Join(".opencode", "commands", "lufy.mem-search.md"):        "memory search\n",
-		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):           "hook\n",
-		filepath.Join(".opencode", "hooks", "memory-validate.sh"):           "memory hook\n",
-		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):        "skill\n",
-		filepath.Join(".opencode", "skills", "lufy.mem-search", "SKILL.md"): "memory skill\n",
-		filepath.Join(".opencode", "templates", "sdd-lite.md"):              "lite\n",
-		filepath.Join(".opencode", "templates", "result-contract.md"):       "result\n",
-		filepath.Join(".opencode", "templates", "memory-note.md"):           "memory note\n",
-		filepath.Join(".opencode", "policies", "delivery.md"):               "delivery\n",
-		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):      "plugin\n",
-		filepath.Join(".opencode", "agent-observatory", "state.ts"):         "state\n",
-		filepath.Join("openspec", "config.yaml"):                            "config\n",
-		filepath.Join("openspec", "UPSTREAM.json"):                          "{}\n",
-		filepath.Join("openspec", "README.md"):                              "openspec\n",
-		filepath.Join("openspec", "specs", ".gitkeep"):                      "",
-		filepath.Join(".lufy", "sdd", "README.md"):                          "lufy-sdd\n",
-		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                "",
-		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):              "",
-		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                  "",
-		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):           "",
-		filepath.Join("tools", "lufy-cli-go", "go.mod"):                     "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
+		filepath.Join(".lufy", "contracts", "README.md"):                        "contracts\n",
+		filepath.Join(".lufy", "contracts", "delivery.md"):                      "delivery\n",
+		filepath.Join(".lufy", "contracts", "result-contract.md"):               "result\n",
+		filepath.Join(".lufy", "contracts", "pr-review", "review-framework.md"): "review framework\n",
+		filepath.Join(".lufy", "contracts", "pr-review", "report.html"):         "<!DOCTYPE html>\n",
+		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):            "close skill\n",
+		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):          "sdd skill\n",
+		filepath.Join(".codex", "README.md"):                                    "codex readme\n",
+		filepath.Join(".codex", "config.toml"):                                  "project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n",
+		filepath.Join(".codex", "lufy-agent-mapping.md"):                        "agent_execution_mode\n",
+		filepath.Join(".codex", "agents", "implementer.toml"):                   "name = \"implementer\"\n",
+		filepath.Join(".codex", "hooks.json"):                                   "{\"hooks\":{}}\n",
+		filepath.Join(".codex", "rules", "lufy.rules"):                          "# rules\n",
+		filepath.Join(".opencode", ".gitignore"):                                "node_modules\n",
+		filepath.Join(".opencode", "README.md"):                                 "readme\n",
+		filepath.Join(".opencode", "package.json"):                              "{}\n",
+		filepath.Join(".opencode", "package-lock.json"):                         "{}\n",
+		filepath.Join(".opencode", "agents", "orchestrator.md"):                 "orchestrator\n",
+		filepath.Join(".opencode", "commands", "opsx-apply.md"):                 "apply\n",
+		filepath.Join(".opencode", "commands", "lufy.mem-search.md"):            "memory search\n",
+		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):               "hook\n",
+		filepath.Join(".opencode", "hooks", "memory-validate.sh"):               "memory hook\n",
+		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):            "skill\n",
+		filepath.Join(".opencode", "skills", "lufy.mem-search", "SKILL.md"):     "memory skill\n",
+		filepath.Join(".opencode", "templates", "sdd-lite.md"):                  "lite\n",
+		filepath.Join(".opencode", "templates", "result-contract.md"):           "result\n",
+		filepath.Join(".opencode", "templates", "memory-note.md"):               "memory note\n",
+		filepath.Join(".opencode", "policies", "delivery.md"):                   "delivery\n",
+		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):          "plugin\n",
+		filepath.Join(".opencode", "agent-observatory", "state.ts"):             "state\n",
+		filepath.Join("openspec", "config.yaml"):                                "config\n",
+		filepath.Join("openspec", "UPSTREAM.json"):                              "{}\n",
+		filepath.Join("openspec", "README.md"):                                  "openspec\n",
+		filepath.Join("openspec", "specs", ".gitkeep"):                          "",
+		filepath.Join(".lufy", "sdd", "README.md"):                              "lufy-sdd\n",
+		filepath.Join(".lufy", "sdd", "changes", ".gitkeep"):                    "",
+		filepath.Join(".lufy", "sdd", "decisions", ".gitkeep"):                  "",
+		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                      "",
+		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):               "",
+		filepath.Join("tools", "lufy-cli-go", "go.mod"):                         "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

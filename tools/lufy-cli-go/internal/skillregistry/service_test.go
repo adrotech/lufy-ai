@@ -12,6 +12,8 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
 func TestRefreshAndStatusLifecycle(t *testing.T) {
@@ -101,5 +103,34 @@ func TestEnsureIsIdempotentAndRepairsMovedRepository(t *testing.T) {
 	}
 	if !os.SameFile(indexedInfo, wantInfo) {
 		t.Fatalf("moved registry path points to another file: got=%s want=%s", index.Skills[0].Path, want)
+	}
+}
+
+func TestInspectResolvesToolFromInstallStateAndBlocksUnresolvedMismatch(t *testing.T) {
+	target := t.TempDir()
+	writeSkill(t, filepath.Join(target, ".agents", "skills"), "reviewer", "reviewer", "review changes")
+	harness := domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	st := state.NewWithHarness(target, nil, nil, "test", harness)
+	if err := state.WriteAtomic(target, st); err != nil {
+		t.Fatal(err)
+	}
+	service := Service{Env: ports.Env{}}
+	report, err := service.Inspect(Options{Target: target})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Tool != domain.ToolCodex {
+		t.Fatalf("tool should come from install state, got %s", report.Tool)
+	}
+	cfg := projectconfig.ProjectConfig{SchemaVersion: projectconfig.SchemaVersion, Tool: domain.ToolInitialDefault, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Inspect(Options{Target: target}); err == nil || !strings.Contains(err.Error(), "tool project=opencode install-state=codex") {
+		t.Fatalf("expected unresolved harness mismatch, got %v", err)
+	}
+	report, err = service.Inspect(Options{Target: target, Tool: domain.ToolCodex})
+	if err != nil || report.Tool != domain.ToolCodex {
+		t.Fatalf("explicit tool should resolve mismatch: report=%#v err=%v", report, err)
 	}
 }

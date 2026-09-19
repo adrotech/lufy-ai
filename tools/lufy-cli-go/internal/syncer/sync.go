@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
@@ -74,8 +75,8 @@ type actionExecutor interface {
 	Apply(Plan, io.Writer) error
 }
 
-type projectConfigEnsurer interface {
-	Ensure(string) (bool, error)
+type projectConfigManager interface {
+	MergeHarnessSelection(string, domain.HarnessConfig) (projectconfig.HarnessMerge, error)
 }
 
 type skillRegistryEnsurer interface {
@@ -89,7 +90,7 @@ type ActionExecutor struct{}
 type Service struct {
 	planBuilder    planBuilder
 	actionExecutor actionExecutor
-	projectConfig  projectConfigEnsurer
+	projectConfig  projectConfigManager
 	skillRegistry  skillRegistryEnsurer
 }
 
@@ -128,23 +129,29 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if len(plan.Conflicts) > 0 {
 		return fmt.Errorf("sync bloqueado por %d conflicto(s); resuelve drift/estado antes de reintentar", len(plan.Conflicts))
 	}
-	if requiresConfirmation(plan.Actions) && !opts.Yes {
+	configNeedsMerge, err := projectconfig.HarnessSelectionNeedsMerge(plan.TargetRoot, plan.Harness)
+	if err != nil {
+		return err
+	}
+	if (requiresConfirmation(plan.Actions) || configNeedsMerge) && !opts.Yes {
 		return fmt.Errorf("sync requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
-	if created, err := s.projectConfig.Ensure(plan.TargetRoot); err != nil {
+	configMerge, err := s.projectConfig.MergeHarnessSelection(plan.TargetRoot, plan.Harness)
+	if err != nil {
 		return err
-	} else if created {
+	}
+	if configMerge.Changed {
 		fmt.Fprintf(stdout, "- [project-config] %s\n", projectconfig.ProjectConfigPath)
 		plan, err = s.BuildPlan(opts)
 		if err != nil {
-			return err
+			return rollbackProjectConfig(configMerge, err)
 		}
 		if len(plan.Conflicts) > 0 {
-			return fmt.Errorf("sync bloqueado por %d conflicto(s); resuelve drift/estado antes de reintentar", len(plan.Conflicts))
+			return rollbackProjectConfig(configMerge, fmt.Errorf("sync bloqueado por %d conflicto(s); resuelve drift/estado antes de reintentar", len(plan.Conflicts)))
 		}
 	}
 	if err := s.apply(plan, stdout); err != nil {
-		return err
+		return rollbackProjectConfig(configMerge, err)
 	}
 	s.ensureSkillRegistry(plan, stdout)
 	fmt.Fprintln(stdout, "Sync real completado")
@@ -173,9 +180,13 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	if err != nil {
 		return Plan{}, err
 	}
+	resolution, err := harnessconfig.Resolve(harnessconfig.Options{Target: target, Requested: opts.Harness, BlockOnMismatch: true})
+	if err != nil {
+		return Plan{}, err
+	}
+	harness := resolution.Config
 	globalRoot := ""
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		harness := opts.Harness.WithDefaults()
 		globalRoot, err = toolruntime.GlobalRoot(harness.Tool)
 		if err != nil {
 			return Plan{}, err
@@ -201,15 +212,10 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	if previous == nil {
 		return Plan{}, fmt.Errorf("sync requiere %s; ejecuta install/verify antes de sincronizar", state.Path(target))
 	}
-	harness := opts.Harness.WithDefaults()
-	if err := harness.ValidateSupported(); err != nil {
-		return Plan{}, err
-	}
 	if previous.Tool != harness.Tool {
 		return Plan{}, fmt.Errorf("sync bloqueado por tool mismatch: manifest=%s solicitado=%s", previous.Tool, harness.Tool)
 	}
-	installedHarness := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
-	catalog, err = harnesscatalog.Effective(catalog, installedHarness)
+	catalog, err = harnesscatalog.Effective(catalog, harness)
 	if err != nil {
 		return Plan{}, err
 	}
@@ -218,7 +224,7 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 		return Plan{}, err
 	}
 	previousAssets := previous.AssetMap()
-	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot, Harness: installedHarness}
+	plan := Plan{SourceRoot: sourceRoot, TargetRoot: target, Catalog: catalog, Previous: previous, Scope: scope, GlobalRoot: globalRoot, Harness: harness}
 	catalogTargets := map[string]bool{}
 
 	for _, asset := range catalog.Assets {
@@ -480,7 +486,7 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 	if err != nil {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
-	st := state.New(plan.TargetRoot, plan.Previous, assetStates, fingerprint)
+	st := state.NewWithHarness(plan.TargetRoot, plan.Previous, assetStates, fingerprint, plan.Harness)
 	if err := state.WriteAtomic(plan.TargetRoot, st); err != nil {
 		return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
 	}
@@ -602,4 +608,11 @@ func shortHash(hash string) string {
 		return hash
 	}
 	return hash[:12]
+}
+
+func rollbackProjectConfig(merge projectconfig.HarnessMerge, syncErr error) error {
+	if err := merge.Rollback(); err != nil {
+		return fmt.Errorf("%w; además falló restaurar %s: %v", syncErr, projectconfig.ProjectConfigPath, err)
+	}
+	return syncErr
 }

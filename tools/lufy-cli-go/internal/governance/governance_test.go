@@ -9,8 +9,10 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -31,6 +33,9 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	}
 	if !info.Installed || info.CatalogAssets == 0 || info.ManifestAssets == 0 {
 		t.Fatalf("info missing installed/catalog/manifest data: %#v", info)
+	}
+	if info.HarnessProvenance.Tool != domain.HarnessSourceProjectConfig {
+		t.Fatalf("info missing effective harness provenance: %#v", info.HarnessProvenance)
 	}
 	if !contains(info.Stacks, "go") || !containsPrefix(info.Surfaces, "go-library:") {
 		t.Fatalf("info missing stack/surface context: %#v", info)
@@ -63,6 +68,29 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	}
 	if !strings.Contains(doctorOut.String(), "Doctor OK") {
 		t.Fatalf("Doctor() output unexpected: %s", doctorOut.String())
+	}
+}
+
+func TestDoctorFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
+	target := t.TempDir()
+	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
+		t.Fatalf("install fixture: %v", err)
+	}
+	cfg, err := projectconfig.Load(projectconfig.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Tool = domain.ToolCodex
+	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	report, err := NewService().BuildDoctor(Options{Target: target, Scope: assets.ScopeProject})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.OK || !hasDoctorCheck(report.Checks, "fail", "tool project=codex install-state=opencode") {
+		t.Fatalf("doctor accepted harness mismatch: %#v", report)
 	}
 }
 

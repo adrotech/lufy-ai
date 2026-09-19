@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
 
@@ -541,7 +543,12 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 
-	code := Run([]string{"install", "--target", target, "--yes", "--tool", "codex"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code := Run([]string{
+		"install", "--target", target, "--yes", "--tool", "codex",
+		"--methodology-tier", "T1:lufy-sdd/full",
+		"--methodology-tier", "T2:lufy-sdd/lite",
+		"--methodology-tier", "T3:none",
+	}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
@@ -554,6 +561,16 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 	}
 	if st.Tool != domain.ToolCodex {
 		t.Fatalf("tool = %s", st.Tool)
+	}
+	cfg, err := projectconfig.Load(projectconfig.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.MethodologyByTier, st.MethodologyByTier) {
+		t.Fatalf("project config and install state diverged: config=%#v state=%#v", cfg, st)
+	}
+	if got := cfg.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeFull {
+		t.Fatalf("T1 methodology = %#v", got)
 	}
 	for _, path := range []string{
 		filepath.Join(target, ".agents", "skills", "sdd-workflow", "SKILL.md"),
@@ -576,9 +593,9 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 
 	out.Reset()
 	errOut.Reset()
-	code = Run([]string{"verify", "--target", target, "--tool", "codex", "--quiet"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	code = Run([]string{"verify", "--target", target, "--quiet"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
-		t.Fatalf("verify codex expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+		t.Fatalf("verify should resolve persisted codex without repeated flag, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
 	}
 
 	out.Reset()

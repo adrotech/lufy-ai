@@ -13,6 +13,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
@@ -92,6 +93,11 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	resolution, err := harnessconfig.Resolve(harnessconfig.Options{Target: report.TargetRoot, Requested: opts.Harness, BlockOnMismatch: true})
+	if err != nil {
+		return err
+	}
+	opts.Harness = resolution.Config
 	if report.Version != nil && opts.RequireLatest && (report.Version.UpdateAvailable || report.Version.Error != "") {
 		if opts.JSON {
 			_ = writeJSON(stdout, report)
@@ -283,10 +289,11 @@ func (s Service) applyFeature(opts Options, report *Report, index int, stdout io
 	if scope == "" {
 		scope = assets.ScopeProject
 	}
-	harness := opts.Harness.WithDefaults()
-	if harness.Tool == "" {
-		harness = domain.HarnessConfig{}.WithDefaults()
+	resolution, resolveErr := harnessconfig.Resolve(harnessconfig.Options{Target: report.TargetRoot, Requested: opts.Harness, BlockOnMismatch: true})
+	if resolveErr != nil {
+		return resolveErr
 	}
+	harness := resolution.Config
 	var err error
 	switch feature.ID {
 	case "layout":

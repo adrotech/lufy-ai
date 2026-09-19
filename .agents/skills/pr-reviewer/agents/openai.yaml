@@ -1,0 +1,6 @@
+interface:
+  display_name: "Lufy PR Reviewer"
+  short_description: "Revisa PRs y genera el reporte HTML Lufy."
+  default_prompt: "Revisa el PR o branch indicado con el contrato Lufy y genera el reporte HTML autocontenido."
+policy:
+  allow_implicit_invocation: true

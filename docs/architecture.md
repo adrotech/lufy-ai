@@ -189,16 +189,18 @@ Los presets OpenCode y Codex instalan el mismo núcleo de roles:
 - `reviewer`: revisión stack-aware con severidades y scoring;
 - `delivery`: Git/GitHub solo con autorización explícita.
 
+El núcleo compartido se instala desde `.lufy/contracts/`: delivery, Result Contract y recursos de PR review. OpenCode conserva overlays de compatibilidad; Codex proyecta los recursos necesarios dentro de cada skill para progressive disclosure.
+
 También instala:
 
-- templates `sdd-lite.md` y `result-contract.md`;
-- policy de delivery;
+- template `sdd-lite.md` específico de OpenCode y Result Contract neutral;
+- contrato neutral de delivery;
 - skills `sdd-workflow`;
 - comandos `/opsx-*`;
 - comandos `/lufy.*`;
 - plugin Agent Observatory.
 
-OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, sin comandos slash ni plugin Observatory todavía.
+OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, proyecta references/assets desde `.lufy/contracts/` y mantiene lifecycle/rules nativos, sin comandos slash ni plugin Observatory todavía.
 
 ## Decisiones vigentes
 

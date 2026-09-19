@@ -13,6 +13,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexlifecycle"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextstore "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
@@ -104,6 +105,8 @@ func Run(args []string, deps Dependencies) int {
 		return runPR(args[1:], deps)
 	case "context":
 		return runContext(args[1:], deps)
+	case "lifecycle":
+		return runLifecycle(args[1:], deps)
 	case "conflicts":
 		return runConflicts(args[1:], deps)
 	case "version":
@@ -118,6 +121,21 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runLifecycle(args []string, deps Dependencies) int {
+	if len(args) != 1 || args[0] != "codex" {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai lifecycle codex")
+		return ExitUsageErr
+	}
+	if deps.Stdin == nil {
+		deps.Stdin = os.Stdin
+	}
+	if err := codexlifecycle.NewService().Run(deps.Stdin, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runSkills(args []string, deps Dependencies) int {
@@ -1367,7 +1385,11 @@ func runVerify(args []string, deps Dependencies) int {
 			return ExitRuntimeErr
 		}
 	}
-	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
+	expectedTool := domain.ToolID("")
+	if harness.ToolIsExplicit() {
+		expectedTool = harness.Tool
+	}
+	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: expectedTool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1609,6 +1631,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
+	fmt.Fprintln(out, "  lifecycle Ejecuta lifecycle portable para adapters soportados")
 	fmt.Fprintln(out, "  conflicts Planifica conflictos de install sin mutar")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")

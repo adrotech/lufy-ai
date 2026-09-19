@@ -24,7 +24,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - `.opencode/commands/`: slash commands del flujo OpenSpec (`opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive`) y comandos LUFY (`lufy.close`, `lufy.pr-review`, `lufy.onboard`, `lufy.timereport`).
 - `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios OpenSpec; skills LUFY transversales viven en `.opencode/skills/lufy.*`.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
-- `.opencode/policies/delivery.md`: fuente canónica para delivery, branch safety, validación y gates de cambios completos.
+- `.lufy/contracts/delivery.md`: fuente canónica neutral para delivery, branch safety, validación y gates; `.opencode/policies/delivery.md` es solo un overlay de compatibilidad.
 - `openspec/`: propuestas, especificaciones y tareas del flujo OpenSpec.
 - `tools/lufy-cli-go/`: implementación actual de la CLI Go usada por el instalador.
 - `scripts/install.sh`: wrapper estricto hacia `tools/lufy-cli-go`, sin fallback legacy.
@@ -175,7 +175,7 @@ skill_resolution:
 - `test-writer`: escribe o ajusta pruebas TDD stack-aware para cambios T1/T2 sustantivos y reporta evidencia RED/GREEN/TRIANGULATE/REFACTOR; no hace delivery.
 - `validator`: valida y diagnostica en modo read-only; no edita.
 - `reviewer`: revisa calidad, riesgos y cobertura con scoring L1-L5 stack-aware; no edita.
-- `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.opencode/policies/delivery.md`.
+- `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.lufy/contracts/delivery.md`.
 
 ## OpenSpec workflow
 
@@ -186,7 +186,7 @@ skill_resolution:
 - Sincronizar deltas validados a specs principales: `opsx-sync` / skill `openspec-sync`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
 - Cerrar/finalizar spec activa o cambio LUFY con gates de validación, sync, delivery, PR cerrado/merged y limpieza segura de rama: `/lufy.close` / skill `lufy.close`.
-- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md` con estado explícito.
+- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.lufy/contracts/delivery.md` con estado explícito.
 - En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
@@ -201,7 +201,7 @@ skill_resolution:
 
 ## Política de delivery
 
-- Consultar `.opencode/policies/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
+- Consultar `.lufy/contracts/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
 - PR normal: ramas `feature/*`, `fix/*`, `chore/*` o equivalentes → `develop`.
 - Promoción productiva: `develop` → `main` con autorización y evidencia de validación.
 - `main` no es base de trabajo diario; se reserva para producción, release y hotfix explícitamente autorizado.

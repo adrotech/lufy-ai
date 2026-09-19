@@ -1,3 +1,59 @@
 {
-  "hooks": {}
+  "description": "Lifecycle Lufy local, acotado y privacy-first para Codex.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if command -v lufy-ai >/dev/null 2>&1; then exec lufy-ai lifecycle codex; else printf \"%s\\n\" \"{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}\"; fi'",
+            "commandWindows": "powershell -NoProfile -Command \"if (Get-Command lufy-ai -ErrorAction SilentlyContinue) { lufy-ai lifecycle codex } else { Write-Output '{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}' }\"",
+            "timeout": 8,
+            "statusMessage": "Orientando sesión Lufy",
+            "additionalContextLimit": 800
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if command -v lufy-ai >/dev/null 2>&1; then exec lufy-ai lifecycle codex; else printf \"%s\\n\" \"{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}\"; fi'",
+            "commandWindows": "powershell -NoProfile -Command \"if (Get-Command lufy-ai -ErrorAction SilentlyContinue) { lufy-ai lifecycle codex } else { Write-Output '{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}' }\"",
+            "timeout": 4,
+            "statusMessage": "Diagnosticando handoff Lufy"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if command -v lufy-ai >/dev/null 2>&1; then exec lufy-ai lifecycle codex; else printf \"%s\\n\" \"{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}\"; fi'",
+            "commandWindows": "powershell -NoProfile -Command \"if (Get-Command lufy-ai -ErrorAction SilentlyContinue) { lufy-ai lifecycle codex } else { Write-Output '{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}' }\"",
+            "timeout": 4,
+            "statusMessage": "Consultando estado Lufy"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if command -v lufy-ai >/dev/null 2>&1; then exec lufy-ai lifecycle codex; else exit 0; fi'",
+            "commandWindows": "powershell -NoProfile -Command \"if (Get-Command lufy-ai -ErrorAction SilentlyContinue) { lufy-ai lifecycle codex }\"",
+            "timeout": 3,
+            "statusMessage": "Validando memoria Lufy"
+          }
+        ]
+      }
+    ]
+  }
 }
