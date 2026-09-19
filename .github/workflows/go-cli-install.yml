@@ -21,6 +21,7 @@ on:
       - "docs/**"
       - "AGENTS.md"
       - ".opencode/**"
+      - ".lufy/**"
       - "openspec/**"
   push:
     branches:
@@ -42,6 +43,7 @@ on:
       - "docs/**"
       - "AGENTS.md"
       - ".opencode/**"
+      - ".lufy/**"
       - "openspec/**"
 
 permissions:
