@@ -28,9 +28,22 @@ func DefaultContextGraphConfig() ContextGraphConfig {
 		Report:              ".lufy/context/GRAPH_REPORT.md",
 		SkipSensitive:       true,
 		SensitivePatterns:   []string{".env", ".env.*", "*.pem", "*.key", "*secret*", "*secrets*", "*token*", "*credentials*"},
-		Exclude:             []string{".lufy/managed-state/backups/**", ".lufy/managed-state/ancestors/**"},
+		Exclude:             []string{".lufy/managed-state/backups/**", ".lufy/managed-state/ancestors/**", ".lufy/runtime/**"},
 		MaxQueryResults:     20,
 		MaxNeighborsPerHint: 5,
+	}
+}
+
+func DefaultRunLedgerConfig() RunLedgerConfig {
+	enabled := true
+	return RunLedgerConfig{
+		Enabled: &enabled,
+		Root:    ".lufy/runtime",
+		Retention: RunLedgerRetentionConfig{
+			MaxAgeDays:      30,
+			MaxTerminalRuns: 500,
+			MaxBytes:        64 * 1024 * 1024,
+		},
 	}
 }
 

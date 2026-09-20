@@ -101,6 +101,8 @@ func Run(args []string, deps Dependencies) int {
 		return runOpsx(args[1:], deps)
 	case "sdd":
 		return runSDD(args[1:], deps)
+	case "run":
+		return runRun(args[1:], deps)
 	case "pr":
 		return runPR(args[1:], deps)
 	case "context":
@@ -1629,6 +1631,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
+	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
 	fmt.Fprintln(out, "  lifecycle Ejecuta lifecycle portable para adapters soportados")

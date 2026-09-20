@@ -37,6 +37,7 @@ func Registry() []CommandSpec {
 	dryRun := ParamSpec{Name: "dry-run", Flag: "--dry-run", Kind: ParamBool, Description: "Mostrar plan sin escribir"}
 	yes := ParamSpec{Name: "yes", Flag: "--yes", Kind: ParamBool, Description: "Confirmar mutaciones"}
 	jsonOut := ParamSpec{Name: "json", Flag: "--json", Kind: ParamBool, Description: "Emitir JSON"}
+	runID := ParamSpec{Name: "run", Flag: "--run", Kind: ParamText, Required: true, Description: "Run ID local"}
 	scope := ParamSpec{Name: "scope", Flag: "--scope", Kind: ParamChoice, Default: "project", Choices: []string{"project", "global", "both"}, Description: "Scope de assets"}
 	tool := ParamSpec{Name: "tool", Flag: "--tool", Kind: ParamChoice, Default: "opencode", Choices: []string{"opencode", "codex", "claude-code"}, Description: "Tool adapter"}
 	skillTool := ParamSpec{Name: "tool", Flag: "--tool", Kind: ParamChoice, Default: "opencode", Choices: []string{"opencode", "codex"}, Description: "Tool adapter con skills"}
@@ -76,6 +77,11 @@ func Registry() []CommandSpec {
 		{ID: "sdd-validate", Title: "Lufy SDD Validate", Description: "Valida y refresca el overview", Args: []string{"sdd", "validate"}, Params: []ParamSpec{commonTarget, {Name: "change", Flag: "--change", Kind: ParamText, Required: true, Description: "Change ID"}, {Name: "strict", Flag: "--strict", Kind: ParamBool, Description: "Validación estricta"}, jsonOut}},
 		{ID: "sdd-sync", Title: "Lufy SDD Sync", Description: "Sincroniza deltas con specs activas", Args: []string{"sdd", "sync"}, Params: []ParamSpec{commonTarget, {Name: "change", Flag: "--change", Kind: ParamText, Required: true, Description: "Change ID"}, jsonOut}},
 		{ID: "sdd-archive", Title: "Lufy SDD Archive", Description: "Archiva un change con gates completos", Args: []string{"sdd", "archive"}, Params: []ParamSpec{commonTarget, {Name: "change", Flag: "--change", Kind: ParamText, Required: true, Description: "Change ID"}, jsonOut}},
+		{ID: "run-checkpoint", Title: "Run Checkpoint", Description: "Registra un checkpoint causal", Args: []string{"run", "checkpoint"}, Params: []ParamSpec{commonTarget, runID, {Name: "status", Flag: "--status", Kind: ParamText, Required: true, Description: "Estado Result Contract"}, {Name: "idempotency-key", Flag: "--idempotency-key", Kind: ParamText, Required: true, Description: "Clave estable de retry"}, {Name: "gate", Flag: "--gate", Kind: ParamText, Description: "Gate opcional"}, {Name: "next-owner", Flag: "--next-owner", Kind: ParamText, Description: "Siguiente owner"}, jsonOut}},
+		{ID: "run-status", Title: "Run Status", Description: "Resume estado causal e integridad", Args: []string{"run", "status"}, Params: []ParamSpec{commonTarget, runID, jsonOut}},
+		{ID: "run-summary", Title: "Run Summary", Description: "Muestra el árbol causal", Args: []string{"run", "summary"}, Params: []ParamSpec{commonTarget, runID, jsonOut}},
+		{ID: "run-verify", Title: "Run Verify", Description: "Verifica fuente y proyecciones", Args: []string{"run", "verify"}, Params: []ParamSpec{commonTarget, runID, {Name: "repair", Flag: "--repair", Kind: ParamBool, Description: "Reconstruir derivados"}, jsonOut}},
+		{ID: "run-prune", Title: "Run Prune", Description: "Aplica retención local", Args: []string{"run", "prune"}, Params: []ParamSpec{commonTarget, dryRun, yes, jsonOut}},
 		{ID: "version", Title: "Version", Description: "Muestra version del binario", Args: []string{"version"}},
 	}
 }

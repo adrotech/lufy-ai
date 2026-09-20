@@ -26,6 +26,7 @@ type ProjectConfig struct {
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
 	ContextGraph      ContextGraphConfig       `yaml:"context_graph"`
 	Memory            MemoryConfig             `yaml:"memory"`
+	RunLedger         RunLedgerConfig          `yaml:"run_ledger"`
 	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
@@ -158,6 +159,24 @@ type ContextGraphConfig struct {
 	MaxQueryResults     int            `yaml:"max_query_results"`
 	MaxNeighborsPerHint int            `yaml:"max_neighbors_per_hint"`
 	Extra               map[string]any `yaml:",inline,omitempty"`
+}
+
+type RunLedgerConfig struct {
+	Enabled   *bool                    `yaml:"enabled,omitempty"`
+	Root      string                   `yaml:"root"`
+	Retention RunLedgerRetentionConfig `yaml:"retention"`
+	Extra     map[string]any           `yaml:",inline,omitempty"`
+}
+
+type RunLedgerRetentionConfig struct {
+	MaxAgeDays      int            `yaml:"max_age_days"`
+	MaxTerminalRuns int            `yaml:"max_terminal_runs"`
+	MaxBytes        int64          `yaml:"max_bytes"`
+	Extra           map[string]any `yaml:",inline,omitempty"`
+}
+
+func (c RunLedgerConfig) IsEnabled() bool {
+	return c.Enabled == nil || *c.Enabled
 }
 
 type ParallelExecutionConfig struct {

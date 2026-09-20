@@ -1,0 +1,40 @@
+{
+  "schema_version": "lufy-run-summary/v1",
+  "run_id": "run-root",
+  "status": "closed",
+  "terminal": false,
+  "event_count": 2,
+  "last_event_id": "evt_projector_root_finish",
+  "last_observed_at": "2026-09-19T12:00:02Z",
+  "tasks": [
+    "task-2.1"
+  ],
+  "metrics": {
+    "availability": "partial",
+    "duration_millis": 1200,
+    "tokens": 340
+  },
+  "children": [
+    {
+      "schema_version": "lufy-run-summary/v1",
+      "run_id": "run-child",
+      "parent_run_id": "run-root",
+      "status": "blocked",
+      "terminal": false,
+      "event_count": 1,
+      "last_event_id": "evt_projector_child_blocked",
+      "last_observed_at": "2026-09-19T12:00:01Z",
+      "tasks": [
+        "task-child"
+      ],
+      "blocker_event_ids": [
+        "evt_projector_child_blocked"
+      ],
+      "metrics": {
+        "availability": "unavailable"
+      },
+      "source_digest": "5c8f76cf079b0cfe761b7fc481418f99ad6f01a0af5de3996ef72bce75a67ce6"
+    }
+  ],
+  "source_digest": "32cddd233edd2d57fb4ca0bc3e55dda92dca92594f5d787deefb562b42824e53"
+}

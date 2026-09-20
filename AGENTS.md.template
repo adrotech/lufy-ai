@@ -121,6 +121,10 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+ledger: # optional; omission preserves Result Contract v1 compatibility
+  run_id: <local run id or not_applicable>
+  event_id: <local event id or not_applicable>
+  status: recorded | duplicate_noop | conflict | unavailable | disabled | not_applicable
 overview:
   policy: automatic | optional | none | not_available | not_applicable
   status: generated | refreshed | preserved | offered_pending | skipped_by_user | not_available | not_applicable

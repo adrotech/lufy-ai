@@ -94,6 +94,22 @@ func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
 	if len(cfg.ContextGraph.Exclude) == 0 {
 		cfg.ContextGraph.Exclude = DefaultContextGraphConfig().Exclude
 	}
+	defaults := DefaultRunLedgerConfig()
+	if cfg.RunLedger.Enabled == nil {
+		cfg.RunLedger.Enabled = defaults.Enabled
+	}
+	if cfg.RunLedger.Root == "" {
+		cfg.RunLedger.Root = defaults.Root
+	}
+	if cfg.RunLedger.Retention.MaxAgeDays == 0 {
+		cfg.RunLedger.Retention.MaxAgeDays = defaults.Retention.MaxAgeDays
+	}
+	if cfg.RunLedger.Retention.MaxTerminalRuns == 0 {
+		cfg.RunLedger.Retention.MaxTerminalRuns = defaults.Retention.MaxTerminalRuns
+	}
+	if cfg.RunLedger.Retention.MaxBytes == 0 {
+		cfg.RunLedger.Retention.MaxBytes = defaults.Retention.MaxBytes
+	}
 	if cfg.Memory.Vault == "" {
 		cfg.Memory.Vault = cfg.Memory.Root
 	}

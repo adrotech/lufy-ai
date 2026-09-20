@@ -113,6 +113,42 @@ func TestProjectSurfaceCapabilitiesRoundTripAndSurviveRescan(t *testing.T) {
 	}
 }
 
+func TestRunLedgerConfigRoundTripsAndSurvivesRescan(t *testing.T) {
+	disabled := false
+	current := ProjectConfig{RunLedger: RunLedgerConfig{
+		Enabled: &disabled,
+		Root:    ".lufy/runtime/custom",
+		Retention: RunLedgerRetentionConfig{
+			MaxAgeDays:      7,
+			MaxTerminalRuns: 25,
+			MaxBytes:        1024,
+			Extra:           map[string]any{"future_retention": "preserved"},
+		},
+		Extra: map[string]any{"future_option": true},
+	}}
+	detected := ProjectConfig{RunLedger: DefaultRunLedgerConfig()}
+	merged := MergeRescan(current, detected)
+	if merged.RunLedger.IsEnabled() || merged.RunLedger.Root != ".lufy/runtime/custom" || merged.RunLedger.Retention.MaxAgeDays != 7 {
+		t.Fatalf("run ledger overrides not preserved: %#v", merged.RunLedger)
+	}
+
+	body, err := Marshal(merged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "project.yaml")
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.RunLedger.IsEnabled() || loaded.RunLedger.Retention.Extra["future_retention"] != "preserved" || loaded.RunLedger.Extra["future_option"] != true {
+		t.Fatalf("run ledger did not round-trip: %#v", loaded.RunLedger)
+	}
+}
+
 func TestScanDetectsInteractiveApplicationCapabilities(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "package.json", `{"dependencies":{"react":"19.0.0","phaser":"3.90.0","dexie":"4.0.0","@tauri-apps/api":"2.0.0"},"devDependencies":{"typescript":"5.0.0","vite-plugin-pwa":"1.0.0"}}`)

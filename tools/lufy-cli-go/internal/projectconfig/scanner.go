@@ -41,6 +41,7 @@ func (s Scanner) Scan(root string) (ProjectConfig, error) {
 		WorkflowLimits:    defaultWorkflowLimits(),
 		ContextGraph:      DefaultContextGraphConfig(),
 		Memory:            DefaultMemoryConfig(),
+		RunLedger:         DefaultRunLedgerConfig(),
 		ParallelExecution: DefaultParallelExecutionConfig(),
 	}, nil
 }
