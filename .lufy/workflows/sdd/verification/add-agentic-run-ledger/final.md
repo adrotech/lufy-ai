@@ -6,7 +6,7 @@ Fecha: 2026-09-20
 
 La implementación satisface proposal, design y los tres deltas del change. Los escenarios están cubiertos por tests unitarios/integración, race focalizado, smoke CLI, fixtures lifecycle, golden JSON, revisión estática de privacidad y validación completa del repositorio.
 
-Gate final de este informe: `delivery_pending`. La implementación está validada y las specs canónicas fueron sincronizadas; no implica delivery, archive ni cierre.
+Gate final de este informe: `closed`. La implementación fue validada, las specs canónicas fueron sincronizadas, el PR #226 fue mergeado en `develop` con todos los checks remotos exitosos y el change quedó archivado en `archive/2026-09-20-add-agentic-run-ledger`.
 
 ## Completeness
 
@@ -34,7 +34,7 @@ Gate final de este informe: `delivery_pending`. La implementación está validad
 - Codex no abre `transcript_path`; `last_assistant_message` se usa solo para diagnóstico efímero y nunca ingresa al ledger.
 - Result Contract conserva compatibilidad v1 porque el bloque ledger completo es opcional y no domina el estado del handoff.
 
-No se detectaron gaps funcionales contra los scenarios. La matriz Windows/Linux se ejecutará en checks remotos cuando delivery sea autorizado; el código usa primitives portables y no depende de `flock`.
+No se detectaron gaps funcionales contra los scenarios. La matriz remota Linux/macOS/Windows y el smoke del instalador finalizaron exitosamente. El fix `0100ac7` normalizó el golden ante CRLF y estabilizó la liberación del lock frente a handles concurrentes de Windows sin depender de `flock`.
 
 ## Coherence
 
@@ -59,6 +59,9 @@ Delivery recomendado: un PR único contra `develop` porque los cambios comparten
 - `git diff --check origin/develop`: passed.
 - `lufy-ai sdd validate --strict`: passed; 42/46 antes de sync y 46/46 al cierre del checklist.
 - `lufy-ai sdd sync --change add-agentic-run-ledger`: passed; 17 requirements creados en tres specs canónicas, sin diagnostics.
+- `gh pr checks 226`: passed; quality gates, Ubuntu, macOS, Windows e installer smoke exitosos.
+- `gh pr merge 226 --merge`: passed; merge commit `4ca35645e11f5f5d90dac12b30c14b024052fda3` alcanzable desde `origin/develop`.
+- `gh issue view 219`: passed; `CLOSED / COMPLETED`.
 - `shellcheck`: no disponible; notice no bloqueante y no se modificaron scripts shell.
 
 ## Gate state
@@ -66,5 +69,5 @@ Delivery recomendado: un PR único contra `develop` porque los cambios comparten
 - Implementación: validated.
 - Privacy/security review: passed con fixtures sintéticos y escaneo durable.
 - Sync: passed; delta digest `c9ed56bf527e255699f2a7ff3d0f9b6d65017121bff8f3bc2fd1cd5792b082b3` aplicado.
-- Delivery: pending; no autorizado en este turno.
-- Archive/closed: no permitido hasta sync, delivery y checks remotos requeridos.
+- Delivery: passed; PR #226 mergeado en `develop`, checks remotos exitosos e issue #219 cerrada.
+- Archive/closed: passed; change archivado como `archive/2026-09-20-add-agentic-run-ledger` con 46/46 tareas y sin diagnostics.
