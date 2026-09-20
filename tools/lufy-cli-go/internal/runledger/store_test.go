@@ -146,6 +146,43 @@ func TestFileStoreSerializesConcurrentWriters(t *testing.T) {
 	}
 }
 
+func TestRunLockReleaseRetriesWhileOwnerFileIsInUse(t *testing.T) {
+	lockPath := filepath.Join(t.TempDir(), "lock")
+	if err := os.Mkdir(lockPath, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	owner := lockOwner{Token: "evt_release_owner"}
+	ownerPath := filepath.Join(lockPath, "owner.json")
+	if err := writeJSONAtomic(ownerPath, owner); err != nil {
+		t.Fatal(err)
+	}
+
+	held, err := os.Open(ownerPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	closed := make(chan struct{})
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		_ = held.Close()
+		close(closed)
+	}()
+
+	lock := &runLock{
+		path:             lockPath,
+		token:            owner.Token,
+		cleanupTimeout:   time.Second,
+		cleanupPollDelay: 5 * time.Millisecond,
+	}
+	if err := lock.release(); err != nil {
+		t.Fatalf("release() with transient owner handle error = %v", err)
+	}
+	<-closed
+	if _, err := os.Stat(lockPath); !os.IsNotExist(err) {
+		t.Fatalf("lock dir remains after release, err=%v", err)
+	}
+}
+
 func TestFileStoreRecoversEventPublishedBeforeReceipt(t *testing.T) {
 	target := t.TempDir()
 	now := time.Date(2026, 9, 19, 12, 0, 0, 0, time.UTC)

@@ -1,11 +1,11 @@
 package runledger
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -90,7 +90,16 @@ func TestProjectorBuildsDeterministicCausalTree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.TrimSpace(string(golden)) != strings.TrimSpace(string(firstJSON)) {
+	goldenLF := bytes.ReplaceAll(golden, []byte("\r\n"), []byte("\n"))
+	goldenCRLF := bytes.ReplaceAll(goldenLF, []byte("\n"), []byte("\r\n"))
+	var compactGolden, compactActual bytes.Buffer
+	if err := json.Compact(&compactGolden, goldenCRLF); err != nil {
+		t.Fatalf("invalid summary golden: %v", err)
+	}
+	if err := json.Compact(&compactActual, firstJSON); err != nil {
+		t.Fatalf("invalid projected summary: %v", err)
+	}
+	if compactGolden.String() != compactActual.String() {
 		t.Fatalf("summary differs from golden:\n%s", firstJSON)
 	}
 }

@@ -93,8 +93,10 @@ type lockOwner struct {
 }
 
 type runLock struct {
-	path  string
-	token string
+	path             string
+	token            string
+	cleanupTimeout   time.Duration
+	cleanupPollDelay time.Duration
 }
 
 func NewFileStore(targetRoot string, options Options) (*FileStore, error) {
@@ -494,17 +496,22 @@ func readJSONStrict(path string, target any) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 	dec := json.NewDecoder(file)
 	dec.DisallowUnknownFields()
-	if err := dec.Decode(target); err != nil {
-		return err
+	decodeErr := dec.Decode(target)
+	var trailingErr error
+	if decodeErr == nil {
+		var trailing any
+		trailingErr = dec.Decode(&trailing)
 	}
-	var trailing any
-	if err := dec.Decode(&trailing); err != io.EOF {
+	closeErr := file.Close()
+	if decodeErr != nil {
+		return decodeErr
+	}
+	if trailingErr != io.EOF {
 		return fmt.Errorf("contenido adicional")
 	}
-	return nil
+	return closeErr
 }
 
 func sortEvents(events []Event) {

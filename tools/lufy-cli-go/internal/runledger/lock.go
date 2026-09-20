@@ -27,7 +27,12 @@ func (s *FileStore) acquireRunLock(ctx context.Context, runDir string) (*runLock
 				_ = os.RemoveAll(lockPath)
 				return nil, err
 			}
-			return &runLock{path: lockPath, token: token}, nil
+			return &runLock{
+				path:             lockPath,
+				token:            token,
+				cleanupTimeout:   s.options.LockTimeout,
+				cleanupPollDelay: s.options.LockPollInterval,
+			}, nil
 		}
 		if !os.IsExist(err) {
 			return nil, err
@@ -95,5 +100,23 @@ func (l *runLock) release() error {
 	if owner.Token != l.token {
 		return fmt.Errorf("lock del run cambió de owner")
 	}
-	return os.RemoveAll(l.path)
+	timeout := l.cleanupTimeout
+	if timeout <= 0 {
+		timeout = 2 * time.Second
+	}
+	pollDelay := l.cleanupPollDelay
+	if pollDelay <= 0 {
+		pollDelay = 10 * time.Millisecond
+	}
+	deadline := time.Now().Add(timeout)
+	for {
+		err := os.RemoveAll(l.path)
+		if err == nil || os.IsNotExist(err) {
+			return nil
+		}
+		if !time.Now().Before(deadline) {
+			return err
+		}
+		time.Sleep(pollDelay)
+	}
 }
