@@ -74,6 +74,14 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	} else {
 		items = append(items, DriftItem{Category: "parallel_execution", Severity: "info", Path: "parallel_execution", Status: "applied", SuggestedAction: "Se agregó estrategia de paralelismo gobernada por review_slices independientes."})
 	}
+	if !isZeroRunLedgerConfig(current.RunLedger) {
+		merged.RunLedger = mergeRunLedgerConfig(current.RunLedger, detected.RunLedger)
+		if !reflect.DeepEqual(current.RunLedger, merged.RunLedger) {
+			items = append(items, DriftItem{Category: "run_ledger", Severity: "info", Path: "run_ledger", Status: "applied", SuggestedAction: "Se completaron defaults del Run Ledger preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "run_ledger", Severity: "info", Path: "run_ledger", Status: "applied", SuggestedAction: "Se agregó configuración local y privacy-first del Run Ledger."})
+	}
 	if len(current.TDD.EdgeCaseCategories) > 0 || current.TDD.Strict || current.TDD.TriangulateRequired {
 		merged.TDD = current.TDD
 	}
@@ -365,6 +373,37 @@ func mergeParallelExecutionConfig(current, defaults ParallelExecutionConfig) Par
 	}
 	if current.ValidationMode != "" {
 		merged.ValidationMode = current.ValidationMode
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroRunLedgerConfig(config RunLedgerConfig) bool {
+	return reflect.DeepEqual(config, RunLedgerConfig{})
+}
+
+func mergeRunLedgerConfig(current, defaults RunLedgerConfig) RunLedgerConfig {
+	merged := defaults
+	if current.Enabled != nil {
+		enabled := *current.Enabled
+		merged.Enabled = &enabled
+	}
+	if current.Root != "" {
+		merged.Root = current.Root
+	}
+	if current.Retention.MaxAgeDays != 0 {
+		merged.Retention.MaxAgeDays = current.Retention.MaxAgeDays
+	}
+	if current.Retention.MaxTerminalRuns != 0 {
+		merged.Retention.MaxTerminalRuns = current.Retention.MaxTerminalRuns
+	}
+	if current.Retention.MaxBytes != 0 {
+		merged.Retention.MaxBytes = current.Retention.MaxBytes
+	}
+	if len(current.Retention.Extra) > 0 {
+		merged.Retention.Extra = current.Retention.Extra
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

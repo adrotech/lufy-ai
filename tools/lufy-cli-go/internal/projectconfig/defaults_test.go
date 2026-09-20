@@ -42,3 +42,16 @@ func TestApplySurfaceDefaultsCompletesStructuralExpectations(t *testing.T) {
 		t.Fatalf("hexagonal structural expectations were not completed: %#v", surface.Architecture)
 	}
 }
+
+func TestDefaultRunLedgerConfigIsBoundedAndLocal(t *testing.T) {
+	config := DefaultRunLedgerConfig()
+	if !config.IsEnabled() || config.Root != ".lufy/runtime" {
+		t.Fatalf("run ledger defaults = %#v", config)
+	}
+	if config.Retention.MaxAgeDays != 30 || config.Retention.MaxTerminalRuns != 500 || config.Retention.MaxBytes != 64*1024*1024 {
+		t.Fatalf("retention defaults = %#v", config.Retention)
+	}
+	if !contains(DefaultContextGraphConfig().Exclude, ".lufy/runtime/**") {
+		t.Fatalf("runtime ledger must be excluded from context graph")
+	}
+}

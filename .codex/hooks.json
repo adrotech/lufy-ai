@@ -16,6 +16,19 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'if command -v lufy-ai >/dev/null 2>&1; then exec lufy-ai lifecycle codex; else printf \"%s\\n\" \"{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}\"; fi'",
+            "commandWindows": "powershell -NoProfile -Command \"if (Get-Command lufy-ai -ErrorAction SilentlyContinue) { lufy-ai lifecycle codex } else { Write-Output '{\\\"continue\\\":true,\\\"systemMessage\\\":\\\"LUFY lifecycle unavailable: install lufy-ai or disable this project hook.\\\"}' }\"",
+            "timeout": 4,
+            "statusMessage": "Vinculando subagente Lufy"
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [

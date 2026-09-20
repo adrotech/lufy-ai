@@ -100,6 +100,10 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+ledger: # bloque opcional; su ausencia preserva compatibilidad Result Contract v1
+  run_id: <local run id or not_applicable>
+  event_id: <local event id or not_applicable>
+  status: recorded | duplicate_noop | conflict | unavailable | disabled | not_applicable
 evidence:
   commands:
     - command: <command or none>

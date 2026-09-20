@@ -432,6 +432,7 @@ No disponible como feature escribible todavía:
 | [`docs/installation.md`](docs/installation.md) | Instalación del binario, PATH, install/uninstall/reinstall y troubleshooting. |
 | [`docs/getting-started.md`](docs/getting-started.md) | Walkthrough de uso diario y flujo de repo destino. |
 | [`docs/architecture.md`](docs/architecture.md) | Arquitectura hexagonal, adapters, ownership y lifecycle. |
+| [`docs/run-ledger.md`](docs/run-ledger.md) | Observabilidad causal local, CLI, privacidad, retención y recovery de runs agentes. |
 | [`docs/status.md`](docs/status.md) | Estado implementado vs pendiente. |
 | [`docs/backlog.md`](docs/backlog.md) | Backlog estratégico y prioridades. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Evolución futura y límites de roadmap. |

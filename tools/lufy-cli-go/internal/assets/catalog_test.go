@@ -351,7 +351,15 @@ func TestAgentAssetsRouteNativeLufySDDFullAndLite(t *testing.T) {
 		},
 		{
 			rels: []string{filepath.Join(".lufy", "contracts", "result-contract.md"), filepath.Join(embedded, ".lufy", "contracts", "result-contract.md")},
-			want: []string{"policy: automatic", "trigger: new | validate | sync | archive | status_read_only"},
+			want: []string{"policy: automatic", "trigger: new | validate | sync | archive | status_read_only", "ledger:", "run_id:", "event_id:"},
+		},
+		{
+			rels: []string{filepath.Join(".lufy", "contracts", "run-ledger-producer.md"), filepath.Join(embedded, ".lufy", "contracts", "run-ledger-producer.md")},
+			want: []string{"lufy-run-event/v1", "duplicate_noop", "External identifiers must be pseudonymized", "Other adapters remain supported"},
+		},
+		{
+			rels: []string{filepath.Join(".codex", "hooks.json"), filepath.Join(embedded, ".codex", "hooks.json")},
+			want: []string{"SessionStart", "SubagentStart", "SubagentStop", "SessionEnd"},
 		},
 		{
 			rels: []string{filepath.Join(".codex", "agents", "sdd-router.toml"), filepath.Join(embedded, ".codex", "agents", "sdd-router.toml")},

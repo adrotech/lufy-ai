@@ -1,6 +1,6 @@
 # Result Contract Envelope V1
 
-Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. Preserve the adapter-specific overview contract: OpenSpec render remains `optional`, while Lufy SDD Full/Lite is `automatic` and must report the materialized/refreshed path without asking the user or invoking another render command. When an overview exists, expose its path as a clickable Markdown link and keep `open <path>` as fallback in user-facing output. Use `skipped_by_user` only for an optional render after explicit decline; never use it for Lufy SDD.
+Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. Preserve the adapter-specific overview contract: OpenSpec render remains `optional`, while Lufy SDD Full/Lite is `automatic` and must report the materialized/refreshed path without asking the user or invoking another render command. When an overview exists, expose its path as a clickable Markdown link and keep `open <path>` as fallback in user-facing output. Use `skipped_by_user` only for an optional render after explicit decline; never use it for Lufy SDD. The entire `ledger` block is optional: legacy Result Contract v1 payloads without it remain valid, and its status never overrides the handoff status or workflow gates.
 
 ```yaml
 schema_version: result-contract/v1
@@ -12,6 +12,10 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+ledger:
+  run_id: <local run id or not_applicable>
+  event_id: <local event id or not_applicable>
+  status: recorded | duplicate_noop | conflict | unavailable | disabled | not_applicable
 overview:
   policy: automatic | optional | none | not_available | not_applicable
   status: generated | refreshed | preserved | offered_pending | skipped_by_user | not_available | not_applicable

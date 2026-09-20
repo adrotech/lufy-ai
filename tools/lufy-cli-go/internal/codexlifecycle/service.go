@@ -23,6 +23,9 @@ const maxContextBytes = 1800
 type Input struct {
 	CWD                  string  `json:"cwd"`
 	HookEventName        string  `json:"hook_event_name"`
+	SessionID            string  `json:"session_id,omitempty"`
+	TurnID               string  `json:"turn_id,omitempty"`
+	AgentID              string  `json:"agent_id,omitempty"`
 	AgentType            string  `json:"agent_type,omitempty"`
 	LastAssistantMessage *string `json:"last_assistant_message,omitempty"`
 }
@@ -57,6 +60,8 @@ func (Service) Run(input io.Reader, output io.Writer) error {
 	switch event.HookEventName {
 	case "SessionStart":
 		result = sessionStart(target)
+	case "SubagentStart":
+		result = Output{Continue: true, SuppressOutput: true}
 	case "SubagentStop":
 		result = subagentStop(event)
 	case "Stop":
@@ -65,6 +70,12 @@ func (Service) Run(input io.Reader, output io.Writer) error {
 		result = sessionEnd(target)
 	default:
 		result = Output{Continue: true, SystemMessage: "LUFY lifecycle ignoró un evento Codex no soportado."}
+	}
+	if supportsLedgerEvent(event.HookEventName) {
+		if err := recordLifecycleEvent(target, event); err != nil {
+			result.SystemMessage = joinMessages(result.SystemMessage, "LUFY Run Ledger no pudo registrar metadata estable; el lifecycle continúa sin avanzar gates. Recovery: ejecuta lufy-ai run verify manualmente.")
+			result.SuppressOutput = false
+		}
 	}
 	return writeOutput(output, result)
 }
@@ -201,6 +212,22 @@ func bounded(value string) string {
 		return value
 	}
 	return value[:maxContextBytes] + "…"
+}
+
+func supportsLedgerEvent(name string) bool {
+	switch name {
+	case "SessionStart", "SubagentStart", "SubagentStop", "Stop", "SessionEnd":
+		return true
+	default:
+		return false
+	}
+}
+
+func joinMessages(current, next string) string {
+	if strings.TrimSpace(current) == "" {
+		return next
+	}
+	return current + " " + next
 }
 
 func writeOutput(output io.Writer, result Output) error {

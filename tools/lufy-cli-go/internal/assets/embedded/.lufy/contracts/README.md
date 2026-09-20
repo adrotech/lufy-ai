@@ -8,6 +8,7 @@ This directory is the adapter-neutral source of truth for invariants shared by C
 | --- | --- | --- |
 | `delivery.md` | Authorization, branch safety, validation, remote checks, and closure gates | Agent permissions and Git/GH execution details |
 | `result-contract.md` | Portable result envelope, evidence, risks, workflow decision, and next action | Tool-native handoff syntax |
+| `run-ledger-producer.md` | Typed, privacy-first producer boundary for causal run metadata | Automatic lifecycle mapping where supported |
 | `pr-review/review-framework.md` | Review dimensions, severity, scoring, and desk-check guidance | Tool-specific evidence collection |
 | `pr-review/report.html` | Self-contained HTML report structure and visual contract | Output-path and open/preview mechanics |
 
