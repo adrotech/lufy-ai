@@ -47,10 +47,34 @@ func TestRegistryContainsSetupAndUpgrade(t *testing.T) {
 	for _, spec := range Registry() {
 		seen[spec.ID] = true
 	}
-	for _, id := range []string{"setup", "upgrade", "plan", "context-build", "memory-search", "skills-refresh", "skills-status", "pr-guard", "run-status", "run-verify"} {
+	for _, id := range []string{"setup", "upgrade", "plan", "context-build", "memory-search", "skills-refresh", "skills-status", "pr-guard", "run-status", "run-verify", "result-validate", "result-normalize", "result-transition"} {
 		if !seen[id] {
 			t.Fatalf("registry missing %s", id)
 		}
+	}
+}
+
+func TestResultCommandsExposeSafeInputAndMutationFlags(t *testing.T) {
+	wantFlags := map[string]map[string]bool{
+		"result-validate":   {"--stdin": true, "--file": true, "--role": true, "--json": true},
+		"result-normalize":  {"--stdin": true, "--file": true, "--json": true},
+		"result-transition": {"--stdin": true, "--file": true, "--record": true, "--json": true},
+	}
+	for _, spec := range Registry() {
+		flags, relevant := wantFlags[spec.ID]
+		if !relevant {
+			continue
+		}
+		for _, param := range spec.Params {
+			delete(flags, param.Flag)
+		}
+		if len(flags) != 0 {
+			t.Fatalf("%s missing flags: %v", spec.ID, flags)
+		}
+		delete(wantFlags, spec.ID)
+	}
+	if len(wantFlags) != 0 {
+		t.Fatalf("registry missing result commands: %v", wantFlags)
 	}
 }
 

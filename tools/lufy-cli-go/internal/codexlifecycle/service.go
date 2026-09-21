@@ -129,15 +129,19 @@ func sessionStart(target string) Output {
 }
 
 func subagentStop(event Input) Output {
-	message := ""
 	if event.LastAssistantMessage == nil || strings.TrimSpace(*event.LastAssistantMessage) == "" {
-		message = "LUFY SubagentStop: resultado vacío; el orchestrator debe recuperar o reasignar y ningún gate fue avanzado."
-	} else if strings.Contains(*event.LastAssistantMessage, "schema_version:") && !strings.Contains(*event.LastAssistantMessage, "schema_version: result-contract/v1") {
-		message = "LUFY SubagentStop: Result Contract con schema no reconocido; requiere normalización del orchestrator y ningún gate fue avanzado."
-	} else if !strings.Contains(*event.LastAssistantMessage, "schema_version: result-contract/v1") {
-		message = "LUFY SubagentStop: no se detectó Result Contract v1; el orchestrator debe confirmar si el resultado era sustantivo antes de avanzar gates."
+		return Output{
+			Continue: true, SuppressOutput: false,
+			SystemMessage: "LUFY SubagentStop: resultado vacío; el orchestrator debe recuperar o reasignar y ningún gate fue avanzado.",
+		}
 	}
-	return Output{Continue: true, SystemMessage: message, SuppressOutput: message == ""}
+	if _, err := extractResultContract(*event.LastAssistantMessage); err != nil {
+		return Output{
+			Continue: true, SuppressOutput: false,
+			SystemMessage: "LUFY SubagentStop: Result Contract ausente, ambiguo o inválido; requiere revisión del orchestrator y ningún gate fue avanzado.",
+		}
+	}
+	return Output{Continue: true, SuppressOutput: true}
 }
 
 func stop(target string) Output {

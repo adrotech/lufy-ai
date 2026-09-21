@@ -88,6 +88,8 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 
 ## Result Contract envelope v1
 
+Antes de aceptar automáticamente un handoff sustantivo, validar con `lufy-ai result validate`. Las mutaciones usan `result-transition/v1` mediante `lufy-ai result transition`; un substring del schema nunca avanza gates.
+
 Usar este envelope para handoffs y resultados sustantivos de agentes locales. Para T3 simples, mantenerlo compacto con `not_applicable`; para salidas legacy/terceros, `orchestrator` puede normalizar con `legacy_fallback: true` y marcar evidencia faltante como `not_available`.
 
 ```yaml

@@ -1,0 +1,77 @@
+skill_resolution:
+  notes: not_applicable
+  bootstrap_recommended: false
+  selected_skill_paths:
+    - .agents/skills/lufy-sdd-apply/SKILL.md
+  local_skills_used:
+    - lufy-sdd-apply
+next_recommended:
+  action: Implementar el decoder estricto.
+  owner: implementer
+risks:
+  - none
+workflow_decision:
+  artifact_branching:
+    canonical_artifact_set:
+      - .lufy/workflows/sdd/changes/make-result-contract-executable
+    candidate_paths:
+      - not_applicable
+    human_escalation_triggers:
+      - not_applicable
+    merge_plan_required: false
+    candidate_isolation: not_applicable
+    requires_join: false
+    parallel_allowed: false
+    reason: not_applicable
+    candidate_count: not_applicable
+    stage: not_applicable
+    status: not_needed
+  delivery_batching_guidance: not_applicable
+  stop_rule_status: not_available
+  preflight_status: not_available
+  review_slices:
+    - Slice A
+  workload_decision_needed: true
+  workflow_limits_paths:
+    stop_rules: not_available
+    preflight: not_available
+    delivery_batching: not_applicable
+    proposal_slicing: not_available
+    routing: not_available
+    sizing: not_available
+  workflow_limits_source: not_available
+  adapter_context:
+    execution_mode: full-sdd
+    methodology_required: true
+    methodology_mode: full
+    methodology_id: lufy-sdd
+    tool_id: codex
+  fast_path_allowed: false
+  slice_tier: T1
+  program_tier: T1
+  tier: T1
+surface_execution:
+  validation_rule_ids:
+    - not_applicable
+  active_surfaces:
+    - not_applicable
+  mode: not_applicable
+  primary_surface: not_available
+  source: not_applicable
+  schema_version: not_applicable
+evidence:
+  static:
+    - contrato tipado
+  commands:
+    - notes: not_applicable
+      result: not_run
+      command: none
+artifacts:
+  referenced:
+    - .lufy/contracts/result-contract.md
+  changed:
+    - none
+executive_summary: Slice A listo para validar.
+legacy_fallback: false
+status: ready
+schema_version: result-contract/v1
