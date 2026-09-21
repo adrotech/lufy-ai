@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -92,7 +93,7 @@ func TestDecodeRejectsUnknownAndDuplicateKeys(t *testing.T) {
 		},
 		{
 			name: "unknown nested key",
-			payload: []byte(strings.Replace(string(base),
+			payload: []byte(replaceFixture(t, string(base),
 				"  changed:\n", "  private_output: "+outputCanary+"\n  changed:\n", 1)),
 			path: "artifacts.private_output",
 		},
@@ -103,19 +104,19 @@ func TestDecodeRejectsUnknownAndDuplicateKeys(t *testing.T) {
 		},
 		{
 			name: "duplicate nested key",
-			payload: []byte(strings.Replace(string(base),
+			payload: []byte(replaceFixture(t, string(base),
 				"  changed:\n", "  changed:\n    - duplicate\n  changed:\n", 1)),
 			path: "artifacts.changed",
 		},
 		{
 			name: "unknown JSON key",
-			payload: []byte(strings.Replace(jsonBase,
+			payload: []byte(replaceFixture(t, jsonBase,
 				`"status": "ready",`, `"status": "ready", "private_prompt": "`+promptCanary+`",`, 1)),
 			path: "private_prompt",
 		},
 		{
 			name: "duplicate JSON key",
-			payload: []byte(strings.Replace(jsonBase,
+			payload: []byte(replaceFixture(t, jsonBase,
 				`"status": "ready",`, `"status": "ready", "status": "blocked",`, 1)),
 			path: "status",
 		},
@@ -145,7 +146,10 @@ func TestDecodeAcceptsEveryDocumentedStatus(t *testing.T) {
 		status := status
 		t.Run(status, func(t *testing.T) {
 			t.Parallel()
-			payload := strings.Replace(base, "status: ready", "status: "+status, 1)
+			payload := base
+			if status != "ready" {
+				payload = replaceFixture(t, base, "status: ready", "status: "+status, 1)
+			}
 			if _, err := Decode(strings.NewReader(payload)); err != nil {
 				t.Fatalf("Decode(status=%s) error = %v", status, err)
 			}
@@ -162,17 +166,17 @@ func TestDecodeRejectsAnchorsAliasesAndCustomTags(t *testing.T) {
 	}{
 		{
 			name: "anchor",
-			payload: strings.Replace(string(readFixture(t, "testdata/valid-minimal.yaml")),
+			payload: replaceFixture(t, string(readFixture(t, "testdata/valid-minimal.yaml")),
 				"schema_version: result-contract/v1", "schema_version: &schema result-contract/v1", 1),
 		},
 		{
 			name: "alias",
-			payload: strings.Replace(string(readFixture(t, "testdata/valid-minimal.yaml")),
+			payload: replaceFixture(t, string(readFixture(t, "testdata/valid-minimal.yaml")),
 				"schema_version: result-contract/v1\nstatus: ready", "schema_version: &schema result-contract/v1\nstatus: *schema", 1),
 		},
 		{
 			name: "custom tag",
-			payload: strings.Replace(string(readFixture(t, "testdata/valid-minimal.yaml")),
+			payload: replaceFixture(t, string(readFixture(t, "testdata/valid-minimal.yaml")),
 				"executive_summary: Slice A listo para validar.", "executive_summary: !private "+secretCanary, 1),
 		},
 	}
@@ -231,16 +235,57 @@ func TestDecodeRejectsUnsupportedSchemaAndEnums(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			payload := strings.Replace(base, tc.old, tc.new, 1)
-			if payload == base {
-				t.Fatalf("invalid test fixture: %q not found", tc.old)
-			}
+			payload := replaceFixture(t, base, tc.old, tc.new, 1)
 			_, err := Decode(strings.NewReader(payload))
 			diagnostic := requireDiagnostic(t, err)
 			if !strings.Contains(diagnostic.Path, tc.path) {
 				t.Fatalf("diagnostic path = %q, want containing %q", diagnostic.Path, tc.path)
 			}
 			assertSanitized(t, diagnostic, tc.new)
+		})
+	}
+}
+
+func TestReadFixtureNormalizesCRLFForPortableMutations(t *testing.T) {
+	t.Parallel()
+
+	wantBase := string(readFixture(t, "testdata/valid-minimal.yaml"))
+	path := filepath.Join(t.TempDir(), "windows-checkout.yaml")
+	if err := os.WriteFile(path, []byte(strings.ReplaceAll(wantBase, "\n", "\r\n")), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	base := string(readFixture(t, path))
+	if strings.Contains(base, "\r\n") || base != wantBase {
+		t.Fatalf("readFixture() did not normalize CRLF: %q", base)
+	}
+	cases := []struct {
+		name        string
+		old         string
+		replacement string
+		path        string
+	}{
+		{
+			name: "alias", old: "schema_version: result-contract/v1\nstatus: ready",
+			replacement: "schema_version: &schema result-contract/v1\nstatus: *schema",
+		},
+		{
+			name: "unknown nested", old: "  changed:\n",
+			replacement: "  private_output: " + outputCanary + "\n  changed:\n", path: "artifacts.private_output",
+		},
+		{
+			name: "duplicate nested", old: "  changed:\n",
+			replacement: "  changed:\n    - duplicate\n  changed:\n", path: "artifacts.changed",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			mutated := replaceFixture(t, base, tc.old, tc.replacement, 1)
+			_, err := Decode(strings.NewReader(mutated))
+			diagnostic := requireDiagnostic(t, err)
+			if tc.path != "" && !strings.Contains(diagnostic.Path, tc.path) {
+				t.Fatalf("diagnostic path=%q, want containing %q", diagnostic.Path, tc.path)
+			}
 		})
 	}
 }
@@ -278,7 +323,19 @@ func readFixture(t *testing.T, path string) []byte {
 	if err != nil {
 		t.Fatalf("os.ReadFile(%s) error = %v", path, err)
 	}
-	return body
+	return bytes.ReplaceAll(body, []byte("\r\n"), []byte("\n"))
+}
+
+func replaceFixture(t *testing.T, input, old, replacement string, count int) string {
+	t.Helper()
+	if count == 0 || !strings.Contains(input, old) {
+		t.Fatalf("invalid test mutation: pattern %q not found", old)
+	}
+	mutated := strings.Replace(input, old, replacement, count)
+	if mutated == input {
+		t.Fatalf("invalid test mutation: replacing %q did not change fixture", old)
+	}
+	return mutated
 }
 
 func mustCanonicalize(t *testing.T, contract Contract) Canonical {
