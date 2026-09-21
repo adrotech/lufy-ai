@@ -15,6 +15,7 @@ Operational guide for coding agents working in this repository.
 - **Multi-artifact branching**: For T1 or multi-risk T2 work with high uncertainty, `sdd-router` may recommend up to 2 artifact candidates; `orchestrator` must join before design/tasks/implementation and no new roles are created
 - **Task/block gate**: Track `implemented`, `validated`, `delivery_pending`, `delivered`, and `closed` separately; task checkboxes are not operational closure by themselves
 - **Result Contract envelope v1**: Substantive routed handoffs should use the canonical YAML envelope with state, evidence, risks, next action, and workflow-limit decisions when applicable
+- **Review workload harness**: Treat `lufy-ai context coverage|review|metrics` as bounded secondary evidence; canonical budgets live only under `workflow_limits.review`, and no graph result authorizes validation, delivery, merge, or closure
 - **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile.surfaces[*].agent_lens.structural_expectations` / `architecture.structural_expectations` are acceptance criteria, not optional style guidance
 - **Surface execution**: When available, consume `lufy-ai plan --target <repo> --json` as the canonical read-only resolution of active surfaces, cross-surface contracts and validation evidence; an explicit user scope still has precedence
 
@@ -100,6 +101,8 @@ When the effective tier selects `lufy-sdd`, use `lufy-sdd-explore|propose|apply|
 - If artifact candidates exist, `orchestrator` must coordinate `branching_candidate_generation`, isolated non-overwriting paths, a merge plan, and `join/decision`; implementation cannot start until one canonical artifact set exists, and non-selected candidates are context only.
 - Escalate candidate differences about public contract, security, product direction, significant UX, or non-objective trade-offs to the human; `reviewer` compares quality/risk/completeness/validation clarity and does not arbitrate those decisions.
 - For sizing/routing/slicing, read `workflow_limits.sizing`, `workflow_limits.routing`, and `workflow_limits.proposal_slicing_strategy`; do not confuse these with `workflow_limits.delivery_batch_strategy`.
+- For T1/T2 review boundaries with a known Git base, consume `lufy-ai context review --base <ref> --json` when available. `proceed` is advisory; `split` or `escalate` requires an explicit workload decision. A stale/missing graph keeps direct Git observations but makes traceability `unknown`.
+- Use `lufy-ai context coverage --json` to surface scenario/task/test gaps and `lufy-ai context metrics --json` only for content-free Run Ledger metrics. Record availability and recovery instead of synthesizing missing history.
 - For parallelism, read `parallel_execution`. Recommend parallel agents only for `review_slices` or `artifact candidates` with independent files/artifacts, a merge/join plan, and grouped validation after join. Do not parallelize delivery/Git/GH, schema/db migrations, unresolved public contracts or security decisions, unresolved API decisions, or slices/candidates touching the same files or artifacts.
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.

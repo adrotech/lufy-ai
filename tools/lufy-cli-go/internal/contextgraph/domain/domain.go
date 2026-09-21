@@ -9,6 +9,7 @@ type Graph struct {
 	Sources     []Source               `json:"sources"`
 	Nodes       []Node                 `json:"nodes"`
 	Edges       []Edge                 `json:"edges"`
+	Diagnostics []Diagnostic           `json:"diagnostics,omitempty"`
 	Health      Health                 `json:"health"`
 	Communities []Community            `json:"communities,omitempty"`
 	Important   []ImportantNode        `json:"important_nodes,omitempty"`
@@ -89,9 +90,21 @@ type Manifest struct {
 }
 
 type ExtractResult struct {
-	Source Source
-	Nodes  []Node
-	Edges  []Edge
+	Source      Source       `json:"source"`
+	Nodes       []Node       `json:"nodes"`
+	Edges       []Edge       `json:"edges"`
+	Diagnostics []Diagnostic `json:"diagnostics,omitempty"`
+}
+
+// Diagnostic describes a bounded, recoverable extraction gap. Diagnostic
+// producers must not copy unvalidated source content into these fields.
+type Diagnostic struct {
+	Code     string `json:"code"`
+	Path     string `json:"path"`
+	Line     int    `json:"line,omitempty"`
+	Relation string `json:"relation,omitempty"`
+	TargetID string `json:"target_id,omitempty"`
+	Recovery string `json:"recovery"`
 }
 
 type Cache struct {
@@ -101,7 +114,8 @@ type Cache struct {
 }
 
 type CacheEntry struct {
-	Source Source `json:"source"`
-	Nodes  []Node `json:"nodes"`
-	Edges  []Edge `json:"edges"`
+	Source      Source       `json:"source"`
+	Nodes       []Node       `json:"nodes"`
+	Edges       []Edge       `json:"edges"`
+	Diagnostics []Diagnostic `json:"diagnostics,omitempty"`
 }

@@ -205,6 +205,9 @@ func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
 	if current.Routing.Strategy != "" || len(current.Routing.Extra) > 0 {
 		merged.Routing = mergeWorkflowRouting(current.Routing, defaults.Routing)
 	}
+	if !reflect.DeepEqual(current.Review, WorkflowReviewLimits{}) {
+		merged.Review = mergeWorkflowReviewLimits(current.Review, defaults.Review)
+	}
 	if current.ProposalSlicingStrategy != "" {
 		merged.ProposalSlicingStrategy = current.ProposalSlicingStrategy
 	}
@@ -216,6 +219,26 @@ func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
 	}
 	if len(current.Preflight) > 0 {
 		merged.Preflight = current.Preflight
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func mergeWorkflowReviewLimits(current, defaults WorkflowReviewLimits) WorkflowReviewLimits {
+	merged := defaults
+	if current.MaxFilesPerSlice != 0 {
+		merged.MaxFilesPerSlice = current.MaxFilesPerSlice
+	}
+	if current.MaxChurnLinesPerSlice != 0 {
+		merged.MaxChurnLinesPerSlice = current.MaxChurnLinesPerSlice
+	}
+	if current.MaxConcurrentSlices != 0 {
+		merged.MaxConcurrentSlices = current.MaxConcurrentSlices
+	}
+	if current.MinEvidenceItems != 0 {
+		merged.MinEvidenceItems = current.MinEvidenceItems
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

@@ -106,6 +106,7 @@ Use `AGENTS.md` for project conventions, `.lufy/config/project.yaml` for stack-s
 - When `.lufy/config/project.yaml` declares `context_graph.enabled: true` and review needs broad discovery beyond changed/user-named files, require graph preflight first (`context status`, then targeted `context query` when ready). Direct diff files, config and exact handoff paths remain allowed.
 - If `.lufy/context/graph.json` is missing, stale, unreadable, or the CLI is unavailable, continue review with `context_graph_hints.status: not_available` or `stale`, `fallback_reason` and recovery; do not penalize the change solely for absent graph data.
 - Return compact `context_graph_hints` when useful. Findings still require current diff/file/line, validation evidence, logs or explicit acceptance criteria; graph inference alone is not a finding.
+- When available, consume `context coverage` gaps and `context review` traced/untraced files, budget violations and freshness before scoring. Verify every material signal against the current diff/source; a `proceed` recommendation never substitutes reviewer judgment, and `unknown` must lower confidence rather than fabricate coverage.
 
 ## Workflow
 

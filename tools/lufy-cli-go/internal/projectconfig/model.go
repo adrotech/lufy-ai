@@ -118,13 +118,22 @@ type ValidationAllowedCommands struct {
 }
 
 type WorkflowLimits struct {
-	Sizing                  WorkflowSizing  `yaml:"sizing"`
-	Routing                 WorkflowRouting `yaml:"routing"`
-	ProposalSlicingStrategy string          `yaml:"proposal_slicing_strategy"`
-	DeliveryBatchStrategy   string          `yaml:"delivery_batch_strategy"`
-	StopRules               []string        `yaml:"stop_rules"`
-	Preflight               []string        `yaml:"preflight"`
-	Extra                   map[string]any  `yaml:",inline,omitempty"`
+	Sizing                  WorkflowSizing       `yaml:"sizing"`
+	Routing                 WorkflowRouting      `yaml:"routing"`
+	Review                  WorkflowReviewLimits `yaml:"review"`
+	ProposalSlicingStrategy string               `yaml:"proposal_slicing_strategy"`
+	DeliveryBatchStrategy   string               `yaml:"delivery_batch_strategy"`
+	StopRules               []string             `yaml:"stop_rules"`
+	Preflight               []string             `yaml:"preflight"`
+	Extra                   map[string]any       `yaml:",inline,omitempty"`
+}
+
+type WorkflowReviewLimits struct {
+	MaxFilesPerSlice      int            `yaml:"max_files_per_slice,omitempty"`
+	MaxChurnLinesPerSlice int            `yaml:"max_churn_lines_per_slice,omitempty"`
+	MaxConcurrentSlices   int            `yaml:"max_concurrent_slices,omitempty"`
+	MinEvidenceItems      int            `yaml:"min_evidence_items,omitempty"`
+	Extra                 map[string]any `yaml:",inline,omitempty"`
 }
 
 type WorkflowSizing struct {

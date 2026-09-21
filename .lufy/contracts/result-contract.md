@@ -8,6 +8,7 @@ Use this YAML envelope for substantive routed agent handoffs, context recovery, 
 - `lufy-ai result normalize --stdin` acepta únicamente el schema legacy allow-listed; no infiere éxito ni gates.
 - Claves `unknown`, claves `duplicate`, aliases y tags se rechazan. YAML y JSON equivalentes producen el mismo JSON `canonical` y `fingerprint` SHA-256.
 - Los cambios de estado usan el protocolo separado `result-transition/v1`; mencionar el schema en texto no constituye una transición.
+- Los resultados de `context coverage`, `context review` y `context metrics` son evidencia secundaria bounded. Registrar el comando en `evidence.commands`, resumir `action`, freshness/availability, violaciones y recovery en `evidence.static`, y conservar `diagnostics.context_graph_status`; no agregar claves top-level ad hoc ni avanzar un gate solo porque el assessment reporte `proceed`.
 
 ```yaml
 schema_version: result-contract/v1
