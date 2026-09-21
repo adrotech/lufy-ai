@@ -2,6 +2,13 @@
 
 Use this YAML envelope for substantive routed agent handoffs, context recovery, and final status summaries. Keep simple T3 Express work compact with `not_applicable`; do not invent command evidence. Preserve the adapter-specific overview contract: OpenSpec render remains `optional`, while Lufy SDD Full/Lite is `automatic` and must report the materialized/refreshed path without asking the user or invoking another render command. When an overview exists, expose its path as a clickable Markdown link and keep `open <path>` as fallback in user-facing output. Use `skipped_by_user` only for an optional render after explicit decline; never use it for Lufy SDD. The entire `ledger` block is optional: legacy Result Contract v1 payloads without it remain valid, and its status never overrides the handoff status or workflow gates.
 
+## Validación ejecutable
+
+- `lufy-ai result validate --stdin --role <rol> --json` aplica el decoder estricto y bounded de `result-contract/v1`.
+- `lufy-ai result normalize --stdin` acepta únicamente el schema legacy allow-listed; no infiere éxito ni gates.
+- Claves `unknown`, claves `duplicate`, aliases y tags se rechazan. YAML y JSON equivalentes producen el mismo JSON `canonical` y `fingerprint` SHA-256.
+- Los cambios de estado usan el protocolo separado `result-transition/v1`; mencionar el schema en texto no constituye una transición.
+
 ```yaml
 schema_version: result-contract/v1
 status: ready | implemented | validated | delivery_pending | sync_pending | blocked | escalated | delivered | closed

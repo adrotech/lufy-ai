@@ -82,6 +82,9 @@ func Registry() []CommandSpec {
 		{ID: "run-summary", Title: "Run Summary", Description: "Muestra el árbol causal", Args: []string{"run", "summary"}, Params: []ParamSpec{commonTarget, runID, jsonOut}},
 		{ID: "run-verify", Title: "Run Verify", Description: "Verifica fuente y proyecciones", Args: []string{"run", "verify"}, Params: []ParamSpec{commonTarget, runID, {Name: "repair", Flag: "--repair", Kind: ParamBool, Description: "Reconstruir derivados"}, jsonOut}},
 		{ID: "run-prune", Title: "Run Prune", Description: "Aplica retención local", Args: []string{"run", "prune"}, Params: []ParamSpec{commonTarget, dryRun, yes, jsonOut}},
+		{ID: "result-validate", Title: "Result Validate", Description: "Valida un Result Contract tipado", Args: []string{"result", "validate"}, Params: []ParamSpec{{Name: "stdin", Flag: "--stdin", Kind: ParamBool, Description: "Leer desde stdin"}, {Name: "file", Flag: "--file", Kind: ParamText, Description: "Archivo de entrada"}, {Name: "role", Flag: "--role", Kind: ParamText, Description: "Rol emisor"}, jsonOut}},
+		{ID: "result-normalize", Title: "Result Normalize", Description: "Normaliza legacy estructurado", Args: []string{"result", "normalize"}, Params: []ParamSpec{{Name: "stdin", Flag: "--stdin", Kind: ParamBool, Description: "Leer desde stdin"}, {Name: "file", Flag: "--file", Kind: ParamText, Description: "Archivo de entrada"}, jsonOut}},
+		{ID: "result-transition", Title: "Result Transition", Description: "Evalúa una transición tipada", Args: []string{"result", "transition"}, Params: []ParamSpec{commonTarget, {Name: "stdin", Flag: "--stdin", Kind: ParamBool, Description: "Leer desde stdin"}, {Name: "file", Flag: "--file", Kind: ParamText, Description: "Archivo de entrada"}, {Name: "record", Flag: "--record", Kind: ParamBool, Description: "Persistir receipt content-free"}, jsonOut}},
 		{ID: "version", Title: "Version", Description: "Muestra version del binario", Args: []string{"version"}},
 	}
 }

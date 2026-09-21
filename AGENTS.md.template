@@ -111,6 +111,8 @@ When the effective tier selects `lufy-sdd`, use `lufy-sdd-explore|propose|apply|
 
 Use this envelope for substantive local-agent handoffs and final workflow results. Keep T3 Express results compact with `not_applicable` values; normalize legacy or third-party outputs with `legacy_fallback: true` and missing evidence as `not_available`.
 
+Para aceptación automática, valida con `lufy-ai result validate`; las mutaciones usan `result-transition/v1` y `lufy-ai result transition`. Un substring del schema nunca avanza gates.
+
 ```yaml
 schema_version: result-contract/v1
 status: ready | implemented | validated | delivery_pending | sync_pending | blocked | escalated | delivered | closed

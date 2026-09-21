@@ -17,3 +17,7 @@ An automatic adapter maps only documented stable lifecycle metadata into `EventD
 Codex is the initial automatic producer for `SessionStart`, `SubagentStart`, `SubagentStop`, `Stop` and `SessionEnd`. Other adapters remain supported through the portable CLI/internal boundary; automatic instrumentation for them is intentionally not required in this phase.
 
 Result Contract v1 may carry the optional `ledger` references defined in `result-contract.md`. Those references correlate evidence but never make the ledger authoritative for the handoff status.
+
+## Correlación con Result Contract
+
+El bridge registra un evento `content-free` con `contract_fingerprint`, `decision_status`, versión y referencias SHA-256 allow-listed. Un retry equivalente produce `duplicate_noop`; la misma key con metadata distinta produce `conflict`; un fallo de storage produce `unavailable`. Ninguno de estos outcomes altera por sí solo el gate del workflow.
