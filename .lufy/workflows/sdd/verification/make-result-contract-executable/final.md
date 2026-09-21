@@ -4,9 +4,9 @@
 
 - **Implementación:** completa para Slices A–D.
 - **Validación local:** completa y aprobada.
-- **Sync:** pendiente al iniciar esta verificación; se ejecuta como siguiente gate separado.
-- **Delivery:** no autorizado para este change; no se hizo commit, push ni PR.
-- **Archive/close:** bloqueado hasta sync, delivery autorizado, checks remotos y merge/cierre.
+- **Sync:** completo; 14 requirements sincronizados en tres specs activas.
+- **Delivery:** autorizado y ejecutado en el PR `#228`; checks remotos exitosos en Ubuntu, macOS, Windows, quality gates e installer smoke.
+- **Archive/close:** listo para archivar en el mismo PR; el cierre definitivo ocurre al mergear `#228` y cerrar `#220`.
 
 ## Completeness
 
@@ -64,7 +64,7 @@
 | `scripts/validate.sh` | passed | Whitespace, PR guard, workflows, coupling, shell/smoke, quality, coverage 80,1% y build. |
 | `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go test -exec=true ...` | passed | Cross-compilación de paquetes afectados. |
 
-Limitaciones: `shellcheck` no estaba disponible y el script lo omitió explícitamente; Windows fue cross-compilado, no ejecutado en runner nativo.
+Limitaciones: `shellcheck` no estaba disponible localmente y el script lo omitió explícitamente. La ejecución nativa de Windows quedó cubierta por CI después de corregir la normalización CRLF de fixtures de prueba.
 
 ## Riesgos residuales
 
@@ -74,4 +74,4 @@ Limitaciones: `shellcheck` no estaba disponible y el script lo omitió explícit
 
 ## Decisión
 
-La implementación está **validated** y lista para sync. Aún no está `delivered` ni `closed`.
+La implementación está **validated**, sincronizada y con delivery/checks completos. Está lista para archive en el PR `#228`; quedará **closed** cuando ese PR sea mergeado y la issue `#220` se cierre.

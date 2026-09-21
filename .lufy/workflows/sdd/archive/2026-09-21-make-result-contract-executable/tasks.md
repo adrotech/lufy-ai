@@ -56,10 +56,10 @@
   - [x] 6.5 Probar ausencia durable de summary, prompts, paths, outputs y canaries.
   - [x] 6.6 Ejecutar coupling/catalog/lifecycle y validación Slice D.
 
-- [ ] 7. Verify, sync y delivery readiness
+- [x] 7. Verify, sync y delivery readiness
   - [x] 7.1 Ejecutar suite, build, race focalizado, fuzz bounded y `scripts/validate.sh`.
   - [x] 7.2 Verificar contra proposal/design/deltas y revisar privacidad/cross-platform.
   - [x] 7.3 Registrar evidencia en `verification/make-result-contract-executable/` y strict validate.
   - [x] 7.4 Sincronizar deltas validados.
   - [x] 7.5 Preparar PR único con cuatro review slices; no iniciar Loop Engine antes de merge/cierre.
-  - [ ] 7.6 No archivar ni cerrar sin delivery, checks, sync y gates completos.
+  - [x] 7.6 No archivar ni cerrar sin delivery, checks, sync y gates completos.

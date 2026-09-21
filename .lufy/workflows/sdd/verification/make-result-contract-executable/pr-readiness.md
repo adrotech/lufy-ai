@@ -59,12 +59,13 @@
 - Receipt y evento Run Ledger usan dos escrituras locales; un retry `duplicate_noop` completa una correlación interrumpida.
 - La validación estructural no prueba la veracidad material de la evidencia; validator/delivery siguen siendo autoridades.
 - `shellcheck` no estaba disponible localmente; CI debe ejecutar su gate habitual.
-- Windows se cross-compiló, pero la ejecución nativa queda para CI.
+- Windows se cross-compiló localmente y la ejecución nativa pasó en CI después de cubrir CRLF explícitamente.
 
-### Delivery pendiente
+### Delivery y cierre
 
-- Reejecutar `lufy-ai pr guard` después de stage/commit: el gate actual aprobó los 16 archivos tracked modificados, pero los archivos nuevos aún están untracked.
-- Requiere autorización explícita para commit, push y creación del PR contra `develop`.
-- No cerrar ni archivar hasta checks remotos exitosos, merge, sync confirmado y cleanup seguro.
+- PR `#228` abierto contra `develop`, mergeable y con checks remotos exitosos.
+- Sync confirmado: 14 requirements en tres specs activas.
+- El archive se incorpora al mismo PR para evitar un PR posterior exclusivo de cierre.
+- Al mergear, `Closes #220` cierra la issue de forma atómica con la integración.
 
-`Refs #220`
+`Closes #220`
