@@ -4,7 +4,7 @@
 
 - Implementación de Fase 4 validada localmente contra proposal, design y spec.
 - Trazabilidad preparada para la issue `#221` y PR único contra `develop`.
-- No se inició Fase 5 y no se autoriza archive/cierre antes de delivery y checks remotos.
+- No se inició Fase 5. Delivery y checks remotos quedaron completos en el PR `#229`; el usuario autorizó archivar antes del merge para incluir el archive en el mismo PR.
 
 ## Matriz de aceptación
 
@@ -33,6 +33,8 @@
 | `lufy-ai sdd validate --change extend-context-graph-workflow-traceability --strict --json` | passed antes de sync; 38/41 |
 | `lufy-ai sdd sync --change extend-context-graph-workflow-traceability --json` | passed; spec activa creada y digest `531c64dbbc446edd4117b8b9e374bf56fd6931d0d0bc3f3b810d8f03857aa64b` |
 | `lufy-ai context review --target ../.. --base origin/develop --concurrent-slices 1 --evidence-items 4 --json` | `escalate`; 39 archivos tracked, 1511 líneas de churn, límites no disponibles y traceability `unknown`, conservando observaciones directas |
+| `gh pr checks 229` | passed; Quality, Ubuntu, macOS, Windows e installer smoke exitosos |
+| `gh pr view 229 --json state,mergeStateStatus,closingIssuesReferences` | PR abierto, `CLEAN`, con `Closes #221` reconocido |
 
 ## Portabilidad y fallback
 
@@ -43,5 +45,5 @@
 ## Riesgos y gates restantes
 
 - Sync Full quedó materializado; la spec activa y el change comparten digest.
-- Commit, push, PR, checks remotos, merge, cierre de `#221` y archive requieren delivery explícitamente autorizado.
-- El change permanece abierto; la tarea 7.6 solo puede cerrarse después de esos gates.
+- Commit, push, PR y checks remotos están completos; el usuario autorizó el archive previo al merge.
+- Merge y cierre de `#221` siguen pendientes y ocurrirán después de que el archive quede incluido en el PR `#229`.

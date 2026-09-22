@@ -51,10 +51,10 @@
   - [x] 6.3 Mantener root/embedded assets y specs en paridad.
   - [x] 6.4 Ejecutar coupling/catalog/parity y E2E de Slice D.
 
-- [ ] 7. Verify, sync y delivery readiness
+- [x] 7. Verify, sync y delivery readiness
   - [x] 7.1 Ejecutar suite, build, race focalizado y `scripts/validate.sh`.
   - [x] 7.2 Verificar proposal/design/spec, privacidad, fallback y cross-platform.
   - [x] 7.3 Registrar evidencia en `verification/extend-context-graph-workflow-traceability/` y strict validate.
   - [x] 7.4 Sincronizar deltas validados.
   - [x] 7.5 Preparar trazabilidad con issue `#221`; no iniciar Fase 5 antes de merge/cierre.
-  - [ ] 7.6 No archivar ni cerrar sin delivery, checks, sync y gates completos.
+  - [x] 7.6 No archivar ni cerrar sin delivery, checks, sync y gates completos.
