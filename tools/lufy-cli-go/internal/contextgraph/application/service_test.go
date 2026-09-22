@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -45,6 +46,118 @@ func TestBuildWritesDeterministicArtifacts(t *testing.T) {
 	}
 	if second.Changed || second.CacheHits == 0 {
 		t.Fatalf("second build should be idempotent and use cache: %+v", second)
+	}
+}
+
+func TestBuildResolvesWorkflowReferencesAndPreservesDiagnosticsAcrossCache(t *testing.T) {
+	root := t.TempDir()
+	const (
+		validTarget  = "scenario:cache-demo/traceability#explicit-links/valid-target"
+		brokenTarget = "scenario:cache-demo/traceability#explicit-links/missing-target"
+		taskID       = "task:cache-demo#1.1"
+	)
+	mustWrite(t, filepath.Join(root, ".lufy/workflows/sdd/changes/cache-demo/specs/traceability/spec.md"), strings.Join([]string{
+		"# Traceability Specification",
+		"### Requirement: Explicit links",
+		"#### Scenario: Valid target",
+		"- **WHEN** extraction runs",
+		"- **THEN** the target resolves.",
+		"",
+	}, "\n"))
+	mustWrite(t, filepath.Join(root, ".lufy/workflows/sdd/changes/cache-demo/tasks.md"), strings.Join([]string{
+		"# Tasks: cache-demo",
+		"- [ ] 1.1 Valid cross-file marker <!-- lufy:implements " + validTarget + " -->",
+		"- [ ] 1.2 Broken cross-file marker <!-- lufy:implements " + brokenTarget + " -->",
+		"",
+	}, "\n"))
+
+	service := NewService()
+	first, err := service.Build(root)
+	if err != nil {
+		t.Fatalf("first Build() error = %v", err)
+	}
+	if len(first.Diagnostics) != 1 || first.Diagnostics[0].TargetID != brokenTarget {
+		t.Fatalf("first build diagnostics = %#v, want bounded broken reference", first.Diagnostics)
+	}
+	firstGraph, err := service.store.LoadGraph(root, ".lufy/context")
+	if err != nil {
+		t.Fatalf("load first graph: %v", err)
+	}
+	if !hasGraphEdge(firstGraph.Edges, taskID, "implements", validTarget) {
+		t.Fatalf("valid cross-file edge missing from graph: %#v", firstGraph.Edges)
+	}
+	if hasGraphEdge(firstGraph.Edges, "task:cache-demo#1.2", "implements", brokenTarget) {
+		t.Fatalf("broken edge persisted in graph: %#v", firstGraph.Edges)
+	}
+	rawCache, err := service.store.LoadCache(root, ".lufy/context")
+	if err != nil {
+		t.Fatalf("load raw cache: %v", err)
+	}
+	if !cacheHasEdge(rawCache, "task:cache-demo#1.2", "implements", brokenTarget) {
+		t.Fatalf("raw cache lost unresolved candidate: %#v", rawCache.Entries)
+	}
+
+	second, err := service.Build(root)
+	if err != nil {
+		t.Fatalf("second Build() error = %v", err)
+	}
+	if second.Changed || second.CacheHits < 2 || !reflect.DeepEqual(first.Diagnostics, second.Diagnostics) ||
+		first.Nodes != second.Nodes || first.Edges != second.Edges {
+		t.Fatalf("cached build is not equivalent: first=%+v second=%+v", first, second)
+	}
+}
+
+func TestBuildReevaluatesCachedWorkflowCandidateWhenTargetAppears(t *testing.T) {
+	root := t.TempDir()
+	const target = "scenario:late-target/traceability#cache-resolution/added-later"
+	tasksPath := filepath.Join(root, ".lufy/workflows/sdd/changes/late-target/tasks.md")
+	mustWrite(t, tasksPath, strings.Join([]string{
+		"# Tasks: late-target",
+		"- [ ] 1.1 Waiting marker <!-- lufy:implements " + target + " -->",
+		"",
+	}, "\n"))
+
+	service := NewService()
+	first, err := service.Build(root)
+	if err != nil {
+		t.Fatalf("first Build() error = %v", err)
+	}
+	if len(first.Diagnostics) != 1 || first.Diagnostics[0].TargetID != target {
+		t.Fatalf("first build should report unresolved target: %#v", first.Diagnostics)
+	}
+	mustWrite(t, filepath.Join(root, ".lufy/workflows/sdd/changes/late-target/specs/traceability/spec.md"), strings.Join([]string{
+		"# Traceability Specification",
+		"### Requirement: Cache resolution",
+		"#### Scenario: Added later",
+		"- **WHEN** the target source appears",
+		"- **THEN** a cached marker resolves.",
+		"",
+	}, "\n"))
+
+	second, err := service.Build(root)
+	if err != nil {
+		t.Fatalf("second Build() error = %v", err)
+	}
+	if !second.Changed || second.CacheHits != 1 || second.CacheMisses != 1 || len(second.Diagnostics) != 0 {
+		t.Fatalf("second build should combine cached marker with new target: %+v", second)
+	}
+	graph, err := service.store.LoadGraph(root, ".lufy/context")
+	if err != nil {
+		t.Fatalf("load updated graph: %v", err)
+	}
+	if !hasGraphEdge(graph.Edges, "task:late-target#1.1", "implements", target) {
+		t.Fatalf("cached marker did not resolve after target appeared: %#v", graph.Edges)
+	}
+}
+
+func TestLimitGraphDiagnosticsIsBounded(t *testing.T) {
+	diagnostics := make([]domain.Diagnostic, maxGraphDiagnostics+5)
+	for index := range diagnostics {
+		diagnostics[index] = domain.Diagnostic{Code: "test", Path: "fixture", Line: index + 1, Recovery: "fix fixture"}
+	}
+	limited := limitGraphDiagnostics(diagnostics)
+	if len(limited) != maxGraphDiagnostics || limited[0].Line != 1 || limited[len(limited)-1].Line != maxGraphDiagnostics {
+		t.Fatalf("bounded diagnostics = %#v", limited)
 	}
 }
 
@@ -267,4 +380,22 @@ func runGit(t *testing.T, root string, args ...string) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("git %v failed: %v\n%s", args, err, string(out))
 	}
+}
+
+func hasGraphEdge(edges []domain.Edge, from, relation, to string) bool {
+	for _, edge := range edges {
+		if edge.From == from && edge.Type == relation && edge.To == to {
+			return true
+		}
+	}
+	return false
+}
+
+func cacheHasEdge(cache domain.Cache, from, relation, to string) bool {
+	for _, entry := range cache.Entries {
+		if hasGraphEdge(entry.Edges, from, relation, to) {
+			return true
+		}
+	}
+	return false
 }

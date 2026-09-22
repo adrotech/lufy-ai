@@ -69,6 +69,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If `.lufy/config/project.yaml` declares `context_graph.enabled: true`, route broad discovery through graph preflight first: status plus targeted query when available. Direct config/user-named path reads remain allowed. If hints are unavailable, stale, or not provided, set diagnostics to `not_available`/`stale` and include fallback recovery instead of omitting them silently.
 - If provided, use `context_graph_hints` as required preflight context for likely files, affected surfaces, impact questions or review slices, not as replacement evidence.
 - Never treat graph-derived relationships or inferred impact as evidence stronger than current files, user-provided constraints, diffs, validation evidence, or repository policies.
+- When an upstream handoff already provides `context review`, use only canonical `workflow_limits.review` availability and the reported `proceed|split|escalate` action to refine review slices. Do not execute the command, infer missing budgets, or treat `proceed` as implementation/delivery authority.
 
 ## Governed Parallelism
 

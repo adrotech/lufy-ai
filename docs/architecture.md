@@ -191,6 +191,12 @@ Los presets OpenCode y Codex instalan el mismo núcleo de roles:
 
 El núcleo compartido se instala desde `.lufy/contracts/`: delivery, Result Contract y recursos de PR review. OpenCode conserva overlays de compatibilidad; Codex proyecta los recursos necesarios dentro de cada skill para progressive disclosure.
 
+### Context Graph y Review Workload Harness
+
+El Context Graph conecta artefactos SDD, tareas, tests, archivos y metadata content-free del Run Ledger mediante referencias explícitas. `lufy-ai context coverage` detecta gaps scenario/task/test; `context review --base <ref>` combina numstat directo, trazabilidad y `workflow_limits.review`; `context metrics` deriva duración de review, rework y defectos reabiertos desde nombres de evento reconocidos.
+
+Estas salidas son evidencia secundaria y bounded. Un grafo missing/stale conserva observaciones Git directas pero marca trazabilidad `unknown`; el runtime nunca entra al discovery genérico. Ningún resultado del grafo reemplaza archivos, tests, reviewer, autorización de delivery, checks remotos, sync o cierre.
+
 También instala:
 
 - template `sdd-lite.md` específico de OpenCode y Result Contract neutral;

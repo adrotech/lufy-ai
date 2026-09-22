@@ -31,6 +31,9 @@ func Load(path string) (ProjectConfig, error) {
 	if err := validateHarnessConfig(cfg); err != nil {
 		return ProjectConfig{}, err
 	}
+	if err := validateReviewLimits(cfg.WorkflowLimits.Review); err != nil {
+		return ProjectConfig{}, err
+	}
 	return cfg, nil
 }
 
@@ -70,6 +73,24 @@ func validateHarnessConfig(cfg ProjectConfig) error {
 		Tool:              cfg.Tool,
 		MethodologyByTier: cfg.MethodologyByTier,
 	}.ValidateSupported()
+}
+
+func validateReviewLimits(limits WorkflowReviewLimits) error {
+	fields := []struct {
+		name  string
+		value int
+	}{
+		{name: "max_files_per_slice", value: limits.MaxFilesPerSlice},
+		{name: "max_churn_lines_per_slice", value: limits.MaxChurnLinesPerSlice},
+		{name: "max_concurrent_slices", value: limits.MaxConcurrentSlices},
+		{name: "min_evidence_items", value: limits.MinEvidenceItems},
+	}
+	for _, field := range fields {
+		if field.value < 0 {
+			return fmt.Errorf("workflow_limits.review.%s debe ser mayor o igual a cero", field.name)
+		}
+	}
+	return nil
 }
 
 func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {

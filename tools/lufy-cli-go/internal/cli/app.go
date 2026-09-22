@@ -354,6 +354,14 @@ func runContext(args []string, deps Dependencies) int {
 		return runContextExplain(args[1:], deps)
 	case "diff":
 		return runContextDiff(args[1:], deps)
+	case "coverage":
+		return runContextCoverage(args[1:], deps)
+	case "trace":
+		return runContextTrace(args[1:], deps)
+	case "review":
+		return runContextReview(args[1:], deps)
+	case "metrics":
+		return runContextMetrics(args[1:], deps)
 	case "-h", "--help", "help":
 		printContextHelp(deps.Stdout)
 		return ExitOK
@@ -515,6 +523,140 @@ func runContextDiff(args []string, deps Dependencies) int {
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
 		fmt.Fprintf(deps.Stdout, "changed files: %d\nimpact nodes: %d\ncommunities: %d\ntoken savings: %s\n", len(res.ChangedFiles), len(res.Impact), len(res.Communities), res.TokenSavings)
+	})
+}
+
+func runContextCoverage(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("coverage", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context coverage [--target <dir>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res := contextapp.NewService().Coverage(*target)
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context coverage: %s (graph=%s scenarios=%d truncated=%t)\n", res.Status, res.GraphStatus, res.TotalScenarios, res.Truncated)
+		for _, scenario := range res.Scenarios {
+			fmt.Fprintf(deps.Stdout, "%s: %s", scenario.ScenarioID, scenario.Status)
+			if len(scenario.Missing) > 0 {
+				fmt.Fprintf(deps.Stdout, " missing=%s", strings.Join(scenario.Missing, ","))
+			}
+			fmt.Fprintln(deps.Stdout)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextTrace(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("trace", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context trace [--target <dir>] [--json] <node>")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res := contextapp.NewService().Trace(*target, fs.Args()[0])
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		label := res.Status
+		if res.Traced {
+			label = "traced"
+		}
+		fmt.Fprintf(deps.Stdout, "context trace: %s (graph=%s)\n", label, res.GraphStatus)
+		if len(res.Path) > 0 {
+			fmt.Fprintf(deps.Stdout, "path: %s\n", strings.Join(res.Path, " -> "))
+		}
+		if res.Reason != "" {
+			fmt.Fprintf(deps.Stdout, "reason: %s\n", res.Reason)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextReview(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("review", deps)
+	base := fs.String("base", "", "Referencia Git base")
+	concurrentSlices := fs.Int("concurrent-slices", 0, "Slices concurrentes observados")
+	evidenceItems := fs.Int("evidence-items", 0, "Items de evidencia observados")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context review --base <ref> [--target <dir>] [--concurrent-slices <n>] [--evidence-items <n>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if *base == "" || len(fs.Args()) != 0 || *concurrentSlices < 0 || *evidenceItems < 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Review(*target, contextapp.ReviewOptions{Base: *base, ConcurrentSlices: *concurrentSlices, EvidenceItems: *evidenceItems})
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context review: %s (graph=%s traceability=%s files=%d churn=%d)\n", res.Action, res.GraphStatus, res.Traceability, res.Observations.Files, res.Observations.Churn)
+		for _, violation := range res.Violations {
+			fmt.Fprintf(deps.Stdout, "violation: %s", violation.Code)
+			if violation.Path != "" {
+				fmt.Fprintf(deps.Stdout, " path=%s", violation.Path)
+			}
+			fmt.Fprintln(deps.Stdout)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextMetrics(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("metrics", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context metrics [--target <dir>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	result := contextapp.NewService().Metrics(*target)
+	return writeContextResult(deps, *jsonOutput, result, func() {
+		duration := "not_available"
+		if result.ReviewDurationMillis != nil {
+			duration = fmt.Sprint(*result.ReviewDurationMillis)
+		}
+		fmt.Fprintf(deps.Stdout, "context metrics: %s (ledger=%s reviews=%d duration_ms=%s rework=%d reopened=%d)\n", result.Status, result.LedgerAvailability, result.CompletedReviews, duration, result.ReworkCount, result.ReopenedDefectCount)
+		for _, missing := range result.Missing {
+			fmt.Fprintf(deps.Stdout, "missing: %s\n", missing)
+		}
+		if result.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", result.Recovery)
+		}
 	})
 }
 
@@ -1673,6 +1815,10 @@ func printContextHelp(out io.Writer) {
 	fmt.Fprintln(out, "  path      Calcula un camino explicable entre nodos")
 	fmt.Fprintln(out, "  explain   Explica por qué existe un nodo o edge")
 	fmt.Fprintln(out, "  diff      Resume impacto desde git diff --base <ref>")
+	fmt.Fprintln(out, "  coverage  Reporta cobertura explícita scenario-task-test")
+	fmt.Fprintln(out, "  trace     Sigue trazabilidad forward desde un nodo")
+	fmt.Fprintln(out, "  review    Evalúa diff, trazabilidad y budgets de revisión")
+	fmt.Fprintln(out, "  metrics   Deriva métricas content-free desde Run Ledger")
 }
 
 func printOpsxHelp(out io.Writer) {
