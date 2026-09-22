@@ -145,6 +145,8 @@ func prepareReviewRepo(t *testing.T, fx reviewFixture) (string, string) {
 	gitReview(t, root, "init")
 	gitReview(t, root, "config", "user.email", "test@example.com")
 	gitReview(t, root, "config", "user.name", "Test User")
+	gitReview(t, root, "config", "gc.auto", "0")
+	gitReview(t, root, "config", "maintenance.auto", "false")
 	gitReview(t, root, "add", ".")
 	gitReview(t, root, "commit", "-m", "base")
 	base := strings.TrimSpace(gitReview(t, root, "rev-parse", "HEAD"))

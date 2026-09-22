@@ -47,3 +47,9 @@
 - Sync Full quedó materializado; la spec activa y el change comparten digest.
 - Commit, push, PR y checks remotos están completos; el usuario autorizó el archive previo al merge.
 - Merge y cierre de `#221` siguen pendientes y ocurrirán después de que el archive quede incluido en el PR `#229`.
+
+## Hardening CI posterior al archive
+
+- La primera corrida posterior al commit de archive falló solo en macOS durante el cleanup de `TestReviewBoundsUntracedFilesAndViolationsWithoutHidingTotals`: `TempDir RemoveAll cleanup: .git: directory not empty`.
+- El fixture desactiva `gc.auto` y `maintenance.auto` en su repositorio temporal para impedir auto-maintenance de Git concurrente con `t.TempDir`.
+- La corrección no cambia comportamiento productivo ni el delta sincronizado; se valida con repetición focalizada, suite Context Graph y checks remotos del mismo PR.
