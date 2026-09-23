@@ -69,6 +69,7 @@ func TestBuildCatalogExpandsManagedAssetsAndExcludesOpenSpecChanges(t *testing.T
 		filepath.Join(".lufy", "workflows", "sdd", "actions", "propose.md"):                    false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                      false,
 		filepath.Join(".lufy", "contracts", "delivery.md"):                                     false,
+		filepath.Join(".lufy", "contracts", "adaptive-routing.md"):                             false,
 		filepath.Join(".lufy", "contracts", "result-contract.md"):                              false,
 	}
 	for _, asset := range catalog.Assets {
@@ -185,6 +186,7 @@ func TestBuildEmbeddedCatalogIncludesManagedAssetsAndExcludesOpenSpecChanges(t *
 		filepath.Join(".lufy", "workflows", "sdd", "actions", "propose.md"):                    false,
 		filepath.Join(".lufy", "workflows", "sdd", "changes", ".gitkeep"):                      false,
 		filepath.Join(".lufy", "contracts", "delivery.md"):                                     false,
+		filepath.Join(".lufy", "contracts", "adaptive-routing.md"):                             false,
 		filepath.Join(".lufy", "contracts", "result-contract.md"):                              false,
 	}
 	for _, asset := range catalog.Assets {
@@ -322,6 +324,58 @@ func TestAgentAssetsContainT2FastPathApprovalGate(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAdaptiveRoutingGuidancePreservesAuthorityAcrossManagedSurfaces(t *testing.T) {
+	root := repoRoot(t)
+	embedded := filepath.Join("tools", "lufy-cli-go", "internal", "assets", "embedded")
+	cases := []struct {
+		rels []string
+		want []string
+	}{
+		{
+			rels: []string{filepath.Join(".lufy", "contracts", "adaptive-routing.md"), filepath.Join(embedded, ".lufy", "contracts", "adaptive-routing.md")},
+			want: []string{"temporary scheduling suggestion", "scheduler evidence only", "No autonomous mode", "protected boundary", "duplicate_noop", "content-free metadata"},
+		},
+		{
+			rels: []string{"AGENTS.md.template", filepath.Join(embedded, "AGENTS.md.template")},
+			want: []string{"`role_hint` as a temporary capability suggestion", "`disabled` is the default", "never grants permissions", "destructive migrations", "durable checkpoint receipt"},
+		},
+		{
+			rels: []string{"lufy-ia.harness.md", filepath.Join(embedded, "lufy-ia.harness.md")},
+			want: []string{"## Adaptive Routing Safety", "no autonomous mode", "human/orchestrator escalation", "preserve deterministic routing"},
+		},
+		{
+			rels: []string{filepath.Join(".opencode", "agents", "orchestrator.md"), filepath.Join(embedded, ".opencode", "agents", "orchestrator.md")},
+			want: []string{"## Adaptive Routing Boundary", "gate_advanced=false", "Do not synthesize a new role", "protected boundaries", "not_available|disabled"},
+		},
+		{
+			rels: []string{filepath.Join(".opencode", "agents", "sdd-router.md"), filepath.Join(embedded, ".opencode", "agents", "sdd-router.md")},
+			want: []string{"## Adaptive Routing Evidence", "temporary capability/`role_hint`", "No autonomous mode exists", "preserve the current deterministic route"},
+		},
+		{
+			rels: []string{filepath.Join(".codex", "agents", "orchestrator.toml"), filepath.Join(embedded, ".codex", "agents", "orchestrator.toml")},
+			want: []string{"temporary scheduler evidence", "gate_advanced=false", "protected boundaries", "preserve deterministic SDD/role routing"},
+		},
+		{
+			rels: []string{filepath.Join(".codex", "agents", "sdd-router.toml"), filepath.Join(embedded, ".codex", "agents", "sdd-router.toml")},
+			want: []string{"temporary planning evidence only", "No autonomous mode exists", "preempt adaptive scoring", "preserve deterministic routing"},
+		},
+	}
+
+	for _, tc := range cases {
+		for _, rel := range tc.rels {
+			body, err := os.ReadFile(filepath.Join(root, rel))
+			if err != nil {
+				t.Fatalf("ReadFile(%s) error = %v", rel, err)
+			}
+			for _, want := range tc.want {
+				if !strings.Contains(string(body), want) {
+					t.Fatalf("%s missing %q", rel, want)
+				}
+			}
+		}
 	}
 }
 
@@ -941,6 +995,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join("openspec", "specs", ".gitkeep"):                                    "",
 		filepath.Join(".lufy", "README.md"):                                               "layout\n",
 		filepath.Join(".lufy", "contracts", "README.md"):                                  "contracts\n",
+		filepath.Join(".lufy", "contracts", "adaptive-routing.md"):                        "adaptive routing\n",
 		filepath.Join(".lufy", "contracts", "delivery.md"):                                "delivery\n",
 		filepath.Join(".lufy", "contracts", "result-contract.md"):                         "result\n",
 		filepath.Join(".lufy", "contracts", "pr-review", "review-framework.md"):           "review framework\n",

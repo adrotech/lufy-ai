@@ -66,6 +66,15 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - When the user corrects an AI technical decision, route or execute memory capture as `type: rule` or `type: lesson` with `lufy-ai memory capture`, then connect it to related notes with `lufy-ai memory connect` when existing notes are available. Do not leave user corrections only in chat.
 - After memory mutations, require `lufy-ai memory index`/automatic index update and `lufy-ai memory validate` evidence, or report why memory was unavailable.
 
+## Adaptive Routing Boundary
+
+- Follow `.lufy/contracts/adaptive-routing.md`. Treat `actor_ref`, capabilities, and `role_hint` as separate: a role hint is temporary scheduler evidence for selecting an existing capability, never identity, ownership, permission, or tool authority.
+- Adaptive output may refine a plan, but it must not by itself spawn or reassign an agent, invoke a specialist, mutate state, or advance Result Contract, validation, review, delivery, sync, archive, merge, or closure gates. Preserve `gate_advanced=false` in adaptive handoffs.
+- Keep the canonical roles unchanged. Do not synthesize a new role or broaden any role contract from a recommendation, assignment, lease, yield, score, or waiting-pool state.
+- Delivery, security, public contracts, database schema, and destructive migrations are protected boundaries. Stop before adaptive scoring/routing and require the same human/orchestrator decision and explicit authorization as the non-adaptive workflow.
+- A safe yield releases adaptive lease/budget only after a durable `recorded` or equivalent `duplicate_noop` checkpoint receipt. Conflict, stale/expired lease, owner mismatch, or unavailable storage leaves the assignment active and requires recovery.
+- When adaptive config, CLI support, ledger, or adapter integration is absent/unavailable, record `adaptive_routing: not_available|disabled` and continue with existing deterministic SDD/role routing. Never fabricate a recommendation, assignment, release, or success.
+
 ## Workflow
 
 - Use `explorer` to understand impact, locate files, analyze architecture, review existing patterns, or prepare strategy without editing.

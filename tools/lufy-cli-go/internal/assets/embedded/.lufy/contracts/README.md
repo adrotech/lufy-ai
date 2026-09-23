@@ -10,6 +10,7 @@ This directory is the adapter-neutral source of truth for invariants shared by C
 | `result-contract.md` | Portable result envelope, evidence, risks, workflow decision, and next action | Tool-native handoff syntax |
 | `result-transition.md` | Typed state transition, CAS, ownership, lease, join, and durable idempotency | CLI and lifecycle adapters |
 | `run-ledger-producer.md` | Typed, privacy-first producer boundary for causal run metadata | Automatic lifecycle mapping where supported |
+| `adaptive-routing.md` | Temporary capability hints, disabled/shadow/advisory modes, protected boundaries, safe yield, and no-gate-advance rules | OpenCode/Codex routing guidance and CLI integration |
 | `pr-review/review-framework.md` | Review dimensions, severity, scoring, and desk-check guidance | Tool-specific evidence collection |
 | `pr-review/report.html` | Self-contained HTML report structure and visual contract | Output-path and open/preview mechanics |
 

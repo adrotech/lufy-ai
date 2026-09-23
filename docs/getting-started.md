@@ -216,6 +216,17 @@ lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
 | `reviewer` | Revisa calidad, cobertura y riesgo. |
 | `delivery` | Git/GitHub solo con autorización explícita. |
 
+Los roles siguen siendo contratos fijos. Si `adaptive_routing` está habilitado, `role_hint` solo expresa una capacidad temporal sugerida y no cambia identidad, permisos ni ownership. El router/orchestrator puede usarla para planificar, pero delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas continúan requiriendo escalación humana.
+
+Para inspeccionar la capacidad sin mutar:
+
+```bash
+lufy-ai adaptive recommend --target <repo> --file demand.yaml --json
+lufy-ai adaptive status --target <repo> --run <run-id> --json
+```
+
+`assign` y `yield` requieren `--record`, `--run` e `--idempotency-key`. `yield` libera recursos adaptativos solo después de persistir un checkpoint content-free. Cuando la capacidad no está disponible, el flujo normal T1/T2/T3 sigue siendo autoritativo.
+
 ## 8. Desarrollo local de lufy-ai
 
 ```bash

@@ -86,6 +86,10 @@ scripts/validate.sh
 | `lufy-ai context path` | Calcula un camino explicable entre dos nodos. | `--target`, `--json`, `<from> <to>` |
 | `lufy-ai context explain` | Explica por qué existe un nodo o edge. | `--target`, `--json`, `<node-or-edge>` |
 | `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base con nodos, vecinos y comunidades afectadas. | `--target`, `--json`, `--base <ref>` |
+| `lufy-ai adaptive recommend` | Evalúa demanda/candidatos en `disabled`, `shadow` o `advisory`; es read-only salvo recording explícito. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
+| `lufy-ai adaptive assign` | Confirma una recomendación advisory vigente con lease fenced y persistencia explícita. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
+| `lufy-ai adaptive yield` | Persiste un checkpoint content-free antes de liberar lease/budget y reencolar. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
+| `lufy-ai adaptive status` | Reconstruye assignments activas, budget y waiting pool desde Run Ledger. | `--target`, `--run`, `--json` |
 | `lufy-ai skills ensure` | Mantiene el índice si está `ready` y lo actualiza solamente si falta o está `stale`. | `--target`, `--tool`, `--json` |
 | `lufy-ai skills refresh` | Escanea las raíces declaradas por OpenCode/Codex y actualiza `.lufy/skill-registry.json` sin modificar skills. | `--target`, `--tool`, `--json` |
 | `lufy-ai skills status` | Reporta `ready`, `stale` o `not_available` comparando el índice con las fuentes actuales. | `--target`, `--tool`, `--json` |
@@ -248,6 +252,20 @@ parallel_execution:
 ```
 
 El CLI solo persiste la política. La decisión operacional queda en `sdd-router`: recomienda paralelismo únicamente para `review_slices` independientes con archivos separados y plan de merge; bloquea delivery, migraciones, contratos compartidos o cambios sobre los mismos archivos.
+
+## Adaptive routing
+
+`adaptive_routing` está deshabilitado por default. `shadow` calcula evidencia sin assignment/budget/ownership; `advisory` habilita `assign` y `yield` solo mediante una invocación explícita con `--record`, `--run` e `--idempotency-key`. Ningún subcomando avanza gates: las salidas conservan `gate_advanced=false`.
+
+```bash
+lufy-ai adaptive recommend --target <repo> --file demand.yaml --json
+lufy-ai adaptive recommend --target <repo> --run <run-id> --file demand.yaml --record --idempotency-key <key> --json
+lufy-ai adaptive assign --target <repo> --run <run-id> --file assignment.yaml --record --idempotency-key <key> --json
+lufy-ai adaptive yield --target <repo> --run <run-id> --file checkpoint.yaml --record --idempotency-key <key> --json
+lufy-ai adaptive status --target <repo> --run <run-id> --json
+```
+
+La entrada acepta YAML/JSON desde `--file` o stdin y usa strict decode/bounds. Persistencia y diagnósticos son content-free: no se admiten prompts, outputs, summaries, secretos, paths ni hipótesis/intentos en texto. Delivery, seguridad, contratos públicos, database schema y destructive migrations requieren escalación antes del scoring. Si falta soporte/config/ledger, el caller debe conservar el routing determinista existente y tratar adaptive como `disabled`/`not_available`.
 
 ## OpenSpec helpers
 

@@ -29,7 +29,7 @@ La metodología también debe ser un adapter:
 
 ```mermaid
 flowchart TD
-    CLI["cmd/lufy-ai + internal/cli"] --> App["Casos de uso: install, uninstall, verify, status, sync, merge"]
+    CLI["cmd/lufy-ai + internal/cli"] --> App["Casos de uso: lifecycle + adaptive recommend/assign/yield/status"]
     App --> Domain["Core domain"]
     Domain --> Ports["Ports neutrales"]
     Ports --> ToolAdapters["Tool adapters"]
@@ -76,6 +76,10 @@ flowchart TD
 | `internal/backup` | Backup/restore multiasset con manifest. |
 | `internal/config` | Merge conservador de `opencode.json`. |
 | `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
+| `internal/adaptive/domain` | Contratos bounded, strict decode, eligibility, scoring entero determinista y protected-boundary preemption. |
+| `internal/adaptive/application` | Casos de uso `recommend`, `assign`, `yield` y `status`; consume ports sin avanzar gates. |
+| `internal/adaptive/adapters` | Integración content-free con Run Ledger para persistencia causal, leases fenced y proyección reconstruible. |
+| `internal/runledger` | Fuente append-only de eventos causales y metadata adaptativa allow-listed. |
 | `internal/surfaceplan` | Resuelve superficies activas y compone contratos/validaciones read-only mediante Strategy, Factory y adapters de config/Git. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
 | `internal/contextgraph` | Grafo local determinístico: extractores, almacenamiento `.lufy/context/`, consultas lexicales, path/explain y diff impact. |
@@ -190,6 +194,27 @@ Los presets OpenCode y Codex instalan el mismo núcleo de roles:
 - `delivery`: Git/GitHub solo con autorización explícita.
 
 El núcleo compartido se instala desde `.lufy/contracts/`: delivery, Result Contract y recursos de PR review. OpenCode conserva overlays de compatibilidad; Codex proyecta los recursos necesarios dentro de cada skill para progressive disclosure.
+
+### Adaptive role allocation
+
+El allocator separa identidad pseudónima, capacidades actuales y `role_hint` temporal. Una recomendación ayuda a planificar cuál de los roles existentes puede aportar una capacidad, pero no crea roles, no amplía permisos, no cambia ownership y siempre conserva `gate_advanced=false`. El contrato neutral vive en `.lufy/contracts/adaptive-routing.md`.
+
+```mermaid
+flowchart LR
+    Demand["DemandSignal + CapabilityProfile"] --> Score["deterministic-v1"]
+    Score --> Protected{"protected boundary?"}
+    Protected -->|sí| Human["human/orchestrator escalation"]
+    Protected -->|no| Recommend["recommendation"]
+    Recommend --> Shadow["shadow: observation only"]
+    Recommend --> Advisory["advisory: explicit assign"]
+    Advisory --> Ledger["Run Ledger append-only"]
+    Ledger --> Yield["durable checkpoint before release"]
+    Yield --> Waiting["bounded waiting pool / requeue"]
+```
+
+`disabled` es el default. `shadow` puede observar/registrar evidencia sin assignment, budget ni ownership; `advisory` exige una mutación explícita con idempotencia y lease. Delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas preemptan el score. Si config, CLI, ledger o adapter no soportan la capacidad, el harness informa `not_available`/`disabled` y conserva el routing SDD determinista existente.
+
+Yield significa liberación segura y auditable, no sacrificio opaco: el checkpoint conserva solo referencias/digests content-free y libera lease/budget después de `recorded` o `duplicate_noop` equivalente. Conflictos, lease stale/expirada, owner mismatch o storage unavailable mantienen la assignment activa.
 
 ### Context Graph y Review Workload Harness
 

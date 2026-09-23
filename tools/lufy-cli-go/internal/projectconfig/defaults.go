@@ -47,6 +47,18 @@ func DefaultRunLedgerConfig() RunLedgerConfig {
 	}
 }
 
+func DefaultAdaptiveRoutingConfig() AdaptiveRoutingConfig {
+	return AdaptiveRoutingConfig{
+		Enabled:               false,
+		Mode:                  "shadow",
+		PolicyVersion:         "deterministic-v1",
+		LeaseTTLSeconds:       900,
+		MaxCandidates:         32,
+		MaxWaitingItems:       128,
+		StarvationAfterCycles: 5,
+	}
+}
+
 func DefaultParallelExecutionConfig() ParallelExecutionConfig {
 	return ParallelExecutionConfig{
 		Enabled:                  true,

@@ -90,6 +90,13 @@ Methodology is tier-aware:
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - Include adapter context in substantive handoffs: `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required`, and `execution_mode`. For Lufy SDD also carry overview `policy`, `status`, refresh trigger and path.
 
+## Adaptive Routing Safety
+
+- Follow `.lufy/contracts/adaptive-routing.md`: `role_hint` is a temporary capability suggestion, not identity, ownership, permission, role creation, or gate authority.
+- `disabled` is the default, `shadow` observes without assignments, and `advisory` requires explicit durable mutation; no autonomous mode exists.
+- Adaptive recommendations may refine orchestrator/router planning only. Delivery, security, public contracts, database schema, and destructive migrations always require human/orchestrator escalation.
+- Safe yield releases adaptive lease/budget only after a durable content-free checkpoint receipt. If adaptive support is unavailable, preserve deterministic routing and report `not_available`/`disabled` instead of inventing state.
+
 ## Skill Resolution
 
 - Prefer exact `SKILL.md` paths from `.lufy/skill-registry.json` when ready, then the active adapter's project-local skills and this `AGENTS.md`, over external skills. If the registry is missing or stale, report `lufy-ai skills ensure --target <repo>` as recovery.

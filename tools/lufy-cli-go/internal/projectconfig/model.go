@@ -27,6 +27,7 @@ type ProjectConfig struct {
 	ContextGraph      ContextGraphConfig       `yaml:"context_graph"`
 	Memory            MemoryConfig             `yaml:"memory"`
 	RunLedger         RunLedgerConfig          `yaml:"run_ledger"`
+	AdaptiveRouting   AdaptiveRoutingConfig    `yaml:"adaptive_routing"`
 	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
@@ -182,6 +183,17 @@ type RunLedgerRetentionConfig struct {
 	MaxTerminalRuns int            `yaml:"max_terminal_runs"`
 	MaxBytes        int64          `yaml:"max_bytes"`
 	Extra           map[string]any `yaml:",inline,omitempty"`
+}
+
+type AdaptiveRoutingConfig struct {
+	Enabled               bool           `yaml:"enabled"`
+	Mode                  string         `yaml:"mode"`
+	PolicyVersion         string         `yaml:"policy_version"`
+	LeaseTTLSeconds       int            `yaml:"lease_ttl_seconds"`
+	MaxCandidates         int            `yaml:"max_candidates"`
+	MaxWaitingItems       int            `yaml:"max_waiting_items"`
+	StarvationAfterCycles int            `yaml:"starvation_after_cycles"`
+	Extra                 map[string]any `yaml:",inline,omitempty"`
 }
 
 func (c RunLedgerConfig) IsEnabled() bool {
