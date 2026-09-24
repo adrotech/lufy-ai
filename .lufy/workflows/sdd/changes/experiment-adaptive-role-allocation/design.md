@@ -192,7 +192,9 @@ erDiagram
 
 La proyección `lufy-adaptive-status/v1` se reconstruye por causalidad y secuencia local. Incluye assignments activas, presupuesto observado y waiting items ordenados por prioridad descendente, ciclo de espera descendente (mayor edad lógica primero) y `demand_id` lexicográfico. No se reescriben eventos; repair solo reemplaza proyección derivada.
 
-Un `yield` válido se considera liberado únicamente si el append durable devuelve `recorded` o `duplicate_noop` para el mismo fingerprint. Conflicto, lease stale, owner mismatch o storage unavailable dejan la assignment activa.
+Una confirmación `assign` es válida solo si la recommendation sigue siendo el último evento de la proyección y el mismo CAS vuelve a verificar capacidad global y presupuesto acumulado del actor. Presentar una `expected_projection_version` actual no revive una recomendación desplazada por eventos intermedios.
+
+Un `yield` válido se considera liberado únicamente si el append durable devuelve `recorded` o `duplicate_noop` para el mismo fingerprint. Conflicto, lease stale, owner mismatch o storage unavailable dejan la assignment activa. El reloj por sí solo nunca libera recursos: una lease vencida requiere un checkpoint explícito, exactamente fenced, con `reason: lease_expiring` y `next_status: waiting`; ese evento durable representa la recuperación y permite reconstruir la liberación sin estado implícito.
 
 ## Workflow
 
@@ -228,7 +230,7 @@ sequenceDiagram
 - Functional Core / Imperative Shell: scoring, eligibility y tie-break son funciones puras; CLI/ledger quedan en adapters.
 - Strategy: policy `deterministic-v1` es seleccionable por versión, sin loading dinámico ni ML.
 - Event Sourcing + Projection: assignments/yields se reconstruyen desde Run Ledger append-only.
-- Lease + Fencing Token: expected version, owner ref y token digest impiden writers stale.
+- Lease + Fencing Token: expected version, owner ref y token digest impiden writers stale; la confirmación revalida recommendation, capacidad y budget en el mismo CAS.
 - State Machine: `waiting -> recommended -> assigned -> yielded|completed|escalated`; no existen saltos implícitos.
 - Circuit Breaker de autoridad: protected boundaries cortan antes del scoring y requieren humano.
 
@@ -255,7 +257,7 @@ Alternativas rechazadas:
 - Performance: máximo 32 candidatos y 128 waiting items; scoring `O(candidates * capabilities)` con listas bounded.
 - Observabilidad: cada decisión expone policy version, breakdown, exclusions, mode, source availability y `gate_advanced: false`.
 - Migration/backfill: no se backfillean eventos históricos; métricas y estado previo son `unavailable`.
-- Rollback: apagar `adaptive_routing.enabled`; las leases existentes pueden expirar o liberarse explícitamente sin tocar Result Contract.
+- Rollback: apagar `adaptive_routing.enabled`; las leases existentes pueden liberarse explícitamente, incluso después de expirar mediante el checkpoint durable de recuperación, sin tocar Result Contract.
 - Compatibility: config y ledger metadata son aditivos; readers viejos deben seguir rechazando/ignorando solo según su contrato, por lo que el schema de evento se versiona conscientemente.
 - Cross-platform: canonical JSON, UTC, LF/CRLF, locks y rename se prueban en Windows/macOS/Linux.
 

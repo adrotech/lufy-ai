@@ -265,7 +265,7 @@ lufy-ai adaptive yield --target <repo> --run <run-id> --file checkpoint.yaml --r
 lufy-ai adaptive status --target <repo> --run <run-id> --json
 ```
 
-La entrada acepta YAML/JSON desde `--file` o stdin y usa strict decode/bounds. Persistencia y diagnósticos son content-free: no se admiten prompts, outputs, summaries, secretos, paths ni hipótesis/intentos en texto. Delivery, seguridad, contratos públicos, database schema y destructive migrations requieren escalación antes del scoring. Si falta soporte/config/ledger, el caller debe conservar el routing determinista existente y tratar adaptive como `disabled`/`not_available`.
+La entrada acepta YAML/JSON desde `--file` o stdin y usa strict decode/bounds. `assign` revalida en el CAS que la recommendation siga siendo el último evento y que capacidad global y budget del actor continúen disponibles. El vencimiento no libera recursos implícitamente: la recuperación requiere un `yield` exactamente fenced con `reason: lease_expiring` y `next_status: waiting`. Persistencia y diagnósticos son content-free: no se admiten prompts, outputs, summaries, secretos, paths ni hipótesis/intentos en texto. Delivery, seguridad, contratos públicos, database schema y destructive migrations requieren escalación antes del scoring. Si falta soporte/config/ledger, el caller debe conservar el routing determinista existente y tratar adaptive como `disabled`/`not_available`.
 
 ## OpenSpec helpers
 

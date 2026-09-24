@@ -191,6 +191,110 @@ func TestLedgerAdapterConcurrentAssignmentsFenceOneWriter(t *testing.T) {
 	}
 }
 
+func TestLedgerAdapterRejectsStaleRecommendationEvenWithCurrentExpectedVersion(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)
+	store := newAdaptiveStore(t, now)
+	adapter := NewLedgerAdapter(store, func() time.Time { return now })
+	ctx := context.Background()
+	first, err := adapter.RecordDemand(ctx, RecordDemandRequest{
+		RunID: "run-stale-recommendation", Demand: testDemand(), IdempotencyKey: "demand:stale-recommendation:1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	recorded := recordTestRecommendation(t, adapter, ctx, "run-stale-recommendation", first, "recommend:stale-recommendation:1")
+	secondDemand := testDemand()
+	secondDemand.DemandID = "demand-2"
+	secondDemand.TaskRef = "task-2"
+	secondDemand.SnapshotVersion = 2
+	intervening, err := adapter.RecordDemand(ctx, RecordDemandRequest{
+		RunID: "run-stale-recommendation", Demand: secondDemand, IdempotencyKey: "demand:stale-recommendation:2",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	assignment := testAssignment(intervening.State.Version, now)
+	_, err = adapter.Assign(ctx, AssignRequest{
+		RunID: "run-stale-recommendation", Assignment: assignment, IdempotencyKey: "assign:stale-recommendation",
+		MaxActiveAssignments: 2, ActorBudgetCeiling: 100,
+	})
+	if !errors.Is(err, ErrRecommendationStale) {
+		t.Fatalf("stale recommendation at recorded version %d accepted after version %d: %v", recorded.State.Version, intervening.State.Version, err)
+	}
+}
+
+func TestLedgerAdapterEnforcesCapacityAndActorBudgetAtConfirmation(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name           string
+		firstBudget    int
+		secondBudget   int
+		maxAssignments int
+		wantErr        error
+	}{
+		{name: "global capacity", firstBudget: 40, secondBudget: 40, maxAssignments: 1, wantErr: ErrCapacityExhausted},
+		{name: "actor budget", firstBudget: 60, secondBudget: 50, maxAssignments: 2, wantErr: ErrBudgetExhausted},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			now := time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)
+			store := newAdaptiveStore(t, now)
+			adapter := NewLedgerAdapter(store, func() time.Time { return now })
+			ctx := context.Background()
+			firstDemand := testDemand()
+			firstDemand.RequiredBudget = test.firstBudget
+			first, err := adapter.RecordDemand(ctx, RecordDemandRequest{
+				RunID: "run-confirmation-limit", Demand: firstDemand, IdempotencyKey: "demand:limit:1",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			firstRecommended := recordTestRecommendation(t, adapter, ctx, "run-confirmation-limit", first, "recommend:limit:1")
+			firstAssignment := testAssignment(firstRecommended.State.Version, now)
+			firstAssignment.RequiredBudget = test.firstBudget
+			if _, err := adapter.Assign(ctx, AssignRequest{
+				RunID: "run-confirmation-limit", Assignment: firstAssignment, IdempotencyKey: "assign:limit:1",
+				MaxActiveAssignments: test.maxAssignments, ActorBudgetCeiling: 100,
+			}); err != nil {
+				t.Fatal(err)
+			}
+
+			secondDemand := testDemand()
+			secondDemand.DemandID = "demand-2"
+			secondDemand.TaskRef = "task-2"
+			secondDemand.SnapshotVersion = 2
+			secondDemand.RequiredBudget = test.secondBudget
+			second, err := adapter.RecordDemand(ctx, RecordDemandRequest{
+				RunID: "run-confirmation-limit", Demand: secondDemand, IdempotencyKey: "demand:limit:2",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			secondRecommended := recordTestRecommendation(t, adapter, ctx, "run-confirmation-limit", second, "recommend:limit:2")
+			secondAssignment := testAssignment(secondRecommended.State.Version, now)
+			secondAssignment.AssignmentID = "assignment-2"
+			secondAssignment.DemandID = secondDemand.DemandID
+			secondAssignment.TaskRef = secondDemand.TaskRef
+			secondAssignment.RequiredBudget = test.secondBudget
+			_, err = adapter.Assign(ctx, AssignRequest{
+				RunID: "run-confirmation-limit", Assignment: secondAssignment, IdempotencyKey: "assign:limit:2",
+				MaxActiveAssignments: test.maxAssignments, ActorBudgetCeiling: 100,
+			})
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("assign error = %v, want %v", err, test.wantErr)
+			}
+			status, statusErr := adapter.Status(ctx, "run-confirmation-limit", 128, 5)
+			if statusErr != nil {
+				t.Fatal(statusErr)
+			}
+			if len(status.ActiveAssignments) != 1 || status.Version != secondRecommended.State.Version {
+				t.Fatalf("rejected confirmation mutated state: %#v", status)
+			}
+		})
+	}
+}
+
 func TestLedgerAdapterConcurrentYieldsReleaseOnlyOnce(t *testing.T) {
 	now := time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)
 	store := newAdaptiveStore(t, now)
@@ -324,6 +428,44 @@ func TestLedgerAdapterYieldRejectsOwnerLeaseAndExpiry(t *testing.T) {
 				t.Fatalf("rejected yield mutated state: %#v", status)
 			}
 		})
+	}
+}
+
+func TestLedgerAdapterExpiredLeaseRequiresExplicitDurableRecovery(t *testing.T) {
+	t.Parallel()
+	now := time.Date(2026, 9, 22, 12, 0, 0, 0, time.UTC)
+	clock := now
+	store := newAdaptiveStore(t, now)
+	adapter := NewLedgerAdapter(store, func() time.Time { return clock })
+	ctx := context.Background()
+	demand, err := adapter.RecordDemand(ctx, RecordDemandRequest{
+		RunID: "run-expired-recovery", Demand: testDemand(), IdempotencyKey: "demand:expired-recovery",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	recommended := recordTestRecommendation(t, adapter, ctx, "run-expired-recovery", demand, "recommend:expired-recovery")
+	assignment := testAssignment(recommended.State.Version, now)
+	assigned, err := adapter.Assign(ctx, AssignRequest{
+		RunID: "run-expired-recovery", Assignment: assignment, IdempotencyKey: "assign:expired-recovery",
+		MaxActiveAssignments: 2, ActorBudgetCeiling: 100,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock = assignment.Lease.ExpiresAt.Add(time.Second)
+	checkpoint := testYield(assigned.State.Version, assignment)
+	checkpoint.Reason = "lease_expiring"
+	checkpoint.NextStatus = "waiting"
+	recovered, err := adapter.Yield(ctx, YieldRequest{
+		RunID: "run-expired-recovery", Checkpoint: checkpoint, IdempotencyKey: "yield:expired-recovery",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if recovered.Status != runledger.AppendRecorded || len(recovered.State.ActiveAssignments) != 0 ||
+		len(recovered.State.ConsumedBudget) != 0 || len(recovered.State.Waiting) != 1 {
+		t.Fatalf("expired recovery = %#v", recovered)
 	}
 }
 

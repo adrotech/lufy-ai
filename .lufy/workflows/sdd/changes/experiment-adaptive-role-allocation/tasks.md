@@ -65,4 +65,6 @@
   - [x] 8.3 Registrar evidencia en `verification/experiment-adaptive-role-allocation/` y strict validate.
   - [x] 8.4 Sincronizar deltas validados a specs activas.
   - [x] 8.5 Preparar trazabilidad con issue `#222`; no iniciar fase 6 antes de merge/cierre.
-  - [ ] 8.6 No archivar ni cerrar sin delivery, checks remotos, sync y gates completos.
+  - [x] 8.6 Revalidar recommendation vigente, capacidad global y budget del actor dentro del CAS de confirmación, con regresiones de stale state.
+  - [x] 8.7 Añadir recuperación durable y fenced de leases vencidas sin liberación implícita por reloj.
+  - [ ] 8.8 No archivar ni cerrar sin delivery, checks remotos, sync y gates completos.

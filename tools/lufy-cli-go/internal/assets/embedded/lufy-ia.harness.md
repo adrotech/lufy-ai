@@ -95,7 +95,8 @@ Methodology is tier-aware:
 - Follow `.lufy/contracts/adaptive-routing.md`: `role_hint` is a temporary capability suggestion, not identity, ownership, permission, role creation, or gate authority.
 - `disabled` is the default, `shadow` observes without assignments, and `advisory` requires explicit durable mutation; no autonomous mode exists.
 - Adaptive recommendations may refine orchestrator/router planning only. Delivery, security, public contracts, database schema, and destructive migrations always require human/orchestrator escalation.
-- Safe yield releases adaptive lease/budget only after a durable content-free checkpoint receipt. If adaptive support is unavailable, preserve deterministic routing and report `not_available`/`disabled` instead of inventing state.
+- Confirm an assignment only while its recommendation is the latest projection event and the authoritative CAS still has capacity and actor budget.
+- Safe yield releases adaptive lease/budget only after a durable content-free checkpoint receipt. Expiry alone never releases resources; recover an expired lease only with exact fencing and a durable `lease_expiring` checkpoint to `waiting`. If adaptive support is unavailable, preserve deterministic routing and report `not_available`/`disabled` instead of inventing state.
 
 ## Skill Resolution
 

@@ -13,6 +13,7 @@ This contract defines the adapter-neutral safety boundary for adaptive role allo
 - `disabled` is the default and prevents new adaptive assignments.
 - `shadow` may compute and optionally record recommendations, but it never creates an assignment, consumes budget, changes ownership, or performs work.
 - `advisory` may record an assignment or yield only after an explicit CLI/API mutation request with the required idempotency and lease inputs.
+- Assignment confirmation must atomically verify that its recommendation is still the latest projection event and that global capacity plus accumulated actor budget remain available. A caller cannot revive a displaced recommendation by copying the current ledger version.
 - No autonomous mode is defined by this contract.
 - When adaptive configuration, CLI support, Run Ledger, or adapter integration is absent or unavailable, consumers must report `not_available` or `disabled` and continue with the existing deterministic SDD/role routing. They must not infer a recommendation, assignment, or successful release.
 
@@ -33,7 +34,8 @@ A recommendation for `delivery`, or any successor capability that intersects a p
 - Yield means a safe, auditable release of adaptive lease and budget; it is not loss of identity, history, permissions, or workflow ownership.
 - A checkpoint may contain only bounded enums/tokens and existing artifact/evidence references or SHA-256 digests for hypotheses and failed attempts. It must not contain prompts, responses, summaries, command output, secrets, raw paths, or free-form work content.
 - Lease and budget are released only after Run Ledger returns a durable `recorded` receipt or an equivalent same-fingerprint `duplicate_noop`.
-- Conflict, stale/expired lease, owner mismatch, or unavailable storage leaves the assignment active and requires retry or escalation.
+- Conflict, stale lease, owner mismatch, unavailable storage, or an ordinary yield after expiry leaves the assignment active and requires retry or escalation.
+- Expiry never releases resources by wall clock alone. An expired lease may be recovered only by a durable, exact-fence checkpoint with reason `lease_expiring` and `next_status: waiting`.
 - Disabling adaptive routing may still allow an explicit fenced yield of a pre-existing lease so rollback does not orphan adaptive resources.
 
 ## Harness Consumption

@@ -212,9 +212,9 @@ flowchart LR
     Yield --> Waiting["bounded waiting pool / requeue"]
 ```
 
-`disabled` es el default. `shadow` puede observar/registrar evidencia sin assignment, budget ni ownership; `advisory` exige una mutación explícita con idempotencia y lease. Delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas preemptan el score. Si config, CLI, ledger o adapter no soportan la capacidad, el harness informa `not_available`/`disabled` y conserva el routing SDD determinista existente.
+`disabled` es el default. `shadow` puede observar/registrar evidencia sin assignment, budget ni ownership; `advisory` exige una mutación explícita con idempotencia y lease. La confirmación vuelve a comprobar dentro del CAS que la recommendation sigue siendo el último evento y que capacidad global y budget del actor continúan disponibles. Delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas preemptan el score. Si config, CLI, ledger o adapter no soportan la capacidad, el harness informa `not_available`/`disabled` y conserva el routing SDD determinista existente.
 
-Yield significa liberación segura y auditable, no sacrificio opaco: el checkpoint conserva solo referencias/digests content-free y libera lease/budget después de `recorded` o `duplicate_noop` equivalente. Conflictos, lease stale/expirada, owner mismatch o storage unavailable mantienen la assignment activa.
+Yield significa liberación segura y auditable, no sacrificio opaco: el checkpoint conserva solo referencias/digests content-free y libera lease/budget después de `recorded` o `duplicate_noop` equivalente. Conflictos, lease stale, owner mismatch, storage unavailable o un yield ordinario después del vencimiento mantienen la assignment activa. Una lease vencida solo se recupera con fencing exacto y un checkpoint durable `lease_expiring` que vuelve la demanda a `waiting`; el reloj nunca libera recursos por sí solo.
 
 ### Context Graph y Review Workload Harness
 

@@ -29,6 +29,13 @@ func TestRecommendModesProtectedBoundaryAndCapacity(t *testing.T) {
 			status:     domain.AdaptiveStatus{ActiveAssignments: []domain.ActiveAssignment{{AssignmentID: "a"}, {AssignmentID: "b"}}},
 			wantAction: domain.ActionNoCandidate,
 		},
+		{
+			name: "actor budget exhausted", config: base, request: testEvaluation(),
+			status: domain.AdaptiveStatus{ConsumedBudget: []domain.ActorBudget{{
+				ActorRef: strings.Repeat("a", 64), Consumed: 70,
+			}}},
+			wantAction: domain.ActionNoCandidate,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -98,9 +105,11 @@ func TestMutationsRequireIntentRespectModeAndAllowDisabledYieldCleanup(t *testin
 	assignment := testAssignment()
 	checkpoint := testCheckpoint(assignment)
 	assignCalls, yieldCalls := 0, 0
+	var gotLimits AssignmentLimits
 	service := NewServiceWithClock(LedgerPort{
-		Assign: func(context.Context, string, domain.Assignment, string) (domain.LedgerOperation, error) {
+		Assign: func(_ context.Context, _ string, _ domain.Assignment, _ string, limits AssignmentLimits) (domain.LedgerOperation, error) {
 			assignCalls++
+			gotLimits = limits
 			return domain.LedgerOperation{Status: "recorded"}, nil
 		},
 		Yield: func(context.Context, string, domain.YieldCheckpoint, string) (domain.LedgerOperation, error) {
@@ -132,6 +141,9 @@ func TestMutationsRequireIntentRespectModeAndAllowDisabledYieldCleanup(t *testin
 	}
 	if assignCalls != 1 || yieldCalls != 1 {
 		t.Fatalf("assign calls=%d yield calls=%d", assignCalls, yieldCalls)
+	}
+	if gotLimits.MaxActiveAssignments != 2 || gotLimits.ActorBudgetCeiling != 100 {
+		t.Fatalf("assignment limits = %#v", gotLimits)
 	}
 }
 

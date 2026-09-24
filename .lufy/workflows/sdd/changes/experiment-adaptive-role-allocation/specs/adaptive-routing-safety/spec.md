@@ -1,6 +1,6 @@
 # adaptive-routing-safety Specification Delta
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Adaptive decisions never advance workflow gates
 

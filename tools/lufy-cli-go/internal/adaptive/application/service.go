@@ -35,9 +35,14 @@ type RuntimeConfig struct {
 type LedgerPort struct {
 	RecordDemand         func(context.Context, string, domain.DemandSignal, string) (domain.LedgerOperation, error)
 	RecordRecommendation func(context.Context, string, domain.Recommendation, string) (domain.LedgerOperation, error)
-	Assign               func(context.Context, string, domain.Assignment, string) (domain.LedgerOperation, error)
+	Assign               func(context.Context, string, domain.Assignment, string, AssignmentLimits) (domain.LedgerOperation, error)
 	Yield                func(context.Context, string, domain.YieldCheckpoint, string) (domain.LedgerOperation, error)
 	Status               func(context.Context, string, int, int) (domain.AdaptiveStatus, error)
+}
+
+type AssignmentLimits struct {
+	MaxActiveAssignments int
+	ActorBudgetCeiling   int
 }
 
 type CapacitySignal struct {
@@ -93,8 +98,11 @@ func (s *Service) Recommend(ctx context.Context, request RecommendRequest) (Reco
 	if err := validateRuntimeConfig(request.Config); err != nil {
 		return RecommendationResult{}, err
 	}
-	capacity := s.capacitySignal(ctx, request.RunID, request.Config)
+	capacity, status, statusAvailable := s.capacitySignal(ctx, request.RunID, request.Config)
 	evaluation := request.Evaluation
+	if statusAvailable {
+		evaluation.Profiles = applyProjectedBudget(evaluation.Profiles, status, 100)
+	}
 	if capacity.Exhausted {
 		evaluation.Profiles = append([]domain.CapabilityProfile(nil), evaluation.Profiles...)
 		for index := range evaluation.Profiles {
@@ -173,7 +181,11 @@ func (s *Service) Assign(ctx context.Context, request MutationRequest[domain.Ass
 	if s == nil || s.ledger.Assign == nil {
 		return domain.LedgerOperation{}, ErrLedgerUnavailable
 	}
-	return s.ledger.Assign(ctx, request.RunID, request.Value, request.IdempotencyKey)
+	maxActive, _ := effectiveCapacity(request.Config.MaxParallelAgentsIfEnabled(), request.Config.MaxConcurrentSlices)
+	return s.ledger.Assign(ctx, request.RunID, request.Value, request.IdempotencyKey, AssignmentLimits{
+		MaxActiveAssignments: maxActive,
+		ActorBudgetCeiling:   100,
+	})
 }
 
 func (s *Service) Yield(ctx context.Context, request MutationRequest[domain.YieldCheckpoint]) (domain.LedgerOperation, error) {
@@ -205,24 +217,49 @@ func (s *Service) Status(ctx context.Context, runID string, config RuntimeConfig
 	return s.ledger.Status(ctx, runID, config.MaxWaitingItems, config.StarvationAfterCycles)
 }
 
-func (s *Service) capacitySignal(ctx context.Context, runID string, config RuntimeConfig) CapacitySignal {
+func (s *Service) capacitySignal(ctx context.Context, runID string, config RuntimeConfig) (CapacitySignal, domain.AdaptiveStatus, bool) {
 	parallelLimit := 0
 	if config.ParallelEnabled {
 		parallelLimit = config.MaxParallelAgents
 	}
 	limit, sources := effectiveCapacity(parallelLimit, config.MaxConcurrentSlices)
 	signal := CapacitySignal{Availability: "not_available", Limit: limit, Sources: sources}
-	if limit == 0 || strings.TrimSpace(runID) == "" || s == nil || s.ledger.Status == nil {
-		return signal
+	if strings.TrimSpace(runID) == "" || s == nil || s.ledger.Status == nil {
+		return signal, domain.AdaptiveStatus{}, false
 	}
 	status, err := s.ledger.Status(ctx, runID, config.MaxWaitingItems, config.StarvationAfterCycles)
 	if err != nil {
-		return signal
+		return signal, domain.AdaptiveStatus{}, false
 	}
 	signal.Availability = "available"
 	signal.ActiveAssignments = len(status.ActiveAssignments)
-	signal.Exhausted = signal.ActiveAssignments >= limit
-	return signal
+	signal.Exhausted = limit > 0 && signal.ActiveAssignments >= limit
+	return signal, status, true
+}
+
+func (config RuntimeConfig) MaxParallelAgentsIfEnabled() int {
+	if !config.ParallelEnabled {
+		return 0
+	}
+	return config.MaxParallelAgents
+}
+
+func applyProjectedBudget(profiles []domain.CapabilityProfile, status domain.AdaptiveStatus, ceiling int) []domain.CapabilityProfile {
+	adjusted := append([]domain.CapabilityProfile(nil), profiles...)
+	consumedByActor := make(map[string]int, len(status.ConsumedBudget))
+	for _, budget := range status.ConsumedBudget {
+		consumedByActor[budget.ActorRef] = budget.Consumed
+	}
+	for index := range adjusted {
+		remaining := ceiling - consumedByActor[adjusted[index].ActorRef]
+		if remaining < 0 {
+			remaining = 0
+		}
+		if adjusted[index].AvailableBudget > remaining {
+			adjusted[index].AvailableBudget = remaining
+		}
+	}
+	return adjusted
 }
 
 func effectiveCapacity(parallel, review int) (int, []string) {

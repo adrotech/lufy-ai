@@ -13,7 +13,6 @@ LUFY SHALL treat adaptive recommendations, assignments and yields as scheduler e
 
 - **WHEN** a checkpoint names successor capabilities or role hint
 - **THEN** no Result Contract owner or role permission changes until the existing authoritative transition accepts it.
-
 ### Requirement: Runtime modes fail safely
 
 LUFY SHALL distinguish disabled, shadow, advisory, unavailable, conflict and escalated outcomes in versioned human/JSON surfaces.
@@ -27,7 +26,6 @@ LUFY SHALL distinguish disabled, shadow, advisory, unavailable, conflict and esc
 
 - **WHEN** assign or yield requires persistence
 - **THEN** command fails without partial state and returns bounded recovery.
-
 ### Requirement: Allocation telemetry is content-free
 
 LUFY SHALL persist only allow-listed IDs, enums, integer scores, digests, logical versions and UTC timestamps for adaptive routing.
@@ -41,7 +39,6 @@ LUFY SHALL persist only allow-listed IDs, enums, integer scores, digests, logica
 
 - **WHEN** duration, token, cost, capability or context evidence is missing
 - **THEN** availability is explicit and missing data is not treated as zero or fabricated success.
-
 ### Requirement: CLI exposes explicit safe operations
 
 LUFY SHALL expose scriptable `adaptive recommend`, `adaptive assign`, `adaptive yield` and `adaptive status` commands with strict stdin/file selection, stable exit categories and sanitized diagnostics.
@@ -55,7 +52,6 @@ LUFY SHALL expose scriptable `adaptive recommend`, `adaptive assign`, `adaptive 
 
 - **WHEN** assign or yield would require a durable effect without its required explicit option/input
 - **THEN** CLI remains read-only or returns usage/rejected rather than mutating implicitly.
-
 ### Requirement: Harness consumers preserve authority boundaries
 
 Orchestrator, router, implementer, reviewer, validator and delivery guidance SHALL consume adaptive output only within their existing permissions and SHALL preserve manual escalation for protected work.

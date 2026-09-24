@@ -100,8 +100,11 @@ Esto provoca tres fallos sistémicos: agentes o slices pueden quedar ocupados au
 - **WHEN** el modo es `shadow`
 - **THEN** se puede observar la recomendación, pero `assign` no adquiere lease ni consume presupuesto.
 
-- **WHEN** el modo es `advisory` y un caller confirma una recomendación vigente
-- **THEN** se registra una assignment idempotente con lease digest/expiry y se descuenta presupuesto solo en la proyección adaptativa.
+- **WHEN** el modo es `advisory` y un caller confirma una recomendación que todavía es el último evento de la proyección, con capacidad global y presupuesto del actor disponibles
+- **THEN** se registran atómicamente una assignment idempotente con lease digest/expiry y su consumo de presupuesto adaptativo.
+
+- **WHEN** otro evento avanzó la proyección o la capacidad/presupuesto se agotaron después de recomendar
+- **THEN** `assign` rechaza/conflicta sin consumir presupuesto aunque el caller presente la versión actual del ledger.
 
 - **WHEN** un agente no progresa o detecta mayor valor esperado en otro perfil
 - **THEN** `yield` valida el lease, registra checkpoint/artifacts/hipótesis/intentos fallidos por referencias content-free y publica capacidades sucesoras.
@@ -110,7 +113,10 @@ Esto provoca tres fallos sistémicos: agentes o slices pueden quedar ocupados au
 - **THEN** la proyección libera lease y presupuesto, reencola la demanda de forma determinista y no avanza gates.
 
 - **WHEN** el lease está vencido, pertenece a otro actor o la misma idempotency key cambia de payload
-- **THEN** la operación rechaza/conflicta sin release parcial ni sobrescritura.
+- **THEN** una operación ordinaria rechaza/conflicta sin release parcial ni sobrescritura.
+
+- **WHEN** una lease vencida coincide exactamente en assignment, actor, fencing y versión, y el caller registra un checkpoint explícito `lease_expiring` con `next_status: waiting`
+- **THEN** el ledger puede persistir esa recuperación durable y liberar/reencolar recursos sin inferir el paso del tiempo como evento.
 
 - **WHEN** Run Ledger no está disponible para `assign` o `yield`
 - **THEN** no se informa éxito ni se simula una liberación durable; se devuelve recovery sanitizado.

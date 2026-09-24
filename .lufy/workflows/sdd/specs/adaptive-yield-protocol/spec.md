@@ -6,7 +6,7 @@ LUFY SHALL create adaptive assignments only from current advisory recommendation
 
 #### Scenario: Current recommendation is confirmed
 
-- **WHEN** a caller submits matching owner, recommendation, expected version and lease digest
+- **WHEN** a caller submits matching owner, recommendation, expected version and lease digest, the recommendation is still the last projection event, and global capacity plus actor budget remain available
 - **THEN** one assignment event is durably recorded and budget is consumed in the adaptive projection.
 
 #### Scenario: Stale or mismatched confirmation is submitted
@@ -14,6 +14,10 @@ LUFY SHALL create adaptive assignments only from current advisory recommendation
 - **WHEN** owner, recommendation fingerprint, expected version, lease digest or expiry does not match current state
 - **THEN** assignment rejects/conflicts without consuming budget or overwriting prior state.
 
+#### Scenario: Recommendation was displaced or capacity changed
+
+- **WHEN** an intervening event advanced the projection after recommendation, or global capacity or accumulated actor budget is exhausted at confirmation
+- **THEN** assignment rejects/conflicts in the authoritative compare-and-swap even if the caller supplied the ledger's current version.
 ### Requirement: Yield checkpoint is content-free and reusable
 
 LUFY SHALL represent yield with bounded reason, assignment/lease identity, artifact/evidence refs, hypothesis/failed-attempt digests and successor capability tokens, without free-form work content.
@@ -28,7 +32,6 @@ LUFY SHALL represent yield with bounded reason, assignment/lease identity, artif
 
 - **WHEN** payload contains an unknown free-text field, raw path, secret or oversized references
 - **THEN** decoding rejects before persistence and does not reflect the sensitive value.
-
 ### Requirement: Release happens only after durable checkpoint
 
 LUFY SHALL release adaptive lease and budget only after the yield event is durably recorded or confirmed as an equivalent duplicate.
@@ -43,6 +46,15 @@ LUFY SHALL release adaptive lease and budget only after the yield event is durab
 - **WHEN** ledger is unavailable or the idempotency key conflicts
 - **THEN** operation does not report release and current assignment remains active with retry/escalation recovery.
 
+#### Scenario: Expired lease receives an ordinary yield
+
+- **WHEN** a caller submits a yield for an expired lease with any ordinary reason or next status
+- **THEN** operation rejects/conflicts and the projection keeps the assignment active.
+
+#### Scenario: Expired lease is explicitly recovered
+
+- **WHEN** a caller submits exact assignment, actor, lease fencing and expected version with reason `lease_expiring` and `next_status: waiting`
+- **THEN** the durable checkpoint may release and requeue the adaptive resources without treating wall-clock expiry as an implicit event.
 ### Requirement: Yield is idempotent under concurrency
 
 LUFY SHALL use event idempotency, expected projection version and lease fencing so concurrent yield/assign operations cannot release twice or transfer stale work.
@@ -56,7 +68,6 @@ LUFY SHALL use event idempotency, expected projection version and lease fencing 
 
 - **WHEN** concurrent writers target the same active assignment from the same prior version
 - **THEN** at most one advances projection and the other receives conflict/stale recovery.
-
 ### Requirement: Disabled mode permits safe cleanup only
 
 Disabling adaptive routing SHALL prevent new assignments while allowing explicit fenced yield of pre-existing leases so rollback does not orphan budget.
@@ -70,7 +81,6 @@ Disabling adaptive routing SHALL prevent new assignments while allowing explicit
 
 - **WHEN** an explicit yield presents the matching owner, lease and expected version
 - **THEN** cleanup may record the checkpoint and release adaptive resources without changing Result Contract ownership.
-
 ### Requirement: Projection is rebuildable from append-only events
 
 LUFY SHALL derive assignment, budget and waiting state from validated Run Ledger events and SHALL treat cached status as replaceable derived data.

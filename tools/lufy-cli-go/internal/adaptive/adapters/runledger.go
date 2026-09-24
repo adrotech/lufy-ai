@@ -15,6 +15,9 @@ const StatusSchemaVersion = adaptivedomain.AdaptiveStatusSchemaVersion
 
 var (
 	ErrAssignmentUnavailable = errors.New("assignment adaptativa no disponible")
+	ErrRecommendationStale   = errors.New("recommendation adaptativa stale")
+	ErrCapacityExhausted     = errors.New("capacidad adaptativa agotada")
+	ErrBudgetExhausted       = errors.New("budget adaptativo agotado")
 	ErrLeaseMismatch         = errors.New("lease adaptativa no coincide")
 	ErrLeaseExpired          = errors.New("lease adaptativa vencida")
 )
@@ -31,9 +34,11 @@ type RecordDemandRequest struct {
 }
 
 type AssignRequest struct {
-	RunID          string
-	Assignment     adaptivedomain.Assignment
-	IdempotencyKey string
+	RunID                string
+	Assignment           adaptivedomain.Assignment
+	IdempotencyKey       string
+	MaxActiveAssignments int
+	ActorBudgetCeiling   int
 }
 
 type RecordRecommendationRequest struct {
@@ -124,6 +129,15 @@ func (a *LedgerAdapter) Assign(ctx context.Context, request AssignRequest) (Oper
 			recommendation.PolicyVersion != request.Assignment.PolicyVersion || recommendation.Priority != request.Assignment.Priority ||
 			recommendation.RequiredBudget != request.Assignment.RequiredBudget || recommendation.Score != request.Assignment.Score {
 			return OperationResult{}, ErrAssignmentUnavailable
+		}
+		if recommendationEvent.LocalSequence != request.Assignment.ExpectedProjectionVersion {
+			return OperationResult{}, ErrRecommendationStale
+		}
+		if request.MaxActiveAssignments > 0 && len(state.ActiveAssignments) >= request.MaxActiveAssignments {
+			return OperationResult{}, ErrCapacityExhausted
+		}
+		if request.ActorBudgetCeiling > 0 && consumedBudget(state, request.Assignment.ActorRef)+request.Assignment.RequiredBudget > request.ActorBudgetCeiling {
+			return OperationResult{}, ErrBudgetExhausted
 		}
 		if !a.now().UTC().Before(request.Assignment.Lease.ExpiresAt.UTC()) {
 			return OperationResult{}, ErrLeaseExpired
@@ -229,7 +243,7 @@ func (a *LedgerAdapter) Yield(ctx context.Context, request YieldRequest) (Operat
 			!active.LeaseExpiresAt.Equal(request.Checkpoint.Lease.ExpiresAt.UTC()) {
 			return OperationResult{}, ErrLeaseMismatch
 		}
-		if !a.now().UTC().Before(active.LeaseExpiresAt) {
+		if !a.now().UTC().Before(active.LeaseExpiresAt) && !isExpiredLeaseRecovery(request.Checkpoint) {
 			return OperationResult{}, ErrLeaseExpired
 		}
 	}
@@ -425,6 +439,19 @@ func activeDemandMap(values map[string]ActiveAssignment, demandID string) bool {
 		}
 	}
 	return false
+}
+
+func consumedBudget(state AdaptiveStatus, actorRef string) int {
+	for _, budget := range state.ConsumedBudget {
+		if budget.ActorRef == actorRef {
+			return budget.Consumed
+		}
+	}
+	return 0
+}
+
+func isExpiredLeaseRecovery(checkpoint adaptivedomain.YieldCheckpoint) bool {
+	return checkpoint.Reason == "lease_expiring" && checkpoint.NextStatus == "waiting"
 }
 
 func findHistoricalAssignment(events []runledger.Event, assignmentID string) (ActiveAssignment, bool) {

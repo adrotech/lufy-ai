@@ -1,6 +1,6 @@
 # adaptive-yield-protocol Specification Delta
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Advisory assignments use fenced leases
 
@@ -8,13 +8,18 @@ LUFY SHALL create adaptive assignments only from current advisory recommendation
 
 #### Scenario: Current recommendation is confirmed
 
-- **WHEN** a caller submits matching owner, recommendation, expected version and lease digest
+- **WHEN** a caller submits matching owner, recommendation, expected version and lease digest, the recommendation is still the last projection event, and global capacity plus actor budget remain available
 - **THEN** one assignment event is durably recorded and budget is consumed in the adaptive projection.
 
 #### Scenario: Stale or mismatched confirmation is submitted
 
 - **WHEN** owner, recommendation fingerprint, expected version, lease digest or expiry does not match current state
 - **THEN** assignment rejects/conflicts without consuming budget or overwriting prior state.
+
+#### Scenario: Recommendation was displaced or capacity changed
+
+- **WHEN** an intervening event advanced the projection after recommendation, or global capacity or accumulated actor budget is exhausted at confirmation
+- **THEN** assignment rejects/conflicts in the authoritative compare-and-swap even if the caller supplied the ledger's current version.
 
 ### Requirement: Yield checkpoint is content-free and reusable
 
@@ -44,6 +49,16 @@ LUFY SHALL release adaptive lease and budget only after the yield event is durab
 
 - **WHEN** ledger is unavailable or the idempotency key conflicts
 - **THEN** operation does not report release and current assignment remains active with retry/escalation recovery.
+
+#### Scenario: Expired lease receives an ordinary yield
+
+- **WHEN** a caller submits a yield for an expired lease with any ordinary reason or next status
+- **THEN** operation rejects/conflicts and the projection keeps the assignment active.
+
+#### Scenario: Expired lease is explicitly recovered
+
+- **WHEN** a caller submits exact assignment, actor, lease fencing and expected version with reason `lease_expiring` and `next_status: waiting`
+- **THEN** the durable checkpoint may release and requeue the adaptive resources without treating wall-clock expiry as an implicit event.
 
 ### Requirement: Yield is idempotent under concurrency
 

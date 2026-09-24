@@ -1,6 +1,6 @@
 # adaptive-role-allocation Specification Delta
 
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Demand and capability contracts are strict and bounded
 

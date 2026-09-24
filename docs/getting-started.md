@@ -225,7 +225,7 @@ lufy-ai adaptive recommend --target <repo> --file demand.yaml --json
 lufy-ai adaptive status --target <repo> --run <run-id> --json
 ```
 
-`assign` y `yield` requieren `--record`, `--run` e `--idempotency-key`. `yield` libera recursos adaptativos solo después de persistir un checkpoint content-free. Cuando la capacidad no está disponible, el flujo normal T1/T2/T3 sigue siendo autoritativo.
+`assign` y `yield` requieren `--record`, `--run` e `--idempotency-key`. `assign` confirma solo la última recommendation y revalida capacidad/budget al persistir. `yield` libera recursos adaptativos solo después de persistir un checkpoint content-free; una lease vencida requiere recuperación explícita `lease_expiring` hacia `waiting`. Cuando la capacidad no está disponible, el flujo normal T1/T2/T3 sigue siendo autoritativo.
 
 ## 8. Desarrollo local de lufy-ai
 

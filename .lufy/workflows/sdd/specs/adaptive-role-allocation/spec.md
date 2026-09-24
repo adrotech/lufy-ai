@@ -14,7 +14,6 @@ LUFY SHALL decode versioned `DemandSignal` and `CapabilityProfile` inputs throug
 
 - **WHEN** an input contains unknown keys, duplicate YAML keys, oversized lists, raw prompts, outputs, paths or secrets
 - **THEN** decoding rejects before scoring and diagnostics identify only the safe field/reason.
-
 ### Requirement: Roles are temporary capability hints
 
 LUFY SHALL keep pseudonymous actor identity, current capabilities and `role_hint` as separate concepts; an assignment SHALL NOT grant permissions absent from the canonical Role Contract.
@@ -29,7 +28,6 @@ LUFY SHALL keep pseudonymous actor identity, current capabilities and `role_hint
 
 - **WHEN** a recommendation would require delivery, security or another undeclared permission
 - **THEN** the result escalates and no permission or owner mutation is inferred from the hint.
-
 ### Requirement: Deterministic scoring is explainable
 
 LUFY SHALL rank eligible profiles using the versioned integer policy `deterministic-v1`, expose every score term and resolve ties with stable keys.
@@ -48,7 +46,6 @@ LUFY SHALL rank eligible profiles using the versioned integer policy `determinis
 
 - **WHEN** a profile lacks a required capability or sufficient budget
 - **THEN** it is marked ineligible with a bounded reason and cannot win through other score terms.
-
 ### Requirement: Protected boundaries preempt allocation
 
 LUFY SHALL evaluate protected boundaries before scoring and SHALL require human/orchestrator escalation for delivery, security, public contracts, database schema or destructive migrations.
@@ -62,7 +59,6 @@ LUFY SHALL evaluate protected boundaries before scoring and SHALL require human/
 
 - **WHEN** the demand contains no protected boundary
 - **THEN** normal eligibility and scoring may proceed without granting delivery or gate authority.
-
 ### Requirement: Adaptive routing is disabled by default
 
 `.lufy/config/project.yaml` SHALL expose `adaptive_routing` with explicit `enabled`, `mode`, policy, lease and bounded pool settings, and missing config SHALL behave as disabled.
@@ -82,7 +78,6 @@ LUFY SHALL evaluate protected boundaries before scoring and SHALL require human/
 
 - **WHEN** recommendation or assignment is requested with adaptive routing disabled
 - **THEN** no new adaptive assignment or lease is recorded and current deterministic routing remains authoritative.
-
 ### Requirement: Shadow and advisory modes have distinct effects
 
 LUFY SHALL support only `shadow` and `advisory` modes in v1 and SHALL report `gate_advanced: false` for every adaptive decision.
@@ -96,7 +91,6 @@ LUFY SHALL support only `shadow` and `advisory` modes in v1 and SHALL report `ga
 
 - **WHEN** mode is `advisory` and a caller confirms a current recommendation
 - **THEN** an adaptive assignment may be recorded with lease and budget projection while Result Contract ownership and gates remain unchanged.
-
 ### Requirement: Waiting pool is bounded and starvation-visible
 
 LUFY SHALL project unassigned/yielded demand into a bounded deterministic waiting pool and SHALL expose starvation risk without silently elevating priority or authority.

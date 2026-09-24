@@ -224,8 +224,11 @@ func newAdaptiveService(target string) (adaptiveapp.RuntimeConfig, *adaptiveapp.
 			result, callErr := adapter.RecordRecommendation(ctx, adaptiveadapters.RecordRecommendationRequest{RunID: runID, Recommendation: value, IdempotencyKey: key})
 			return adaptiveLedgerOperation(result), callErr
 		},
-		Assign: func(ctx context.Context, runID string, value adaptivedomain.Assignment, key string) (adaptivedomain.LedgerOperation, error) {
-			result, callErr := adapter.Assign(ctx, adaptiveadapters.AssignRequest{RunID: runID, Assignment: value, IdempotencyKey: key})
+		Assign: func(ctx context.Context, runID string, value adaptivedomain.Assignment, key string, limits adaptiveapp.AssignmentLimits) (adaptivedomain.LedgerOperation, error) {
+			result, callErr := adapter.Assign(ctx, adaptiveadapters.AssignRequest{
+				RunID: runID, Assignment: value, IdempotencyKey: key,
+				MaxActiveAssignments: limits.MaxActiveAssignments, ActorBudgetCeiling: limits.ActorBudgetCeiling,
+			})
 			return adaptiveLedgerOperation(result), callErr
 		},
 		Yield: func(ctx context.Context, runID string, value adaptivedomain.YieldCheckpoint, key string) (adaptivedomain.LedgerOperation, error) {
@@ -290,7 +293,8 @@ func writeAdaptiveError(deps Dependencies, err error) int {
 		return ExitResultRejected
 	case errors.Is(err, runledger.ErrIdempotencyConflict), errors.Is(err, runledger.ErrVersionConflict),
 		errors.Is(err, adaptiveadapters.ErrAssignmentUnavailable), errors.Is(err, adaptiveadapters.ErrLeaseMismatch),
-		errors.Is(err, adaptiveadapters.ErrLeaseExpired):
+		errors.Is(err, adaptiveadapters.ErrLeaseExpired), errors.Is(err, adaptiveadapters.ErrRecommendationStale),
+		errors.Is(err, adaptiveadapters.ErrCapacityExhausted), errors.Is(err, adaptiveadapters.ErrBudgetExhausted):
 		return ExitResultConflict
 	case errors.Is(err, adaptiveapp.ErrLedgerUnavailable):
 		return ExitResultUnavailable
