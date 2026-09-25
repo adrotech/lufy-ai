@@ -17,7 +17,10 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
-var ErrIdempotencyConflict = errors.New("conflicto de idempotencia")
+var (
+	ErrIdempotencyConflict = errors.New("conflicto de idempotencia")
+	ErrVersionConflict     = errors.New("conflicto de versión")
+)
 
 const AppendResultSchemaVersion = "lufy-run-append-result/v1"
 
@@ -30,9 +33,10 @@ const (
 )
 
 type AppendRequest struct {
-	Draft           EventDraft
-	IdempotencyKey  string
-	ProposedLamport uint64
+	Draft                 EventDraft
+	IdempotencyKey        string
+	ProposedLamport       uint64
+	ExpectedLocalSequence *uint64
 }
 
 type AppendResult struct {
@@ -184,6 +188,17 @@ func (s *FileStore) Append(ctx context.Context, request AppendRequest) (result A
 			return AppendResult{}, err
 		}
 		return AppendResult{SchemaVersion: AppendResultSchemaVersion, Status: AppendDuplicateNoop, Event: event}, nil
+	}
+	if request.ExpectedLocalSequence != nil {
+		var currentSequence uint64
+		for _, event := range events {
+			if event.LocalSequence > currentSequence {
+				currentSequence = event.LocalSequence
+			}
+		}
+		if currentSequence != *request.ExpectedLocalSequence {
+			return AppendResult{SchemaVersion: AppendResultSchemaVersion, Status: AppendConflict}, ErrVersionConflict
+		}
 	}
 	if len(events) > 0 {
 		parent, parentErr := consistentParent(events)
@@ -474,7 +489,8 @@ func eventFromDraft(draft EventDraft, eventID string, clock, sequence uint64, ob
 		CausedByEventID: draft.CausedByEventID, LamportClock: clock, LocalSequence: sequence,
 		OccurredAt: occurredAt, ObservedAt: observedAt, Kind: draft.Kind, Source: draft.Source,
 		TaskRef: draft.TaskRef, ArtifactRefs: draft.ArtifactRefs, EvidenceRefs: draft.EvidenceRefs,
-		Checkpoint: draft.Checkpoint, Metrics: draft.Metrics, IdempotencyKeyHash: keyHash, Fingerprint: fingerprint,
+		Checkpoint: draft.Checkpoint, Metrics: draft.Metrics, Adaptive: draft.Adaptive,
+		IdempotencyKeyHash: keyHash, Fingerprint: fingerprint,
 	}
 }
 

@@ -42,6 +42,7 @@ func (s Scanner) Scan(root string) (ProjectConfig, error) {
 		ContextGraph:      DefaultContextGraphConfig(),
 		Memory:            DefaultMemoryConfig(),
 		RunLedger:         DefaultRunLedgerConfig(),
+		AdaptiveRouting:   DefaultAdaptiveRoutingConfig(),
 		ParallelExecution: DefaultParallelExecutionConfig(),
 	}, nil
 }

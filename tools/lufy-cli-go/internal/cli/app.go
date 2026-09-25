@@ -103,6 +103,8 @@ func Run(args []string, deps Dependencies) int {
 		return runSDD(args[1:], deps)
 	case "run":
 		return runRun(args[1:], deps)
+	case "adaptive":
+		return runAdaptive(args[1:], deps)
 	case "result":
 		return runResult(args[1:], deps)
 	case "pr":
@@ -1776,6 +1778,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
+	fmt.Fprintln(out, "  adaptive  Recomienda y registra asignaciones/yields adaptativos acotados")
 	fmt.Fprintln(out, "  result    Valida, normaliza y evalúa Result Contracts")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")

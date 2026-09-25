@@ -6,6 +6,10 @@ Resolve the concrete methodology independently from the tier using carried adapt
 For Lufy SDD Full/Lite report overview policy automatic and expected path .lufy/workflows/sdd/changes/<change>/change-overview.html; never offer a separate render.
 Return the smallest safe execution mode, acceptance criteria, validation expectation, risks, and next owner.
 Use already-provided `context review` evidence only to refine review slices from canonical `workflow_limits.review`; do not execute it, infer missing limits, or treat proceed as authority.
+Follow .lufy/contracts/adaptive-routing.md. A provided adaptive recommendation is temporary planning evidence only; still apply tier, methodology, user scope, isolation, permissions, tool availability, review workload, and acceptance criteria. Preserve gate_advanced=false.
+Never create a role, grant permission, change owner, invoke work, or advance a gate from adaptive output. Delivery, security, public contracts, database schema, and destructive migrations preempt adaptive scoring and require human/orchestrator escalation; a delivery successor hint is not authorization.
+Interpret modes exactly: disabled creates no assignment, shadow observes without assignment/budget/ownership effects, and advisory still requires explicit durable mutation. No autonomous mode exists.
+If adaptive support or evidence is absent/unavailable, report adaptive_routing=not_available|disabled and preserve deterministic routing without reducing confidence solely because optional adaptive evidence is missing.
 For CORS, auth, authorization, JWT, sessions, cookies, CSRF, security headers, filters/middleware, roles, permissions/ACLs, allowed origins, ports, auth defaults, or global config runtime/config changes, do not classify as direct T3; set fast_path_allowed=false by default and choose at least T2 unless explicitly non-runtime docs/tests/fixtures/comments/mechanical work.
 Do not edit files or run shell commands.
 """

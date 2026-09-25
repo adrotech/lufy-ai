@@ -74,6 +74,14 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	} else {
 		items = append(items, DriftItem{Category: "parallel_execution", Severity: "info", Path: "parallel_execution", Status: "applied", SuggestedAction: "Se agregó estrategia de paralelismo gobernada por review_slices independientes."})
 	}
+	if !isZeroAdaptiveRoutingConfig(current.AdaptiveRouting) {
+		merged.AdaptiveRouting = mergeAdaptiveRoutingConfig(current.AdaptiveRouting, detected.AdaptiveRouting)
+		if !reflect.DeepEqual(current.AdaptiveRouting, merged.AdaptiveRouting) {
+			items = append(items, DriftItem{Category: "adaptive_routing", Severity: "info", Path: "adaptive_routing", Status: "applied", SuggestedAction: "Se completaron defaults de routing adaptativo preservando overrides y sin activar el feature."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "adaptive_routing", Severity: "info", Path: "adaptive_routing", Status: "applied", SuggestedAction: "Se agregó routing adaptativo en modo shadow y deshabilitado por defecto."})
+	}
 	if !isZeroRunLedgerConfig(current.RunLedger) {
 		merged.RunLedger = mergeRunLedgerConfig(current.RunLedger, detected.RunLedger)
 		if !reflect.DeepEqual(current.RunLedger, merged.RunLedger) {
@@ -396,6 +404,37 @@ func mergeParallelExecutionConfig(current, defaults ParallelExecutionConfig) Par
 	}
 	if current.ValidationMode != "" {
 		merged.ValidationMode = current.ValidationMode
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroAdaptiveRoutingConfig(config AdaptiveRoutingConfig) bool {
+	return reflect.DeepEqual(config, AdaptiveRoutingConfig{})
+}
+
+func mergeAdaptiveRoutingConfig(current, defaults AdaptiveRoutingConfig) AdaptiveRoutingConfig {
+	merged := defaults
+	merged.Enabled = current.Enabled
+	if current.Mode != "" {
+		merged.Mode = current.Mode
+	}
+	if current.PolicyVersion != "" {
+		merged.PolicyVersion = current.PolicyVersion
+	}
+	if current.LeaseTTLSeconds != 0 {
+		merged.LeaseTTLSeconds = current.LeaseTTLSeconds
+	}
+	if current.MaxCandidates != 0 {
+		merged.MaxCandidates = current.MaxCandidates
+	}
+	if current.MaxWaitingItems != 0 {
+		merged.MaxWaitingItems = current.MaxWaitingItems
+	}
+	if current.StarvationAfterCycles != 0 {
+		merged.StarvationAfterCycles = current.StarvationAfterCycles
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

@@ -34,7 +34,10 @@ func (s *FileStore) acquireRunLock(ctx context.Context, runDir string) (*runLock
 				cleanupPollDelay: s.options.LockPollInterval,
 			}, nil
 		}
-		if !os.IsExist(err) {
+		// Windows puede devolver access denied mientras otro writer elimina el
+		// directorio del lock. Es contención transitoria y debe respetar el mismo
+		// timeout acotado que un lock todavía existente.
+		if !os.IsExist(err) && !os.IsPermission(err) {
 			return nil, err
 		}
 		recovered, recoverErr := s.recoverExpiredLock(lockPath)

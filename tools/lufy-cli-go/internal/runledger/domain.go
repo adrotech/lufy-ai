@@ -13,11 +13,12 @@ import (
 )
 
 const (
-	SchemaVersion    = "lufy-run-event/v1"
-	maxReferenceLen  = 128
-	maxEventNameLen  = 96
-	maxReferences    = 32
-	maxInputJSONSize = 64 * 1024
+	SchemaVersion                 = "lufy-run-event/v1"
+	AdaptiveMetadataSchemaVersion = "lufy-run-adaptive/v1"
+	maxReferenceLen               = 128
+	maxEventNameLen               = 96
+	maxReferences                 = 32
+	maxInputJSONSize              = 64 * 1024
 )
 
 var (
@@ -29,14 +30,18 @@ var (
 type EventKind string
 
 const (
-	KindStart      EventKind = "start"
-	KindLink       EventKind = "link"
-	KindCheckpoint EventKind = "checkpoint"
-	KindEvidence   EventKind = "evidence"
-	KindValidation EventKind = "validation"
-	KindBlocked    EventKind = "blocked"
-	KindFinish     EventKind = "finish"
-	KindWarning    EventKind = "warning"
+	KindStart          EventKind = "start"
+	KindLink           EventKind = "link"
+	KindCheckpoint     EventKind = "checkpoint"
+	KindEvidence       EventKind = "evidence"
+	KindValidation     EventKind = "validation"
+	KindBlocked        EventKind = "blocked"
+	KindFinish         EventKind = "finish"
+	KindWarning        EventKind = "warning"
+	KindDemand         EventKind = "demand"
+	KindRecommendation EventKind = "recommendation"
+	KindAssignment     EventKind = "assignment"
+	KindYield          EventKind = "yield"
 )
 
 type Source struct {
@@ -73,40 +78,64 @@ type Metrics struct {
 	CostUSD        *float64 `json:"cost_usd,omitempty"`
 }
 
+type AdaptiveMetadata struct {
+	SchemaVersion             string    `json:"schema_version"`
+	DemandID                  string    `json:"demand_id"`
+	AssignmentID              string    `json:"assignment_id,omitempty"`
+	ActorRef                  string    `json:"actor_ref,omitempty"`
+	RoleHint                  string    `json:"role_hint,omitempty"`
+	PolicyVersion             string    `json:"policy_version,omitempty"`
+	RecommendationFingerprint string    `json:"recommendation_fingerprint,omitempty"`
+	LeaseTokenDigest          string    `json:"lease_token_digest,omitempty"`
+	LeaseExpiresAt            time.Time `json:"lease_expires_at,omitzero"`
+	ExpectedVersion           uint64    `json:"expected_version,omitempty"`
+	Priority                  int       `json:"priority,omitempty"`
+	RequiredBudget            int       `json:"required_budget,omitempty"`
+	Score                     int       `json:"score,omitempty"`
+	WaitingCycle              int       `json:"waiting_cycle,omitempty"`
+	Reason                    string    `json:"reason,omitempty"`
+	NextStatus                string    `json:"next_status,omitempty"`
+	HypothesisRefs            []string  `json:"hypothesis_refs,omitempty"`
+	FailedAttemptRefs         []string  `json:"failed_attempt_refs,omitempty"`
+	SuccessorCapabilities     []string  `json:"successor_capabilities,omitempty"`
+}
+
 type EventDraft struct {
-	EventID         string        `json:"event_id,omitempty"`
-	RunID           string        `json:"run_id"`
-	ParentRunID     string        `json:"parent_run_id,omitempty"`
-	CausedByEventID string        `json:"caused_by_event_id,omitempty"`
-	OccurredAt      time.Time     `json:"occurred_at,omitempty"`
-	Kind            EventKind     `json:"kind"`
-	Source          Source        `json:"source"`
-	TaskRef         string        `json:"task_ref,omitempty"`
-	ArtifactRefs    []ArtifactRef `json:"artifact_refs,omitempty"`
-	EvidenceRefs    []EvidenceRef `json:"evidence_refs,omitempty"`
-	Checkpoint      *Checkpoint   `json:"checkpoint,omitempty"`
-	Metrics         *Metrics      `json:"metrics,omitempty"`
+	EventID         string            `json:"event_id,omitempty"`
+	RunID           string            `json:"run_id"`
+	ParentRunID     string            `json:"parent_run_id,omitempty"`
+	CausedByEventID string            `json:"caused_by_event_id,omitempty"`
+	OccurredAt      time.Time         `json:"occurred_at,omitempty"`
+	Kind            EventKind         `json:"kind"`
+	Source          Source            `json:"source"`
+	TaskRef         string            `json:"task_ref,omitempty"`
+	ArtifactRefs    []ArtifactRef     `json:"artifact_refs,omitempty"`
+	EvidenceRefs    []EvidenceRef     `json:"evidence_refs,omitempty"`
+	Checkpoint      *Checkpoint       `json:"checkpoint,omitempty"`
+	Metrics         *Metrics          `json:"metrics,omitempty"`
+	Adaptive        *AdaptiveMetadata `json:"adaptive,omitempty"`
 }
 
 type Event struct {
-	SchemaVersion      string        `json:"schema_version"`
-	EventID            string        `json:"event_id"`
-	RunID              string        `json:"run_id"`
-	ParentRunID        string        `json:"parent_run_id,omitempty"`
-	CausedByEventID    string        `json:"caused_by_event_id,omitempty"`
-	LamportClock       uint64        `json:"lamport_clock"`
-	LocalSequence      uint64        `json:"local_sequence"`
-	OccurredAt         time.Time     `json:"occurred_at,omitempty"`
-	ObservedAt         time.Time     `json:"observed_at"`
-	Kind               EventKind     `json:"kind"`
-	Source             Source        `json:"source"`
-	TaskRef            string        `json:"task_ref,omitempty"`
-	ArtifactRefs       []ArtifactRef `json:"artifact_refs,omitempty"`
-	EvidenceRefs       []EvidenceRef `json:"evidence_refs,omitempty"`
-	Checkpoint         *Checkpoint   `json:"checkpoint,omitempty"`
-	Metrics            *Metrics      `json:"metrics,omitempty"`
-	IdempotencyKeyHash string        `json:"idempotency_key_hash"`
-	Fingerprint        string        `json:"fingerprint"`
+	SchemaVersion      string            `json:"schema_version"`
+	EventID            string            `json:"event_id"`
+	RunID              string            `json:"run_id"`
+	ParentRunID        string            `json:"parent_run_id,omitempty"`
+	CausedByEventID    string            `json:"caused_by_event_id,omitempty"`
+	LamportClock       uint64            `json:"lamport_clock"`
+	LocalSequence      uint64            `json:"local_sequence"`
+	OccurredAt         time.Time         `json:"occurred_at,omitempty"`
+	ObservedAt         time.Time         `json:"observed_at"`
+	Kind               EventKind         `json:"kind"`
+	Source             Source            `json:"source"`
+	TaskRef            string            `json:"task_ref,omitempty"`
+	ArtifactRefs       []ArtifactRef     `json:"artifact_refs,omitempty"`
+	EvidenceRefs       []EvidenceRef     `json:"evidence_refs,omitempty"`
+	Checkpoint         *Checkpoint       `json:"checkpoint,omitempty"`
+	Metrics            *Metrics          `json:"metrics,omitempty"`
+	Adaptive           *AdaptiveMetadata `json:"adaptive,omitempty"`
+	IdempotencyKeyHash string            `json:"idempotency_key_hash"`
+	Fingerprint        string            `json:"fingerprint"`
 }
 
 func DecodeDraft(input io.Reader) (EventDraft, error) {
@@ -226,6 +255,9 @@ func ValidateDraft(draft EventDraft) error {
 			return fieldError("metrics.cost_usd", "no puede ser negativo")
 		}
 	}
+	if err := validateAdaptiveMetadata(draft.Kind, draft.Adaptive); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -258,6 +290,7 @@ func ValidateEvent(event Event) error {
 		EvidenceRefs:    event.EvidenceRefs,
 		Checkpoint:      event.Checkpoint,
 		Metrics:         event.Metrics,
+		Adaptive:        event.Adaptive,
 	})
 }
 
@@ -266,21 +299,23 @@ func CanonicalFingerprint(draft EventDraft) (string, error) {
 		return "", err
 	}
 	payload := struct {
-		RunID           string        `json:"run_id"`
-		ParentRunID     string        `json:"parent_run_id,omitempty"`
-		CausedByEventID string        `json:"caused_by_event_id,omitempty"`
-		OccurredAt      time.Time     `json:"occurred_at,omitempty"`
-		Kind            EventKind     `json:"kind"`
-		Source          Source        `json:"source"`
-		TaskRef         string        `json:"task_ref,omitempty"`
-		ArtifactRefs    []ArtifactRef `json:"artifact_refs,omitempty"`
-		EvidenceRefs    []EvidenceRef `json:"evidence_refs,omitempty"`
-		Checkpoint      *Checkpoint   `json:"checkpoint,omitempty"`
-		Metrics         *Metrics      `json:"metrics,omitempty"`
+		RunID           string            `json:"run_id"`
+		ParentRunID     string            `json:"parent_run_id,omitempty"`
+		CausedByEventID string            `json:"caused_by_event_id,omitempty"`
+		OccurredAt      time.Time         `json:"occurred_at,omitempty"`
+		Kind            EventKind         `json:"kind"`
+		Source          Source            `json:"source"`
+		TaskRef         string            `json:"task_ref,omitempty"`
+		ArtifactRefs    []ArtifactRef     `json:"artifact_refs,omitempty"`
+		EvidenceRefs    []EvidenceRef     `json:"evidence_refs,omitempty"`
+		Checkpoint      *Checkpoint       `json:"checkpoint,omitempty"`
+		Metrics         *Metrics          `json:"metrics,omitempty"`
+		Adaptive        *AdaptiveMetadata `json:"adaptive,omitempty"`
 	}{
 		RunID: draft.RunID, ParentRunID: draft.ParentRunID, CausedByEventID: draft.CausedByEventID,
 		OccurredAt: draft.OccurredAt.UTC(), Kind: draft.Kind, Source: draft.Source, TaskRef: draft.TaskRef,
 		ArtifactRefs: draft.ArtifactRefs, EvidenceRefs: draft.EvidenceRefs, Checkpoint: draft.Checkpoint, Metrics: draft.Metrics,
+		Adaptive: draft.Adaptive,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -296,11 +331,138 @@ func HashReference(value string) string {
 
 func validKind(kind EventKind) bool {
 	switch kind {
-	case KindStart, KindLink, KindCheckpoint, KindEvidence, KindValidation, KindBlocked, KindFinish, KindWarning:
+	case KindStart, KindLink, KindCheckpoint, KindEvidence, KindValidation, KindBlocked, KindFinish, KindWarning,
+		KindDemand, KindRecommendation, KindAssignment, KindYield:
 		return true
 	default:
 		return false
 	}
+}
+
+func validateAdaptiveMetadata(kind EventKind, value *AdaptiveMetadata) error {
+	adaptiveKind := kind == KindDemand || kind == KindRecommendation || kind == KindAssignment || kind == KindYield
+	if !adaptiveKind {
+		if value != nil {
+			return fieldError("adaptive", "solo se permite en eventos adaptativos")
+		}
+		return nil
+	}
+	if value == nil {
+		return fieldError("adaptive", "es obligatorio para eventos adaptativos")
+	}
+	if value.SchemaVersion != AdaptiveMetadataSchemaVersion {
+		return fieldError("adaptive.schema_version", "usar lufy-run-adaptive/v1")
+	}
+	if err := validateID("adaptive.demand_id", value.DemandID, true); err != nil {
+		return err
+	}
+	if value.Priority < 0 || value.Priority > 100 {
+		return fieldError("adaptive.priority", "debe estar entre 0 y 100")
+	}
+	if value.RequiredBudget < 1 || value.RequiredBudget > 100 {
+		return fieldError("adaptive.required_budget", "debe estar entre 1 y 100")
+	}
+	if value.WaitingCycle < 0 || value.WaitingCycle > 1_000_000 {
+		return fieldError("adaptive.waiting_cycle", "fuera de límite")
+	}
+	if kind == KindDemand {
+		if value.AssignmentID != "" || value.ActorRef != "" || value.RoleHint != "" || value.PolicyVersion != "" ||
+			value.RecommendationFingerprint != "" || value.LeaseTokenDigest != "" || !value.LeaseExpiresAt.IsZero() ||
+			value.ExpectedVersion != 0 || value.Score != 0 || hasYieldMetadata(value) {
+			return fieldError("adaptive", "demand contiene metadata no permitida")
+		}
+		return nil
+	}
+	if !digestPattern.MatchString(value.ActorRef) {
+		return fieldError("adaptive.actor_ref", "debe ser sha256 hexadecimal")
+	}
+	if err := validateToken("adaptive.policy_version", value.PolicyVersion, true, maxReferenceLen); err != nil {
+		return err
+	}
+	if !digestPattern.MatchString(value.RecommendationFingerprint) {
+		return fieldError("adaptive.recommendation_fingerprint", "debe ser sha256 hexadecimal")
+	}
+	if value.Score < -5000 || value.Score > 2000 {
+		return fieldError("adaptive.score", "fuera de límite")
+	}
+	if kind == KindRecommendation {
+		if value.RoleHint != "" {
+			if err := validateToken("adaptive.role_hint", value.RoleHint, false, maxReferenceLen); err != nil {
+				return err
+			}
+		}
+		if value.ExpectedVersion == 0 {
+			return fieldError("adaptive.expected_version", "debe ser mayor que cero")
+		}
+		if value.AssignmentID != "" || value.LeaseTokenDigest != "" ||
+			!value.LeaseExpiresAt.IsZero() || hasYieldMetadata(value) {
+			return fieldError("adaptive", "recommendation contiene metadata no permitida")
+		}
+		return nil
+	}
+	if err := validateID("adaptive.assignment_id", value.AssignmentID, true); err != nil {
+		return err
+	}
+	if err := validateToken("adaptive.role_hint", value.RoleHint, true, maxReferenceLen); err != nil {
+		return err
+	}
+	if !digestPattern.MatchString(value.LeaseTokenDigest) {
+		return fieldError("adaptive.lease_token_digest", "debe ser sha256 hexadecimal")
+	}
+	if value.LeaseExpiresAt.IsZero() {
+		return fieldError("adaptive.lease_expires_at", "es obligatorio")
+	}
+	if value.ExpectedVersion == 0 {
+		return fieldError("adaptive.expected_version", "debe ser mayor que cero")
+	}
+	if kind == KindAssignment {
+		if hasYieldMetadata(value) {
+			return fieldError("adaptive", "assignment contiene metadata de yield")
+		}
+		return nil
+	}
+	if !oneOfAdaptive(value.Reason, "blocked", "capacity_change", "higher_value_successor", "lease_expiring", "manual") {
+		return fieldError("adaptive.reason", "valor no soportado")
+	}
+	if !oneOfAdaptive(value.NextStatus, "waiting", "blocked", "escalated", "completed") {
+		return fieldError("adaptive.next_status", "valor no soportado")
+	}
+	for field, refs := range map[string][]string{
+		"adaptive.hypothesis_refs":     value.HypothesisRefs,
+		"adaptive.failed_attempt_refs": value.FailedAttemptRefs,
+	} {
+		if len(refs) > maxReferences {
+			return fieldError(field, "excede el límite")
+		}
+		for _, ref := range refs {
+			if !digestPattern.MatchString(ref) {
+				return fieldError(field, "debe contener sha256 hexadecimal")
+			}
+		}
+	}
+	if len(value.SuccessorCapabilities) > maxReferences {
+		return fieldError("adaptive.successor_capabilities", "excede el límite")
+	}
+	for _, capability := range value.SuccessorCapabilities {
+		if err := validateToken("adaptive.successor_capabilities", capability, true, maxReferenceLen); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func hasYieldMetadata(value *AdaptiveMetadata) bool {
+	return value.Reason != "" || value.NextStatus != "" || len(value.HypothesisRefs) > 0 ||
+		len(value.FailedAttemptRefs) > 0 || len(value.SuccessorCapabilities) > 0
+}
+
+func oneOfAdaptive(value string, allowed ...string) bool {
+	for _, candidate := range allowed {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }
 
 func allowedCheckpointStatus(status string) bool {

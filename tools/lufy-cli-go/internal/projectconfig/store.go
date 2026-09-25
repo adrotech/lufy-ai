@@ -34,6 +34,9 @@ func Load(path string) (ProjectConfig, error) {
 	if err := validateReviewLimits(cfg.WorkflowLimits.Review); err != nil {
 		return ProjectConfig{}, err
 	}
+	if err := validateAdaptiveRouting(cfg.AdaptiveRouting); err != nil {
+		return ProjectConfig{}, err
+	}
 	return cfg, nil
 }
 
@@ -93,6 +96,32 @@ func validateReviewLimits(limits WorkflowReviewLimits) error {
 	return nil
 }
 
+func validateAdaptiveRouting(config AdaptiveRoutingConfig) error {
+	if config.Mode != "shadow" && config.Mode != "advisory" {
+		return fmt.Errorf("adaptive_routing.mode debe ser shadow o advisory")
+	}
+	if config.PolicyVersion != "deterministic-v1" {
+		return fmt.Errorf("adaptive_routing.policy_version debe ser deterministic-v1")
+	}
+	fields := []struct {
+		path  string
+		value int
+		min   int
+		max   int
+	}{
+		{path: "lease_ttl_seconds", value: config.LeaseTTLSeconds, min: 1, max: 86400},
+		{path: "max_candidates", value: config.MaxCandidates, min: 1, max: 32},
+		{path: "max_waiting_items", value: config.MaxWaitingItems, min: 1, max: 1024},
+		{path: "starvation_after_cycles", value: config.StarvationAfterCycles, min: 1, max: 1000},
+	}
+	for _, field := range fields {
+		if field.value < field.min || field.value > field.max {
+			return fmt.Errorf("adaptive_routing.%s debe estar entre %d y %d", field.path, field.min, field.max)
+		}
+	}
+	return nil
+}
+
 func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
 	if cfg.ContextGraph.Root == "" && cfg.ContextGraph.Report == "" && len(cfg.ContextGraph.SensitivePatterns) == 0 && len(cfg.ContextGraph.Exclude) == 0 {
 		cfg.ContextGraph = DefaultContextGraphConfig()
@@ -133,6 +162,25 @@ func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
 	}
 	if cfg.Memory.Vault == "" {
 		cfg.Memory.Vault = cfg.Memory.Root
+	}
+	adaptiveDefaults := DefaultAdaptiveRoutingConfig()
+	if cfg.AdaptiveRouting.Mode == "" {
+		cfg.AdaptiveRouting.Mode = adaptiveDefaults.Mode
+	}
+	if cfg.AdaptiveRouting.PolicyVersion == "" {
+		cfg.AdaptiveRouting.PolicyVersion = adaptiveDefaults.PolicyVersion
+	}
+	if cfg.AdaptiveRouting.LeaseTTLSeconds == 0 {
+		cfg.AdaptiveRouting.LeaseTTLSeconds = adaptiveDefaults.LeaseTTLSeconds
+	}
+	if cfg.AdaptiveRouting.MaxCandidates == 0 {
+		cfg.AdaptiveRouting.MaxCandidates = adaptiveDefaults.MaxCandidates
+	}
+	if cfg.AdaptiveRouting.MaxWaitingItems == 0 {
+		cfg.AdaptiveRouting.MaxWaitingItems = adaptiveDefaults.MaxWaitingItems
+	}
+	if cfg.AdaptiveRouting.StarvationAfterCycles == 0 {
+		cfg.AdaptiveRouting.StarvationAfterCycles = adaptiveDefaults.StarvationAfterCycles
 	}
 	return cfg
 }

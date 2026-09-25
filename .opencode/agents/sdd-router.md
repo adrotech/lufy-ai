@@ -71,6 +71,14 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Never treat graph-derived relationships or inferred impact as evidence stronger than current files, user-provided constraints, diffs, validation evidence, or repository policies.
 - When an upstream handoff already provides `context review`, use only canonical `workflow_limits.review` availability and the reported `proceed|split|escalate` action to refine review slices. Do not execute the command, infer missing budgets, or treat `proceed` as implementation/delivery authority.
 
+## Adaptive Routing Evidence
+
+- Follow `.lufy/contracts/adaptive-routing.md`. A provided adaptive recommendation may be copied into planning as a temporary capability/`role_hint`, but tier, methodology, user scope, isolation, permissions, tool availability, review workload, and acceptance criteria remain independently authoritative.
+- Never create a role, grant permission, change owner, invoke work, or advance a gate from adaptive output. Report `gate_advanced: false` with the recommendation.
+- Delivery, security, public contracts, database schema, and destructive migrations preempt adaptive scoring. Return `escalated` with the required human/orchestrator authority; a recommended `delivery` successor is never Git/GH authorization.
+- `disabled` means no new adaptive assignment; `shadow` observes without assignment/budget/ownership effects; `advisory` still requires explicit durable mutation. No autonomous mode exists.
+- If adaptive config/support/evidence is absent, unavailable, or unsupported by the adapter, set `adaptive_routing: not_available|disabled` and preserve the current deterministic route. Do not downgrade confidence solely because optional adaptive evidence is absent.
+
 ## Governed Parallelism
 
 - Read `parallel_execution` from `.lufy/config/project.yaml` when present.
