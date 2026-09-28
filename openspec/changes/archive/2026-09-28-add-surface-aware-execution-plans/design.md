@@ -49,4 +49,3 @@ Cada `ValidationRule` declara ID, categoría, trigger, obligatoriedad, superfici
 - El adapter Git usa argumentos directos, no shell.
 - Paths absolutos o que escapen del target se rechazan como entrada de archivos.
 - La salida explica cuándo usa una composición conservadora.
-

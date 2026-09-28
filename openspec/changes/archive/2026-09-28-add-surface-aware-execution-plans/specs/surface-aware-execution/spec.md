@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Deterministic active surface resolution
 Lufy SHALL resolve an execution surface from explicit selection, changed files and configured surface roots using deterministic precedence and explainable decisions.
