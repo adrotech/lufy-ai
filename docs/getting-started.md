@@ -24,10 +24,12 @@ Por ahora `opencode` es el default escribible y `codex` también puede instalar 
 
 ```bash
 lufy-ai version
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --dry-run --yes
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode
+lufy-ai setup --target /ruta/a/tu/proyecto --dry-run
+lufy-ai setup --target /ruta/a/tu/proyecto --yes
+lufy-ai verify --target /ruta/a/tu/proyecto --deep
 ```
+
+`setup` es el camino recomendado con defaults `opencode`/`project`. Si necesitas Codex, otro scope o metodología por tier, usa `install` explícitamente.
 
 Después de instalar:
 
@@ -38,7 +40,7 @@ Después de instalar:
 
 ## 2. Inicializar configuración stack-aware y surface-aware
 
-`init` crea `.lufy/config/project.yaml`, que es configuración del proyecto destino. No es asset gestionado por hash. Además de stacks técnicos, incluye `project_profile.surfaces` para declarar si el proyecto o una raíz se razona como `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
+`setup` crea `.lufy/config/project.yaml` cuando falta. También puedes ejecutar `init` directamente para controlar esta configuración del proyecto destino, que no es un asset gestionado por hash. Además de stacks técnicos, incluye `project_profile.surfaces` para declarar si el proyecto o una raíz se razona como `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`.
 
 ```bash
 lufy-ai init --target /ruta/a/tu/proyecto
@@ -58,6 +60,14 @@ lufy-ai init --target /ruta/a/tu/proyecto --rescan
 ```
 
 `--rescan` preserva overrides manuales como thresholds, anti-patterns, `project_profile.surfaces` y `workflow_limits`.
+
+Antes de implementar, transforma el perfil en un alcance ejecutable y explicable:
+
+```bash
+lufy-ai plan --target /ruta/a/tu/proyecto --base origin/develop --json
+```
+
+`plan` es read-only: selecciona superficies, compone contratos conectados y propone reglas de validación, pero no ejecuta comandos.
 
 Ejemplo frontend con `pnpm`: el proyecto puede declarar comandos de validación que `implementer` hereda sin hardcodearlos en el agente.
 
@@ -87,7 +97,14 @@ Para usar Lufy SDD Lite en T2:
 lufy-ai install --target /ruta/a/tu/proyecto --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
-Lufy SDD Full/Lite está implementándose como lifecycle nativo (`new`, `status`, `validate`, `sync`, `archive`) en el change `complete-lufy-sdd-full-workflow`, incluyendo un overview HTML automático derivado de los Markdown. Hasta completar validación Go/CI y delivery, usa OpenSpec Full para trabajo T1 productivo.
+Lufy SDD Full/Lite está disponible como lifecycle nativo (`new`, `status`, `validate`, `sync`, `archive`) e incluye un overview HTML automático derivado de los Markdown. Puedes usar `lufy-sdd/full` para T1 y `lufy-sdd/lite` para T2, o mantener OpenSpec por tier.
+
+```bash
+lufy-ai install --target /ruta/a/tu/proyecto \
+  --methodology-tier T1:lufy-sdd/full \
+  --methodology-tier T2:lufy-sdd/lite \
+  --yes
+```
 
 Para combinar OpenSpec Lite en T2 y T3 Express sin spec:
 
@@ -129,7 +146,7 @@ Template:
 
 ### T1 Full SDD
 
-Usa T1 para arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre.
+Usa T1 para arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre. Puedes elegir OpenSpec Full o Lufy SDD Full.
 
 Comandos:
 
@@ -142,6 +159,8 @@ Comandos:
 | Sincronizar specs | `/opsx-sync` |
 | Archivar | `/opsx-archive` |
 | Diagnóstico versión | `/opsx-version` |
+
+Equivalente nativo Lufy SDD: `/lufy.sdd-explore`, `/lufy.sdd-propose`, `/lufy.sdd-apply`, `/lufy.sdd-verify`, `/lufy.sdd-sync` y `/lufy.sdd-archive`.
 
 ## 5. Lifecycle de mantenimiento
 
@@ -198,8 +217,13 @@ lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
 | OpenSpec | `/opsx-sync` | Aplicar deltas validados a specs principales. |
 | OpenSpec | `/opsx-archive` | Archivar cambio terminado. |
 | OpenSpec | `/opsx-version` | Reportar fuente OpenSpec efectiva. |
+| Lufy | `/lufy.sdd-*` | Ciclo Full/Lite nativo: explore, propose, apply, verify, sync y archive. |
+| Lufy | `/lufy.close` | Cierre transversal con gates de validación, sync y delivery. |
+| Lufy | `/lufy.context` | Orientación usando el Context Graph local. |
+| Lufy | `/lufy.mem-*` | Buscar, capturar, documentar y conectar memoria durable. |
+| Lufy | `/lufy.pr-review` | Review de PR con reporte HTML en español. |
 | Lufy | `/lufy.timereport` | Reporte local de tiempo/ROI. |
-| Lufy | `/lufy.onboard` | Onboarding/demo cuando esté disponible en el target. |
+| Lufy | `/lufy.onboard` | Onboarding y demo segura del harness. |
 
 `/opsx-*` se conserva como namespace estable de OpenSpec. `/lufy.*` queda para capacidades propias del kit.
 
@@ -251,7 +275,7 @@ No hay `npm test`, `npm run typecheck` ni `tsc` global en la raíz.
 
 1. Reinicia OpenCode.
 2. Verifica `.opencode/agents/`.
-3. Verifica que `AGENTS.md` tenga `@lufy-ia.harness.md`.
+3. Verifica que `AGENTS.md` contenga el bloque gestionado LUFY; la referencia `@lufy-ia.harness.md` sólo se conserva por compatibilidad legacy.
 4. Corre `lufy-ai verify --target <repo>`.
 
 ### El plugin TUI no aparece
@@ -274,6 +298,7 @@ Si el comando bloquea por drift, revisa `status --verbose` antes de decidir cóm
 
 - [README raíz](../README.md)
 - [Instalación completa](installation.md)
+- [Flujo sistémico del harness](harness-workflow.md)
 - [Arquitectura](architecture.md)
 - [Estado](status.md)
 - [Roadmap](roadmap.md)
