@@ -1,12 +1,14 @@
-# Verificación final local — experiment-adaptive-role-allocation
+# Verificación final — experiment-adaptive-role-allocation
 
 ## Gate state
 
 - Implementación: completa para Slices A-D.
 - Validación local: passed.
 - Spec sync: complete; tres specs activas creadas con digest verificado.
-- Delivery y CI multi-OS: `delivery_pending`.
-- Archive/cierre: no autorizados y no intentados.
+- Delivery y CI multi-OS: complete; PR #230 mergeada en `develop` (`700ceb1`) con 5/5 checks remotos exitosos.
+- Issue #222: cerrada.
+- Tasks: 50/50.
+- Archive/cierre: complete; archive canónico `2026-09-28-experiment-adaptive-role-allocation` con overview preservado.
 
 ## Completeness
 
@@ -20,7 +22,7 @@
 
 ## Correctness And Coherence
 
-- Proposal, design, tres deltas y 41/48 tasks completadas son coherentes: las siete restantes son sync, trazabilidad/delivery y cierre.
+- Proposal, design, tres deltas y 50/50 tasks completadas son coherentes; sync, delivery y cierre quedaron satisfechos.
 - State machine observable: `waiting -> recommended -> assigned -> yielded|completed|escalated`; recommendation/assignment/yield conservan autoridad separada del Result Contract.
 - Rollback: `adaptive_routing.enabled=false` bloquea nuevas assignments y permite únicamente cleanup explícito/fenced de leases existentes.
 - No gate advancement: dominio inicializa `GateAdvanced: false`, CLI lo expone y tests cubren disabled, recommendation y protected escalation.
@@ -32,7 +34,7 @@
 - El runtime adaptativo nuevo no contiene archivos ni branches específicos de `windows`, `linux` o `darwin`; usa Go portable, `io`, `time`, YAML/JSON y los ports existentes.
 - `go test ./...`, `go build ./...`, race y el gate integral pasaron en `darwin/arm64`.
 - Los intentos locales `GOOS=linux` y `GOOS=windows` no pudieron compilar porque la instalación host Go 1.26.2 carece de paquetes std cross-OS (`internal/runtime/cgroup`, `internal/runtime/syscall/linux|windows`); no fue un error de código.
-- La evidencia ejecutable Ubuntu/macOS/Windows sigue siendo un gate remoto obligatorio durante delivery, tal como define el design. Hasta entonces el estado no puede avanzar a `delivered`/`closed`.
+- La CI del PR #230 ejecutó los gates Ubuntu, macOS y Windows requeridos y terminó 5/5 exitosa antes del merge.
 
 ## Evidencia agrupada
 
@@ -41,15 +43,18 @@
 | `go test ./... -count=1` | passed |
 | `go build ./...` | passed |
 | `go test -race ./internal/adaptive/... ./internal/runledger -count=1` | passed |
-| `scripts/validate.sh` | passed; coverage global 80.3%, whitespace PR-aware, PR guard, YAML, coupling, tests/vet/build verdes; shellcheck no disponible se reportó como notice |
+| `scripts/validate.sh` | passed; coverage global 80.4%, whitespace PR-aware, PR guard, YAML, coupling, tests/vet/build verdes; shellcheck no disponible se reportó como notice |
 | `git diff --check origin/develop` y `git diff --check` | passed |
 | `go run ./cmd/lufy-ai sdd validate --change experiment-adaptive-role-allocation --strict --target ../.. --json` | passed antes de sync; status `valid`, 44/48, digest `0d92505edfcbd55abfd2502e933dab6def6005ea045d19248b5072b170f549d1` |
 | `go run ./cmd/lufy-ai sdd sync --change experiment-adaptive-role-allocation --target ../.. --json` | passed; 18 requirements creados en tres specs activas y `syncedDigest` coincidente |
+| `go run ./cmd/lufy-ai sdd validate --change experiment-adaptive-role-allocation --strict --target ../.. --json` | passed al cierre; status `valid`, 50/50, digest `a22cfb12f0da8ec5041ba0c27c3716dc87f19b18fb0ea39b6086007bf12ac4bd` |
+| `go run ./cmd/lufy-ai sdd archive --change experiment-adaptive-role-allocation --target ../.. --json` | passed; status `archived`, overview preservado |
 | lectura post-sync de `.lufy/workflows/sdd/specs/adaptive-{role-allocation,routing-safety,yield-protocol}/spec.md` | passed; requirements/scenarios presentes y sin targets ambiguos |
-| `gh issue view 222 --json ...` | issue abierta `[Fase 5/6] Implementar asignación adaptativa y protocolo de yield`, label `program: adaptive-agentic-harness` |
+| PR #230 | mergeada en `develop` mediante `700ceb1`; 5/5 checks remotos exitosos |
+| `gh issue view 222 --json ...` | issue cerrada `[Fase 5/6] Implementar asignación adaptativa y protocolo de yield`, label `program: adaptive-agentic-harness` |
 | `gh issue view 221 --json ...` | dependencia de Fase 4 cerrada |
-| `GOOS=linux/windows GOARCH=amd64 go build ...` | blocked por stdlib cross-OS incompleta del host; recovery: CI multi-OS durante delivery |
+| `GOOS=linux/windows GOARCH=amd64 go build ...` | el host local carecía de stdlib cross-OS; gate sustituido por CI multi-OS exitosa del PR #230 |
 
-## Siguiente gate
+## Cierre
 
-El change queda `delivery_pending` contra issue `#222`. Commit/push/PR/checks requieren autorización explícita y rol delivery. No iniciar Fase 6, archivar ni cerrar antes del merge, checks remotos, cierre de issue y gates restantes.
+El change queda `closed`: implementación, validación, sync, delivery, checks remotos, merge, cierre de issue y archive canónico están completos. La fase 6 puede comenzar como iniciativa independiente.

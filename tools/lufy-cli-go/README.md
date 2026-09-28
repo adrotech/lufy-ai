@@ -424,8 +424,8 @@ Release:
 Bootstrap:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.22/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.22 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version v0.6.24 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap instala solo el binario. No toca repositorios destino.
