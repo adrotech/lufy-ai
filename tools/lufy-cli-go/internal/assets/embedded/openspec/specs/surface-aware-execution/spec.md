@@ -73,4 +73,3 @@ Lufy SHALL expose execution planning through a read-only plan command with equiv
 #### Scenario: Planning does not mutate target
 - **WHEN** any valid lufy-ai plan invocation runs
 - **THEN** it SHALL only read project configuration and Git state and SHALL NOT write project files or run validation commands
-

@@ -55,4 +55,3 @@ Lufy necesita convertir el perfil declarado en un plan read-only, determinístic
 - `scripts/validate.sh`
 - `openspec validate "add-surface-aware-execution-plans" --strict`
 - Verificación manual de salida humana y JSON sobre fixtures frontend, backend y fullstack.
-
