@@ -11,9 +11,11 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexsurface"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
@@ -177,6 +179,17 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 	report.Tool = string(st.Tool)
 	report.MethodologyByTier = st.MethodologyByTier
 	report.Assets = len(st.Assets)
+	if configPath, pathErr := projectconfig.ExistingPath(target); pathErr != nil {
+		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo resolver project config para reconciliar harness: %s", pathErr.Error())
+	} else if cfg, loadErr := projectconfig.Load(configPath); loadErr == nil {
+		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}
+		installedHarness := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}
+		for _, drift := range harnessconfig.Compare(&projectHarness, &installedHarness) {
+			recorder.emit("fail", projectconfig.ProjectConfigPath, "%s", harnessconfig.RecoveryMessage(drift))
+		}
+	} else if !os.IsNotExist(loadErr) {
+		recorder.emit("fail", projectconfig.ProjectConfigPath, "project config inválido para reconciliar harness: %s", loadErr.Error())
+	}
 	if opts.ExpectedTool != "" && st.Tool != opts.ExpectedTool {
 		recorder.emit("fail", "install-state.json", "tool del manifest no coincide: esperado=%s actual=%s", opts.ExpectedTool, st.Tool)
 	}
@@ -214,7 +227,12 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		runDeepSkillRegistryVerify(st.Tool, target, recorder.emit)
 		runDeepMemoryVerify(target, recorder.emit)
 		runDeepContextVerify(target, recorder.emit)
-		runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
+		switch st.Tool {
+		case domain.ToolCodex:
+			runDeepCodexLifecycleVerify(target, recorder.emit)
+		case domain.ToolInitialDefault:
+			runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
+		}
 	} else {
 		runMemoryContextDiagnostics(target, recorder.emit)
 	}
@@ -351,8 +369,8 @@ func verifyCodexPRReviewerSkillContract(target string, emit func(string, string,
 	required := []string{
 		"pr_review/",
 		"pr-review-<number>-<yyyyMMdd-HHmm>.html",
-		".opencode/skills/pr.reviewer/SKILL.md",
-		"templates/report.html",
+		"references/review-framework.md",
+		"assets/report.html",
 		"lufy-ai pr guard --base <base>",
 		"git check-ignore -v --no-index --stdin",
 		"Desk check",
@@ -634,6 +652,12 @@ func runDeepOpenCodeMemoryHookVerify(target string, emit func(level, path, forma
 		return
 	}
 	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
+}
+
+func runDeepCodexLifecycleVerify(target string, emit func(level, path, format string, args ...any)) {
+	for _, check := range codexsurface.Validate(target) {
+		emit(check.Level, check.Path, "%s", check.Message)
+	}
 }
 
 func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {

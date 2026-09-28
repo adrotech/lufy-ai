@@ -1,0 +1,29 @@
+{
+  "schema_version": "lufy-adaptive-status/v1",
+  "run_id": "run-waiting",
+  "version": 3,
+  "active_assignments": [],
+  "waiting": [
+    {
+      "demand_id": "demand-b",
+      "task_ref": "task-demand-b",
+      "priority": 90,
+      "required_budget": 40,
+      "waiting_cycle": 5,
+      "state": "waiting",
+      "starvation_risk": true
+    },
+    {
+      "demand_id": "demand-a",
+      "task_ref": "task-demand-a",
+      "priority": 90,
+      "required_budget": 40,
+      "waiting_cycle": 1,
+      "state": "waiting",
+      "starvation_risk": false
+    }
+  ],
+  "consumed_budget": [],
+  "truncated": true,
+  "source_digest": "7b5607809b84f7f7c44bf3bb6cd3c455338a56f8b5b52d7e5bdcb79ade956680"
+}

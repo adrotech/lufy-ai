@@ -26,6 +26,8 @@ type ProjectConfig struct {
 	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
 	ContextGraph      ContextGraphConfig       `yaml:"context_graph"`
 	Memory            MemoryConfig             `yaml:"memory"`
+	RunLedger         RunLedgerConfig          `yaml:"run_ledger"`
+	AdaptiveRouting   AdaptiveRoutingConfig    `yaml:"adaptive_routing"`
 	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
 	Extra             map[string]any           `yaml:",inline,omitempty"`
 }
@@ -42,6 +44,7 @@ type ProjectSurface struct {
 	Stacks       []string            `yaml:"stacks"`
 	Frameworks   []string            `yaml:"frameworks"`
 	Connects     []string            `yaml:"connects,omitempty"`
+	Capabilities []string            `yaml:"capabilities,omitempty"`
 	Architecture ArchitectureProfile `yaml:"architecture,omitempty"`
 	AgentLens    AgentLens           `yaml:"agent_lens"`
 	Extra        map[string]any      `yaml:",inline,omitempty"`
@@ -116,13 +119,22 @@ type ValidationAllowedCommands struct {
 }
 
 type WorkflowLimits struct {
-	Sizing                  WorkflowSizing  `yaml:"sizing"`
-	Routing                 WorkflowRouting `yaml:"routing"`
-	ProposalSlicingStrategy string          `yaml:"proposal_slicing_strategy"`
-	DeliveryBatchStrategy   string          `yaml:"delivery_batch_strategy"`
-	StopRules               []string        `yaml:"stop_rules"`
-	Preflight               []string        `yaml:"preflight"`
-	Extra                   map[string]any  `yaml:",inline,omitempty"`
+	Sizing                  WorkflowSizing       `yaml:"sizing"`
+	Routing                 WorkflowRouting      `yaml:"routing"`
+	Review                  WorkflowReviewLimits `yaml:"review"`
+	ProposalSlicingStrategy string               `yaml:"proposal_slicing_strategy"`
+	DeliveryBatchStrategy   string               `yaml:"delivery_batch_strategy"`
+	StopRules               []string             `yaml:"stop_rules"`
+	Preflight               []string             `yaml:"preflight"`
+	Extra                   map[string]any       `yaml:",inline,omitempty"`
+}
+
+type WorkflowReviewLimits struct {
+	MaxFilesPerSlice      int            `yaml:"max_files_per_slice,omitempty"`
+	MaxChurnLinesPerSlice int            `yaml:"max_churn_lines_per_slice,omitempty"`
+	MaxConcurrentSlices   int            `yaml:"max_concurrent_slices,omitempty"`
+	MinEvidenceItems      int            `yaml:"min_evidence_items,omitempty"`
+	Extra                 map[string]any `yaml:",inline,omitempty"`
 }
 
 type WorkflowSizing struct {
@@ -157,6 +169,35 @@ type ContextGraphConfig struct {
 	MaxQueryResults     int            `yaml:"max_query_results"`
 	MaxNeighborsPerHint int            `yaml:"max_neighbors_per_hint"`
 	Extra               map[string]any `yaml:",inline,omitempty"`
+}
+
+type RunLedgerConfig struct {
+	Enabled   *bool                    `yaml:"enabled,omitempty"`
+	Root      string                   `yaml:"root"`
+	Retention RunLedgerRetentionConfig `yaml:"retention"`
+	Extra     map[string]any           `yaml:",inline,omitempty"`
+}
+
+type RunLedgerRetentionConfig struct {
+	MaxAgeDays      int            `yaml:"max_age_days"`
+	MaxTerminalRuns int            `yaml:"max_terminal_runs"`
+	MaxBytes        int64          `yaml:"max_bytes"`
+	Extra           map[string]any `yaml:",inline,omitempty"`
+}
+
+type AdaptiveRoutingConfig struct {
+	Enabled               bool           `yaml:"enabled"`
+	Mode                  string         `yaml:"mode"`
+	PolicyVersion         string         `yaml:"policy_version"`
+	LeaseTTLSeconds       int            `yaml:"lease_ttl_seconds"`
+	MaxCandidates         int            `yaml:"max_candidates"`
+	MaxWaitingItems       int            `yaml:"max_waiting_items"`
+	StarvationAfterCycles int            `yaml:"starvation_after_cycles"`
+	Extra                 map[string]any `yaml:",inline,omitempty"`
+}
+
+func (c RunLedgerConfig) IsEnabled() bool {
+	return c.Enabled == nil || *c.Enabled
 }
 
 type ParallelExecutionConfig struct {

@@ -1,5 +1,59 @@
 # Managed by lufy-ai.
-# Codex rules files use Starlark prefix_rule(...) entries for command
-# allow/prompt/forbid policy. Lufy role execution guidance lives in
-# AGENTS.md and .codex/lufy-agent-mapping.md, not in this rules file.
-# Project-specific command rules can be added by the user after install.
+# These rules govern command execution only. They do not grant business
+# authorization for delivery, release, destructive work, or external writes.
+
+prefix_rule(
+    pattern = ["git", ["commit", "push", "merge", "tag"]],
+    decision = "prompt",
+    justification = "Git mutations require explicit user authorization and Lufy delivery evidence.",
+    match = ["git commit -m change", "git push origin feature/demo", "git merge feature/demo", "git tag v1.2.3"],
+    not_match = ["git status --short", "git diff --check", "git log -1"],
+)
+
+prefix_rule(
+    pattern = ["gh", "pr", ["create", "merge", "ready", "review"]],
+    decision = "prompt",
+    justification = "Pull Request mutations require explicit user authorization and remote-check evidence.",
+    match = ["gh pr create --base develop", "gh pr merge 123 --merge", "gh pr ready 123", "gh pr review 123 --approve"],
+    not_match = ["gh pr view 123", "gh pr list", "gh pr checks 123"],
+)
+
+prefix_rule(
+    pattern = ["gh", "release", ["create", "delete", "edit"]],
+    decision = "prompt",
+    justification = "Release mutations require explicit authorization and a tag reachable from main.",
+    match = ["gh release create v1.2.3", "gh release delete v1.2.3", "gh release edit v1.2.3 --draft=false"],
+    not_match = ["gh release view v1.2.3", "gh release list"],
+)
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Hard reset can destroy uncommitted work. Use git status/diff and a recoverable stash or targeted restore after explicit review.",
+    match = ["git reset --hard", "git reset --hard HEAD~1"],
+    not_match = ["git reset HEAD file.go", "git status --short"],
+)
+
+prefix_rule(
+    pattern = ["git", "clean", ["-f", "-fd", "-df", "-fx", "-fdx", "-xdf"]],
+    decision = "forbidden",
+    justification = "Forced git clean can delete untracked work. Inspect with git clean -n and remove only explicit reviewed targets.",
+    match = ["git clean -f", "git clean -fd", "git clean -xdf"],
+    not_match = ["git clean -n", "git status --short"],
+)
+
+prefix_rule(
+    pattern = ["git", "branch", "-D"],
+    decision = "forbidden",
+    justification = "Forced branch deletion can discard unmerged work. Verify merge state and use git branch -d after explicit review.",
+    match = ["git branch -D feature/demo"],
+    not_match = ["git branch --list", "git branch -d feature/demo"],
+)
+
+prefix_rule(
+    pattern = ["gh", "repo", "delete"],
+    decision = "forbidden",
+    justification = "Repository deletion is outside normal Lufy delivery. Perform it manually only after independent confirmation and recovery planning.",
+    match = ["gh repo delete owner/repo"],
+    not_match = ["gh repo view owner/repo"],
+)

@@ -9,7 +9,8 @@ Use this skill from the `delivery` agent after explicit user authorization for c
 
 ## Source Of Truth
 
-- Follow `AGENTS.md` and `.opencode/policies/delivery.md`; if this skill conflicts with either, the policy wins.
+- Follow `AGENTS.md` and the adapter-neutral `.lufy/contracts/delivery.md`; if this skill conflicts with either, the contract wins.
+- Use `.lufy/contracts/result-contract.md` as the canonical handoff envelope. Adapter syntax may wrap it but MUST NOT redefine it.
 - Do not create PRs unless the user explicitly authorized PR creation in addition to commit/push.
 - Do not force push unless the user explicitly requested force push.
 - Do not stage unrelated files. If the worktree contains mixed or unclear changes, stop and return `blocked` with the exact file selection needed.

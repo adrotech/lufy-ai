@@ -9,10 +9,10 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/registry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 )
 
 type Options struct {
@@ -175,24 +175,13 @@ func (s Service) build(opts Options) (Index, string, error) {
 }
 
 func resolveTool(target string, requested domain.ToolID) (domain.ToolID, error) {
+	harness := domain.DefaultHarnessConfig()
 	if requested != "" {
-		return requested, nil
+		harness = domain.HarnessConfig{Tool: requested}
 	}
-	path, err := projectconfig.ExistingPath(target)
+	resolution, err := harnessconfig.Resolve(harnessconfig.Options{Target: target, Requested: harness, BlockOnMismatch: true})
 	if err != nil {
 		return "", err
 	}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return domain.ToolInitialDefault, nil
-	} else if err != nil {
-		return "", err
-	}
-	cfg, err := projectconfig.Load(path)
-	if err != nil {
-		return "", fmt.Errorf("leer tool desde project config: %w", err)
-	}
-	if cfg.Tool == "" {
-		return domain.ToolInitialDefault, nil
-	}
-	return cfg.Tool, nil
+	return resolution.Config.Tool, nil
 }

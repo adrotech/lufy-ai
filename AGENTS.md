@@ -13,6 +13,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - **Workflow limits**: `.lufy/config/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
 - **Multi-artifact branching**: para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar hasta 2 candidates de artifacts; `orchestrator` debe hacer join antes de diseño/tareas/implementación y no se crean roles nuevos.
 - **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
+- **Surface execution**: preferir `lufy-ai plan --target <repo> --json` como fuente read-only de superficies frontend/backend/fullstack, contratos conectados y reglas de validación; el alcance explícito del usuario conserva precedencia.
 - **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
 - **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
 - **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
@@ -23,7 +24,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 - `.opencode/commands/`: slash commands del flujo OpenSpec (`opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive`) y comandos LUFY (`lufy.close`, `lufy.pr-review`, `lufy.onboard`, `lufy.timereport`).
 - `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios OpenSpec; skills LUFY transversales viven en `.opencode/skills/lufy.*`.
 - `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
-- `.opencode/policies/delivery.md`: fuente canónica para delivery, branch safety, validación y gates de cambios completos.
+- `.lufy/contracts/delivery.md`: fuente canónica neutral para delivery, branch safety, validación y gates; `.opencode/policies/delivery.md` es solo un overlay de compatibilidad.
 - `openspec/`: propuestas, especificaciones y tareas del flujo OpenSpec.
 - `tools/lufy-cli-go/`: implementación actual de la CLI Go usada por el instalador.
 - `scripts/install.sh`: wrapper estricto hacia `tools/lufy-cli-go`, sin fallback legacy.
@@ -87,6 +88,8 @@ Ejecutar desde la raíz salvo que se indique otra ruta.
 
 ## Result Contract envelope v1
 
+Antes de aceptar automáticamente un handoff sustantivo, validar con `lufy-ai result validate`. Las mutaciones usan `result-transition/v1` mediante `lufy-ai result transition`; un substring del schema nunca avanza gates.
+
 Usar este envelope para handoffs y resultados sustantivos de agentes locales. Para T3 simples, mantenerlo compacto con `not_applicable`; para salidas legacy/terceros, `orchestrator` puede normalizar con `legacy_fallback: true` y marcar evidencia faltante como `not_available`.
 
 ```yaml
@@ -99,6 +102,10 @@ artifacts:
     - <path or none>
   referenced:
     - <path/spec/PR or none>
+ledger: # bloque opcional; su ausencia preserva compatibilidad Result Contract v1
+  run_id: <local run id or not_applicable>
+  event_id: <local event id or not_applicable>
+  status: recorded | duplicate_noop | conflict | unavailable | disabled | not_applicable
 evidence:
   commands:
     - command: <command or none>
@@ -106,6 +113,15 @@ evidence:
       notes: <key output or reason>
   static:
     - <manual/static evidence or not_applicable>
+surface_execution:
+  schema_version: surface-execution-plan/v1 | not_available | not_applicable
+  source: explicit | files | git_diff | carried_handoff | not_available | not_applicable
+  primary_surface: <surface id or not_available>
+  mode: single | composed | not_available | not_applicable
+  active_surfaces:
+    - <surface id or not_applicable>
+  validation_rule_ids:
+    - <rule id or not_applicable>
 workflow_decision:
   tier: T1 | T2 | T3 | not_applicable
   program_tier: T1 | T2 | T3 | not_applicable
@@ -165,7 +181,7 @@ skill_resolution:
 - `test-writer`: escribe o ajusta pruebas TDD stack-aware para cambios T1/T2 sustantivos y reporta evidencia RED/GREEN/TRIANGULATE/REFACTOR; no hace delivery.
 - `validator`: valida y diagnostica en modo read-only; no edita.
 - `reviewer`: revisa calidad, riesgos y cobertura con scoring L1-L5 stack-aware; no edita.
-- `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.opencode/policies/delivery.md`.
+- `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.lufy/contracts/delivery.md`.
 
 ## OpenSpec workflow
 
@@ -176,7 +192,7 @@ skill_resolution:
 - Sincronizar deltas validados a specs principales: `opsx-sync` / skill `openspec-sync`.
 - Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
 - Cerrar/finalizar spec activa o cambio LUFY con gates de validación, sync, delivery, PR cerrado/merged y limpieza segura de rama: `/lufy.close` / skill `lufy.close`.
-- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.opencode/policies/delivery.md` con estado explícito.
+- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.lufy/contracts/delivery.md` con estado explícito.
 - En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
 - Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
 - No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
@@ -191,7 +207,7 @@ skill_resolution:
 
 ## Política de delivery
 
-- Consultar `.opencode/policies/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
+- Consultar `.lufy/contracts/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
 - PR normal: ramas `feature/*`, `fix/*`, `chore/*` o equivalentes → `develop`.
 - Promoción productiva: `develop` → `main` con autorización y evidencia de validación.
 - `main` no es base de trabajo diario; se reserva para producción, release y hotfix explícitamente autorizado.

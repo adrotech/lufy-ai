@@ -29,7 +29,7 @@ La metodología también debe ser un adapter:
 
 ```mermaid
 flowchart TD
-    CLI["cmd/lufy-ai + internal/cli"] --> App["Casos de uso: install, uninstall, verify, status, sync, merge"]
+    CLI["cmd/lufy-ai + internal/cli"] --> App["Casos de uso: lifecycle + adaptive recommend/assign/yield/status"]
     App --> Domain["Core domain"]
     Domain --> Ports["Ports neutrales"]
     Ports --> ToolAdapters["Tool adapters"]
@@ -76,6 +76,11 @@ flowchart TD
 | `internal/backup` | Backup/restore multiasset con manifest. |
 | `internal/config` | Merge conservador de `opencode.json`. |
 | `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
+| `internal/adaptive/domain` | Contratos bounded, strict decode, eligibility, scoring entero determinista y protected-boundary preemption. |
+| `internal/adaptive/application` | Casos de uso `recommend`, `assign`, `yield` y `status`; consume ports sin avanzar gates. |
+| `internal/adaptive/adapters` | Integración content-free con Run Ledger para persistencia causal, leases fenced y proyección reconstruible. |
+| `internal/runledger` | Fuente append-only de eventos causales y metadata adaptativa allow-listed. |
+| `internal/surfaceplan` | Resuelve superficies activas y compone contratos/validaciones read-only mediante Strategy, Factory y adapters de config/Git. |
 | `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
 | `internal/contextgraph` | Grafo local determinístico: extractores, almacenamiento `.lufy/context/`, consultas lexicales, path/explain y diff impact. |
 | `internal/platform` | Path safety, locks y resolución portable de targets. |
@@ -95,6 +100,24 @@ lufy-ai context diff --target <repo> --base origin/develop
 ```
 
 Los artefactos persistidos por defecto viven bajo `.lufy/context/` (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/`). El manifest y cache no son configuración: se regeneran desde `project.yaml` y el workspace. Los agentes consumen el grafo como índice secundario para `context_graph_hints`; si falta o está stale, degradan a `not_available`/`stale` y siguen con inspección de archivos, diff y validación normal. La salida incluye ranking, comunidades determinísticas, nodos importantes, preguntas sugeridas y vecinos acotados para ahorrar lecturas/tokens iniciales. La semántica/LLM es una fase futura opcional: el comportamiento actual es conservador y local, por lo que ninguna inferencia del grafo reemplaza evidencia directa de archivos actuales, tests, logs o comandos.
+
+## Surface-aware execution plans
+
+`lufy-ai plan` transforma `project_profile.surfaces` en un contrato operativo `surface-execution-plan/v1`. La selección explícita tiene precedencia; en modo automático se comparan los archivos del diff con las roots más específicas y se usa la composición `fullstack` declarada cuando el alcance cruza superficies o modifica un contrato conectado.
+
+```mermaid
+flowchart LR
+    Input["--surface / --files / git diff"] --> Resolver["SurfaceResolverStrategy"]
+    Config["project.yaml"] --> Adapter["ProjectConfigAdapter"]
+    Adapter --> Resolver
+    Resolver --> Active["single o composed"]
+    Active --> Factory["ValidationPlanFactory"]
+    Stacks["stack commands"] --> Factory
+    Capabilities["realtime / rendering / offline / persistence / desktop"] --> Factory
+    Factory --> Plan["surface-execution-plan/v1"]
+```
+
+El plan registra decisiones, evidencias, conexiones frontend/backend y reglas tipadas. Los comandos encontrados en la configuración se reportan como sugerencias; planificar nunca implica autorización ni ejecución. Las capacidades son ortogonales al tipo de producto, de modo que un juego, editor o dashboard en tiempo real puede compartir políticas sin agregar ramas específicas al dominio.
 
 ## Lifecycle de assets
 
@@ -170,16 +193,45 @@ Los presets OpenCode y Codex instalan el mismo núcleo de roles:
 - `reviewer`: revisión stack-aware con severidades y scoring;
 - `delivery`: Git/GitHub solo con autorización explícita.
 
+El núcleo compartido se instala desde `.lufy/contracts/`: delivery, Result Contract y recursos de PR review. OpenCode conserva overlays de compatibilidad; Codex proyecta los recursos necesarios dentro de cada skill para progressive disclosure.
+
+### Adaptive role allocation
+
+El allocator separa identidad pseudónima, capacidades actuales y `role_hint` temporal. Una recomendación ayuda a planificar cuál de los roles existentes puede aportar una capacidad, pero no crea roles, no amplía permisos, no cambia ownership y siempre conserva `gate_advanced=false`. El contrato neutral vive en `.lufy/contracts/adaptive-routing.md`.
+
+```mermaid
+flowchart LR
+    Demand["DemandSignal + CapabilityProfile"] --> Score["deterministic-v1"]
+    Score --> Protected{"protected boundary?"}
+    Protected -->|sí| Human["human/orchestrator escalation"]
+    Protected -->|no| Recommend["recommendation"]
+    Recommend --> Shadow["shadow: observation only"]
+    Recommend --> Advisory["advisory: explicit assign"]
+    Advisory --> Ledger["Run Ledger append-only"]
+    Ledger --> Yield["durable checkpoint before release"]
+    Yield --> Waiting["bounded waiting pool / requeue"]
+```
+
+`disabled` es el default. `shadow` puede observar/registrar evidencia sin assignment, budget ni ownership; `advisory` exige una mutación explícita con idempotencia y lease. La confirmación vuelve a comprobar dentro del CAS que la recommendation sigue siendo el último evento y que capacidad global y budget del actor continúan disponibles. Delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas preemptan el score. Si config, CLI, ledger o adapter no soportan la capacidad, el harness informa `not_available`/`disabled` y conserva el routing SDD determinista existente.
+
+Yield significa liberación segura y auditable, no sacrificio opaco: el checkpoint conserva solo referencias/digests content-free y libera lease/budget después de `recorded` o `duplicate_noop` equivalente. Conflictos, lease stale, owner mismatch, storage unavailable o un yield ordinario después del vencimiento mantienen la assignment activa. Una lease vencida solo se recupera con fencing exacto y un checkpoint durable `lease_expiring` que vuelve la demanda a `waiting`; el reloj nunca libera recursos por sí solo.
+
+### Context Graph y Review Workload Harness
+
+El Context Graph conecta artefactos SDD, tareas, tests, archivos y metadata content-free del Run Ledger mediante referencias explícitas. `lufy-ai context coverage` detecta gaps scenario/task/test; `context review --base <ref>` combina numstat directo, trazabilidad y `workflow_limits.review`; `context metrics` deriva duración de review, rework y defectos reabiertos desde nombres de evento reconocidos.
+
+Estas salidas son evidencia secundaria y bounded. Un grafo missing/stale conserva observaciones Git directas pero marca trazabilidad `unknown`; el runtime nunca entra al discovery genérico. Ningún resultado del grafo reemplaza archivos, tests, reviewer, autorización de delivery, checks remotos, sync o cierre.
+
 También instala:
 
-- templates `sdd-lite.md` y `result-contract.md`;
-- policy de delivery;
+- template `sdd-lite.md` específico de OpenCode y Result Contract neutral;
+- contrato neutral de delivery;
 - skills `sdd-workflow`;
 - comandos `/opsx-*`;
 - comandos `/lufy.*`;
 - plugin Agent Observatory.
 
-OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, sin comandos slash ni plugin Observatory todavía.
+OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, proyecta references/assets desde `.lufy/contracts/` y mantiene lifecycle/rules nativos, sin comandos slash ni plugin Observatory todavía.
 
 ## Decisiones vigentes
 

@@ -13,6 +13,7 @@ Operational guide for coding agents working in this repository.
 - **Spec workflow**: OpenSpec change artifacts in `openspec/`, Lufy SDD artifacts in `.lufy/workflows/sdd/` when selected
 - **SDD routing**: Use proportional T1/T2/T3 routing for proposals, features, and tasks, with methodology chosen by tier
 - **Structural acceptance**: Explicit user-requested folder/layer structures and `.lufy/config/project.yaml` `project_profile` structural expectations are acceptance criteria, not optional style guidance
+- **Surface execution**: Prefer a supplied `surface-execution-plan/v1`, or generate it read-only with `lufy-ai plan`, before interpreting frontend/backend/fullstack scope manually
 
 ## Source Layout
 
@@ -88,6 +89,14 @@ Methodology is tier-aware:
 - Do not split T3 work into artificial micro-deliverables.
 - Delivery is never authorized by tier; Git/GH operations require explicit user authorization and the `delivery` role.
 - Include adapter context in substantive handoffs: `tool_id`, `methodology_id`, `methodology_mode`, `methodology_required`, and `execution_mode`. For Lufy SDD also carry overview `policy`, `status`, refresh trigger and path.
+
+## Adaptive Routing Safety
+
+- Follow `.lufy/contracts/adaptive-routing.md`: `role_hint` is a temporary capability suggestion, not identity, ownership, permission, role creation, or gate authority.
+- `disabled` is the default, `shadow` observes without assignments, and `advisory` requires explicit durable mutation; no autonomous mode exists.
+- Adaptive recommendations may refine orchestrator/router planning only. Delivery, security, public contracts, database schema, and destructive migrations always require human/orchestrator escalation.
+- Confirm an assignment only while its recommendation is the latest projection event and the authoritative CAS still has capacity and actor budget.
+- Safe yield releases adaptive lease/budget only after a durable content-free checkpoint receipt. Expiry alone never releases resources; recover an expired lease only with exact fencing and a durable `lease_expiring` checkpoint to `waiting`. If adaptive support is unavailable, preserve deterministic routing and report `not_available`/`disabled` instead of inventing state.
 
 ## Skill Resolution
 

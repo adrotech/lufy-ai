@@ -68,8 +68,10 @@ func TestGuardPassesWithoutIgnoredOrInternalPaths(t *testing.T) {
 	}
 }
 
-func TestInternalFilesAllowsOnlyUserOwnedLufySDDArtifacts(t *testing.T) {
+func TestInternalFilesAllowsOnlyVersionableLufyArtifacts(t *testing.T) {
 	files := []string{
+		".lufy/contracts/delivery.md",
+		".lufy/contracts/result-contract.md",
 		".lufy/sdd/config.yaml",
 		".lufy/sdd/actions/propose.md",
 		".lufy/workflows/sdd/changes/add-audit/proposal.md",

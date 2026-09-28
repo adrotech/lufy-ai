@@ -13,6 +13,28 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
+## [v0.6.24] - 2026-09-28
+
+### Added
+
+- Surface Execution Plan para detectar superficies frontend, backend y fullstack, componer contratos conectados y seleccionar reglas de validación desde el proyecto.
+- Run Ledger append-only con idempotencia, control de versión, reparación auditable y Result Contract ejecutable para registrar transiciones del Loop Engine sin avanzar gates por texto libre.
+- Context Graph local y Review Workload Harness para recuperar contexto estructural, dimensionar slices y mantener la carga de revisión dentro de límites explícitos.
+- Asignación adaptativa `disabled`/`shadow`/`advisory` con scoring determinista, capacidad y budget acotados, leases con fencing y protocolo de yield durable.
+
+### Changed
+
+- Lufy SDD Full y Lite cubren el ciclo completo de explore, propose, apply, verify, sync y archive, con routing proporcional T1/T2/T3 y validación estricta por change.
+- Harnesses OpenCode y Codex mantienen paridad de agentes, skills, contratos, assets gestionados y Result Contract v1.
+- La orquestación integra Surface Execution, Context Graph, workload de review, Run Ledger y asignación adaptativa sin transferir autoridad de delivery ni avanzar gates automáticamente.
+
+### Fixed
+
+- Run Ledger reintenta de forma acotada la contención transitoria de reemplazos de archivos en Windows y conserva la semántica CAS/idempotente.
+- La confirmación adaptativa revalida recommendation vigente, capacidad global y budget del actor dentro del mismo CAS.
+- La recuperación de leases vencidas exige un checkpoint durable y fenced; no libera recursos implícitamente por reloj.
+- Gates de coupling, paridad root/embedded, privacidad, race, stress, artifacts multi-OS y CI remota quedaron verdes para la promoción.
+
 ## [v0.6.23] - 2026-08-25
 
 ### Added

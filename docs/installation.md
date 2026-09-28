@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión de release preparada en el source tree: `v0.6.23`.
+Versión de release preparada en el source tree: `v0.6.24`.
 
 ## Requisitos
 
@@ -24,9 +24,9 @@ El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario 
 Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.23/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.23 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.24 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap:
@@ -40,8 +40,8 @@ El bootstrap:
 Atajo directo, solo si ya revisaste el script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.23/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.23 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh \
+  | bash -s -- --version v0.6.24 --install-dir "$HOME/.local/bin"
 ```
 
 ## PATH por shell
@@ -68,12 +68,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo
 
-1. Descarga `lufy-ai_v0.6.23_windows_amd64.zip` o `lufy-ai_v0.6.23_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.23_checksums.txt`.
+1. Descarga `lufy-ai_v0.6.24_windows_amd64.zip` o `lufy-ai_v0.6.24_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.6.24_checksums.txt`.
 3. Verifica el hash:
 
    ```powershell
-   Get-FileHash .\lufy-ai_v0.6.23_windows_amd64.zip -Algorithm SHA256
+   Get-FileHash .\lufy-ai_v0.6.24_windows_amd64.zip -Algorithm SHA256
    ```
 
 4. Extrae `lufy-ai.exe` en un directorio de usuario.
@@ -194,7 +194,11 @@ En scope `project`, la CLI gestiona:
 
 La CLI sigue reconociendo la referencia legacy `@lufy-ia.harness.md` para compatibilidad. `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
 
-En Codex, `lufy-ai install --tool codex` instala archivos `.codex/agents/*.toml` como custom agents para roles Lufy y habilita `features.multi_agent` en `.codex/config.toml`. La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
+En Codex, `lufy-ai install --tool codex` instala ocho custom agents en `.codex/agents/*.toml`, habilita `features.multi_agent` y configura lifecycle project-local para `SessionStart`, `SubagentStop`, `Stop` y `SessionEnd`. Los hooks son best-effort, respetan el trust gate de Codex y no leen transcripts ni contenido privado. `doctor` y `verify --deep` validan esta superficie sin exigir plugins o hooks OpenCode.
+
+Los skills Codex son autocontenidos: sus contratos compartidos viven en `.lufy/contracts/`, el PR reviewer recibe `references/review-framework.md` y `assets/report.html`, y la metadata opcional de discovery vive en `agents/openai.yaml`. Una instalación `--tool codex` no crea `.opencode/`.
+
+La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
 
 
 
@@ -339,8 +343,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 `upgrade` requiere versión fija.
 
 ```bash
-lufy-ai upgrade --to v0.6.23 --dry-run
-lufy-ai upgrade --to v0.6.23
+lufy-ai upgrade --to v0.6.24 --dry-run
+lufy-ai upgrade --to v0.6.24
 ```
 
 Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.

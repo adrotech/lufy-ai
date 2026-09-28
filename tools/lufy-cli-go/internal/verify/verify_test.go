@@ -12,6 +12,7 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 )
@@ -66,6 +67,24 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "fail: falta archivo crítico") {
 		t.Fatalf("missing output unexpected: %s", out.String())
+	}
+}
+
+func TestVerifyFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
+	target := validVerifyTarget(t)
+	cfg := projectconfig.ProjectConfig{
+		SchemaVersion:     projectconfig.SchemaVersion,
+		Tool:              domain.ToolCodex,
+		MethodologyByTier: domain.DefaultMethodologyByTier(),
+	}
+	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	var out bytes.Buffer
+	err := NewService().Run(Options{Target: target}, &out)
+	if err == nil || !strings.Contains(out.String(), "tool project=codex install-state=opencode") || !strings.Contains(out.String(), "Recovery") {
+		t.Fatalf("expected harness mismatch failure, err=%v output=%s", err, out.String())
 	}
 }
 
@@ -211,9 +230,9 @@ description: Review a PR or branch and generate the Lufy HTML report.
 
 # PR Reviewer
 
-Use .opencode/skills/pr.reviewer/SKILL.md as the canonical contract.
+Load references/review-framework.md as the canonical checklist.
 Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
-Use templates/report.html when available.
+Use assets/report.html when available.
 Check ignored paths with lufy-ai pr guard --base <base> or git check-ignore -v --no-index --stdin.
 Include Desk check and Scoring.
 Return:

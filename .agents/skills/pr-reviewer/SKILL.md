@@ -7,7 +7,7 @@ description: Review a PR or branch and generate the Lufy HTML report in pr_revie
 
 Use when the user asks for a PR review, PR audit, branch review, or phrases like `pr review de owner/repo#N` from Codex.
 
-This Codex-visible skill MUST follow the Lufy PR review contract, not a chat-only review. If `.opencode/skills/pr.reviewer/SKILL.md` exists, use it as the canonical detailed contract and follow it. If it is not readable, still follow the minimum contract below.
+This Codex-visible skill MUST follow the Lufy PR review contract, not a chat-only review. Load `references/review-framework.md` as the detailed checklist and `assets/report.html` as the canonical visual template. In the Lufy source repository, the neutral sources are `.lufy/contracts/pr-review/review-framework.md` and `.lufy/contracts/pr-review/report.html`.
 
 ## Required Output Artifact
 
@@ -15,7 +15,7 @@ This Codex-visible skill MUST follow the Lufy PR review contract, not a chat-onl
 - Always write a self-contained HTML report named `pr_review/pr-review-<number>-<yyyyMMdd-HHmm>.html`.
 - If the PR has no number, use `pr_review/pr-review-<slug>-<yyyyMMdd-HHmm>.html`.
 - Do not overwrite existing reports; add `-2`, `-3`, etc. on collisions.
-- Use `.opencode/skills/pr.reviewer/templates/report.html` when available, preserving the Notion-dark style markers: `--navy`, `--navy-deep`, `--surface`, `.gauge`, `.scoregrid`, `.issue`, `.final-summary`.
+- Use `assets/report.html`, preserving the Notion-dark style markers: `--navy`, `--navy-deep`, `--surface`, `.gauge`, `.scoregrid`, `.issue`, `.final-summary`.
 - The HTML must be self-contained: inline CSS, no external assets, no CDN, no required JavaScript.
 
 ## Review Scope

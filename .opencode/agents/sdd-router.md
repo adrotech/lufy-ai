@@ -26,6 +26,7 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - Recommend the smallest workflow that can complete the request safely.
 - Resolve the concrete methodology adapter from the effective tier selection; never use the tier or execution mode as a synonym for OpenSpec.
 - When `.lufy/config/project.yaml` context is available, read `project_profile.surfaces` to identify the affected product surface (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`) and carry the matching `agent_lens` and `architecture` into routing context.
+- If a `surface-execution-plan/v1` is already provided, treat its active surfaces, contracts, decisions and validation rule IDs as the canonical surface resolution. This no-shell role must not fabricate or execute the plan command; route read-only repository resolution to `explorer` when the plan is absent and ambiguity matters.
 - Extract explicit user-requested folder structures, layer names, file placement rules or architecture conventions and carry them as `structural_acceptance` criteria. These criteria are acceptance requirements, not style suggestions.
 - When `.lufy/config/project.yaml` context is available, read sizing, routing, proposal slicing, delivery batching, preflight, stop-rule and escalation limits from top-level `workflow_limits` only.
 - When high-uncertainty T1 or multi-risk T2 work may benefit from comparing credible planning alternatives, recommend bounded `artifact_branching` metadata for the orchestrator without creating new roles.
@@ -68,6 +69,15 @@ Use `AGENTS.md` for project-wide conventions and `.opencode/policies/delivery.md
 - If `.lufy/config/project.yaml` declares `context_graph.enabled: true`, route broad discovery through graph preflight first: status plus targeted query when available. Direct config/user-named path reads remain allowed. If hints are unavailable, stale, or not provided, set diagnostics to `not_available`/`stale` and include fallback recovery instead of omitting them silently.
 - If provided, use `context_graph_hints` as required preflight context for likely files, affected surfaces, impact questions or review slices, not as replacement evidence.
 - Never treat graph-derived relationships or inferred impact as evidence stronger than current files, user-provided constraints, diffs, validation evidence, or repository policies.
+- When an upstream handoff already provides `context review`, use only canonical `workflow_limits.review` availability and the reported `proceed|split|escalate` action to refine review slices. Do not execute the command, infer missing budgets, or treat `proceed` as implementation/delivery authority.
+
+## Adaptive Routing Evidence
+
+- Follow `.lufy/contracts/adaptive-routing.md`. A provided adaptive recommendation may be copied into planning as a temporary capability/`role_hint`, but tier, methodology, user scope, isolation, permissions, tool availability, review workload, and acceptance criteria remain independently authoritative.
+- Never create a role, grant permission, change owner, invoke work, or advance a gate from adaptive output. Report `gate_advanced: false` with the recommendation.
+- Delivery, security, public contracts, database schema, and destructive migrations preempt adaptive scoring. Return `escalated` with the required human/orchestrator authority; a recommended `delivery` successor is never Git/GH authorization.
+- `disabled` means no new adaptive assignment; `shadow` observes without assignment/budget/ownership effects; `advisory` still requires explicit durable mutation. No autonomous mode exists.
+- If adaptive config/support/evidence is absent, unavailable, or unsupported by the adapter, set `adaptive_routing: not_available|disabled` and preserve the current deterministic route. Do not downgrade confidence solely because optional adaptive evidence is absent.
 
 ## Governed Parallelism
 

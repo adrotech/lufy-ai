@@ -2,11 +2,20 @@ package projectprofile
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	tea "github.com/charmbracelet/bubbletea"
 )
+
+func TestModelShowsDetectedCapabilities(t *testing.T) {
+	model := NewModel(projectconfig.ProjectConfig{ProjectProfile: projectconfig.ProjectProfile{Surfaces: []projectconfig.ProjectSurface{{ID: "web", Type: "frontend", Capabilities: []string{"realtime", "rendering"}}}}})
+
+	if view := model.View(); !strings.Contains(view, "Capacidades: realtime, rendering") {
+		t.Fatalf("capabilities missing from view: %s", view)
+	}
+}
 
 func TestModelChangesSelectedSurfaceTypeAndLens(t *testing.T) {
 	model := NewModel(projectconfig.ProjectConfig{

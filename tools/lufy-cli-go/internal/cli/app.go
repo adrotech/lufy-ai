@@ -13,6 +13,7 @@ import (
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexlifecycle"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
 	contextstore "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
@@ -60,6 +61,8 @@ func Run(args []string, deps Dependencies) int {
 		return runInit(args[1:], deps)
 	case "scan":
 		return runScan(args[1:], deps)
+	case "plan":
+		return runPlan(args[1:], deps)
 	case "install":
 		return runInstall(args[1:], deps)
 	case "uninstall":
@@ -98,10 +101,18 @@ func Run(args []string, deps Dependencies) int {
 		return runOpsx(args[1:], deps)
 	case "sdd":
 		return runSDD(args[1:], deps)
+	case "run":
+		return runRun(args[1:], deps)
+	case "adaptive":
+		return runAdaptive(args[1:], deps)
+	case "result":
+		return runResult(args[1:], deps)
 	case "pr":
 		return runPR(args[1:], deps)
 	case "context":
 		return runContext(args[1:], deps)
+	case "lifecycle":
+		return runLifecycle(args[1:], deps)
 	case "conflicts":
 		return runConflicts(args[1:], deps)
 	case "version":
@@ -116,6 +127,21 @@ func Run(args []string, deps Dependencies) int {
 		printGeneralHelp(deps.Stderr)
 		return ExitUsageErr
 	}
+}
+
+func runLifecycle(args []string, deps Dependencies) int {
+	if len(args) != 1 || args[0] != "codex" {
+		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai lifecycle codex")
+		return ExitUsageErr
+	}
+	if deps.Stdin == nil {
+		deps.Stdin = os.Stdin
+	}
+	if err := codexlifecycle.NewService().Run(deps.Stdin, deps.Stdout); err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return ExitOK
 }
 
 func runSkills(args []string, deps Dependencies) int {
@@ -330,6 +356,14 @@ func runContext(args []string, deps Dependencies) int {
 		return runContextExplain(args[1:], deps)
 	case "diff":
 		return runContextDiff(args[1:], deps)
+	case "coverage":
+		return runContextCoverage(args[1:], deps)
+	case "trace":
+		return runContextTrace(args[1:], deps)
+	case "review":
+		return runContextReview(args[1:], deps)
+	case "metrics":
+		return runContextMetrics(args[1:], deps)
 	case "-h", "--help", "help":
 		printContextHelp(deps.Stdout)
 		return ExitOK
@@ -491,6 +525,140 @@ func runContextDiff(args []string, deps Dependencies) int {
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
 		fmt.Fprintf(deps.Stdout, "changed files: %d\nimpact nodes: %d\ncommunities: %d\ntoken savings: %s\n", len(res.ChangedFiles), len(res.Impact), len(res.Communities), res.TokenSavings)
+	})
+}
+
+func runContextCoverage(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("coverage", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context coverage [--target <dir>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res := contextapp.NewService().Coverage(*target)
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context coverage: %s (graph=%s scenarios=%d truncated=%t)\n", res.Status, res.GraphStatus, res.TotalScenarios, res.Truncated)
+		for _, scenario := range res.Scenarios {
+			fmt.Fprintf(deps.Stdout, "%s: %s", scenario.ScenarioID, scenario.Status)
+			if len(scenario.Missing) > 0 {
+				fmt.Fprintf(deps.Stdout, " missing=%s", strings.Join(scenario.Missing, ","))
+			}
+			fmt.Fprintln(deps.Stdout)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextTrace(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("trace", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context trace [--target <dir>] [--json] <node>")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 1 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res := contextapp.NewService().Trace(*target, fs.Args()[0])
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		label := res.Status
+		if res.Traced {
+			label = "traced"
+		}
+		fmt.Fprintf(deps.Stdout, "context trace: %s (graph=%s)\n", label, res.GraphStatus)
+		if len(res.Path) > 0 {
+			fmt.Fprintf(deps.Stdout, "path: %s\n", strings.Join(res.Path, " -> "))
+		}
+		if res.Reason != "" {
+			fmt.Fprintf(deps.Stdout, "reason: %s\n", res.Reason)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextReview(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("review", deps)
+	base := fs.String("base", "", "Referencia Git base")
+	concurrentSlices := fs.Int("concurrent-slices", 0, "Slices concurrentes observados")
+	evidenceItems := fs.Int("evidence-items", 0, "Items de evidencia observados")
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context review --base <ref> [--target <dir>] [--concurrent-slices <n>] [--evidence-items <n>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if *base == "" || len(fs.Args()) != 0 || *concurrentSlices < 0 || *evidenceItems < 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	res, err := contextapp.NewService().Review(*target, contextapp.ReviewOptions{Base: *base, ConcurrentSlices: *concurrentSlices, EvidenceItems: *evidenceItems})
+	if err != nil {
+		fmt.Fprintln(deps.Stderr, err.Error())
+		return ExitRuntimeErr
+	}
+	return writeContextResult(deps, *jsonOutput, res, func() {
+		fmt.Fprintf(deps.Stdout, "context review: %s (graph=%s traceability=%s files=%d churn=%d)\n", res.Action, res.GraphStatus, res.Traceability, res.Observations.Files, res.Observations.Churn)
+		for _, violation := range res.Violations {
+			fmt.Fprintf(deps.Stdout, "violation: %s", violation.Code)
+			if violation.Path != "" {
+				fmt.Fprintf(deps.Stdout, " path=%s", violation.Path)
+			}
+			fmt.Fprintln(deps.Stdout)
+		}
+		if res.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
+		}
+	})
+}
+
+func runContextMetrics(args []string, deps Dependencies) int {
+	fs, target, jsonOutput := contextFlagSet("metrics", deps)
+	fs.Usage = func() {
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context metrics [--target <dir>] [--json]")
+	}
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return ExitOK
+		}
+		return ExitUsageErr
+	}
+	if len(fs.Args()) != 0 {
+		fs.Usage()
+		return ExitUsageErr
+	}
+	result := contextapp.NewService().Metrics(*target)
+	return writeContextResult(deps, *jsonOutput, result, func() {
+		duration := "not_available"
+		if result.ReviewDurationMillis != nil {
+			duration = fmt.Sprint(*result.ReviewDurationMillis)
+		}
+		fmt.Fprintf(deps.Stdout, "context metrics: %s (ledger=%s reviews=%d duration_ms=%s rework=%d reopened=%d)\n", result.Status, result.LedgerAvailability, result.CompletedReviews, duration, result.ReworkCount, result.ReopenedDefectCount)
+		for _, missing := range result.Missing {
+			fmt.Fprintf(deps.Stdout, "missing: %s\n", missing)
+		}
+		if result.Recovery != "" {
+			fmt.Fprintf(deps.Stdout, "recovery: %s\n", result.Recovery)
+		}
 	})
 }
 
@@ -1365,7 +1533,11 @@ func runVerify(args []string, deps Dependencies) int {
 			return ExitRuntimeErr
 		}
 	}
-	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: harness.Tool}, deps.Stdout); err != nil {
+	expectedTool := domain.ToolID("")
+	if harness.ToolIsExplicit() {
+		expectedTool = harness.Tool
+	}
+	if err := svc.Run(verify.Options{Target: *target, JSON: *jsonOutput, Quiet: *quiet, Verbose: *verbose, Deep: *deep, Scope: scope, ExpectedTool: expectedTool}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1585,6 +1757,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "Comandos:")
 	fmt.Fprintln(out, "  init      Genera .lufy/config/project.yaml stack-aware")
 	fmt.Fprintln(out, "  scan      Escanea stacks/superficies y actualiza project.yaml")
+	fmt.Fprintln(out, "  plan      Resuelve superficies y validaciones para un cambio")
 	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
@@ -1604,8 +1777,12 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
+	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
+	fmt.Fprintln(out, "  adaptive  Recomienda y registra asignaciones/yields adaptativos acotados")
+	fmt.Fprintln(out, "  result    Valida, normaliza y evalúa Result Contracts")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
+	fmt.Fprintln(out, "  lifecycle Ejecuta lifecycle portable para adapters soportados")
 	fmt.Fprintln(out, "  conflicts Planifica conflictos de install sin mutar")
 	fmt.Fprintln(out, "  upgrade   Actualiza el binario lufy-ai a una versión fija")
 	fmt.Fprintln(out, "  version   Muestra versión, commit, build date y plataforma")
@@ -1641,6 +1818,10 @@ func printContextHelp(out io.Writer) {
 	fmt.Fprintln(out, "  path      Calcula un camino explicable entre nodos")
 	fmt.Fprintln(out, "  explain   Explica por qué existe un nodo o edge")
 	fmt.Fprintln(out, "  diff      Resume impacto desde git diff --base <ref>")
+	fmt.Fprintln(out, "  coverage  Reporta cobertura explícita scenario-task-test")
+	fmt.Fprintln(out, "  trace     Sigue trazabilidad forward desde un nodo")
+	fmt.Fprintln(out, "  review    Evalúa diff, trazabilidad y budgets de revisión")
+	fmt.Fprintln(out, "  metrics   Deriva métricas content-free desde Run Ledger")
 }
 
 func printOpsxHelp(out io.Writer) {

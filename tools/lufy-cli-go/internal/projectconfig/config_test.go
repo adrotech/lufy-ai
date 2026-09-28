@@ -1,6 +1,7 @@
 package projectconfig
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -79,6 +80,94 @@ func TestScanDetectsTypeScriptNextStack(t *testing.T) {
 		!contains(surface.AgentLens.ValidationExpectations, "feature_boundary_review") ||
 		!contains(surface.AgentLens.ValidationExpectations, "structural_acceptance_audit") {
 		t.Fatalf("unexpected frontend surface: %#v", surface)
+	}
+}
+
+func TestProjectSurfaceCapabilitiesRoundTripAndSurviveRescan(t *testing.T) {
+	current := ProjectConfig{ProjectProfile: ProjectProfile{Surfaces: []ProjectSurface{{
+		ID:           "web-app",
+		Type:         "frontend",
+		Roots:        []string{"web"},
+		Capabilities: []string{"realtime", "rendering", "offline"},
+	}}}}
+	detected := ProjectConfig{ProjectProfile: ProjectProfile{Surfaces: []ProjectSurface{{ID: "web-app", Type: "frontend", Roots: []string{"web"}, Capabilities: []string{"desktop-shell"}}}}}
+
+	merged := MergeRescan(current, detected)
+	data, err := Marshal(merged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "capabilities:") || !strings.Contains(string(data), "realtime") {
+		t.Fatalf("capabilities missing from yaml: %s", data)
+	}
+	path := filepath.Join(t.TempDir(), "project.yaml")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if surface := requireSurface(t, loaded, "web-app"); !contains(surface.Capabilities, "realtime") || !contains(surface.Capabilities, "offline") || !contains(surface.Capabilities, "desktop-shell") {
+		t.Fatalf("capabilities did not round-trip: %#v", surface.Capabilities)
+	}
+}
+
+func TestRunLedgerConfigRoundTripsAndSurvivesRescan(t *testing.T) {
+	disabled := false
+	current := ProjectConfig{RunLedger: RunLedgerConfig{
+		Enabled: &disabled,
+		Root:    ".lufy/runtime/custom",
+		Retention: RunLedgerRetentionConfig{
+			MaxAgeDays:      7,
+			MaxTerminalRuns: 25,
+			MaxBytes:        1024,
+			Extra:           map[string]any{"future_retention": "preserved"},
+		},
+		Extra: map[string]any{"future_option": true},
+	}}
+	detected := ProjectConfig{RunLedger: DefaultRunLedgerConfig()}
+	merged := MergeRescan(current, detected)
+	if merged.RunLedger.IsEnabled() || merged.RunLedger.Root != ".lufy/runtime/custom" || merged.RunLedger.Retention.MaxAgeDays != 7 {
+		t.Fatalf("run ledger overrides not preserved: %#v", merged.RunLedger)
+	}
+
+	body, err := Marshal(merged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "project.yaml")
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.RunLedger.IsEnabled() || loaded.RunLedger.Retention.Extra["future_retention"] != "preserved" || loaded.RunLedger.Extra["future_option"] != true {
+		t.Fatalf("run ledger did not round-trip: %#v", loaded.RunLedger)
+	}
+}
+
+func TestScanDetectsInteractiveApplicationCapabilities(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "package.json", `{"dependencies":{"react":"19.0.0","phaser":"3.90.0","dexie":"4.0.0","@tauri-apps/api":"2.0.0"},"devDependencies":{"typescript":"5.0.0","vite-plugin-pwa":"1.0.0"}}`)
+	writeFile(t, root, "tsconfig.json", "{}")
+	writeFile(t, root, "go.mod", "module example.com/interactive\n\ngo 1.24\n")
+	writeFile(t, root, "api/openapi.yaml", "openapi: 3.0.0\n")
+
+	cfg, err := Scan(root, fixedTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	surface := requireSurface(t, cfg, "web-app")
+	for _, capability := range []string{"desktop-shell", "offline", "persistent-state", "realtime", "rendering"} {
+		if !contains(surface.Capabilities, capability) {
+			t.Fatalf("missing capability %s: %#v", capability, surface.Capabilities)
+		}
+		if fullstack := requireSurface(t, cfg, "fullstack-flow"); !contains(fullstack.Capabilities, capability) {
+			t.Fatalf("fullstack did not inherit capability %s: %#v", capability, fullstack.Capabilities)
+		}
 	}
 }
 
@@ -1003,6 +1092,103 @@ func TestProjectConfigHelpers(t *testing.T) {
 	}
 	if stackSummary(nil) != "ninguno" || !strings.Contains(stackSummary([]Stack{{ID: "old", Deprecated: true}}), "deprecated") {
 		t.Fatalf("stackSummary unexpected")
+	}
+}
+
+func TestMergeHarnessSelectionPreservesProjectFieldsAndCanRollback(t *testing.T) {
+	target := t.TempDir()
+	path := Path(target)
+	writeFile(t, target, ProjectConfigPath, `schema_version: 1
+tool: opencode
+methodology_by_tier:
+  T1: {id: openspec, mode: full, required: true}
+  T2: {id: openspec, mode: lite, required: true}
+  T3: {id: none, mode: none, required: false}
+stacks:
+  - id: go
+    supported: true
+    frameworks: []
+    custom_stack_key: keep-stack
+workflow_limits:
+  sizing:
+    loc_budget: 321
+  routing:
+    strategy: proportional
+  proposal_slicing_strategy: review-slices
+  delivery_batch_strategy: bounded
+  stop_rules: [stop]
+  preflight: [preflight]
+  custom_limit_key: keep-limit
+memory:
+  provider: obsidian
+  root: .lufy/memory
+  vault: .lufy/memory
+  schema_version: 1
+context_graph:
+  enabled: true
+  root: .lufy/context
+  report: .lufy/context/report.md
+custom_root_key: keep-root
+`)
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	harness := domain.DefaultHarnessConfig()
+	harness.Tool = domain.ToolCodex
+	harness.MethodologyByTier[domain.TierT2] = domain.MethodologySelection{ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true}
+
+	merge, err := NewService().MergeHarnessSelection(target, harness)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !merge.Changed {
+		t.Fatal("expected harness merge")
+	}
+	merged, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.Tool != domain.ToolCodex || merged.MethodologyByTier[domain.TierT2].ID != domain.MethodologyLufyWorkflow {
+		t.Fatalf("harness selection not merged: %#v", merged)
+	}
+	if merged.WorkflowLimits.Sizing.LOCBudget != 321 || merged.Extra["custom_root_key"] != "keep-root" || merged.WorkflowLimits.Extra["custom_limit_key"] != "keep-limit" || merged.Stacks[0].Extra["custom_stack_key"] != "keep-stack" {
+		t.Fatalf("user-managed fields were not preserved: %#v", merged)
+	}
+	if err := merge.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatalf("rollback did not restore original config\nbefore:\n%s\nafter:\n%s", before, after)
+	}
+}
+
+func TestMergeHarnessSelectionCreatesCanonicalProjectConfig(t *testing.T) {
+	target := t.TempDir()
+	harness := domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	merge, err := NewService().MergeHarnessSelection(target, harness)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !merge.Changed || !merge.Created {
+		t.Fatalf("expected created merge: %#v", merge)
+	}
+	cfg, err := Load(Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Tool != domain.ToolCodex {
+		t.Fatalf("tool = %s", cfg.Tool)
+	}
+	if err := merge.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(Path(target)); !os.IsNotExist(err) {
+		t.Fatalf("created config survived rollback: %v", err)
 	}
 }
 

@@ -51,7 +51,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 - Comandos `/opsx-*`.
 - Comandos `/lufy.*` instalables según catálogo, incluyendo `/lufy.context` y `/lufy.mem-*`.
 - Agent Observatory TUI.
-- Superficie Codex core instalable con `lufy-ai install --tool codex`: custom agents Lufy bajo `.codex/agents`, multi-agent habilitado en `.codex/config.toml`, mapeo explícito native/emulated/inline y contrato `@<rol-lufy>` como delegación en `.codex/lufy-agent-mapping.md`, skills/workflows repo-locales bajo `.agents/skills`, `.codex/hooks.json`, `.codex/rules` y bloque gestionado en `AGENTS.md`.
+- Superficie Codex core autocontenida con `lufy-ai install --tool codex`: ocho custom agents bajo `.codex/agents`, multi-agent, lifecycle SessionStart/SubagentStop/Stop/SessionEnd, rules conservadoras, mapeo native/emulated/inline, skills con progressive disclosure y contratos neutrales bajo `.lufy/contracts/`; no requiere `.opencode/`.
 - OpenSpec core v2/stay-updated: config action-based, specs delta, `/opsx-sync`, `UPSTREAM.json`, `opsx-version` y resolver PATH/cache/embedded.
 - Lufy SDD inicial bajo `.lufy/workflows/sdd/` cuando se selecciona.
 
@@ -67,7 +67,7 @@ Este documento separa capacidades reales de roadmap. El README debe enlazar solo
 ## Pendiente o futuro
 
 - Plugin marketplace, Observatory y reporting avanzado para Codex.
-- Validación Go/CI, delivery y release del candidate Lufy SDD Full/Lite con overview HTML integrado implementado en `complete-lufy-sdd-full-workflow`; no está disponible en la release actual.
+- Delivery y release del candidate Lufy SDD Full/Lite con overview HTML integrado; la matriz Codex local ya cubre install, validate, sync y archive, pero la release publicada todavía no incorpora este conjunto.
 - Templates por stack como paquetes instalables.
 - Subagentes de dominio adicionales.
 - Planner 8-state completo.

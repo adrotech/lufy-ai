@@ -150,3 +150,84 @@ func ChangedFiles(root, base string) ([]string, error) {
 	sort.Strings(files)
 	return files, nil
 }
+
+const maxReviewStatFiles = 128
+
+type ReviewFileStat struct {
+	Path      string `json:"path"`
+	Additions int    `json:"additions"`
+	Deletions int    `json:"deletions"`
+	Binary    bool   `json:"binary"`
+}
+
+type ReviewStats struct {
+	TotalFiles int              `json:"total_files"`
+	Additions  int              `json:"additions"`
+	Deletions  int              `json:"deletions"`
+	Churn      int              `json:"churn"`
+	Files      []ReviewFileStat `json:"files"`
+	Truncated  bool             `json:"truncated"`
+}
+
+func CollectReviewStats(root, base string) (ReviewStats, error) {
+	cmd := exec.Command("git", "diff", "--numstat", "--no-renames", "-z", "--end-of-options", base, "--")
+	cmd.Dir = root
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		return ReviewStats{}, fmt.Errorf("git diff --numstat base %q failed", sanitizedGitBase(base))
+	}
+	all := make([]ReviewFileStat, 0)
+	for _, record := range bytes.Split(stdout.Bytes(), []byte{0}) {
+		if len(record) == 0 {
+			continue
+		}
+		parts := bytes.SplitN(record, []byte{'\t'}, 3)
+		if len(parts) != 3 {
+			continue
+		}
+		stat := ReviewFileStat{Path: normalizeGitPath(string(parts[2]))}
+		if string(parts[0]) == "-" || string(parts[1]) == "-" {
+			stat.Binary = true
+		} else {
+			if _, err := fmt.Sscan(string(parts[0]), &stat.Additions); err != nil {
+				continue
+			}
+			if _, err := fmt.Sscan(string(parts[1]), &stat.Deletions); err != nil {
+				continue
+			}
+		}
+		all = append(all, stat)
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].Path < all[j].Path })
+	result := ReviewStats{TotalFiles: len(all)}
+	for _, stat := range all {
+		result.Additions += stat.Additions
+		result.Deletions += stat.Deletions
+	}
+	result.Churn = result.Additions + result.Deletions
+	limit := len(all)
+	if limit > maxReviewStatFiles {
+		limit = maxReviewStatFiles
+		result.Truncated = true
+	}
+	result.Files = append([]ReviewFileStat(nil), all[:limit]...)
+	return result, nil
+}
+
+func normalizeGitPath(path string) string {
+	path = filepath.ToSlash(filepath.Clean(path))
+	return strings.TrimPrefix(path, "./")
+}
+
+func sanitizedGitBase(base string) string {
+	if len(base) > 128 {
+		base = base[:128]
+	}
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return '?'
+		}
+		return r
+	}, base)
+}

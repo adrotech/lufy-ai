@@ -25,7 +25,7 @@
 
 `lufy-ai` es un harness instalable. No reemplaza tu stack, no genera una app y no fuerza una metodología única. Agrega una capa operativa sobre un repositorio para coordinar agentes, reglas de workflow, specs, validación, delivery, memoria local, grafo de contexto y assets gestionados.
 
-La versión actual instala el preset productivo **OpenCode + OpenSpec**. El core ya está orientado a arquitectura hexagonal: tiers, roles, Result Contract, policies, validación y managed assets viven como dominio neutral; OpenCode, OpenSpec y Lufy SDD son adapters seleccionables o modelados alrededor de ese dominio.
+La versión publicada mantiene **OpenCode + OpenSpec** como preset productivo principal. El source tree ya valida también una instalación Codex project-local autocontenida. El core sigue una arquitectura hexagonal: tiers, roles, Result Contract, policies, validación y managed assets viven como dominio neutral; OpenCode, Codex, OpenSpec y Lufy SDD se seleccionan como adapters.
 
 El objetivo de producto es que Lufy sea el harness y que la tool sea reemplazable: hoy OpenCode es el preset productivo principal, Codex ya tiene adapter core escribible project-local y Claude Code sigue como preview dry-run hasta que exista una superficie validada.
 
@@ -49,14 +49,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Versión de release preparada en el source tree: `v0.6.23`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Versión de release preparada en el source tree: `v0.6.24`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.23/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.23 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.24 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan end-to-end sobre tu repo
@@ -77,6 +77,16 @@ lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --scope project --d
 ```
 
 `init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
+
+Antes de implementar, `plan` convierte esas superficies en un alcance ejecutable y explicable:
+
+```bash
+lufy-ai plan --target /ruta/a/tu/proyecto --base origin/develop
+lufy-ai plan --target /ruta/a/tu/proyecto --files web/src/App.tsx,api/openapi.yaml --json
+lufy-ai plan --target /ruta/a/tu/proyecto --surface web-app --capabilities realtime,rendering,offline,persistent-state,desktop-shell
+```
+
+El comando es read-only: resuelve la superficie activa, eleva contratos conectados a una composición fullstack y propone evidencia de validación, pero no ejecuta comandos. `project_profile.surfaces[*].capabilities` permite declarar políticas portables para aplicaciones interactivas sin hardcodear un tipo de producto.
 
 `memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. La configuracion canonica de memoria/vault vive en `.lufy/config/project.yaml`; el contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter/backlinks, busca notas y persiste conocimiento con `lufy-ai memory validate|search|capture|connect|index`.
 
@@ -138,8 +148,9 @@ Para cerrar la sesión con trazabilidad local:
 | Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
 | Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
 | Codex core | `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | Roles, skills, hooks, reglas y config project-locales cuando se instala con `--tool codex`. |
+| Contratos neutrales | `.lufy/contracts/` | Delivery, Result Contract y recursos de PR review compartidos; cada adapter conserva sólo su overlay. |
 | OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
-| Lufy SDD | `.lufy/workflows/sdd/` | Superficie opcional Full/Lite con lifecycle nativo, routing por tier y `change-overview.html` automático; permanece pendiente la validación Go/CI y el delivery del candidate. |
+| Lufy SDD | `.lufy/workflows/sdd/` | Superficie opcional Full/Lite con lifecycle nativo, routing por tier y `change-overview.html` automático; validada localmente y pendiente de delivery/release. |
 | Harness doc | `lufy-ia.harness.md` | Instrucciones compartidas legacy; `AGENTS.md` usa bloque LUFY gestionado compacto. |
 | Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
 
@@ -209,6 +220,7 @@ Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool cla
 | `lufy-ai menu` | Abre un command palette Bubble Tea en TTY; también aparece cuando ejecutas `lufy-ai` sin argumentos en una terminal interactiva. |
 | `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
 | `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
+| `lufy-ai plan` | Genera un plan read-only y determinístico de superficies, contratos, capacidades y validaciones desde selección explícita, archivos o Git diff. |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
 | `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
@@ -420,6 +432,7 @@ No disponible como feature escribible todavía:
 | [`docs/installation.md`](docs/installation.md) | Instalación del binario, PATH, install/uninstall/reinstall y troubleshooting. |
 | [`docs/getting-started.md`](docs/getting-started.md) | Walkthrough de uso diario y flujo de repo destino. |
 | [`docs/architecture.md`](docs/architecture.md) | Arquitectura hexagonal, adapters, ownership y lifecycle. |
+| [`docs/run-ledger.md`](docs/run-ledger.md) | Observabilidad causal local, CLI, privacidad, retención y recovery de runs agentes. |
 | [`docs/status.md`](docs/status.md) | Estado implementado vs pendiente. |
 | [`docs/backlog.md`](docs/backlog.md) | Backlog estratégico y prioridades. |
 | [`docs/roadmap.md`](docs/roadmap.md) | Evolución futura y límites de roadmap. |

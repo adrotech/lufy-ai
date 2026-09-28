@@ -3,9 +3,13 @@ package cli
 import "io"
 
 const (
-	ExitOK         = 0
-	ExitRuntimeErr = 1
-	ExitUsageErr   = 2
+	ExitOK                = 0
+	ExitRuntimeErr        = 1
+	ExitUsageErr          = 2
+	ExitResultInvalid     = 3
+	ExitResultRejected    = 4
+	ExitResultConflict    = 5
+	ExitResultUnavailable = 6
 )
 
 type Dependencies struct {

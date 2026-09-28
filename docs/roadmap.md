@@ -42,7 +42,7 @@ Estado actual documentable:
 - Harness SDD proporcional instalable: `sdd-router`, T1/T2/T3, SDD Lite, result contracts, context slicing, review workload y skill resolution local-first.
 - Foundation hexagonal implementada: core neutral, `opencode` escribible, `codex` escribible core, `claude-code` dry-run, metodología por tier con `openspec`, `lufy-sdd` y `none`.
 - Review Workload Harness instalable: slices revisables para features/propuestas grandes, sin forzar micro-entregables en T3.
-- Templates de proceso instalables: `.opencode/templates/sdd-lite.md` y `.opencode/templates/result-contract.md`.
+- Contratos y templates instalables: `.opencode/templates/sdd-lite.md` y el contrato neutral `.lufy/contracts/result-contract.md`.
 - Workflow mínimo `.github/workflows/go-cli-install.yml` presente en esta rama para tests/build/smokes de la CLI Go y `git diff --check`; su existencia no implica archive automático de proposals OpenSpec.
 - Distribución versionada implementada en la rama: `lufy-ai version`, artifacts release por OS/arch, checksums SHA-256, bootstrap `scripts/bootstrap.sh` y assets embebidos para instalar sin checkout fuente. Las releases públicas instalables dependen de publicar tags `v*` desde commits alcanzables desde `main` y sus artifacts en GitHub Releases; antes de que exista un tag publicado, el bootstrap solo funciona contra fixtures/local mirrors o fallará al intentar descargar la release inexistente.
 - README, `docs/getting-started.md` y README de la CLI ya describen el flujo sin clone con pinning/inspección, sujeto a que exista la release pública taggeada correspondiente.
@@ -60,8 +60,8 @@ No son capacidades instalables actuales:
 - consumidores completos de `.lufy/config/project.yaml` para todos los agentes/skills; `init` ya genera configuración stack-aware, pero no implica templates por stack instalables;
 - subagentes especializados adicionales como `infra-cloud-sre`, `react-ui`, `nextjs-app-router` o `astro-islands-content`.
 - instalación automática de skills externas; AutoSkills solo queda como bootstrap opcional con dry-run y autorización explícita.
-- instalación real/escribible sobre Claude Code y superficies avanzadas de Codex.
-- Lufy SDD Full/Lite tiene candidate nativo con overview HTML integrado en `complete-lufy-sdd-full-workflow`; sigue fuera de la release instalable hasta completar validación Go/CI y delivery.
+- instalación real/escribible sobre Claude Code y superficies avanzadas de Codex más allá del core project-local validado.
+- Lufy SDD Full/Lite tiene candidate nativo con overview HTML integrado y matriz Codex local validada; sigue fuera de la release instalable hasta completar delivery.
 
 Esos elementos se conservan abajo como roadmap para futuras iteraciones y solo deberían moverse al README cuando existan como assets reales, estén instalados por la CLI y tengan validación local/CI coherente.
 

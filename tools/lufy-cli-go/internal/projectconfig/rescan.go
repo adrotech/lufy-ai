@@ -74,6 +74,22 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 	} else {
 		items = append(items, DriftItem{Category: "parallel_execution", Severity: "info", Path: "parallel_execution", Status: "applied", SuggestedAction: "Se agregó estrategia de paralelismo gobernada por review_slices independientes."})
 	}
+	if !isZeroAdaptiveRoutingConfig(current.AdaptiveRouting) {
+		merged.AdaptiveRouting = mergeAdaptiveRoutingConfig(current.AdaptiveRouting, detected.AdaptiveRouting)
+		if !reflect.DeepEqual(current.AdaptiveRouting, merged.AdaptiveRouting) {
+			items = append(items, DriftItem{Category: "adaptive_routing", Severity: "info", Path: "adaptive_routing", Status: "applied", SuggestedAction: "Se completaron defaults de routing adaptativo preservando overrides y sin activar el feature."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "adaptive_routing", Severity: "info", Path: "adaptive_routing", Status: "applied", SuggestedAction: "Se agregó routing adaptativo en modo shadow y deshabilitado por defecto."})
+	}
+	if !isZeroRunLedgerConfig(current.RunLedger) {
+		merged.RunLedger = mergeRunLedgerConfig(current.RunLedger, detected.RunLedger)
+		if !reflect.DeepEqual(current.RunLedger, merged.RunLedger) {
+			items = append(items, DriftItem{Category: "run_ledger", Severity: "info", Path: "run_ledger", Status: "applied", SuggestedAction: "Se completaron defaults del Run Ledger preservando overrides existentes."})
+		}
+	} else {
+		items = append(items, DriftItem{Category: "run_ledger", Severity: "info", Path: "run_ledger", Status: "applied", SuggestedAction: "Se agregó configuración local y privacy-first del Run Ledger."})
+	}
 	if len(current.TDD.EdgeCaseCategories) > 0 || current.TDD.Strict || current.TDD.TriangulateRequired {
 		merged.TDD = current.TDD
 	}
@@ -197,6 +213,9 @@ func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
 	if current.Routing.Strategy != "" || len(current.Routing.Extra) > 0 {
 		merged.Routing = mergeWorkflowRouting(current.Routing, defaults.Routing)
 	}
+	if !reflect.DeepEqual(current.Review, WorkflowReviewLimits{}) {
+		merged.Review = mergeWorkflowReviewLimits(current.Review, defaults.Review)
+	}
 	if current.ProposalSlicingStrategy != "" {
 		merged.ProposalSlicingStrategy = current.ProposalSlicingStrategy
 	}
@@ -208,6 +227,26 @@ func mergeWorkflowLimits(current, defaults WorkflowLimits) WorkflowLimits {
 	}
 	if len(current.Preflight) > 0 {
 		merged.Preflight = current.Preflight
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func mergeWorkflowReviewLimits(current, defaults WorkflowReviewLimits) WorkflowReviewLimits {
+	merged := defaults
+	if current.MaxFilesPerSlice != 0 {
+		merged.MaxFilesPerSlice = current.MaxFilesPerSlice
+	}
+	if current.MaxChurnLinesPerSlice != 0 {
+		merged.MaxChurnLinesPerSlice = current.MaxChurnLinesPerSlice
+	}
+	if current.MaxConcurrentSlices != 0 {
+		merged.MaxConcurrentSlices = current.MaxConcurrentSlices
+	}
+	if current.MinEvidenceItems != 0 {
+		merged.MinEvidenceItems = current.MinEvidenceItems
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra
@@ -236,8 +275,9 @@ func mergeProjectProfile(current, detected ProjectProfile) ProjectProfile {
 	}
 	byID := map[string]bool{}
 	for i, surface := range merged.Surfaces {
-		if isZeroArchitecture(surface.Architecture) {
-			if fresh, ok := detectedByID[surface.ID]; ok && !isZeroArchitecture(fresh.Architecture) {
+		if fresh, ok := detectedByID[surface.ID]; ok {
+			surface.Capabilities = unique(append(surface.Capabilities, fresh.Capabilities...))
+			if isZeroArchitecture(surface.Architecture) && !isZeroArchitecture(fresh.Architecture) {
 				surface.Architecture = fresh.Architecture
 			}
 		}
@@ -364,6 +404,68 @@ func mergeParallelExecutionConfig(current, defaults ParallelExecutionConfig) Par
 	}
 	if current.ValidationMode != "" {
 		merged.ValidationMode = current.ValidationMode
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroAdaptiveRoutingConfig(config AdaptiveRoutingConfig) bool {
+	return reflect.DeepEqual(config, AdaptiveRoutingConfig{})
+}
+
+func mergeAdaptiveRoutingConfig(current, defaults AdaptiveRoutingConfig) AdaptiveRoutingConfig {
+	merged := defaults
+	merged.Enabled = current.Enabled
+	if current.Mode != "" {
+		merged.Mode = current.Mode
+	}
+	if current.PolicyVersion != "" {
+		merged.PolicyVersion = current.PolicyVersion
+	}
+	if current.LeaseTTLSeconds != 0 {
+		merged.LeaseTTLSeconds = current.LeaseTTLSeconds
+	}
+	if current.MaxCandidates != 0 {
+		merged.MaxCandidates = current.MaxCandidates
+	}
+	if current.MaxWaitingItems != 0 {
+		merged.MaxWaitingItems = current.MaxWaitingItems
+	}
+	if current.StarvationAfterCycles != 0 {
+		merged.StarvationAfterCycles = current.StarvationAfterCycles
+	}
+	if len(current.Extra) > 0 {
+		merged.Extra = current.Extra
+	}
+	return merged
+}
+
+func isZeroRunLedgerConfig(config RunLedgerConfig) bool {
+	return reflect.DeepEqual(config, RunLedgerConfig{})
+}
+
+func mergeRunLedgerConfig(current, defaults RunLedgerConfig) RunLedgerConfig {
+	merged := defaults
+	if current.Enabled != nil {
+		enabled := *current.Enabled
+		merged.Enabled = &enabled
+	}
+	if current.Root != "" {
+		merged.Root = current.Root
+	}
+	if current.Retention.MaxAgeDays != 0 {
+		merged.Retention.MaxAgeDays = current.Retention.MaxAgeDays
+	}
+	if current.Retention.MaxTerminalRuns != 0 {
+		merged.Retention.MaxTerminalRuns = current.Retention.MaxTerminalRuns
+	}
+	if current.Retention.MaxBytes != 0 {
+		merged.Retention.MaxBytes = current.Retention.MaxBytes
+	}
+	if len(current.Retention.Extra) > 0 {
+		merged.Retention.Extra = current.Retention.Extra
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

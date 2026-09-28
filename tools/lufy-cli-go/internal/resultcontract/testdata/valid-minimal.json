@@ -1,0 +1,70 @@
+{
+  "schema_version": "result-contract/v1",
+  "status": "ready",
+  "legacy_fallback": false,
+  "executive_summary": "Slice A listo para validar.",
+  "artifacts": {
+    "changed": ["none"],
+    "referenced": [".lufy/contracts/result-contract.md"]
+  },
+  "evidence": {
+    "commands": [{"command": "none", "result": "not_run", "notes": "not_applicable"}],
+    "static": ["contrato tipado"]
+  },
+  "surface_execution": {
+    "schema_version": "not_applicable",
+    "source": "not_applicable",
+    "primary_surface": "not_available",
+    "mode": "not_applicable",
+    "active_surfaces": ["not_applicable"],
+    "validation_rule_ids": ["not_applicable"]
+  },
+  "workflow_decision": {
+    "tier": "T1",
+    "program_tier": "T1",
+    "slice_tier": "T1",
+    "fast_path_allowed": false,
+    "adapter_context": {
+      "tool_id": "codex",
+      "methodology_id": "lufy-sdd",
+      "methodology_mode": "full",
+      "methodology_required": true,
+      "execution_mode": "full-sdd"
+    },
+    "workflow_limits_source": "not_available",
+    "workflow_limits_paths": {
+      "sizing": "not_available",
+      "routing": "not_available",
+      "proposal_slicing": "not_available",
+      "delivery_batching": "not_applicable",
+      "preflight": "not_available",
+      "stop_rules": "not_available"
+    },
+    "workload_decision_needed": true,
+    "review_slices": ["Slice A"],
+    "preflight_status": "not_available",
+    "stop_rule_status": "not_available",
+    "delivery_batching_guidance": "not_applicable",
+    "artifact_branching": {
+      "status": "not_needed",
+      "stage": "not_applicable",
+      "candidate_count": "not_applicable",
+      "reason": "not_applicable",
+      "parallel_allowed": false,
+      "requires_join": false,
+      "candidate_isolation": "not_applicable",
+      "merge_plan_required": false,
+      "human_escalation_triggers": ["not_applicable"],
+      "candidate_paths": ["not_applicable"],
+      "canonical_artifact_set": [".lufy/workflows/sdd/changes/make-result-contract-executable"]
+    }
+  },
+  "risks": ["none"],
+  "next_recommended": {"owner": "implementer", "action": "Implementar el decoder estricto."},
+  "skill_resolution": {
+    "local_skills_used": ["lufy-sdd-apply"],
+    "selected_skill_paths": [".agents/skills/lufy-sdd-apply/SKILL.md"],
+    "bootstrap_recommended": false,
+    "notes": "not_applicable"
+  }
+}

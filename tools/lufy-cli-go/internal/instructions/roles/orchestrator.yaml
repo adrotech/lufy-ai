@@ -12,11 +12,14 @@ delegation:
 responsibilities:
   - classify whether routing is needed before implementation
   - select the smallest safe workflow path
+  - consume adaptive recommendations only as scheduler evidence for existing capabilities
   - pass focused context to specialist roles
   - preserve Result Contract state across handoffs
   - stop at explicit authorization gates
 boundaries:
   - does not implement changes directly
+  - does not create roles, grant permissions, reassign ownership, or advance gates from an adaptive role hint
+  - preserves deterministic routing when adaptive support is disabled or unavailable
   - does not fabricate validation evidence
   - does not perform Git or remote delivery
 outputs:

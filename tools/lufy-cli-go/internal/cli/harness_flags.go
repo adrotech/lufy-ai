@@ -25,24 +25,48 @@ func (m *methodologyTierFlags) Set(value string) error {
 
 type harnessFlagValues struct {
 	Tool            *string
+	ToolExplicit    *bool
 	MethodologyTier *methodologyTierFlags
 }
 
+type trackedStringFlag struct {
+	value    *string
+	explicit *bool
+}
+
+func (f trackedStringFlag) String() string {
+	if f.value == nil {
+		return ""
+	}
+	return *f.value
+}
+
+func (f trackedStringFlag) Set(value string) error {
+	*f.value = value
+	*f.explicit = true
+	return nil
+}
+
 func addHarnessFlags(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: "+writableToolList())
+	tool := string(domain.ToolInitialDefault)
+	toolExplicit := false
+	fs.Var(trackedStringFlag{value: &tool, explicit: &toolExplicit}, "tool", "Tool adapter efectivo: "+writableToolList())
 	methodologyTier := methodologyTierFlags{}
 	fs.Var(&methodologyTier, "methodology-tier", "Override por tier: T1:openspec/full, T2:openspec/lite o T3:none; repetible")
-	return harnessFlagValues{Tool: tool, MethodologyTier: &methodologyTier}
+	return harnessFlagValues{Tool: &tool, ToolExplicit: &toolExplicit, MethodologyTier: &methodologyTier}
 }
 
 func addToolFlag(fs *flag.FlagSet) harnessFlagValues {
-	tool := fs.String("tool", string(domain.ToolInitialDefault), "Tool adapter efectivo: "+writableToolList())
-	return harnessFlagValues{Tool: tool}
+	tool := string(domain.ToolInitialDefault)
+	toolExplicit := false
+	fs.Var(trackedStringFlag{value: &tool, explicit: &toolExplicit}, "tool", "Tool adapter efectivo: "+writableToolList())
+	return harnessFlagValues{Tool: &tool, ToolExplicit: &toolExplicit}
 }
 
 func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 	cfg := domain.DefaultHarnessConfig()
-	if values.Tool != nil {
+	toolExplicit := values.Tool != nil && (values.ToolExplicit == nil || *values.ToolExplicit)
+	if toolExplicit {
 		tool := domain.ToolID(strings.TrimSpace(*values.Tool))
 		if tool == "" {
 			return domain.HarnessConfig{}, fmt.Errorf("--tool no puede estar vacío")
@@ -51,6 +75,7 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 			return domain.HarnessConfig{}, fmt.Errorf("tool adapter no soportado para escritura: %s; disponibles: %s", tool, writableToolList())
 		}
 		cfg.Tool = tool
+		cfg.Provenance.Tool = domain.HarnessSourceExplicit
 	}
 	if values.MethodologyTier != nil {
 		for _, raw := range *values.MethodologyTier {
@@ -59,6 +84,7 @@ func parseHarnessFlags(values harnessFlagValues) (domain.HarnessConfig, error) {
 				return domain.HarnessConfig{}, err
 			}
 			cfg.MethodologyByTier[tier] = selection
+			cfg.Provenance.MethodologyByTier[tier] = domain.HarnessSourceExplicit
 		}
 	}
 	if err := cfg.ValidateSupported(); err != nil {

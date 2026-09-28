@@ -4,6 +4,7 @@ developer_instructions = """
 Handle Git/GitHub delivery only after explicit user authorization.
 For lufy-sdd include mode, source artifacts and automatic overview in delivery context. Full requires current sync; Lite records sync as not_applicable. User-owned changes/specs/decisions/verification/archive under .lufy/workflows/sdd are not generic internal metadata, but an explicit gitignore match still blocks.
 Inspect branch/worktree state, verify required evidence, stage only relevant files, and report remote check status.
+Preserve context review split/escalate findings in delivery evidence. Proceed is advisory and never grants Git/GitHub authorization or overrides checks, sync, traceability, or closure.
 Never force push unless explicitly requested. Default PR base is develop.
 """
 sandbox_mode = "workspace-write"

@@ -213,6 +213,22 @@ The system SHALL help authors shape features and proposals into reviewer-friendl
 - **WHEN** review slices are produced
 - **THEN** the workflow SHALL treat PR split guidance as advisory until delivery is explicitly authorized
 
+### Requirement: Executable review workload assessment
+The harness SHALL evaluate review workload from direct Git observations, explicit Context Graph traceability and canonical `workflow_limits.review` budgets while keeping the assessment secondary to role and gate authority.
+
+#### Scenario: Review slice is assessed with canonical limits
+- **GIVEN** a known Git base and available `workflow_limits.review`
+- **WHEN** `lufy-ai context review --base <ref> --json` runs
+- **THEN** it SHALL report bounded observations, per-limit provenance, traceability, violations and a deterministic `proceed`, `split` or `escalate` recommendation
+
+#### Scenario: Graph evidence is unavailable
+- **WHEN** the Context Graph is stale or missing
+- **THEN** direct Git observations SHALL remain available, graph-dependent traceability SHALL be `unknown`, and recovery SHALL require an explicit rebuild rather than optimistic approval
+
+#### Scenario: Assessment cannot advance gates
+- **WHEN** the workload recommendation is `proceed`
+- **THEN** validation, reviewer judgment, explicit delivery authorization, remote checks, sync and closure SHALL remain independently required
+
 ### Requirement: Documentation and installer asset synchronization
 The system SHALL keep public documentation, local OpenCode assets, and embedded installer assets synchronized when harness capabilities change.
 

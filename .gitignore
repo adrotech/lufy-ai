@@ -4,3 +4,9 @@
 # No ignorar .lufy/config ni managed-state: solo el output cacheable.
 .lufy/context/
 .lufy/skill-registry.json
+
+# Estado local y privacy-first del Run Ledger; nunca es un asset gestionado.
+.lufy/runtime/
+
+# Snapshots locales de recovery creados por Lufy SDD sync.
+.lufy/workflows/sdd/.backups/

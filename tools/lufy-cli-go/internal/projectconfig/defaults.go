@@ -5,7 +5,7 @@ func defaultTDD() TDDConfig {
 }
 
 func defaultWorkflowLimits() WorkflowLimits {
-	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
+	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, Review: WorkflowReviewLimits{MaxFilesPerSlice: 8, MaxChurnLinesPerSlice: 800, MaxConcurrentSlices: 3, MinEvidenceItems: 2}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
 
 func DefaultMemoryConfig() MemoryConfig {
@@ -28,9 +28,34 @@ func DefaultContextGraphConfig() ContextGraphConfig {
 		Report:              ".lufy/context/GRAPH_REPORT.md",
 		SkipSensitive:       true,
 		SensitivePatterns:   []string{".env", ".env.*", "*.pem", "*.key", "*secret*", "*secrets*", "*token*", "*credentials*"},
-		Exclude:             []string{".lufy/managed-state/backups/**", ".lufy/managed-state/ancestors/**"},
+		Exclude:             []string{".lufy/managed-state/backups/**", ".lufy/managed-state/ancestors/**", ".lufy/runtime/**"},
 		MaxQueryResults:     20,
 		MaxNeighborsPerHint: 5,
+	}
+}
+
+func DefaultRunLedgerConfig() RunLedgerConfig {
+	enabled := true
+	return RunLedgerConfig{
+		Enabled: &enabled,
+		Root:    ".lufy/runtime",
+		Retention: RunLedgerRetentionConfig{
+			MaxAgeDays:      30,
+			MaxTerminalRuns: 500,
+			MaxBytes:        64 * 1024 * 1024,
+		},
+	}
+}
+
+func DefaultAdaptiveRoutingConfig() AdaptiveRoutingConfig {
+	return AdaptiveRoutingConfig{
+		Enabled:               false,
+		Mode:                  "shadow",
+		PolicyVersion:         "deterministic-v1",
+		LeaseTTLSeconds:       900,
+		MaxCandidates:         32,
+		MaxWaitingItems:       128,
+		StarvationAfterCycles: 5,
 	}
 }
 
