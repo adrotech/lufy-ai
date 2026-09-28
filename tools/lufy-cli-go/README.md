@@ -9,6 +9,7 @@ CLI Go canónica de `lufy-ai`. Vive en `tools/lufy-cli-go` y reemplaza la lógic
 - Separar core de harness, tool adapters y methodology adapters.
 - Permitir upgrades, sync y uninstall sin pisar trabajo local.
 - Exponer validación estructural reproducible para usuarios y CI.
+- Resolver superficies, trazabilidad, resultados y runs locales sin ejecutar decisiones implícitas.
 
 ## Estructura
 
@@ -31,6 +32,10 @@ tools/lufy-cli-go/
   internal/backup/           # backup/restore multiasset
   internal/config/           # merge conservador de opencode.json
   internal/projectconfig/    # init/rescan de .lufy/config/project.yaml
+  internal/surfaceplan/      # plan read-only de superficies y validaciones
+  internal/resultcontract/   # validación y transiciones de Result Contract v1
+  internal/runledger/        # eventos causales append-only y proyecciones
+  internal/adaptive/         # scoring, assignment, leases y yield acotados
   internal/opsx/             # resolución OpenSpec PATH/cache/embedded
   internal/lufysdd/          # lifecycle Full/Lite y overview HTML integrado
   internal/prguard/          # guardrail PR para paths ignorados/internos
@@ -69,6 +74,8 @@ scripts/validate.sh
 | `lufy-ai setup` | Orquesta version check, layout, install, project config, memoria, context graph y verify con defaults `opencode`/`project`. | `--target`, `--dry-run`, `--yes`, `--json`, `--skip-version-check`, `--require-latest`, `--check-new-features` |
 | `lufy-ai menu` | Abre el command palette interactivo en TTY. | n/a |
 | `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y abre selector Bubble Tea cuando hay TTY. | `--target`, `--force`, `--rescan`, `--interactive` |
+| `lufy-ai scan` | Reescanea stacks y superficies preservando overrides manuales. | `--target`, `--interactive` |
+| `lufy-ai plan` | Resuelve superficies, contratos conectados, capabilities y validaciones sin ejecutar comandos. | `--target`, `--surface`, `--base`, `--files`, `--capabilities`, `--json` |
 | `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest SHA-256. | `--target`, `--scope`, `--tool`, `--methodology-tier`, `--dry-run`, `--yes`, `--backup` |
 | `lufy-ai uninstall` | Remueve assets gestionados sin drift, crea backup, preserva user-owned y quita solo la referencia Lufy de `AGENTS.md`. | `--target`, `--dry-run`, `--yes`, `--keep-state` |
 | `lufy-ai verify` | Valida manifest, hashes, estructura, JSON merge-managed y referencias críticas. | `--target`, `--scope`, `--tool`, `--json`, `--quiet`, `--verbose`, `--deep` |
@@ -86,6 +93,13 @@ scripts/validate.sh
 | `lufy-ai context path` | Calcula un camino explicable entre dos nodos. | `--target`, `--json`, `<from> <to>` |
 | `lufy-ai context explain` | Explica por qué existe un nodo o edge. | `--target`, `--json`, `<node-or-edge>` |
 | `lufy-ai context diff` | Resume impacto a partir de un diff Git contra una base con nodos, vecinos y comunidades afectadas. | `--target`, `--json`, `--base <ref>` |
+| `lufy-ai context coverage` | Reporta cobertura explícita scenario-task-test. | `--target`, `--json` |
+| `lufy-ai context trace` | Sigue trazabilidad forward desde un nodo. | `--target`, `--json`, `<node>` |
+| `lufy-ai context review` | Evalúa diff, trazabilidad y budgets de revisión. | `--target`, `--base`, `--concurrent-slices`, `--evidence-items`, `--json` |
+| `lufy-ai context metrics` | Deriva métricas content-free desde Run Ledger. | `--target`, `--json` |
+| `lufy-ai sdd` | Ejecuta lifecycle Lufy SDD Full/Lite y mantiene `change-overview.html`. | `new`, `status`, `validate`, `sync`, `archive` |
+| `lufy-ai run` | Registra y consulta eventos/checkpoints causales; verifica, repara proyecciones y aplica retención. | `record`, `checkpoint`, `status`, `summary`, `verify`, `prune` |
+| `lufy-ai result` | Valida, normaliza y transiciona Result Contract v1 con policy de rol/evidencia. | `validate`, `normalize`, `transition` |
 | `lufy-ai adaptive recommend` | Evalúa demanda/candidatos en `disabled`, `shadow` o `advisory`; es read-only salvo recording explícito. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
 | `lufy-ai adaptive assign` | Confirma una recomendación advisory vigente con lease fenced y persistencia explícita. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
 | `lufy-ai adaptive yield` | Persiste un checkpoint content-free antes de liberar lease/budget y reencolar. | `--target`, `--file`, `--run`, `--record`, `--idempotency-key`, `--json` |
@@ -101,6 +115,7 @@ scripts/validate.sh
 | `lufy-ai unpin` | Remueve el freeze de un asset gestionado. | `--target` |
 | `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. | `--target`, `--scope`, `--tool`, `--dry-run`, `--yes` |
 | `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales usando ancestor seguro. | `--target`, `--accept-theirs`, `--accept-ours` |
+| `lufy-ai migrate-layout` | Migra rutas legacy al layout unificado `.lufy/`. | `--target`, `--dry-run`, `--yes`, `--json` |
 | `lufy-ai backup` | Captura assets gestionados en `.lufy/managed-state/backups/<timestamp>/manifest.json`. | `--target` |
 | `lufy-ai restore` | Restaura desde backup validando target, paths seguros y hashes. | `--target`, `--backup`, `--dry-run`, `--yes`, `--list` |
 | `lufy-ai opsx render` | Renderiza un change OpenSpec a HTML offline/autocontenido para revisión humana. | `--target`, `--change`, `--format`, `--theme`, `--output` |
@@ -161,7 +176,7 @@ lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 Reglas actuales:
 
 - `openspec` puede instalar superficie full/lite;
-- `lufy-sdd` instala `.lufy/workflows/sdd/`; el candidate Full/Lite agrega `lufy-ai sdd new|status|validate|sync|archive` y overview HTML automático, pendiente de validación Go/CI y delivery;
+- `lufy-sdd` instala `.lufy/workflows/sdd/` y ofrece `lufy-ai sdd new|status|validate|sync|archive` con overview HTML automático;
 - `none` se permite donde la policy lo habilita;
 - `T1:none` y `T2:none` están bloqueados en comandos mutantes.
 

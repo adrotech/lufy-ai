@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión de release preparada en el source tree: `v0.6.24`.
+Release estable actual: `v0.6.24`.
 
 ## Requisitos
 
@@ -148,7 +148,7 @@ lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodolog
 lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
-`T1:lufy-sdd/full` ya tiene un candidate de lifecycle nativo en el change `complete-lufy-sdd-full-workflow`, pero todavía requiere validación Go/CI y delivery antes de considerarse disponible en una release. El flujo previsto es:
+`T1:lufy-sdd/full` y `T2:lufy-sdd/lite` están disponibles en la release estable. El lifecycle nativo es:
 
 ```bash
 lufy-ai sdd new --change <name> --mode full --capability <name>
@@ -184,7 +184,10 @@ En scope `project`, la CLI gestiona:
 - `tui.json`;
 - `openspec/` cuando la metodología lo requiere;
 - `.lufy/workflows/sdd/` cuando se selecciona `lufy-sdd`;
+- `.lufy/contracts/` para contratos neutrales compartidos;
 - `.lufy/managed-state/install-state.json`.
+
+El uso del harness puede crear estado local no gestionado por `sync`: `.lufy/context/` y `.lufy/skill-registry.json` son derivados/regenerables; `.lufy/runtime/` contiene el Run Ledger content-free; `.lufy/memory/` es memoria privada user-owned.
 
 `AGENTS.md` es user-owned. `install` solo agrega la integración LUFY gestionada:
 

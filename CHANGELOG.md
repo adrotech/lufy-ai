@@ -13,6 +13,12 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
+### Changed
+
+- Renovado el banner principal para representar el ciclo gobernado y distribuido del harness actual.
+- Consolidada la documentación pública alrededor de `v0.6.24`, con una guía sistémica del workflow y estado/roadmap vivos.
+- Retirados los snapshots históricos `docs/backlog.md` y `docs/implementation-plan.md`; la historia entregada permanece en CHANGELOG, ADRs y archives SDD/OpenSpec.
+
 ## [v0.6.24] - 2026-09-28
 
 ### Added
