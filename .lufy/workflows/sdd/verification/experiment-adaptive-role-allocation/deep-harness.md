@@ -1,15 +1,15 @@
 # Verificación profunda del harness — PR #230
 
-Fecha: 2026-09-24
+Fecha: 2026-09-28
 Rama: `codex/feat-adaptive-role-allocation`
-Base: `origin/develop` (`0` commits detrás, `2` delante antes de estas correcciones locales)
+Merge: PR #230 integrado en `develop` mediante `700ceb1`
 Alcance: runtime adaptativo, Run Ledger, CLI, instalación/sync, assets OpenCode/Codex, Lufy SDD, bootstrap y artefactos de release.
 
 ## Resultado ejecutivo
 
 La auditoría profunda original pasó infraestructura, portabilidad, privacidad y suites, pero detectó dos invariantes operativos faltantes: confirmación de assignments sin revalidar recommendation/capacidad/budget y leases vencidas sin transición durable de recuperación. Ambos hallazgos quedaron corregidos con regresiones permanentes, contrato/documentación alineados y spec activa sincronizada.
 
-El gate funcional queda **validado**. El change no está cerrado: faltan commit/push, checks remotos sobre la corrección, merge, cierre de issue y archive, todos sujetos al flujo de delivery autorizado.
+El gate funcional y de delivery queda **completo**: las correcciones fueron publicadas, los cinco checks remotos pasaron, el PR #230 fue mergeado y la issue #222 quedó cerrada. Las tasks están 50/50 y el change queda listo para archive canónico.
 
 ## Evidencia acumulada
 
@@ -19,14 +19,15 @@ El gate funcional queda **validado**. El change no está cerrado: faltan commit/
 | corrección focal con race | `go test -race ./internal/adaptive/... ./internal/runledger ./internal/cli -count=1` | passed |
 | stress adaptativo posterior | `go test ./internal/adaptive/... ./internal/runledger -count=30` | passed |
 | calidad integral posterior | `scripts/validate.sh` | passed; coverage global 80,4%, build/coupling/assets/YAML/PR guard/whitespace verdes |
-| strict SDD posterior | `lufy-ai sdd validate --change experiment-adaptive-role-allocation --strict` | valid; 48/50, digest `a22cfb12f0da8ec5041ba0c27c3716dc87f19b18fb0ea39b6086007bf12ac4bd` |
+| strict SDD final | `lufy-ai sdd validate --change experiment-adaptive-role-allocation --strict` | valid; 50/50, digest `a22cfb12f0da8ec5041ba0c27c3716dc87f19b18fb0ea39b6086007bf12ac4bd` |
 | sync SDD posterior | `lufy-ai sdd sync --change experiment-adaptive-role-allocation` | synced; 18 requirements actualizados en 3 specs activas |
+| archive SDD | `lufy-ai sdd archive --change experiment-adaptive-role-allocation` | archived; overview preservado en `archive/2026-09-28-experiment-adaptive-role-allocation` |
 | fuzzing original | Result Contract ingress, `-fuzztime=10s` | passed; 71.175 ejecuciones |
 | instalaciones limpias originales | OpenCode + Lufy SDD, Codex + Lufy SDD, OpenCode + OpenSpec | passed; verify deep, reinstall y sync sin drift/conflicts/errors |
 | lifecycle/supply chain original | install/verify/backup/restore, wrapper, hooks, bootstrap y artifacts multi-OS | passed |
-| CI remota previa | Quality, Ubuntu, macOS, Windows, installer smoke | 5/5 success; debe repetirse sobre el commit de corrección |
+| CI remota final | Quality, Ubuntu, macOS, Windows, installer smoke sobre PR #230 | 5/5 success |
 
-Advertencias no bloqueantes conservadas: memoria Obsidian y Context Graph no inicializados en targets limpios, comportamiento esperado. Los smokes cross-build requirieron `/opt/homebrew/bin/go`. La CI remota verde corresponde al commit previo; no cuenta como evidencia remota de estas correcciones aún no publicadas.
+Advertencias no bloqueantes conservadas: memoria Obsidian y Context Graph no inicializados en targets limpios, comportamiento esperado. Los smokes cross-build requirieron `/opt/homebrew/bin/go`.
 
 ## Resolución de hallazgos
 
@@ -55,17 +56,17 @@ Advertencias no bloqueantes conservadas: memoria Obsidian y Context Graph no ini
 ## Gate
 
 - Veredicto funcional: **validado**.
-- Estado del workflow: `delivery_pending`.
-- PR #230: abierta; requiere publicar las correcciones y repetir checks remotos.
-- Issue #222: abierta; debe cerrarse después del merge.
-- Tasks SDD: 48/50; solo quedan delivery/cierre y archive.
-- Próximo paso: delivery autorizado de estas correcciones; luego checks remotos, merge, cierre de issue y archive.
+- Estado final del workflow: `closed`.
+- PR #230: mergeada en `develop` (`700ceb1`) con 5/5 checks remotos exitosos.
+- Issue #222: cerrada.
+- Tasks SDD: 50/50.
+- Archive canónico: completo; overview y evidencia preservados.
 
 ```yaml
 schema_version: result-contract/v1
-status: delivery_pending
+status: closed
 legacy_fallback: false
-executive_summary: Los dos hallazgos del harness profundo fueron corregidos, probados, documentados y sincronizados; queda delivery remoto y cierre.
+executive_summary: Los hallazgos fueron corregidos y validados; PR #230 fue mergeado con 5/5 checks, issue #222 cerrada, tasks 50/50 y archive canónico completo.
 artifacts:
   changed:
     - tools/lufy-cli-go/internal/adaptive/application/service.go
@@ -95,10 +96,16 @@ evidence:
       notes: coverage 80.4%, build y gates integrales verdes
     - command: lufy-ai sdd validate --change experiment-adaptive-role-allocation --strict
       result: passed
-      notes: valid 48/50
+      notes: valid 50/50
     - command: lufy-ai sdd sync --change experiment-adaptive-role-allocation
       result: passed
       notes: 18 requirements sincronizados
+    - command: gh pr checks 230
+      result: passed
+      notes: 5/5 checks remotos exitosos antes del merge
+    - command: lufy-ai sdd archive --change experiment-adaptive-role-allocation
+      result: passed
+      notes: archived con overview preservado
   static:
     - Scenarios, código y regresiones contrastados; contratos root/embedded alineados.
 surface_execution:
@@ -137,7 +144,7 @@ workflow_decision:
     - recuperacion durable de leases vencidas
   preflight_status: passed
   stop_rule_status: clear
-  delivery_batching_guidance: publicar las correcciones en PR #230 y exigir checks remotos antes del merge
+  delivery_batching_guidance: completado mediante PR #230 mergeada en develop
   artifact_branching:
     status: not_needed
     stage: not_applicable
@@ -150,10 +157,10 @@ workflow_decision:
     human_escalation_triggers:
       - not_applicable
 risks:
-  - checks remotos aun no ejecutados sobre estas correcciones locales
+  - none
 next_recommended:
-  owner: delivery
-  action: commit, push y actualizar PR #230 con autorizacion explicita
+  owner: none
+  action: fase 5 cerrada; continuar con la fase 6 como change independiente
 skill_resolution:
   local_skills_used:
     - lufy-sdd-apply
