@@ -51,7 +51,7 @@ func isolatedGitEnv() []string {
 
 func fixtureGit(t *testing.T, target string, args ...string) string {
 	t.Helper()
-	command := exec.Command("git", append([]string{"-C", target}, args...)...)
+	command := exec.Command("git", append([]string{"-C", target, "-c", "maintenance.auto=false", "-c", "gc.auto=0"}, args...)...)
 	command.Env = isolatedGitEnv()
 	body, err := command.CombinedOutput()
 	if err != nil {
@@ -78,6 +78,8 @@ func candidateFixture(t *testing.T) (string, string) {
 	}
 	root := t.TempDir()
 	fixtureGit(t, root, "init", "--initial-branch=fixture", "--object-format=sha1")
+	fixtureGit(t, root, "config", "maintenance.auto", "false")
+	fixtureGit(t, root, "config", "gc.auto", "0")
 	fixtureGit(t, root, "config", "core.filemode", "false")
 	fixtureWrite(t, root, ".lufy/contracts/delivery.md", "Política sintética de delivery.\n")
 	fixtureWrite(t, root, ".lufy/contracts/result-contract.md", "Política sintética de contratos.\n")
