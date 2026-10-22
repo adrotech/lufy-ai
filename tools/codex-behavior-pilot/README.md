@@ -1,5 +1,7 @@
 # Piloto conductual de Lufy en Codex
 
+El ensayo de integración nativa y sus límites se documentan en [regresión nativa](../../docs/codex-native-regression-2026-10-22.md). `native.py` requiere `--live`, ejecutables explícitos y un directorio externo nuevo; conserva resultados inconclusos sin emular roles silenciosamente. Sus pruebas `test_native*.py` participan en el mismo discovery offline de CI.
+
 Evalúa los cinco grupos del bloque 2 del plan comparativo con Gentle-AI: análisis, mecánico/auth, auto-chain, delegación indisponible y handoff. Son seis casos más un receptor independiente del handoff. Usa Python 3.9+ estándar en macOS/Linux y Codex CLI con autenticación ya disponible; el timeout controla grupos de procesos POSIX.
 
 Listar casos no ejecuta modelos:
