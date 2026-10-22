@@ -1,0 +1,120 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B3 publicado en PR 242 contra develop, commit 5cf1b30; cinco checks iniciales SUCCESS y PR OPEN/CLEAN. Snapshot delivered elegible para archive; nuevo HEAD y merge final pendientes, sin declarar closed.
+artifacts:
+  changed:
+    - tools/lufy-cli-go/internal/contextgraph/application/service.go
+    - tools/lufy-cli-go/internal/contextgraph/application/metrics_integrity_test.go
+    - docs/codex-operational-metrics-2026-10-22.md
+    - openspec/specs/systemic-workflow/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/systemic-workflow/spec.md
+  referenced:
+    - openspec/changes/verify-codex-operational-metrics/
+    - /private/tmp/lufy-block3-pr.md
+    - /tmp/lufy-block3-tests-result.yaml
+    - https://github.com/adrotech/lufy-ai/pull/242
+    - 5cf1b30e2825d369c1820c2bccbc3d7e27e09a72
+    - codex/fix-operational-review-metrics
+evidence:
+  commands:
+    - command: scripts/validate.sh
+      result: passed
+      notes: Carried handoff raiz; exit 0, coverage 80.4%, vet/build. Shell lint omitido por shellcheck ausente, sin cambios shell.
+    - command: go test focalizado y post-sync assets/contextgraph
+      result: passed
+      notes: GREEN focalizado 0.629s y post-sync passed comunicados por raiz; no repetidos por delivery.
+    - command: openspec validate verify-codex-operational-metrics --strict
+      result: passed
+      notes: Propuesta valida comunicada por raiz; tasks 0-2 completas, delivery 3.1 pendiente.
+    - command: CLI fixtures e inspeccion runtime
+      result: passed
+      notes: Dos tasks suman 70000 ms; partial/unavailable, duplicate_noop, fuentes inmutables y payload libre rechazado. Runtime ledger available, metrics unavailable, recognized_events 0.
+    - command: context review --base origin/develop --json
+      result: passed
+      notes: action escalate; graph not_available, traceability unknown y limites ausentes. Observa 3 tracked antes stage; revision directa observa los 5.
+    - command: git diff --check origin/develop
+      result: passed
+      notes: Sin whitespace; comprobacion propia y root tras stage.
+    - command: lufy-ai pr guard --base origin/develop --include-worktree
+      result: passed
+      notes: Propia 3 tracked antes stage; root confirmo 5 staged permitidos despues.
+    - command: Comparacion byte a byte y stage exacto
+      result: passed
+      notes: Propia paridad fuente 5/5 y stage exacto 5/5, mirror igual.
+    - command: git commit, git push and gh pr create
+      result: passed
+      notes: Root relay confirma commit 5cf1b30, push exit 0 y PR 242 creado/attached; guard y whitespace comprometidos passed para cinco paths.
+    - command: gh pr checks 242 --watch --interval 30
+      result: passed
+      notes: Exit 0; cinco pass, incluido obligatorio installer, run 39835169056.
+    - command: gh pr view 242 --json headRefOid,state,mergeStateStatus,statusCheckRollup
+      result: passed
+      notes: HEAD 5cf1b30e2825d369c1820c2bccbc3d7e27e09a72; OPEN/CLEAN; cinco SUCCESS; ultimo check 2026-10-22T18:55:34Z.
+  static:
+    - Base fresca 7492769; worktree B1 limpio antes switch y solo cinco archivos B3 tras copia.
+    - RED autentico de cruces y ambiguedad; primer fixture timestamp invalido corregido a proyeccion legacy read-side, sin cambiar store defaults.
+    - Autorizacion humana global de finalizar todos los bloques y commit/push/PR/merge con checks; root relay ejecuta mutaciones por bloqueo previo de escalaciones en subagente.
+    - Revision directa de servicio, plan, doc, tests y scope; sin cambios de contrato JSON publico.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T2
+  program_tier: T1
+  slice_tier: T2
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: lite
+    methodology_required: true
+    execution_mode: sdd-lite
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: false
+  review_slices:
+    - B3 slice T2 del programa T1; corrección conservadora del servicio Metrics con validación agrupada tras join.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/verify-codex-operational-metrics/
+risks:
+  - context review escalate; graph not_available, traceability unknown y limites ausentes. Alcance directo real de cinco paths preservado.
+  - Fixtures prueban mecanismos; runtime real metrics unavailable con recognized_events 0 pese a ledger available.
+  - B2/B4, dist y cambios heredados del padre quedan fuera.
+next_recommended:
+  owner: delivery
+  action: Registrar task 3.1 como publicacion/checks iniciales y elegibilidad archive; archivar con validacion y skip-specs por sync aplicado, incorporar archive al mismo PR y esperar checks del nuevo HEAD antes del merge autorizado sin admin.
+skill_resolution:
+  local_skills_used: [git-delivery]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/git-delivery/SKILL.md
+  bootstrap_recommended: false
+  notes: Scope aislado con plan B3-AC1-AC5; evidencia global y fixtures carried handoff de raiz.
