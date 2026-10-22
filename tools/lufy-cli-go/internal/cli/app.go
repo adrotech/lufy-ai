@@ -105,6 +105,8 @@ func Run(args []string, deps Dependencies) int {
 		return runRun(args[1:], deps)
 	case "review":
 		return runReview(args[1:], deps)
+	case "candidate":
+		return runCandidate(args[1:], deps)
 	case "adaptive":
 		return runAdaptive(args[1:], deps)
 	case "result":
@@ -1782,6 +1784,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
 	fmt.Fprintln(out, "  review    Registra eventos semánticos explícitos de review sin avanzar gates")
+	fmt.Fprintln(out, "  candidate Vincula y verifica evidencia contra un candidato Git limpio")
 	fmt.Fprintln(out, "  adaptive  Recomienda y registra asignaciones/yields adaptativos acotados")
 	fmt.Fprintln(out, "  result    Valida, normaliza y evalúa Result Contracts")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
