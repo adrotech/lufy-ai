@@ -9,8 +9,8 @@ Programa T1 autorizado por el usuario el 2026-10-22 para implementar, validar y 
 | 3 | Regresión de integración nativa | Un protocolo reproducible conserva evidencia de roles, hooks, handoff y recuperación; una capacidad no expuesta queda unavailable, nunca un pass inferido | closed — PR 246; ensayo CLI inconcluso |
 | 4 | Eventos semánticos de review | Operaciones explícitas de revisión emiten eventos content-free e idempotentes; el lifecycle genérico no se convierte en review por inferencia | closed — PR 247 |
 | 5 | Evidencia ligada al candidato | Identidad de repositorio, base y candidato vinculan la evidencia; modificar el candidato invalida su vigencia sin reescribir el resultado original | closed — PR 248 |
-| 6 | Instrucciones Codex coherentes | Reglas comunes, mapping y mirrors tienen una fuente identificada; comprobaciones detectan divergencia y mensajes incompatibles con el lifecycle soportado | validated — publicación pendiente |
-| 7 | Experimento reproducible de eficiencia | Variantes usan fuentes, aceptación y runtime comparables; datos incompletos conservan baseline y ninguna variante se adopta automáticamente | planned |
+| 6 | Instrucciones Codex coherentes | Reglas comunes, mapping y mirrors tienen una fuente identificada; comprobaciones detectan divergencia y mensajes incompatibles con el lifecycle soportado | closed — PR 249 |
+| 7 | Experimento reproducible de eficiencia | Variantes usan fuentes, aceptación y runtime comparables; datos incompletos conservan baseline y ninguna variante se adopta automáticamente | delivery_pending — PR 250; keep_baseline; closed se confirma con MERGED del HEAD final y reporte global validado |
 
 ## Ejecución y review
 

@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from experiment import compare_pair, summarize_pairs
+from experiment import PROVENANCE_FILES, compare_pair, summarize_pairs
 
 
 class ExperimentTests(unittest.TestCase):
@@ -40,6 +40,10 @@ class ExperimentTests(unittest.TestCase):
                       "rationale": "No se implementa sin aprobación explícita.",
                       "source_refs": [], "acceptance_ids": [], "examples": []},
         }
+        provenance = {"schema_version": "lufy-codex-execution-provenance/v1",
+                      "runtime": {"executable": "/fixture/codex", "sha256": "c" * 64, "version": "fixture-version"},
+                      "sources": {path: "d" * 64 for path in PROVENANCE_FILES}}
+        result.update(execution_provenance_before=provenance, execution_provenance_after=copy.deepcopy(provenance))
         events = [{"type": "turn.started"}]
         events.extend({"type": "turn.completed", "usage": {"input_tokens": value}} for value in tokens)
         self.write_events(directory, result, events)
