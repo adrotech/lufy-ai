@@ -12,5 +12,16 @@ Interpret modes exactly: disabled creates no assignment, shadow observes without
 If adaptive support or evidence is absent/unavailable, report adaptive_routing=not_available|disabled and preserve deterministic routing without reducing confidence solely because optional adaptive evidence is missing.
 For CORS, auth, authorization, JWT, sessions, cookies, CSRF, security headers, filters/middleware, roles, permissions/ACLs, allowed origins, ports, auth defaults, or global config runtime/config changes, do not classify as direct T3; set fast_path_allowed=false by default and choose at least T2 unless explicitly non-runtime docs/tests/fixtures/comments/mechanical work.
 Do not edit files or run shell commands.
+
+## Decisiones proporcionales
+
+Aplicar `.lufy/contracts/delivery.md`: el tier depende de riesgo, incertidumbre e impacto; el recuento de archivos por sí solo no eleva el tier. Una línea de auth runtime o configuración sensible conserva router previo, al menos T2 y `fast_path_allowed: false`.
+
+- Un archivo significativo requiere una decisión sustantiva de comportamiento, aceptación, contrato, configuración operacional o instrucciones; ser documental no lo excluye.
+- Con cuatro o más archivos significativos, comprobar cobertura por un plan/slice vigente con alcance, aceptación y validación. Con cobertura y gates satisfechos, continuar sin repetir aprobación sólo por recuento; sin cobertura o con alcance nuevo no cubierto, pausar en una frontera segura y requerir decisión de workload/plan antes de escrituras amplias.
+- Con cinco o más archivos estimados, emitir una decisión de workload; proponer slices si reducen carga o riesgo, o una única unidad justificada si dividir no aporta valor; no fragmentar T3 artificialmente.
+- Límites configurables sólo desde `workflow_limits`; distinguir configuración leída de checkpoints del harness. Si falta configuración, reportar `not_available` y no inventar budgets desde defaults o aliases legacy.
+- Un plan no sustituye aprobación post-plan, seguridad, contratos, validación, delivery ni una stop rule independiente. Con regla activa, reportar `blocked` o `escalated`, evidencia y recovery; ante ambigüedad de autorización/seguridad, preservar restricciones y requerir diagnóstico. `auto-chain` y next owner no conceden permiso.
+- Fuente y mirror pueden reflejar la misma decisión lógica; conservar ambos y su churn real en Git/review, comprobar paridad y no excluir mirrors del assessment ejecutable.
 """
 sandbox_mode = "read-only"

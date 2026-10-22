@@ -72,6 +72,28 @@ El grafo orienta; `plan` produce el contrato de superficie. Si el grafo falta o 
 
 T1/T2 con varios riesgos se dividen en `review_slices` cuando eso reduce la carga humana. El paralelismo sólo aplica a slices con archivos independientes, plan de join y validación agrupada.
 
+El tier responde a riesgo, incertidumbre e impacto; el volumen informa workload y review. Un cambio mecánico entendido puede abarcar muchos archivos sin aumentar de tier por esa cifra. Si aparece riesgo nuevo, se vuelve a evaluar la clasificación por esa evidencia.
+
+El contrato canónico [delivery.md](../.lufy/contracts/delivery.md) define archivo significativo como aquel que requiere una decisión sustantiva de comportamiento, aceptación, contrato, configuración operacional o instrucciones del harness; ser documental no lo excluye. Al alcanzar cuatro significativos se comprueba cobertura por un plan/slice vigente con alcance, aceptación y validación. Sin cobertura, o con alcance nuevo no cubierto, se pausa en una frontera segura antes de continuar escrituras amplias. Al estimar cinco archivos, el router justifica una decisión de workload y si conviene dividir; no se exigen slices artificiales para T3.
+
+Alcance y autorización dentro de los invariantes del harness, gates independientes, configuración canónica `workflow_limits` y checkpoints declarados se combinan conservadoramente. Un plan puede cubrir amplitud, pero no concede aprobación post-plan ni desactiva seguridad, validación, delivery o una stop rule. Si falta configuración, sus paths son `not_available`: los checkpoints siguen siendo guardrails del harness, no budgets leídos ni defaults efectivos. Ante configuración inválida o ambigüedad que afecte autorización o seguridad, preservar restricciones y pedir diagnóstico/decisión concreta.
+
+#### Matriz de decisiones del contrato
+
+| Caso | Resultado esperado | Prohibido |
+| --- | --- | --- |
+| AC1: ocho archivos con sustitución mecánica sin riesgo | Tier proporcional y workload justificado | Escalar a Full por recuento aislado |
+| AC2: una línea de auth runtime o configuración sensible | Router previo, al menos T2 y `fast_path_allowed: false` | T3 por tamaño |
+| AC3: cuatro significativos con plan suficiente | Registrar cobertura y continuar sólo con gates independientes satisfechos | Repetir aprobación sólo por recuento o saltar un gate |
+| AC3: cuatro significativos sin plan suficiente o con alcance nuevo no cubierto | Pausa segura y decisión de workload/plan | Escritura amplia silenciosa |
+| AC4: cinco estimados mecánicos | Decisión de workload; una unidad si se justifica que dividir no aporta valor | Slices artificiales obligatorios |
+| AC5: config ausente | `not_available` y guardrails explícitos del harness | Budget inventado desde defaults o aliases legacy |
+| AC6: plan cubierto con stop rule activa | `blocked` o `escalated`, regla, evidencia y recovery | Usar el plan para ignorar la stop rule |
+| AC6: auto-chain sin aprobación post-plan | Esperar la aprobación requerida | Interpretar metadata como permiso |
+| AC7: cambio en fuente y mirror | Misma decisión lógica, diff real y churn completos; comprobar paridad | Excluir mirror del review ejecutable |
+
+Esta matriz guía la revisión de instrucciones. Las pruebas textuales y de paridad comprueban reglas documentadas y distribución; no evalúan la conducta de un agente real ni demuestran menor latencia o ahorro de tokens. Una evaluación conductual requiere un piloto separado.
+
 ### 4. Ejecutar y verificar
 
 Los roles mantienen ownership separado. Implementar no autoriza delivery; validar no autoriza editar; review no sustituye tests. Cada handoff sustantivo usa Result Contract v1 y puede validarse con:

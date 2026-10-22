@@ -188,23 +188,33 @@ The workflow SHALL keep reviewer qualitative scoring separate from validator com
 - **THEN** Git/GH delivery remains blocked until the user explicitly authorizes `delivery`
 
 ### Requirement: Numeric stop rules for workload guard
-The workflow SHALL apply explicit numeric stop rules to prevent oversized, under-scoped, or low-evidence sessions from continuing silently.
+
+El workflow SHALL conservar checkpoints explícitos para impedir continuación silenciosa de trabajo amplio, sin alcance definido o sin evidencia recuperable. Los checkpoints de amplitud SHALL evaluar cobertura por plan/slice sin convertirse en clasificación de riesgo ni anular gates independientes.
+
+Un archivo significativo SHALL ser aquel cuyo cambio requiere una decisión sustantiva sobre comportamiento, aceptación, contrato, configuración operacional o instrucciones del harness. El formato documental no lo excluye. La repetición mecánica demostrablemente equivalente no añade por sí misma una decisión de riesgo. Los mirrors sincronizados SHALL seguir visibles en diff y review aunque reflejen la misma decisión lógica.
+
+#### Scenario: Four-file checkpoint has adequate coverage
+- **GIVEN** un plan/slice vigente y pertinente cubre alcance, aceptación y validación
+- **WHEN** el bloque alcanza cuatro o más archivos significativos dentro de ese alcance
+- **THEN** registra la cobertura como decisión de workload y continúa sólo si los gates independientes están satisfechos
+- **AND** no repite aprobación sólo por el recuento ni escala el tier sin nueva evidencia de riesgo
 
 #### Scenario: Four-file rule pauses for workload decision
-- **WHEN** a routed block is estimated to touch four or more significant files or implementation discovers the block touches four or more significant files
-- **THEN** the orchestrator SHALL require a workload decision, tier escalation, or review-slice plan before continuing beyond the current safe boundary
+- **WHEN** se descubren cuatro o más archivos significativos sin plan/slice suficiente o con alcance ampliado no cubierto
+- **THEN** pausa en una frontera segura, reporta evidencia y requiere decisión de workload/plan antes de continuar escrituras amplias
 
 #### Scenario: Twenty-tool-calls rule pauses long routing
-- **WHEN** a coherent routing or implementation block exceeds twenty tool calls without reaching a resumable state
-- **THEN** the orchestrator SHALL pause for a concise state summary and decide whether to continue, compact context, escalate, or split the work
+- **WHEN** un bloque supera veinte tool calls sin alcanzar estado recuperable
+- **THEN** pausa para resumen compacto y decisión de continuar, compactar, escalar o dividir
+- **AND** no usa el número aislado para inventar riesgo o autorización
 
 #### Scenario: Multi-file write rule requires plan
-- **WHEN** a step proposes or attempts writes across multiple non-trivial files
-- **THEN** the workflow SHALL verify that a scoped plan or review slice exists and SHALL avoid broad multi-file mutation without observable acceptance criteria
+- **WHEN** un paso propone escrituras sobre múltiples archivos no triviales
+- **THEN** verifica plan/slice con alcance y aceptación observables antes de mutar ampliamente
 
 #### Scenario: Long-session rule requires resumable handoff
-- **WHEN** a session becomes long enough that evidence, decisions, or next actions are no longer easily resumable
-- **THEN** the workflow SHALL create or request a handoff summary before continuing with implementation, validation, or delivery routing
+- **WHEN** decisiones, evidencia o siguiente acción dejan de ser fácilmente recuperables
+- **THEN** crea o solicita resumen/handoff antes de continuar
 
 ### Requirement: Stop-rule evidence in Result Contract
 The workflow SHALL report triggered or evaluated numeric stop rules in Result Contract envelope v1 so downstream roles can continue without rediscovering the decision.
@@ -221,3 +231,24 @@ The workflow SHALL report triggered or evaluated numeric stop rules in Result Co
 - **GIVEN** `.lufy/config/project.yaml` or `workflow_limits.stop_rules` is not available
 - **WHEN** a result reports workflow-limit fields
 - **THEN** it SHALL report stop-rule configuration as `not_available` while still applying repository-level default guardrails from agent instructions
+
+### Requirement: Workflow constraint provenance and precedence
+
+El workflow SHALL preservar permisos, seguridad, aprobación post-plan y delivery como invariantes/gates independientes; SHALL consumir límites configurables sólo desde `workflow_limits` disponible; y SHALL identificar separadamente checkpoints del harness y configuración leída. Una restricción activa SHALL NOT desaparecer porque un plan cubra amplitud o un budget esté satisfecho.
+
+#### Scenario: Configuration is unavailable
+- **WHEN** falta configuración canónica de límites
+- **THEN** reporta `not_available` para esos paths, mantiene guardrails declarados y no inventa budgets efectivos desde defaults del producto
+
+#### Scenario: Covered plan meets an active stop rule
+- **GIVEN** un plan cubre la amplitud del bloque y una stop rule independiente está activa
+- **WHEN** el workflow evalúa si continuar
+- **THEN** reporta `blocked` o `escalated` con regla, evidencia y recovery en vez de continuar por cobertura de plan
+
+#### Scenario: Constraints disagree or are invalid
+- **WHEN** configuración o instrucciones presentan una ambigüedad con consecuencias sobre autorización o seguridad
+- **THEN** conserva las restricciones y pide diagnóstico/decisión concreta sin ampliar permisos ni continuar optimistamente
+
+#### Scenario: Validated workload is not delivery authority
+- **WHEN** un assessment de workload permite proceder
+- **THEN** validación funcional, review requerido, autorización explícita y checks remotos siguen sujetos a sus propios gates

@@ -5,6 +5,7 @@ Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
 ## Snapshot del proyecto
 
 - **Repositorio**: configuración local de OpenCode y flujo SDD/OpenSpec para `lufy-ai`.
+- **Foco de mejoras**: aplicar el plan comparativo con `Gentleman-Programming/gentle-ai` a Lufy en Codex. No desarrollar mejoras de OpenCode ni migraciones a Pi dentro de este plan.
 - **CLI del producto**: la CLI Go vive en `tools/lufy-cli-go`; no asumir una CLI legacy fuera de esa ruta.
 - **Instalador**: `scripts/install.sh` es un wrapper estricto del CLI Go y no debe reintroducir fallback legacy.
 - **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
@@ -222,3 +223,14 @@ skill_resolution:
 - Incluir objetivo, cambios/evidencia, riesgos y estado listo/bloqueado.
 - Mantener resúmenes concisos; usar rutas y líneas cuando ayuden.
 - Si falta contexto o una decisión, pedirla o devolver el bloqueo exacto.
+
+## Decisiones proporcionales
+
+Aplicar `.lufy/contracts/delivery.md`: el tier depende de riesgo, incertidumbre e impacto; el recuento de archivos por sí solo no eleva el tier. Una línea de auth runtime o configuración sensible conserva router previo, al menos T2 y `fast_path_allowed: false`.
+
+- Un archivo significativo requiere una decisión sustantiva de comportamiento, aceptación, contrato, configuración operacional o instrucciones; ser documental no lo excluye.
+- Con cuatro o más archivos significativos, comprobar cobertura por un plan/slice vigente con alcance, aceptación y validación. Con cobertura y gates satisfechos, continuar sin repetir aprobación sólo por recuento; sin cobertura o con alcance nuevo no cubierto, pausar en una frontera segura y requerir decisión de workload/plan antes de escrituras amplias.
+- Con cinco o más archivos estimados, emitir una decisión de workload; proponer slices si reducen carga o riesgo, o una única unidad justificada si dividir no aporta valor; no fragmentar T3 artificialmente.
+- Límites configurables sólo desde `workflow_limits`; distinguir configuración leída de checkpoints del harness. Si falta configuración, reportar `not_available` y no inventar budgets desde defaults o aliases legacy.
+- Un plan no sustituye aprobación post-plan, seguridad, contratos, validación, delivery ni una stop rule independiente. Con regla activa, reportar `blocked` o `escalated`, evidencia y recovery; ante ambigüedad de autorización/seguridad, preservar restricciones y requerir diagnóstico. `auto-chain` y next owner no conceden permiso.
+- Fuente y mirror pueden reflejar la misma decisión lógica; conservar ambos y su churn real en Git/review, comprobar paridad y no excluir mirrors del assessment ejecutable.
