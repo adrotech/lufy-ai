@@ -1,0 +1,125 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B2 publicado en PR 245; fix de expectativas Windows validado, cinco checks SUCCESS y OPEN/CLEAN en a000af0. Snapshot delivered elegible archive; checks del HEAD con archive y merge pendientes, sin closed anticipado.
+artifacts:
+  changed:
+    - docs/codex-operational-readiness-plan.md
+    - docs/codex-runtime-diagnostics.md
+    - tools/lufy-cli-go/internal/cli/app.go
+    - tools/lufy-cli-go/internal/cli/app_codex_runtime_test.go
+    - tools/lufy-cli-go/internal/governance/governance.go
+    - tools/lufy-cli-go/internal/codexruntime/runtime.go
+    - tools/lufy-cli-go/internal/codexruntime/runtime_test.go
+    - openspec/specs/codex-runtime-diagnostics/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/codex-runtime-diagnostics/spec.md
+  referenced:
+    - openspec/changes/diagnose-codex-runtime/
+    - /private/tmp/lufy-seven-b2-pr.md
+    - /private/tmp/lufy-seven-b2-tests-result.yaml
+    - /private/tmp/lufy-seven-b2-app-probe-final.json
+    - /private/tmp/lufy-seven-b2-path-probe-final.json
+    - https://github.com/adrotech/lufy-ai/pull/245
+    - a000af0e8e4d88078f8b2bd033195bc5d989977d
+    - codex/diagnose-codex-runtime
+evidence:
+  commands:
+    - command: scripts/validate.sh
+      result: passed
+      notes: Root confirma exit0; 68 offline, Go coverage global80.5/runtime92, vet/build. Shellcheck local ausente y lint omitido.
+    - command: TDD runtime/CLI y result validate test-writer
+      result: passed
+      notes: RED real overflow antes del fix; GREEN con buffer privado por composicion. Reporte TDD validado comunicado por raiz.
+    - command: openspec validate diagnose-codex-runtime --strict y spec canonica strict
+      result: passed
+      notes: Change/canon strict passed tras sync; mirror exacto propio y assets post-sync0.454s comunicado por root.
+    - command: doctor --codex explicito contra CLI app y PATH con binario recien construido
+      result: passed
+      notes: Pruebas produjeron app0.163.0-alpha.10.2/PATH0.144.5 available y native unknown; doctor exit1 por manifestmissing esperado y conservado, no salud global inferida.
+    - command: lufy-ai context review --base origin/develop --json
+      result: passed
+      notes: Escalate, graph not_available, traceability unknown y limites ausentes; tres tracked antes stage no representan nueve rutas totales.
+    - command: Manifest y revision fuente/mirror
+      result: passed
+      notes: Propia9paths existentes, espejo exacto, stage vacio. Fuente opt-in/default, limites/procesos y privacidad revisados.
+    - command: CI Windows initial run39862204278/job120115440018
+      result: failed
+      notes: Root diagnostico expectativas POSIX contra filepath.Abs Windows; fallo en tests, sin evidencia de defecto runtime.
+    - command: go test ./internal/codexruntime -count=1 despues de normalizar fixtures
+      result: passed
+      notes: Root confirma passed1.074s; solo runtime_test.go cambia y conserva path literal/no shell. Nuevos checks finales pendientes.
+    - command: git commit fix de portabilidad y git push
+      result: passed
+      notes: Relay root confirma a000af0e8e4d88078f8b2bd033195bc5d989977d, solo runtime_test.go; stage1 y guard/whitespace rango9 passed. Checks corregidos pendientes.
+    - command: gh pr view 245 --json headRefOid,state,mergeStateStatus,statusCheckRollup
+      result: passed
+      notes: Relay root confirma a000af0e8e4d88078f8b2bd033195bc5d989977d OPEN/CLEAN y cinco SUCCESS; run39862670088, Windows22:10:51Z y installer22:11:12Z del2026-10-22.
+  static:
+    - Base8ea7e3f merged B1; rama codex/diagnose-codex-runtime conserva B2 dirty sin reset/stash. Padre mixed preservado.
+    - Memoria primaria ready1nota, grafo1116indexados/20sensiblesomitidos/0errores; activacion explicita mediante copia exclusiva con rechazo symlinks/preexistentes, sin modelos/credenciales/permisos globales.
+    - Configuracion local .lufy config/mem/state/SDD no entra al stage; activechange tambien excluido.
+    - Deadline total5s y stdout64KiB por proceso; stderr descartado y codigos de causa no revelan rawout/errors. Flags duplicadas conocidas invalidan probe.
+    - Usuario autorizo los siete bloques y delivery/merge con checks; conteo no sustituye plan ni gate independiente.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T2
+  program_tier: T1
+  slice_tier: T2
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: lite
+    methodology_required: true
+    execution_mode: sdd-lite
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - Bloque 2 T2 del programa T1; nueve rutas de servicio/CLI/tests/docs/spec y mirror cubiertas por plan/aceptacion, una unidad coherente sin fragmentar reporte y comando.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/diagnose-codex-runtime/
+risks:
+  - Runtime flags/version son evidencia metadata; native_delegation unknown no se convierte en pass operativo.
+  - Doctor global exit1 por manifest ausente preservado pese a runtime available; no se afirma instalacion saludable.
+  - Configuracion/memoria/grafo locales generados no se incluyen; resultados primarios no prueban evidencia del candidato.
+  - context review escalate por graph not_available, traceability unknown y limites ausentes en worktree; sin budgets inventados.
+next_recommended:
+  owner: delivery
+  action: Marcar3.1 como publicacion/checks iniciales y elegibilidad archive; archivar con validacion y skip-specs por sync aplicado. Stage solo seis artifacts archive B2, excluir B3/locales. Guard committedrange y cinco checks del nuevo HEAD antes de merge normal con match-head-commit.
+skill_resolution:
+  local_skills_used: [git-delivery]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/git-delivery/SKILL.md
+  bootstrap_recommended: false
+  notes: Bloque 2 secuencial del programa autorizado de siete mejoras; root relay ejecuta Git/GH, sin escalaciones propias.
