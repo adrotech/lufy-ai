@@ -14,6 +14,8 @@ Pruebas offline del evaluador:
 python3 -m unittest discover -s tools/codex-behavior-pilot -p 'test_*.py' -v
 ```
 
+`scripts/validate.sh` ejecuta esta suite como gate obligatorio, localmente y en el job Quality de CI. El workflow incluye los cambios de esta carpeta en PR y push. Python 3.9+ es una dependencia de validación; su ausencia o un test fallido devuelve error. Los tests simulan procesos y no ejecutan `--live`, modelos ni autenticación. Las corridas reales conservan su autorización y protocolo separados.
+
 Corrida real explícita, secuencial, con directorio de evidencia nuevo fuera del checkout:
 
 ```bash

@@ -62,6 +62,13 @@ main() {
   whitespace_check
   pr_guard_check
 
+  log "Codex offline regressions (sin modelos ni autenticación)"
+  if ! command -v python3 >/dev/null 2>&1; then
+    printf '%s\n' 'Falta python3 (3.9+). Instala Python y vuelve a ejecutar scripts/validate.sh.' >&2
+    return 1
+  fi
+  python3 -m unittest discover -s "$REPO_ROOT/tools/codex-behavior-pilot" -p 'test_*.py' -v
+
   log "Action pinning"
   "$REPO_ROOT/scripts/check-actions-pinned.sh"
 
