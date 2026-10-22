@@ -1,0 +1,152 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B2 aceptado por muestras documentadas y sincronizado; PR 243 con cinco checks iniciales SUCCESS, elegible archive. Snapshot delivered, gates del nuevo HEAD y merge pendientes.
+artifacts:
+  changed:
+    - tools/codex-behavior-pilot/pilot.py
+    - tools/codex-behavior-pilot/test_pilot.py
+    - tools/codex-behavior-pilot/test_runtime_options.py
+    - tools/codex-behavior-pilot/test_trace_integrity.py
+    - tools/codex-behavior-pilot/scenarios.json
+    - tools/codex-behavior-pilot/README.md
+    - docs/codex-behavior-pilot-2026-10-21.md
+    - openspec/changes/evaluate-codex-workflow-decisions/
+  referenced:
+    - https://github.com/adrotech/lufy-ai/pull/243
+    - f47fd014a27577d221753d8a4a64f4a6c5a8a2b9
+    - pr_review/lufy-odd-comparativa-mejoras.html
+    - /private/tmp/lufy-block2-tests-result.yaml
+    - /private/tmp/lufy-block2-runtime-tests-result.yaml
+    - /private/tmp/lufy-block2-trace-tests-result.yaml
+    - /private/tmp/lufy-codex-pilot-trace-audit-20261022/audit.json
+    - /private/tmp/lufy-codex-pilot-pending-explicit-20261022/summary.json
+    - /private/tmp/lufy-codex-pilot-full-20261021/summary.json
+    - /private/tmp/lufy-codex-pilot-throttle-recovery-20261021/summary.json
+    - /private/tmp/lufy-codex-pilot-recovery-20261022/summary.json
+evidence:
+  commands:
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case delegation-unavailable --codex /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex --model gpt-6.1-sol --reasoning-effort medium --timeout 180 --output /private/tmp/lufy-codex-pilot-isolated-apps-disabled-20261022
+      result: passed
+      notes: Última muestra finalizada exit0, turn.completed,0routererrors, snapshotsiguales, sin comandos/revisióninline; bloqueo explícito. JSONL72f31ac0927c4262e5a301f1d31234053f65807a2e3fa7017b4b818c2412f8be. Sin prueba exhaustiva de inventario ni causalidad atribuida.
+    - command: openspec validate codex-behavior-pilot --type spec --strict
+      result: passed
+      notes: Sync canónico y mirror exacto después de aceptación B2-AC1–AC6.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case handoff-receiver --handoff-from /private/tmp/lufy-codex-pilot-app-handoff-20261022/handoff-producer --codex /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex --model gpt-6.1-sol --reasoning-effort medium --timeout 240 --output /private/tmp/lufy-codex-pilot-handoff-recovered-20261022
+      result: passed
+      notes: Productor revalidado; receptor turno completo sin acciones ni routererrors, referencias/aceptación/ejemplos/restricciones conservados; bloqueo por aprobación sintética ausente.
+    - command: CLI app aislado de handles host y agents.enabled=false
+      result: blocked
+      notes: Muestra medium timeout180s; sin causalidad demostrada. Low previo también inconcluso. Evidencia separada, sin sobrescribir historia ni convertir bloqueo autodeclarado en pass.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case auto-chain --case delegation-unavailable --case handoff-producer --case handoff-receiver --model gpt-5.6-sol --reasoning-effort low --output /private/tmp/lufy-codex-pilot-pending-explicit-20261022 --timeout 180 --interval 10
+      result: blocked
+      notes: Auto-chain passed; delegación con pass inicial reclasificado inconcluso por error del router en stderr no registrado en JSONL. Productor timeout; receptor no ejecutado. Evidencia original preservada.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --model gpt-5.6-sol --reasoning-effort low --output /private/tmp/lufy-codex-pilot-explicit-runtime-20261022 --timeout 180 --interval 10
+      result: blocked
+      notes: Analysis timeout, resto no ejecutado; fijar selección no demostró resolver el bloqueo.
+    - command: python3 -
+      result: passed
+      notes: Auditoría offline con assess corregido y hashes verificados; audit.json conserva fuente y veredicto previo/nuevo. Sin nuevas llamadas al modelo ni sobrescritura de trazas.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case auto-chain --case delegation-unavailable --case handoff-producer --case handoff-receiver --output /private/tmp/lufy-codex-pilot-recovery-20261022 --interval 60 --timeout 180
+      result: blocked
+      notes: Recuperación al día siguiente; auto-chain timeout a los 180 s, sin decisión ni turn.completed. Runner detuvo los otros tres casos. Stderr advirtió caché incompatible, sin causalidad demostrada.
+    - command: python3 -m unittest discover -s tools/codex-behavior-pilot -p 'test_*.py' -v
+      result: passed
+      notes: Root GREEN68/68; 19 originales,22 de runtime/recuperación/aislamiento,8 trazabilidad y19 comparador B4. RED real previo, incluidos falsosverdes y aislamiento. No sustituyen evaluación de modelos.
+    - command: scripts/validate.sh
+      result: passed
+      notes: Suite Go, coverage 80.4%, vet/build y paridad correctos tras sync del bloque 1. Shell lint omitido por shellcheck ausente.
+    - command: openspec validate evaluate-codex-workflow-decisions --strict
+      result: passed
+      notes: Proposal/design/delta válidos; no equivale a aceptación conductual completa.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --output /private/tmp/lufy-codex-pilot-full-20261021 --timeout 150
+      result: blocked
+      notes: Análisis/auth pasaron, mecánico timeout, auto-chain/delegación/productor 429 y receptor no ejecutado.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case mechanical --output /private/tmp/lufy-codex-pilot-smoke-host-20261021 --timeout 90
+      result: passed
+      notes: Caso mecánico T3 con workload explícito y sin escrituras; posterior corrida completa inconclusa conservada.
+    - command: python3 tools/codex-behavior-pilot/pilot.py --live --case auto-chain --case delegation-unavailable --case handoff-producer --case handoff-receiver --output /private/tmp/lufy-codex-pilot-throttle-recovery-20261021 --timeout 120 --interval 60
+      result: blocked
+      notes: Recuperación acotada del 21 de octubre; primer caso timeout y runner detuvo nuevas llamadas.
+    - command: gh pr checks 243 --watch --interval 30
+      result: passed
+      notes: Cinco pass; run 39837591434, watch exit 0.
+    - command: gh pr view 243 --json headRefOid,state,mergeStateStatus,statusCheckRollup
+      result: passed
+      notes: f47fd014a27577d221753d8a4a64f4a6c5a8a2b9 OPEN/CLEAN, cinco SUCCESS, ultimo check 2026-10-22T19:12:20Z.
+  static:
+    - Revisión manual de JSONL, snapshots y decisiones de análisis/mecánico/auth; sin mutaciones en los casos observados.
+    - CLI 0.144.5, roles emulated_cli; se solicita desactivar multi-agent pero no se verifica ausencia efectiva. Sin afirmación de delegación nativa ni identidad de modelo servido.
+    - model/list anunció default gpt-5.6-sol/low y una inferencia mínima con y sin schema terminó correctamente; gpt-6.1-sol solicitado fue rechazado con HTTP 400. No se modificó configuración global.
+    - Auto-chain permanece passed tras auditoría; delegación inconclusa por tool_router_errors. El contador cubre un patrón conocido de stderr y no una auditoría exhaustiva del runtime.
+    - Fuentes en tools/codex-behavior-pilot y reporte en docs; auditoría estructural satisfecha, sin cambios de permisos o auth real.
+    - Sin ledger promotion ni archive B2; aceptación final completa y sync aplicado. Historial antiguo preservado, CLI de app0.163 seleccionable, agents.enabled=false y appsfalse solicitados; cuatro handles host aislados sin alterar auth ni sandbox.
+    - Handoff real productor y receptor completados; recuperación valida fuentes actuales, snapshots, acciones, hash y coincidencia de final con traza antes de consumir un modelo.
+    - Autorización global explícita recibida para finalizar todos los bloques y delivery/merge condicionado a checks.
+diagnostics:
+  memory_provider_used: obsidian:not_available
+  context_graph_status: not_available
+  context_graph_queries: [not_applicable]
+  fallback_reason: Memoria no inicializada y grafo no disponible; evidencia directa y scope explícito del usuario.
+  generic_discovery_before_graph: false
+surface_execution:
+  schema_version: not_available
+  source: not_available
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces: [not_available]
+  validation_rule_ids: [not_available]
+workflow_decision:
+  tier: T1
+  program_tier: T1
+  slice_tier: T2
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: full
+    methodology_required: true
+    execution_mode: full-sdd
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - P1 runner y controles validados68tests; P2 análisis/mecánico/auth/auto-chain/handoff con muestras correctas; delegación final aislada passed; aceptación y sync completos, P3 delivery/archive pendiente.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Un único artifact set aprobado; ejecución secuencial por dependencias.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    candidate_paths: [not_applicable]
+    canonical_artifact_set:
+      - openspec/changes/evaluate-codex-workflow-decisions/
+    merge_plan_required: false
+    human_escalation_triggers: [not_applicable]
+risks:
+  - Muestras de distintas corridas/versiones, sin garantía universal. Configuración solicitada no es inventario exhaustivo; disable_verified=false e identidad no verificada se preservan. El pass inicial corregido y timeouts siguen visibles.
+  - La muestra CLI no demuestra conducta universal, coste, latencia ni comportamiento de la app.
+  - Autorización global humana vigente para delivery/merge de todos los bloques; aceptación y evidencia siguen siendo gates independientes.
+next_recommended:
+  owner: delivery
+  action: Archivar con tasks completas y validacion habilitada, skip-specs por sync aplicado; incorporar ambos archives al PR 243. Esperar cinco checks del nuevo HEAD y merge autorizado con match-head-commit, sin admin ni force. Snapshot no closed.
+skill_resolution:
+  local_skills_used: [sdd-workflow, openspec-propose, openspec-apply-change, openspec-verify-change]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-propose/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/sdd-workflow/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-apply-change/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-verify-change/SKILL.md
+  bootstrap_recommended: false
+  notes: Registry local ready; memoria no inicializada y grafo no disponible preservados.
