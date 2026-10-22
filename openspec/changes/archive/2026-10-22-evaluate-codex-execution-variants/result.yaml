@@ -1,0 +1,112 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B4 validado y sincronizado con decision keep_baseline, adopted false; PR 243 cinco checks iniciales SUCCESS, elegible archive. Snapshot delivered, gates del nuevo HEAD y merge pendientes.
+artifacts:
+  changed:
+    - tools/codex-behavior-pilot/experiment.py
+    - tools/codex-behavior-pilot/test_experiments.py
+    - tools/codex-behavior-pilot/pilot.py
+    - tools/codex-behavior-pilot/README.md
+    - docs/codex-execution-experiments-2026-10-22.md
+    - openspec/specs/codex-execution-experiments/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/codex-execution-experiments/spec.md
+  referenced:
+    - https://github.com/adrotech/lufy-ai/pull/243
+    - f47fd014a27577d221753d8a4a64f4a6c5a8a2b9
+    - /private/tmp/lufy-codex-context-experiment-permitted-20261022/summary.json
+    - /private/tmp/lufy-block4-recovery-20261022.json
+    - /private/tmp/lufy-block4-tests-result.yaml
+evidence:
+  commands:
+    - command: python3 tools/codex-behavior-pilot/experiment.py --live --output /private/tmp/lufy-codex-context-experiment-permitted-20261022 --codex /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex --model gpt-6.1-sol --reasoning-effort medium --pairs 2 --timeout 180 --interval 10
+      result: passed
+      notes: Protocolo finalizado y reportado exit0; primera muestra baseline inconclusive por timeout180s, candidato no ejecutado. No demuestra mejora; keep_baseline, adopted=false.
+    - command: python3 -m unittest discover -s tools/codex-behavior-pilot -p 'test_*.py' -v
+      result: passed
+      notes: Root GREEN68/68 tras RED delegado y adversariales; incluye19 comparador. No sustituyen experimento real.
+    - command: lufy-ai run checkpoint y run verify sobre fixture sintético
+      result: passed
+      notes: recorded seguido de duplicate_noop; hashes sin cambios en retry, fuente saludable, sin gates reales promovidos.
+    - command: openspec validate evaluate-codex-execution-variants --strict
+      result: passed
+      notes: Propuesta válida; resultado negativo previsto por aceptación B4-AC1–AC5.
+    - command: openspec validate codex-execution-experiments --type spec --strict
+      result: passed
+      notes: Spec canónica y mirror exacto sincronizados.
+    - command: go test ./internal/assets
+      result: passed
+      notes: Post-sync assets PASS1.151s; suite completa previa coverage80.4%, vet/build y paridad passed, sin nuevos cambios Go.
+    - command: gh pr checks 243 --watch --interval 30
+      result: passed
+      notes: Cinco pass; run 39837591434, watch exit 0.
+    - command: gh pr view 243 --json headRefOid,state,mergeStateStatus,statusCheckRollup
+      result: passed
+      notes: f47fd014a27577d221753d8a4a64f4a6c5a8a2b9 OPEN/CLEAN, cinco SUCCESS, ultimo check 2026-10-22T19:12:20Z.
+  static:
+    - Se conservan fuentes, sandbox, aprobación y procedencia; fallo o falta de usage impide elegibilidad. No se adopta routing ni se afirma ahorro.
+    - Autorización global humana cubre el plan Lufy/Codex; next owner y checkpoints no amplían alcance. TDD desk check sin causalidad de coste/latencia.
+    - Primer intento exterior Operation not permitted conservado; segundo autorizado completó protocolo hasta timeout. Sin reintentos tras agotar ensayo.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T2
+  program_tier: T1
+  slice_tier: T2
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: lite
+    methodology_required: true
+    execution_mode: sdd-lite
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: false
+  review_slices:
+    - B4 slice T2 experimental; comparador, evidencia y tests en unidad coherente dependiente del runner B2, sin adopción de políticas.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/evaluate-codex-execution-variants/
+risks:
+  - Sin par completo ni mejora reproducible; conservar baseline. Resultado negativo no reemplaza aceptación B2 ni sus gates.
+  - Identidad servida no verificada, trazas completas locales y grafo/configuración/memoria no disponibles.
+next_recommended:
+  owner: delivery
+  action: Archivar con tasks completas y validacion habilitada, skip-specs por sync aplicado; incorporar ambos archives al PR 243. Esperar cinco checks del nuevo HEAD y merge autorizado con match-head-commit, sin admin ni force. Snapshot no closed.
+skill_resolution:
+  local_skills_used: [sdd-workflow, openspec-propose, openspec-apply-change, openspec-sync, openspec-verify-change]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/sdd-workflow/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-sync/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-verify-change/SKILL.md
+  bootstrap_recommended: false
+  notes: Registry ready, sin bootstrap ni inicialización de servicios.
