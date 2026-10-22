@@ -125,7 +125,7 @@ func git(ctx context.Context, root string, args ...string) ([]byte, error) {
 			cmd.Env = append(cmd.Env, entry)
 		}
 	}
-	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull, "GIT_CONFIG_SYSTEM="+os.DevNull, "GIT_TERMINAL_PROMPT=0", "GIT_NO_REPLACE_OBJECTS=1", "GIT_OPTIONAL_LOCKS=0")
+	cmd.Env = append(cmd.Env, "GIT_CONFIG_GLOBAL="+os.DevNull, "GIT_CONFIG_SYSTEM="+os.DevNull, "GIT_TERMINAL_PROMPT=0", "GIT_NO_REPLACE_OBJECTS=1", "GIT_OPTIONAL_LOCKS=0", "GIT_NO_LAZY_FETCH=1")
 	var out boundedBuffer
 	cmd.Stdout = &out
 	cmd.Stderr = io.Discard
@@ -191,6 +191,19 @@ func snapshot(ctx context.Context, root, base, evidenceSHA, role string) (Bindin
 		return b, fmt.Errorf("identidad de repositorio no disponible")
 	}
 	b.RepositorySHA256 = digest([]byte(filepath.Clean(common)))
+	keys, err := git(ctx, root, "config", "--null", "--list", "--name-only")
+	if err != nil {
+		return b, err
+	}
+	for _, key := range bytes.Split(keys, []byte{0}) {
+		name := strings.ToLower(string(key))
+		if name == "extensions.partialclone" || strings.HasPrefix(name, "remote.") && (strings.HasSuffix(name, ".promisor") || strings.HasSuffix(name, ".partialclonefilter")) {
+			return b, fmt.Errorf("partial clones y promisors no admitidos para captura read-only")
+		}
+		if strings.HasPrefix(name, "filter.") {
+			return b, fmt.Errorf("filtros Git configurados no admitidos para captura read-only")
+		}
+	}
 	for _, item := range []struct {
 		ref  string
 		dest *string
@@ -207,15 +220,6 @@ func snapshot(ctx context.Context, root, base, evidenceSHA, role string) (Bindin
 	b.CandidateTree, err = textGit(ctx, root, "rev-parse", "--verify", "--end-of-options", b.CandidateCommit+"^{tree}")
 	if err != nil {
 		return b, err
-	}
-	keys, err := git(ctx, root, "config", "--null", "--list", "--name-only")
-	if err != nil {
-		return b, err
-	}
-	for _, key := range bytes.Split(keys, []byte{0}) {
-		if strings.HasPrefix(strings.ToLower(string(key)), "filter.") {
-			return b, fmt.Errorf("filtros Git configurados no admitidos para captura read-only")
-		}
 	}
 	entries, err := git(ctx, root, "ls-files", "--stage", "-z")
 	if err != nil {

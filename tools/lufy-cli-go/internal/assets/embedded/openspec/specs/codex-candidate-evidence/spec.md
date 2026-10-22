@@ -27,3 +27,7 @@ Lufy SHALL vincular evidencia canónica validada a repositorio, base, candidato 
 #### Scenario: Executable repository configuration
 - **WHEN** hay filtros Git configurados o gitlinks/submódulos
 - **THEN** se rechaza antes de status y sin ejecutar callbacks ni entrar a repositorios hijos
+
+#### Scenario: No implicit object fetch
+- **WHEN** el repositorio declara partial clone o promisor
+- **THEN** se rechaza antes de resolver objetos y no se materializan objetos faltantes mediante lazy fetch
