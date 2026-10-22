@@ -1,6 +1,7 @@
 package governance
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexruntime"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexsurface"
 	contextapp "github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
@@ -24,9 +26,10 @@ import (
 )
 
 type Options struct {
-	Target string
-	JSON   bool
-	Scope  assets.Scope
+	CodexExecutable string
+	Target          string
+	JSON            bool
+	Scope           assets.Scope
 }
 
 type PinOptions struct {
@@ -53,9 +56,10 @@ type InfoReport struct {
 }
 
 type DoctorReport struct {
-	OK         bool          `json:"ok"`
-	TargetRoot string        `json:"targetRoot"`
-	Checks     []DoctorCheck `json:"checks"`
+	CodexRuntime *codexruntime.Report `json:"codex_runtime,omitempty"`
+	OK           bool                 `json:"ok"`
+	TargetRoot   string               `json:"targetRoot"`
+	Checks       []DoctorCheck        `json:"checks"`
 }
 
 type DoctorCheck struct {
@@ -244,12 +248,24 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		report.Checks = append(report.Checks, DoctorCheck{Level: level, Path: path, Message: message})
 	}
 	emit("ok", "", "target resuelto")
+	if opts.CodexExecutable != "" {
+		runtime := codexruntime.NewService().Inspect(context.Background(), codexruntime.Options{Executable: opts.CodexExecutable, Target: target})
+		report.CodexRuntime = &runtime
+		level := "ok"
+		if runtime.Status != "available" {
+			level = "warn"
+		}
+		emit(level, runtime.Executable, fmt.Sprintf("Codex runtime %s; versión=%s; flags=%s; delegación nativa=%s", runtime.Status, runtime.Version, runtime.FeaturesStatus, runtime.NativeDelegation))
+	}
 	if cfg == nil {
 		emit("fail", projectconfig.ProjectConfigPath, cfgStatus)
 	} else {
 		emit("ok", projectconfig.ProjectConfigPath, fmt.Sprintf("project config parseable; stacks=%d surfaces=%d", len(cfg.Stacks), len(cfg.ProjectProfile.Surfaces)))
 	}
 	tool := domain.ToolInitialDefault
+	if opts.CodexExecutable != "" {
+		tool = domain.ToolCodex
+	}
 	if cfg != nil && cfg.Tool != "" {
 		tool = cfg.Tool
 	}

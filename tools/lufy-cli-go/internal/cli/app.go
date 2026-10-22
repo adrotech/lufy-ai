@@ -1350,6 +1350,7 @@ func runDoctor(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	codexExecutable := fs.String("codex", "", "Diagnóstico read-only del ejecutable Codex explícito (path o comando)")
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	if err := fs.Parse(args); err != nil {
@@ -1370,7 +1371,7 @@ func runDoctor(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
-	if err := governance.NewService().Doctor(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope}, deps.Stdout); err != nil {
+	if err := governance.NewService().Doctor(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope, CodexExecutable: *codexExecutable}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
