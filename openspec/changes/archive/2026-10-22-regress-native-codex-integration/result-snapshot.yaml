@@ -1,0 +1,121 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B3 protocolo de regresion nativa observable publicado en PR246 con cinco checks SUCCESS y OPEN/CLEAN. Snapshot delivered elegible archive, sin afirmar native passed; checks del HEAD con archive y merge pendientes.
+artifacts:
+  changed:
+    - docs/codex-operational-readiness-plan.md
+    - docs/codex-native-regression-2026-10-22.md
+    - tools/codex-behavior-pilot/README.md
+    - tools/codex-behavior-pilot/native.py
+    - tools/codex-behavior-pilot/test_native.py
+    - tools/codex-behavior-pilot/test_native_observer.py
+    - tools/codex-behavior-pilot/test_native_runner.py
+    - openspec/specs/codex-native-regression/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/codex-native-regression/spec.md
+  referenced:
+    - openspec/changes/regress-native-codex-integration/
+    - /private/tmp/lufy-seven-b3-pr.md
+    - /private/tmp/lufy-native-regression-20261022-a
+    - /private/tmp/lufy-native-regression-20261022-b
+    - https://github.com/adrotech/lufy-ai/pull/246
+    - 13e15d11ef81c07e11b5afe093d6f7b54d6dcaf6
+    - codex/regress-native-codex-integration
+evidence:
+  commands:
+    - command: scripts/validate.sh
+      result: passed
+      notes: Root confirma exit0 con97 offline, Go coverage80.5, vet/build. Shellcheck local ausente y lint omitido.
+    - command: Offline suite tras hardening de unknown item types
+      result: passed
+      notes: Root reporta RED real separado y GREEN final98 passed0.167s; cambios Python-only posteriores, source Go sin cambio desde suite completa.
+    - command: OpenSpec strict change/canon y assets post-sync
+      result: passed
+      notes: Root confirma strict passed, mirror exacto propio y assets0.476s.
+    - command: Ensayos live bounded A/project y B/inline
+      result: passed
+      notes: Procedimiento completado con CLIexit0 ambos y evaluador exit1 inconclusive. A sin callbacks/reviewer; B con3callbacks lifecycle exit0 pero sin reviewer/recovery y error_item_unknown. No pass nativo.
+    - command: lufy-ai context review --base origin/develop --json
+      result: passed
+      notes: Escalate, graph not_available, traceability unknown, limites ausentes; dos tracked antes stage no representan scope9.
+    - command: Manifest y revision source/mirror
+      result: passed
+      notes: Propia manifest9 rutas existentes, mirror exacto, stage vacio; evaluator fail-closed, runner y confianza fixture revisados.
+    - command: git commit y push con PR246
+      result: passed
+      notes: Relay root confirma HEAD13e15d11ef81c07e11b5afe093d6f7b54d6dcaf6; stage9 exacto, guard9 y committed whitespace passed; PR creado/attached.
+    - command: gh pr view246 con statusCheckRollup
+      result: passed
+      notes: Root confirma OPEN/CLEAN y cinco SUCCESS en HEAD13e15d11ef81c07e11b5afe093d6f7b54d6dcaf6, run39864770558; Windows22:26:58Z e installer22:27:18Z del2026-10-22.
+  static:
+    - TDD report inicial validado por root fingerprint98ad857bad0e08f0fad6a6aec4ec8d3ce9ed7b1598d0808d6ce36147a6682413; tres RED adicionales unknownitems registrados aparte antes del fix final.
+    - A/project native_reviewer_missing; B/inline SessionStart/Stop/SessionEnd observados, cada lifecycle Lufy exit0; reviewer/recovery no observados. Chain native no verificada en esos perfiles.
+    - Warning SessionEnd timeoutclamp permanece en artifact original; fix3s cubierto offline posterior sin nueva muestra live atribuida.
+    - Fixture read-only/approval never, userconfig ignorada, apps/plugins desactivados, cuatro handles host omitidos; no globals, credenciales ni auth cambiadas. Live POSIX y outputs externos nuevos.
+    - Hooks revisados/hasheados, confianza invocacion con dangerously-bypass-hook-trust limitada al fixture; no persistencia ni ampliacion sandbox, no wrapper sin instrumentar probado.
+    - Usuario autorizo programa siete bloques; aceptacion del protocolo permite inconclusive honesto ante capacidad no expuesta, no requiere inventar native pass.
+    - Source local .lufy y activechange no se incluyen en stage; padre mixed y dist ajeno intactos.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T1
+  program_tier: T1
+  slice_tier: T1
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: full
+    methodology_required: true
+    execution_mode: full-sdd
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - Bloque 3 T1 del programa T1; nueve rutas de protocolo transversal y confianza de hooks; plan y aceptacion cubren collector/evaluacion/runner/tests/docs/spec/mirror en unidad coherente.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/regress-native-codex-integration/
+risks:
+  - Cadena nativa completa no verificada en perfiles CLI A/B; resultados inconclusive no se convierten en pass ni bloquean entrega del protocolo fail-closed aceptado.
+  - Hooks instrumentados no prueban wrapper instalado sin instrumentacion; confianza solo de fixture revisado/hasheado en invocacion, sin ampliar sandbox ni persistir confianza.
+  - Modelo solicitado e inventario no atestados; capability_overrides_verified false y runtime_identity_verified false preservados.
+  - Ajuste SessionEnd3s fue posterior y offline; no se atribuye otro ensayo live exitoso ni causalidad.
+  - context review escalate con graph not_available/traceability unknown y limites ausentes; scope9 y mirrors preservados por revision directa.
+next_recommended:
+  owner: delivery
+  action: Completar task3.1 como publicacion/checks iniciales y elegibilidad archive. Archive validado con skip-specs por sync aplicado, stage solo seis artifacts B3 y excluir B4/locales; committedrange guard y cinco checks del nuevo HEAD antes de merge normal con match-head-commit. Sin polling/escalaciones propias.
+skill_resolution:
+  local_skills_used: [git-delivery]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/git-delivery/SKILL.md
+  bootstrap_recommended: false
+  notes: B3 T1 por protocolo transversal y confianza de hooks; unidad coherente collector/evaluator/runner/tests, no promesa de soporte nativo completo.
