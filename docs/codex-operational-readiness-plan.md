@@ -8,8 +8,8 @@ Programa T1 autorizado por el usuario el 2026-10-22 para implementar, validar y 
 | 2 | Diagnóstico Codex y uso de configuración local | El diagnóstico distingue configuración, ejecutable y capacidades observadas; memoria/grafo locales se activan de manera explícita sin sobrescribir archivos del usuario | closed — PR 245 |
 | 3 | Regresión de integración nativa | Un protocolo reproducible conserva evidencia de roles, hooks, handoff y recuperación; una capacidad no expuesta queda unavailable, nunca un pass inferido | closed — PR 246; ensayo CLI inconcluso |
 | 4 | Eventos semánticos de review | Operaciones explícitas de revisión emiten eventos content-free e idempotentes; el lifecycle genérico no se convierte en review por inferencia | closed — PR 247 |
-| 5 | Evidencia ligada al candidato | Identidad de repositorio, base y candidato vinculan la evidencia; modificar el candidato invalida su vigencia sin reescribir el resultado original | validated — publicación pendiente |
-| 6 | Instrucciones Codex coherentes | Reglas comunes, mapping y mirrors tienen una fuente identificada; comprobaciones detectan divergencia y mensajes incompatibles con el lifecycle soportado | planned |
+| 5 | Evidencia ligada al candidato | Identidad de repositorio, base y candidato vinculan la evidencia; modificar el candidato invalida su vigencia sin reescribir el resultado original | closed — PR 248 |
+| 6 | Instrucciones Codex coherentes | Reglas comunes, mapping y mirrors tienen una fuente identificada; comprobaciones detectan divergencia y mensajes incompatibles con el lifecycle soportado | validated — publicación pendiente |
 | 7 | Experimento reproducible de eficiencia | Variantes usan fuentes, aceptación y runtime comparables; datos incompletos conservan baseline y ninguna variante se adopta automáticamente | planned |
 
 ## Ejecución y review
