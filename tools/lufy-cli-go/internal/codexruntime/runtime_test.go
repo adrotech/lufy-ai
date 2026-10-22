@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,6 +12,15 @@ import (
 )
 
 const fixtureFeatures = "multi_agent experimental false\nhooks under development false\napps stable true\nplugins experimental false\n"
+
+func fixtureAbsolute(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resolved
+}
 
 func fixtureService(t *testing.T, probe func(context.Context, string, []string, string) ([]byte, error)) Service {
 	t.Helper()
@@ -39,7 +49,7 @@ func TestInspectDefaultUsesPATHOnlyVersionAndFeaturesInTarget(t *testing.T) {
 	var calls [][]string
 	var sharedDeadline time.Time
 	service := fixtureService(t, func(ctx context.Context, executable string, args []string, cwd string) ([]byte, error) {
-		if executable != "/fixture/bin/codex" || cwd != "/fixture/target" {
+		if executable != fixtureAbsolute(t, "/fixture/bin/codex") || cwd != "/fixture/target" {
 			t.Fatalf("incorrect executable/cwd: %q %q", executable, cwd)
 		}
 		deadline, ok := ctx.Deadline()
@@ -54,7 +64,7 @@ func TestInspectDefaultUsesPATHOnlyVersionAndFeaturesInTarget(t *testing.T) {
 		return validFixtureProbe(ctx, executable, args, cwd)
 	})
 	report := service.Inspect(context.Background(), Options{Target: "/fixture/target"})
-	if report.SchemaVersion != "codex-runtime-report/v1" || report.Status != "available" || report.Executable != "/fixture/bin/codex" || report.PathExecutable != "/fixture/bin/codex" {
+	if report.SchemaVersion != "codex-runtime-report/v1" || report.Status != "available" || report.Executable != fixtureAbsolute(t, "/fixture/bin/codex") || report.PathExecutable != fixtureAbsolute(t, "/fixture/bin/codex") {
 		t.Fatalf("unexpected default report: %#v", report)
 	}
 	if report.Selection != "path" || !strings.Contains(report.Version, "0.163.0-alpha.10.2") || strings.Contains(report.Version, "warning") {
@@ -76,10 +86,10 @@ func TestInspectExplicitExecutablePassesLiteralPathAndCustomDeadline(t *testing.
 		return validFixtureProbe(ctx, executable, args, cwd)
 	})
 	report := service.Inspect(context.Background(), Options{Executable: "/fixture/App Folder/codex", Target: "/fixture/target", Timeout: 200 * time.Millisecond})
-	if report.Executable != "/fixture/App Folder/codex" || report.Selection != "explicit" {
+	if report.Executable != fixtureAbsolute(t, "/fixture/App Folder/codex") || report.Selection != "explicit" {
 		t.Fatalf("explicit executable selection lost: %#v", report)
 	}
-	if !reflect.DeepEqual(executables, []string{"/fixture/App Folder/codex", "/fixture/App Folder/codex"}) {
+	if !reflect.DeepEqual(executables, []string{fixtureAbsolute(t, "/fixture/App Folder/codex"), fixtureAbsolute(t, "/fixture/App Folder/codex")}) {
 		t.Fatalf("explicit executable must remain a literal path without shell: %#v", executables)
 	}
 }
