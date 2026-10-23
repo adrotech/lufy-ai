@@ -26,7 +26,7 @@
 
 `lufy-ai` es un harness instalable. No reemplaza tu stack, no genera una app y no fuerza una metodología única. Agrega una capa operativa sobre un repositorio para coordinar agentes, reglas de workflow, specs, validación, delivery, memoria local, grafo de contexto y assets gestionados.
 
-La release estable `v0.6.24` ofrece **OpenCode y Codex** como tool adapters escribibles project-locales. OpenSpec y Lufy SDD Full/Lite son methodology adapters instalables por tier. El core mantiene tiers, roles, Result Contract, validación, Run Ledger, Context Graph, memoria y managed assets como dominio neutral.
+La release estable `v0.6.25` ofrece **OpenCode y Codex** como tool adapters escribibles project-locales. OpenSpec y Lufy SDD Full/Lite son methodology adapters instalables por tier. El core mantiene tiers, roles, Result Contract, validación, Run Ledger, Context Graph, memoria y managed assets como dominio neutral.
 
 El objetivo de producto es que Lufy sea el harness y que la tool sea reemplazable: hoy OpenCode es el preset productivo principal, Codex ya tiene adapter core escribible project-local y Claude Code sigue como preview dry-run hasta que exista una superficie validada.
 
@@ -53,14 +53,14 @@ En proyectos reales, usar agentes sin una capa de harness suele dejar tres probl
 
 ## Quickstart
 
-Release estable actual: `v0.6.24`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+Release estable actual: `v0.6.25`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
 
 ### 1. Instalar el binario
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.24 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.25 --install-dir "$HOME/.local/bin"
 ```
 
 ### 2. Revisar el plan end-to-end sobre tu repo
@@ -405,7 +405,7 @@ Ver [`docs/github-branch-settings.md`](docs/github-branch-settings.md) y [`docs/
 
 ## Estado real
 
-Disponible en `v0.6.24`:
+Disponible en `v0.6.25`:
 
 - OpenCode y Codex como tool adapters escribibles project-locales.
 - OpenSpec y Lufy SDD Full/Lite como metodologías instalables por tier.

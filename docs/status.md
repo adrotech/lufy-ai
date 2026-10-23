@@ -1,6 +1,6 @@
 # Estado del producto
 
-Este documento describe el estado instalable de la release estable `v0.6.24`. El código en una rama, una proposal o un change activo no cuenta como capacidad publicada hasta completar validación, merge a `main`, tag y release.
+Este documento describe el estado instalable de la release estable `v0.6.25`. El código en una rama, una proposal o un change activo no cuenta como capacidad publicada hasta completar validación, merge a `main`, tag y release.
 
 ## Capacidades vigentes
 
@@ -19,6 +19,8 @@ Este documento describe el estado instalable de la release estable `v0.6.24`. El
 | Managed assets | Disponible | Install/sync/uninstall, manifest schema v2, SHA-256, backup/restore, pin/unpin y merge seguro. |
 | Observabilidad humana | Disponible | Agent Observatory para OpenCode y reportes HTML offline de proposal, PR y tiempo. |
 | Release | Disponible | Binarios multi-OS/arch, checksums, SBOM, provenance, firma keyless y E2E post-release. |
+| Diagnóstico y evidencia Codex | Disponible | Diagnóstico de runtime, eventos explícitos de review y binding de evidencia al candidato Git. |
+| Regresión Codex | Disponible con límites | Suite offline en CI y perfil nativo opt-in con facetas independientes; cierre integral no disponible. |
 
 ## Roles del harness
 
@@ -45,6 +47,8 @@ En orden de autoridad:
 - Run Ledger no guarda prompts, respuestas, transcripts, diffs, secretos ni contenido libre.
 - Adaptive routing no avanza gates y preempta ante delivery, seguridad, contratos públicos, schema de base de datos o migraciones destructivas.
 - Delivery, commit, push, PR, merge y promoción siguen requiriendo autorización explícita.
+- Las auditorías nativas acreditan rol y recuperación en muestras concretas; no prueban cierre ni calidad del reviewer en tareas productivas. Los fixes posteriores se verificaron offline y por replay.
+- Se conserva el baseline inline: la comparación por referencia quedó inconclusa y no acredita ahorro de tokens, coste o latencia.
 
 ## Cómo verificar un target
 
