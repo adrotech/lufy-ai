@@ -1,0 +1,124 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B4 productor explicito publicado en PR247 con cinco checks SUCCESS y OPEN/CLEAN en21e051c. Snapshot delivered elegible archive, sin identidad nativa/binding Git/gates avanzados afirmados; HEAD con archive y merge pendientes.
+artifacts:
+  changed:
+    - docs/codex-operational-readiness-plan.md
+    - docs/codex-review-events.md
+    - tools/lufy-cli-go/internal/cli/app.go
+    - tools/lufy-cli-go/internal/cli/app_review.go
+    - tools/lufy-cli-go/internal/cli/app_review_events_external_test.go
+    - tools/lufy-cli-go/internal/reviewevents/service.go
+    - tools/lufy-cli-go/internal/reviewevents/service_test.go
+    - tools/lufy-cli-go/internal/reviewevents/service_adversarial_test.go
+    - openspec/specs/codex-semantic-review-events/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/codex-semantic-review-events/spec.md
+  referenced:
+    - openspec/changes/produce-semantic-codex-review-events/
+    - /private/tmp/lufy-seven-b4-pr.md
+    - /private/tmp/lufy-seven-b4-tests-result.yaml
+    - /private/tmp/lufy-seven-b4-validation.log
+    - /private/tmp/lufy-seven-b4-review.json
+    - https://github.com/adrotech/lufy-ai/pull/247
+    - 21e051cc7807e903e058f6e8d20311684a8a88d2
+    - codex/emit-semantic-review-events
+evidence:
+  commands:
+    - command: scripts/validate.sh
+      result: passed
+      notes: Root confirma exit0; 98 offline, Go global80.5/reviewevents93, vet/build. Shellcheck ausente local y lint omitido.
+    - command: Test-writer RED/GREEN y triangulacion CLI/servicio
+      result: passed
+      notes: RED tuplecollision y help antes de fix; GREEN completo. Reporte validado fingerprint8fd198d4f60fb87bec1105e29d65250c5b15f2ad820f3dee62cfae8bf4f8c814 comunicado por root.
+    - command: OpenSpec strict change/canon y assets post-sync
+      result: passed
+      notes: Root confirma strict passed y assets0.434s; espejo exacto propio verificado.
+    - command: lufy-ai review start/complete y context metrics del productor
+      result: passed
+      notes: Observacion manual root start22:36:27.859229 y complete22:37:04.000799, duracion36141ms; metrics available1completed/2recognized y retry duplicate_noop. Solo evidencia declarada del host.
+    - command: lufy-ai context review --base origin/develop --json
+      result: passed
+      notes: Escalate con graph not_available, traceability unknown y limites ausentes; dos tracked antes stage no representan diez rutas reales.
+    - command: Manifest y revision source/mirror
+      result: passed
+      notes: Propia manifest10 existente, mirror exacto y stage vacio; CLI/servicio/docs/proposal leidos, claves separan hashes por componente y metadata no incluye checkpoint.
+    - command: git commit/push y gh pr create/attach
+      result: passed
+      notes: Root confirma 21e051cc7807e903e058f6e8d20311684a8a88d2, stage exacto10, guard worktree/committed y whitespace passed, push y PR247 adjuntado.
+    - command: gh pr view247 con statusCheckRollup
+      result: passed
+      notes: Snapshot root2026-10-22T22:39:50Z muestra cuatro checks pendientes, run39866564899 y BLOCKED esperado; ningun claim de checks verdes ni closed.
+    - command: gh pr view247 con statusCheckRollup posterior
+      result: passed
+      notes: Root confirma cinco SUCCESS/CLEAN en21e051cc7807e903e058f6e8d20311684a8a88d2, run39866564899; Quality22:41:17Z/Ubuntu22:40:24Z/macOS22:40:30Z/Windows22:42:23Z/installer22:42:47Z del2026-10-22.
+  static:
+    - Servicio usa FileStore/proyector reales y CAS, retries conservan timestamp y duplicate_noop, conflictos no generan conclusion falsa. Evidencia estricta y claim reviewer requerido salvo start.
+    - No cuerpos de contrato, findings, prompts, rutas de evidencia ni variables de entorno persistidos; solo timestamps, semantic names, outcome y fingerprint canonical.
+    - Review manual del productor no prueba identidad nativa ni binding al candidato; checks/gates y terminalidad independientes. Lifecycle SubagentStart/Stop/SessionEnd no se convierte en review.
+    - Locales .lufy config/memory/managed-state/workflows/stores y activechange fuera de PR; checkout primario mixed y dist preservados. Sin cambios OpenCode/Pi.
+    - Usuario autorizo siete bloques y delivery con checks; T1 por contrato operacional nuevo, unidad revisable cubierta por plan, sin usar conteo como autorizacion.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T1
+  program_tier: T1
+  slice_tier: T1
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: full
+    methodology_required: true
+    execution_mode: full-sdd
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - Bloque 4 T1 del programa T1; diez rutas de productor explicito CLI/servicio/tests/docs/spec y mirror, cubiertas por plan/aceptacion/validacion en unidad coherente.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/produce-semantic-codex-review-events/
+risks:
+  - Outcome es declarado por el host; validacion estructural no prueba calidad de review ni identidad nativa.
+  - Evidencia todavia no ligada a candidato Git exacto; binding corresponde al bloque5, sin claims anticipados.
+  - Eventos KindEvidence sin checkpoint no avanzan gates ni estado terminal; lifecycle generico no se infiere como review.
+  - IDs deben ser opacos y sin datos personales; review/operation hasheados, RunID identifica stream existente. Sin cuerpos/rutas/env persistidos.
+  - context review escalate por graph not_available/traceability unknown y limites ausentes; scope10 y mirrors preservados por revision directa.
+next_recommended:
+  owner: delivery
+  action: Marcar3.1 publicacion/checks iniciales y elegibilidad archive; archive validado con skip-specs por sync aplicado, stage solo seis artifacts B4 y excluir B5/locales. Guard del rango comprometido y cinco checks del HEAD final antes merge con match-head-commit exacto. Sin polling/escalaciones propias.
+skill_resolution:
+  local_skills_used: [git-delivery]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/git-delivery/SKILL.md
+  bootstrap_recommended: false
+  notes: B4 T1 por productor CLI/contrato operacional explicito; unidad coherente servicio/CLI/pruebas/docs/spec, sin inferencia de lifecycle ni permisos ampliados.

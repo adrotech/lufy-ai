@@ -472,42 +472,61 @@ func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error
 }
 
 func (s Service) Metrics(root string) MetricsResult {
-	projection := adapters.LoadWorkflowProjection(root)
+	return metricsFromProjection(adapters.LoadWorkflowProjection(root))
+}
+
+func metricsFromProjection(projection adapters.WorkflowProjection) MetricsResult {
 	result := MetricsResult{Status: "unavailable", LedgerAvailability: projection.Availability, Truncated: projection.Truncated}
 	if projection.Availability == "unavailable" {
 		result.Recovery = projection.Recovery
 		return result
 	}
-	starts := map[string]time.Time{}
+	type reviewKey struct{ runID, taskRef string }
+	starts := map[reviewKey]time.Time{}
 	var totalDuration int64
 	incomplete := projection.Availability == "partial"
 	for _, event := range projection.Events {
+		key := reviewKey{runID: event.RunID, taskRef: event.TaskRef}
 		switch event.EventName {
 		case "review.started":
 			result.RecognizedEvents++
+			if _, exists := starts[key]; exists {
+				incomplete = true
+				appendMetricMissing(&result, "ambiguous_review_pair")
+				starts[key] = time.Time{}
+				continue
+			}
+			starts[key] = event.OccurredAt
 			if event.OccurredAt.IsZero() {
 				incomplete = true
 				appendMetricMissing(&result, "review_started_timestamp")
 				continue
 			}
-			starts[event.RunID] = event.OccurredAt
 		case "review.completed":
 			result.RecognizedEvents++
-			start, ok := starts[event.RunID]
-			if !ok || event.OccurredAt.IsZero() || event.OccurredAt.Before(start) {
+			start, ok := starts[key]
+			delete(starts, key)
+			if !ok || start.IsZero() || event.OccurredAt.IsZero() || event.OccurredAt.Before(start) {
 				incomplete = true
 				appendMetricMissing(&result, "review_pair_or_timestamp")
 				continue
 			}
 			totalDuration += event.OccurredAt.Sub(start).Milliseconds()
 			result.CompletedReviews++
-			delete(starts, event.RunID)
 		case "review.rework":
 			result.RecognizedEvents++
 			result.ReworkCount++
+			if event.OccurredAt.IsZero() {
+				incomplete = true
+				appendMetricMissing(&result, "review_rework_timestamp")
+			}
 		case "defect.reopened":
 			result.RecognizedEvents++
 			result.ReopenedDefectCount++
+			if event.OccurredAt.IsZero() {
+				incomplete = true
+				appendMetricMissing(&result, "defect_reopened_timestamp")
+			}
 		}
 	}
 	if len(starts) > 0 {

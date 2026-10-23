@@ -56,6 +56,29 @@ Canonical policy for lufy-ai agents, commands, and skills.
 - Delivery stop conditions use `workflow_limits.stop_rules`; when a configured stop condition is hit, pause and report `blocked` or `delivery_pending` with the exact recovery path instead of continuing silently.
 - Top-level `loc_budget` and `delivery_strategy` are legacy/non-canonical and must not drive sizing, routing, slicing, batching, preflight, stop rules, delivery authorization, or closure.
 
+## Decisiones proporcionales y precedencia
+
+El tier se determina por riesgo, incertidumbre e impacto. El recuento de archivos por sí solo no eleva el tier: volumen y LOC informan workload y carga de review; tracking informa recuperabilidad y paralelismo exige independencia. Si aparece riesgo nuevo, se escala por esa evidencia y no por la cifra aislada.
+
+Un cambio de una línea en auth runtime o configuración sensible conserva routing previo, al menos T2 y `fast_path_allowed: false`. El bajo volumen no reduce los controles de seguridad.
+
+Un archivo significativo requiere una decisión sustantiva sobre comportamiento, aceptación, contrato, configuración operacional o instrucciones del harness. El formato documental no lo excluye. Una repetición mecánica demostrablemente equivalente no añade por sí misma una decisión de riesgo.
+
+- Al alcanzar cuatro o más archivos significativos, comprobar que un plan/slice vigente y pertinente cubre alcance, aceptación y validación. Registrar esa cobertura permite continuar sólo con los gates independientes satisfechos, sin repetir aprobación sólo por recuento. Si falta cobertura o aparece alcance ampliado no cubierto, pausar en una frontera segura, resumir evidencia y requerir decisión de workload/plan antes de continuar escrituras amplias.
+- Al estimar cinco o más archivos, el router debe emitir una decisión de workload justificada. Proponer slices cuando reduzcan carga o riesgo; conservar una única unidad justificada cuando dividir no aporte valor y no fragmentar T3 artificialmente.
+- Fuentes gestionadas y mirrors sincronizados pueden representar la misma decisión lógica. Mantener ambos archivos, su diff y churn real visibles en Git/review, comprobar paridad y no excluir mirrors del assessment ejecutable. Consolidar el contexto no reduce el volumen observado del cambio.
+
+Las restricciones se combinan conservadoramente, con esta precedencia:
+
+1. Alcance y autorización explícitos del usuario dentro de los invariantes de seguridad y permisos del harness.
+2. Gates independientes de aprobación post-plan, seguridad, contratos públicos, validación y delivery. La cobertura de amplitud, `auto-chain`, next owner o un budget satisfecho no conceden autorización ni amplían permisos.
+3. Límites configurables disponibles únicamente desde `workflow_limits`: sizing, routing, review, proposal slicing, delivery batching, preflight y stop rules conservan sus funciones separadas.
+4. Checkpoints del harness declarados, también cuando falta configuración. Distinguirlos de la configuración efectivamente leída; reportar paths ausentes como `not_available` y no inventar budgets efectivos desde defaults de generación ni aliases legacy.
+
+Un plan suficiente no desactiva una stop rule independiente: con una regla activa reportar `blocked` o `escalated`, regla, evidencia y recovery antes de continuar. La configuración inválida o una ambigüedad con consecuencias sobre autorización o seguridad requiere diagnóstico/decisión concreta, preservando restricciones. Estas reglas no sustituyen los estados específicos de delivery ni sus gates.
+
+Reutilizar plan, criterios de aceptación y fuentes ya recibidos; reabrir exploración sólo por alcance, evidencia o riesgo nuevos. Registrar cobertura y decisión en los campos existentes del Result Contract, sin cambiar su schema.
+
 ## OpenSpec Task/Block Gate
 
 Evaluate completion at the smallest coherent delivery unit: a `tasks.md` task, an implementation block, or a review slice. Nested micro-checkboxes can track internal progress, but they do not trigger full validation, delivery, archive readiness, or closure unless explicitly declared as the coherent unit.

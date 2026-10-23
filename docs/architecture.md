@@ -1,6 +1,6 @@
 # Arquitectura
 
-`lufy-ai` está evolucionando de un kit OpenCode/OpenSpec a un harness neutral con adapters. La implementación productiva actual instala OpenCode como default y Codex como adapter escribible core project-local; el dominio separa lo que pertenece a Lufy de lo que pertenece a una tool o metodología concreta.
+`lufy-ai` es un harness neutral con adapters. La release `v0.6.24` instala OpenCode como default y Codex como adapter escribible project-local; el dominio separa lo que pertenece a Lufy de lo que pertenece a una tool o metodología concreta.
 
 ## Objetivo arquitectónico
 
@@ -22,7 +22,7 @@ La tool debe ser un adapter:
 La metodología también debe ser un adapter:
 
 - `openspec` es la metodología principal actual;
-- `lufy-sdd` existe como superficie seleccionable y su lifecycle Full/Lite nativo, con overview HTML derivado, está implementado como candidate pendiente de validación/delivery;
+- `lufy-sdd` ofrece lifecycle Full/Lite nativo, con overview HTML derivado, deltas, validación, sync y archive;
 - `none` es válido solo donde la policy lo permite, típicamente T3.
 
 ## Capas
@@ -97,6 +97,10 @@ lufy-ai context query --target <repo> "service"
 lufy-ai context path --target <repo> <from> <to>
 lufy-ai context explain --target <repo> <node-or-edge>
 lufy-ai context diff --target <repo> --base origin/develop
+lufy-ai context coverage --target <repo>
+lufy-ai context trace --target <repo> <node>
+lufy-ai context review --target <repo> --base origin/develop
+lufy-ai context metrics --target <repo>
 ```
 
 Los artefactos persistidos por defecto viven bajo `.lufy/context/` (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/`). El manifest y cache no son configuración: se regeneran desde `project.yaml` y el workspace. Los agentes consumen el grafo como índice secundario para `context_graph_hints`; si falta o está stale, degradan a `not_available`/`stale` y siguen con inspección de archivos, diff y validación normal. La salida incluye ranking, comunidades determinísticas, nodos importantes, preguntas sugeridas y vecinos acotados para ahorrar lecturas/tokens iniciales. La semántica/LLM es una fase futura opcional: el comportamiento actual es conservador y local, por lo que ninguna inferencia del grafo reemplaza evidencia directa de archivos actuales, tests, logs o comandos.

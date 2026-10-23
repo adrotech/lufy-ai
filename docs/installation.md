@@ -8,7 +8,7 @@ Esta guía cubre:
 - verificación, sync, uninstall y reinstall;
 - troubleshooting básico.
 
-Versión de release preparada en el source tree: `v0.6.24`.
+Release estable actual: `v0.6.25`.
 
 ## Requisitos
 
@@ -24,9 +24,9 @@ El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario 
 Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.24 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.6.25 --install-dir "$HOME/.local/bin"
 ```
 
 El bootstrap:
@@ -40,8 +40,8 @@ El bootstrap:
 Atajo directo, solo si ya revisaste el script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.24/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.24 --install-dir "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh \
+  | bash -s -- --version v0.6.25 --install-dir "$HOME/.local/bin"
 ```
 
 ## PATH por shell
@@ -68,12 +68,12 @@ set -gx PATH $HOME/.local/bin $PATH
 
 ### Windows nativo
 
-1. Descarga `lufy-ai_v0.6.24_windows_amd64.zip` o `lufy-ai_v0.6.24_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.24_checksums.txt`.
+1. Descarga `lufy-ai_v0.6.25_windows_amd64.zip` o `lufy-ai_v0.6.25_windows_arm64.zip`.
+2. Descarga `lufy-ai_v0.6.25_checksums.txt`.
 3. Verifica el hash:
 
    ```powershell
-   Get-FileHash .\lufy-ai_v0.6.24_windows_amd64.zip -Algorithm SHA256
+   Get-FileHash .\lufy-ai_v0.6.25_windows_amd64.zip -Algorithm SHA256
    ```
 
 4. Extrae `lufy-ai.exe` en un directorio de usuario.
@@ -148,7 +148,7 @@ lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodolog
 lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
 ```
 
-`T1:lufy-sdd/full` ya tiene un candidate de lifecycle nativo en el change `complete-lufy-sdd-full-workflow`, pero todavía requiere validación Go/CI y delivery antes de considerarse disponible en una release. El flujo previsto es:
+`T1:lufy-sdd/full` y `T2:lufy-sdd/lite` están disponibles en la release estable. El lifecycle nativo es:
 
 ```bash
 lufy-ai sdd new --change <name> --mode full --capability <name>
@@ -184,7 +184,10 @@ En scope `project`, la CLI gestiona:
 - `tui.json`;
 - `openspec/` cuando la metodología lo requiere;
 - `.lufy/workflows/sdd/` cuando se selecciona `lufy-sdd`;
+- `.lufy/contracts/` para contratos neutrales compartidos;
 - `.lufy/managed-state/install-state.json`.
+
+El uso del harness puede crear estado local no gestionado por `sync`: `.lufy/context/` y `.lufy/skill-registry.json` son derivados/regenerables; `.lufy/runtime/` contiene el Run Ledger content-free; `.lufy/memory/` es memoria privada user-owned.
 
 `AGENTS.md` es user-owned. `install` solo agrega la integración LUFY gestionada:
 
@@ -343,8 +346,8 @@ lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
 `upgrade` requiere versión fija.
 
 ```bash
-lufy-ai upgrade --to v0.6.24 --dry-run
-lufy-ai upgrade --to v0.6.24
+lufy-ai upgrade --to v0.6.25 --dry-run
+lufy-ai upgrade --to v0.6.25
 ```
 
 Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.

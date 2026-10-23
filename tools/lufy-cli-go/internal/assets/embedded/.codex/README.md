@@ -1,13 +1,14 @@
-# Lufy Codex Surface
+# Superficie Lufy para Codex
 
-This directory contains project-local Codex configuration managed by `lufy-ai`.
+Esta carpeta contiene assets locales gestionados por `lufy-ai`.
 
-- `agents/`: custom Codex agents for Lufy roles.
-- `lufy-agent-mapping.md`: required native/emulated/inline role mapping guidance for Codex runtimes, including `@<lufy-role>` delegation handling.
-- `hooks.json`: lifecycle Lufy para orientación, diagnóstico de handoffs, estado SDD y validación best-effort de memoria. Los hooks no leen transcripts ni avanzan gates.
-- `rules/`: policy conservadora para delivery y comandos destructivos; una decisión técnica `prompt` nunca reemplaza autorización del usuario.
-- `config.toml`: minimal project Codex configuration with multi-agent enabled.
+- `agents/`: instrucciones de los roles Lufy; conservan límites particulares y autorización de delivery.
+- `lufy-agent-mapping.md`: fuente Codex para modos native/emulated/inline, menciones `@<rol>`, recuperación de handoffs y resolución de skills. Leerla antes de delegar; evita repetir el procedimiento en cada entrada.
+- `instructions/proportional-workflow.md`: wording compartido materializado inline en tres roles; la autoridad sigue en `.lufy/contracts/delivery.md`.
+- `hooks.json`: lifecycle para orientación, diagnóstico de handoffs, SDD y validación best-effort de memoria; sin transcripts ni avance de gates.
+- `rules/`: controles conservadores de delivery y comandos destructivos; `prompt` nunca sustituye autorización humana.
+- `config.toml`: configuración local mínima con multi-agent y hooks habilitados; los flags no prueban disponibilidad efectiva.
 
-Codex loads project-local `.codex` layers only when the project is trusted.
-Review and trust changed hooks with `/hooks`. If `lufy-ai` is unavailable, SessionStart emits recovery and continues without advancing workflow state.
-Use Lufy custom agents natively when tool discovery exposes them. Treat `@orchestrator` and other `@<lufy-role>` mentions as delegation requests: spawn the requested subagent, wait for its result, close it, then synthesize. If a Codex runtime exposes only generic invokable roles (`default`, `explorer`, `worker`) or no subagent tooling, degrade explicitly through the mapping guide instead of reporting native Lufy subagents or continuing inline silently.
+Las capas del proyecto requieren confianza. Revisar cambios de hooks con `/hooks`; si falta `lufy-ai`, SessionStart informa recovery y conserva el workflow. Consultar [el protocolo de regresión](https://github.com/adrotech/lufy-ai/blob/develop/docs/codex-native-regression-2026-10-22.md) para distinguir configuración de callbacks/handoffs observados. Una instrucción read-only no crea por sí sola un sandbox independiente: se conserva la política efectiva del padre.
+
+En el repositorio fuente de Lufy, antes de publicar cambios, ejecutar `python3 scripts/render-codex-instructions.py --check`. Para materializar una edición compartida autorizada, usar `--write`; después ejecutar la validación agrupada. Los mirrors deben coincidir y permanecen visibles en Git/review. No se adopta una variante de menor contexto sin el experimento controlado del bloque 7.

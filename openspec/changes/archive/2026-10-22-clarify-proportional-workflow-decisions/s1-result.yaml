@@ -1,0 +1,97 @@
+schema_version: result-contract/v1
+status: validated
+legacy_fallback: false
+executive_summary: S1 implementado y validado; contrato proporcional, matriz de nueve escenarios y mirror sincronizados. S2 y S3 pendientes.
+artifacts:
+  changed:
+    - .lufy/contracts/delivery.md
+    - docs/harness-workflow.md
+    - tools/lufy-cli-go/internal/assets/embedded/.lufy/contracts/delivery.md
+    - tools/lufy-cli-go/internal/assets/proportional_workflow_test.go
+    - openspec/changes/clarify-proportional-workflow-decisions/proposal.md
+    - openspec/changes/clarify-proportional-workflow-decisions/tasks.md
+    - openspec/changes/clarify-proportional-workflow-decisions/s1-result.yaml
+  referenced:
+    - openspec/changes/clarify-proportional-workflow-decisions/design.md
+    - /private/tmp/lufy-s1-test-writer-result.yaml
+evidence:
+  commands:
+    - command: go test ./internal/assets -count=1
+      result: passed
+      notes: Desde tools/lufy-cli-go; GREEN tras RED del subagente, paridad y controles de aprobación incluidos.
+    - command: go build -o bin/lufy-ai ./cmd/lufy-ai
+      result: passed
+      notes: Desde tools/lufy-cli-go; assets distribuidos recompilados.
+    - command: openspec validate clarify-proportional-workflow-decisions --strict
+      result: passed
+      notes: Change válido después de implementar S1.
+    - command: git diff --check origin/develop
+      result: passed
+      notes: Tracked sin errores; test nuevo revisado además con --no-index contra /dev/null, sin diagnósticos de whitespace.
+    - command: lufy-ai result validate --file /private/tmp/lufy-s1-test-writer-result.yaml --role test-writer --json
+      result: passed
+      notes: Envelope corregido validado antes de aceptar el handoff.
+    - command: lufy-ai plan --target /Users/adrianrojas/Desktop/projects/lufy-ai --json
+      result: blocked
+      notes: Project.yaml ausente; no se inicializó configuración.
+  static:
+    - AC1–AC6 documentados y protegidos mediante regresiones textuales y matriz; AC7 comprueba paridad del contrato, propagación completa pendiente en S2.
+    - Revisión final dirigida del contrato y documentación modificados; no cambia permisos, defaults ni schema.
+surface_execution:
+  schema_version: not_available
+  source: not_available
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces: [not_available]
+  validation_rule_ids: [not_available]
+workflow_decision:
+  tier: T1
+  program_tier: T1
+  slice_tier: T1
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: full
+    methodology_required: true
+    execution_mode: full-sdd
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - S1 contrato y matriz validados; S2 consumidores y S3 validación agrupada pendientes.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Un único artifact set aprobado; ejecución secuencial por dependencias.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    candidate_paths: [not_applicable]
+    canonical_artifact_set:
+      - openspec/changes/clarify-proportional-workflow-decisions/
+    merge_plan_required: false
+    human_escalation_triggers: [not_applicable]
+risks:
+  - Pruebas textuales y de paridad no demuestran conducta de un agente real, latencia ni ahorro de tokens.
+  - S2 debe propagar el contrato antes de considerar coherente el conjunto; validación global reservada para S3.
+next_recommended:
+  owner: implementer
+  action: Ejecutar S2 usando el contrato S1 y AC1–AC7; después validar S3. Sin sync ni delivery.
+skill_resolution:
+  local_skills_used: [sdd-workflow, openspec-apply-change]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/sdd-workflow/SKILL.md
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/openspec-apply-change/SKILL.md
+  bootstrap_recommended: false
+  notes: Registry local ready; memoria no inicializada y grafo no disponible preservados.

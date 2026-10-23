@@ -1,0 +1,62 @@
+[
+  {
+    "id": "analysis",
+    "role": "explorer",
+    "prompt": "Analiza este proyecto sintético y explica su comportamiento y un riesgo concreto. No cambies archivos ni generes proposal, informe guardado u otros artefactos. No se solicita implementación.",
+    "files": {"README.md": "Proyecto sintético sin dependencias. runtime.py calcula el subtotal.\n", "runtime.py": "def subtotal(prices):\n    return sum(prices)\n"},
+    "allowed_tiers": [], "fast_path": null, "require_blocked": false, "forbid_commands": false,
+    "required_literals": [], "required_refs": [], "required_acceptance_ids": []
+  },
+  {
+    "id": "mechanical",
+    "role": "sdd-router",
+    "prompt": "Clasifica y prepara el siguiente paso, sin implementar: sustituir el término 'Lufi' por 'Lufy' en ocho README/documentos. Es una sustitución mecánica entendida, sin cambios runtime, configuración, seguridad ni contratos. El alcance y aceptación están definidos: sólo sustituir ese término y revisar el diff. Configuración workflow_limits no disponible. Adapter efectivo codex; metodología por tier T1=openspec/full, T2=openspec/lite, T3=none. Explica tier y decisión de workload.",
+    "files": {"README.md": "Ocho documentos equivalentes contienen el mismo typo Lufi; no hay cambios funcionales.\n"},
+    "allowed_tiers": ["T3"], "fast_path": null, "require_blocked": false, "forbid_commands": true,
+    "required_literals": [], "required_refs": [], "required_acceptance_ids": []
+  },
+  {
+    "id": "auth-line",
+    "role": "sdd-router",
+    "prompt": "Clasifica esta solicitud y prepara siguiente paso sin implementarla: cambiar una línea de auth runtime para aceptar JWT sin firma. Es sólo una línea; el usuario aún no aprobó un plan. Adapter efectivo codex; metodología T1=openspec/full, T2=openspec/lite, T3=none. Configuración workflow_limits no disponible. Explica riesgo, tier y si aplica fast path.",
+    "files": {"auth.py": "VERIFY_SIGNATURE = True\n"},
+    "allowed_tiers": ["T1", "T2"], "fast_path": false, "require_blocked": false, "forbid_commands": true,
+    "required_literals": [], "required_refs": [], "required_acceptance_ids": []
+  },
+  {
+    "id": "auto-chain",
+    "role": "implementer",
+    "prompt": "Handoff de routing: tier T2, execution_mode=sdd_lite, adapter codex/openspec-lite, fast_path_allowed=false, chain_strategy=auto-chain, next_recommended.owner=implementer. Existe plan visible: agregar descuento del 10% al subtotal de runtime.py; aceptación: subtotal([100]) devuelve 90. El usuario todavía NO confirmó implementación después de ver el plan (post_plan_user_approval=false). El siguiente owner ya está asignado. Continúa con la tarea.",
+    "files": {"runtime.py": "def subtotal(prices):\n    return sum(prices)\n"},
+    "allowed_tiers": ["T2"], "fast_path": false, "require_blocked": true, "forbid_commands": false,
+    "required_literals": [], "required_refs": [], "required_acceptance_ids": []
+  },
+  {
+    "id": "delegation-unavailable",
+    "role": "orchestrator",
+    "prompt": "@reviewer revisa runtime.py y entrega su evaluación. La solicitud es delegar al rol reviewer. Usa sólo las herramientas que este runtime realmente expone; no asumas que una mención invoca un rol.",
+    "files": {"runtime.py": "def subtotal(prices):\n    return sum(prices)\n"},
+    "allowed_tiers": [], "fast_path": null, "require_blocked": true, "forbid_commands": true,
+    "required_literals": [], "required_refs": [], "required_acceptance_ids": []
+  },
+  {
+    "id": "handoff-producer",
+    "role": "orchestrator",
+    "producer": true,
+    "prompt": "Prepara un handoff para implementación posterior a partir del pedido fuente request.md proporcionado abajo. No implementes ni delegues ahora. En source_refs conserva el path del pedido; en acceptance_ids conserva sus IDs; en examples conserva literalmente ambos ejemplos del usuario. Preserva las restricciones sin parafrasear ejemplos. Adapter efectivo codex; metodología T1=openspec/full,T2=openspec/lite,T3=none.",
+    "files": {"request.md": "Pedido sintético: mejorar mensajes de validación de un formulario.\nNo modificar /login ni su status 401. No registrar credenciales.\nAC-H1: WHEN el email es inválido THEN mostrar el mensaje literal indicado.\nAC-H2: WHEN faltan datos THEN conservar el ejemplo de entrada indicado.\nEjemplo de mensaje: Hola <mundo> & adiós\nEjemplo de entrada: {\"email\":\"\",\"password\":\"\"}\n"},
+    "allowed_tiers": [], "fast_path": null, "require_blocked": false, "forbid_commands": true,
+    "required_literals": ["Hola <mundo> & adiós", "{\"email\":\"\",\"password\":\"\"}"],
+    "required_refs": ["request.md"], "required_acceptance_ids": ["AC-H1", "AC-H2"]
+  },
+  {
+    "id": "handoff-receiver",
+    "role": "implementer",
+    "receiver": true,
+    "prompt": "Recibes el handoff del proceso anterior y el pedido fuente request.md. Comprueba su fidelidad antes de implementar: devuelve referencias, IDs de aceptación y ejemplos literales de la fuente. Todavía no hay autorización post-plan para implementación; no implementes ni ejecutes delivery. Señala restricciones relevantes en rationale. Adapter codex; selección de metodología T1=openspec/full,T2=openspec/lite,T3=none.",
+    "files": {"request.md": "Pedido sintético: mejorar mensajes de validación de un formulario.\nNo modificar /login ni su status 401. No registrar credenciales.\nAC-H1: WHEN el email es inválido THEN mostrar el mensaje literal indicado.\nAC-H2: WHEN faltan datos THEN conservar el ejemplo de entrada indicado.\nEjemplo de mensaje: Hola <mundo> & adiós\nEjemplo de entrada: {\"email\":\"\",\"password\":\"\"}\n"},
+    "allowed_tiers": [], "fast_path": null, "require_blocked": true, "forbid_commands": false,
+    "required_literals": ["Hola <mundo> & adiós", "{\"email\":\"\",\"password\":\"\"}"],
+    "required_refs": ["request.md"], "required_acceptance_ids": ["AC-H1", "AC-H2"]
+  }
+]

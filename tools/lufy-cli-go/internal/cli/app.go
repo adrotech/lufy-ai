@@ -103,6 +103,10 @@ func Run(args []string, deps Dependencies) int {
 		return runSDD(args[1:], deps)
 	case "run":
 		return runRun(args[1:], deps)
+	case "review":
+		return runReview(args[1:], deps)
+	case "candidate":
+		return runCandidate(args[1:], deps)
 	case "adaptive":
 		return runAdaptive(args[1:], deps)
 	case "result":
@@ -1350,6 +1354,7 @@ func runDoctor(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Directorio destino")
+	codexExecutable := fs.String("codex", "", "Diagnóstico read-only del ejecutable Codex explícito (path o comando)")
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	if err := fs.Parse(args); err != nil {
@@ -1370,7 +1375,7 @@ func runDoctor(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
-	if err := governance.NewService().Doctor(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope}, deps.Stdout); err != nil {
+	if err := governance.NewService().Doctor(governance.Options{Target: *target, JSON: *jsonOutput, Scope: scope, CodexExecutable: *codexExecutable}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1778,6 +1783,8 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
 	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
+	fmt.Fprintln(out, "  review    Registra eventos semánticos explícitos de review sin avanzar gates")
+	fmt.Fprintln(out, "  candidate Vincula y verifica evidencia contra un candidato Git limpio")
 	fmt.Fprintln(out, "  adaptive  Recomienda y registra asignaciones/yields adaptativos acotados")
 	fmt.Fprintln(out, "  result    Valida, normaliza y evalúa Result Contracts")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")

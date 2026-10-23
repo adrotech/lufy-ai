@@ -13,6 +13,29 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
+## [v0.6.25] - 2026-10-23
+
+### Added
+
+- Diagnóstico observable del runtime Codex, eventos semánticos explícitos de review y evidencia ligada al candidato Git.
+- Regresiones offline de Codex obligatorias en CI, protocolo nativo opt-in y perfil collaboration con facetas separadas de transporte, rol y cierre.
+- Procedencia reproducible de experimentos de eficiencia; se conserva el baseline inline porque la variante por referencia no completó una comparación válida.
+
+### Changed
+
+- Renovado el banner principal para representar el ciclo gobernado y distribuido del harness actual.
+- Consolidada la documentación pública, con una guía sistémica del workflow y estado/roadmap vivos.
+- Retirados los snapshots históricos `docs/backlog.md` y `docs/implementation-plan.md`; la historia entregada permanece en CHANGELOG, ADRs y archives SDD/OpenSpec.
+- Unificadas las instrucciones proporcionales de Codex y sus mirrors con controles ejecutables de paridad.
+
+### Fixed
+
+- Corregidos cruces de reviews y duraciones ambiguas en las métricas operativas.
+- El binding de evidencia evita efectos laterales de filtros, gitlinks y lazy fetch durante la inspección del candidato.
+- Un timeout explícito de wait_agent sólo permite acreditar transporte si una inspección posterior del mismo agente confirma el contrato esperado; errores y respuestas desconocidas conservan aceptación cerrada.
+
+Validación: 131 pruebas offline, cobertura Go 80,5%, vet/build, 36 specs estrictas y checks multiplataforma de promoción. La integración nativa completa sigue inconclusa por cierre no disponible; los replays offline no se presentan como nuevas corridas live ni como mejoras de rendimiento.
+
 ## [v0.6.24] - 2026-09-28
 
 ### Added

@@ -1,0 +1,109 @@
+schema_version: result-contract/v1
+status: delivered
+legacy_fallback: false
+executive_summary: B7 publicado en PR250, HEAD acdccde19ba0c76333ab21585f7285c356fdb2da, nueve rutas exactas con validación agrupada exit0. Resultado experimental keep_baseline y adopted=false por candidato inconcluso; cinco SUCCESS/CLEAN iniciales confirmados; archive y merge final conservan gates independientes.
+artifacts:
+  changed:
+    - tools/codex-behavior-pilot/experiment.py
+    - tools/codex-behavior-pilot/test_experiments.py
+    - tools/codex-behavior-pilot/test_execution_provenance.py
+    - tools/codex-behavior-pilot/test_experiment_runner.py
+    - tools/codex-behavior-pilot/README.md
+    - docs/codex-efficiency-experiment-2026-10-22.md
+    - docs/codex-operational-readiness-plan.md
+    - openspec/specs/codex-efficiency-evidence/spec.md
+    - tools/lufy-cli-go/internal/assets/embedded/openspec/specs/codex-efficiency-evidence/spec.md
+  referenced:
+    - openspec/changes/repeat-codex-efficiency-experiment/
+    - /private/tmp/lufy-seven-b7-validation.log
+    - /private/tmp/lufy-seven-b7-validation-result.json
+    - /private/tmp/lufy-seven-b7-efficiency-20261022/summary.json
+    - https://github.com/adrotech/lufy-ai/pull/250
+evidence:
+  commands:
+    - command: scripts/validate.sh via root
+      result: passed
+      notes: Exit0, 116 offline, Go80.5%, vet/build; shellcheck local no disponible. Strict change/spec PASS.
+    - command: lufy-ai result validate del handoff validator via root
+      result: passed
+      notes: Fingerprint be0b4573cf3cb114e255b4e9956b216db60c743f149bac61278b7d7b54cfeddc.
+    - command: Pruebas focales runner/procedencia/comparador via root
+      result: passed
+      notes: Treinta GREEN, cinco runner/seis procedencia/diecinueve comparador; preservan sandbox/modelo/esfuerzo, rechazan drift/ausencias, OSError y segundo par incompleto sin invocar modelos offline.
+    - command: Experimento live acotado via root
+      result: passed
+      notes: Protocolo evaluado con resultado negativo honesto; baseline passed12856ms/18402inputtokens/700bytes, candidato timeout180038ms/usage unavailable/626bytes. Un par incompleto, dos intentos, segundo par no ejecutado, keep_baseline y adopted=false; provenance_stable=true.
+    - command: Stage9, commit/push, guards y PR create/attach via root relay
+      result: passed
+      notes: HEAD acdccde19ba0c76333ab21585f7285c356fdb2da sobre basefresh b655701, nueve rutas exactas, guards/whitespace passed, PR250 adjuntado; snapshot fresco de cinco SUCCESS/CLEAN recibido posteriormente.
+    - command: gh pr view250 con rollup y mergeStateStatus via root relay
+      result: passed
+      notes: HEADacdccde19ba0c76333ab21585f7285c356fdb2da CLEAN, run39872855487 cinco SUCCESS del2026-10-22; Quality23:36:51Z/Ubuntu23:36:36Z/macOS23:36:54Z/Windows23:39:22Z/Smoke23:39:45Z. Publicación inicial delivered; no afirma merge.
+  static:
+    - Review dirigido experiment.py, tests nuevos, reporte, propuesta/tareas; procedencia CLI hash/version y ocho fuentes antes/después, sólo tres valores temporales normalizados en argv, par incompleto inelegible y adopted siempre false. Sin findings bloqueantes.
+    - CLI app0.163.0-alpha.10.2 SHA50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8; modelo solicitado gpt-6.1-sol/medium, identidad servida desconocida, emulated_cli sin verificación nativa.
+    - Reporte sólo campos sintéticos revisados; trazas JSONL/prompts completos locales, sin modelos o cambios globales adicionales por delivery. Muestras históricas sin procedencia nueva inelegibles.
+    - Usuario autorizó siete bloques y delivery con checks; plan incluye estado B7 delivery_pending PR250 y criterio cerrado sólo por merge y reporte final. Sin PR adicional circular de estado.
+surface_execution:
+  schema_version: not_available
+  source: carried_handoff
+  primary_surface: not_available
+  mode: not_available
+  active_surfaces:
+    - not_applicable
+  validation_rule_ids:
+    - not_applicable
+workflow_decision:
+  tier: T1
+  program_tier: T1
+  slice_tier: T1
+  fast_path_allowed: false
+  adapter_context:
+    tool_id: codex
+    methodology_id: openspec
+    methodology_mode: full
+    methodology_required: true
+    execution_mode: full-sdd
+  workflow_limits_source: not_available
+  workflow_limits_paths:
+    sizing: not_available
+    routing: not_available
+    proposal_slicing: not_available
+    delivery_batching: not_applicable
+    preflight: not_available
+    stop_rules: not_available
+  workload_decision_needed: true
+  review_slices:
+    - Bloque7 T1 del programa T1; nueve rutas con procedencia/comparabilidad y reporte experimental como slices lógicas de una unidad coherente cubierta por plan.
+  preflight_status: not_available
+  stop_rule_status: not_available
+  delivery_batching_guidance: not_applicable
+  artifact_branching:
+    status: not_needed
+    stage: not_applicable
+    candidate_count: 1
+    reason: Único conjunto canónico ya propuesto.
+    parallel_allowed: false
+    requires_join: false
+    candidate_isolation: not_applicable
+    merge_plan_required: false
+    human_escalation_triggers:
+      - not_applicable
+    candidate_paths:
+      - not_applicable
+    canonical_artifact_set:
+      - openspec/changes/repeat-codex-efficiency-experiment/
+risks:
+  - El ensayo incompleto conserva baseline; no acredita mejora de tokens, coste o latencia, ni adopción de referencias.
+  - Identidad servida desconocida y emulated_cli; no demuestra delegación nativa, capacidades exhaustivas ni métricas productivas.
+  - Procedencia prepost observa estabilidad, no bloquea mutaciones hostiles ni autentica origen de evidencia externa.
+  - Graph y workflow_limits no disponibles; dos pares y timeout son guardas del protocolo, sin budgets inventados.
+next_recommended:
+  owner: delivery
+  action: Archivar seis artifacts B7 específicos con skip-specs por sync previo y validación habilitada; nuevo HEAD final requiere cinco SUCCESS/CLEAN antes merge exacto. Plan B7 delivery_pending en este PR, cierre se acredita con MERGED y reporte final sin PR circular.
+skill_resolution:
+  local_skills_used: [git-delivery]
+  selected_skill_paths:
+    - /Users/adrianrojas/Desktop/projects/lufy-ai/.agents/skills/git-delivery/SKILL.md
+  bootstrap_recommended: false
+  notes: T1 OpenSpec completo por contrato de evidencia experimental; nueve rutas coherentes, modelos y credenciales globales intactos.
