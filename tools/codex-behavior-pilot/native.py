@@ -17,11 +17,14 @@ from pilot import snapshot
 
 LIFECYCLE = {"SessionStart", "SubagentStart", "SubagentStop", "Stop", "SessionEnd"}
 TOOLS = {"spawn_agent", "wait", "send_input", "close_agent"}
+COLLABORATION_TOOLS = {"spawn_agent", "followup_task", "list_agents", "wait_agent"}
 FORBIDDEN = {"Bash", "apply_patch", "exec_command", "write_stdin"}
+TOOL_ALIASES = {**{"collaboration" + name: name for name in COLLABORATION_TOOLS},
+                **{"functions" + name: name for name in FORBIDDEN}}
 TRUST_WARNING = "`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation."
 
 
-def assess_native(events, hooks, before, after, returncode=0, timed_out=False, tool_router_errors=0):
+def trace_gate(events, hooks, before, after, returncode, timed_out, tool_router_errors, allowed_tools):
     def result(status, reason):
         return {"status": status, "reason": reason}
     if isinstance(before, dict) and before and isinstance(after, dict) and before != after:
@@ -60,8 +63,17 @@ def assess_native(events, hooks, before, after, returncode=0, timed_out=False, t
     for h in hooks:
         if not isinstance(h, dict) or not isinstance(h.get("event"), str) or h["event"] not in known:
             return result("inconclusive", "hook_unknown")
-        if h["event"] in {"PreToolUse", "PostToolUse"} and (not isinstance(h.get("tool"), str) or h["tool"] not in TOOLS):
+        if h["event"] in {"PreToolUse", "PostToolUse"} and (not isinstance(h.get("tool"), str) or h["tool"] not in allowed_tools):
             return result("inconclusive", "tool_unknown")
+    return None
+
+
+def assess_native(events, hooks, before, after, returncode=0, timed_out=False, tool_router_errors=0):
+    def result(status, reason):
+        return {"status": status, "reason": reason}
+    gate = trace_gate(events, hooks, before, after, returncode, timed_out, tool_router_errors, TOOLS)
+    if gate:
+        return gate
     starts = [h for h in hooks if h["event"] == "SubagentStart"]
     if len(starts) != 1 or starts[0].get("agent_type") != "reviewer" or not isinstance(starts[0].get("agent_id"), str) or not starts[0]["agent_id"]:
         return result("inconclusive", "native_reviewer_missing")
@@ -88,6 +100,65 @@ def assess_native(events, hooks, before, after, returncode=0, timed_out=False, t
         if expected == "valid" and (not isinstance(payload.get("fingerprint"), str) or not re.fullmatch(r"[0-9a-f]{64}", payload["fingerprint"])):
             return result("inconclusive", "payload_fingerprint_missing")
     return result("passed", "native_recovery_observed")
+
+
+def assess_collaboration(events, hooks, before, after, returncode=0, timed_out=False, tool_router_errors=0):
+    result = {"status": "inconclusive", "reason": "collaboration_evidence_missing",
+              "transport_status": "inconclusive", "role_status": "not_available",
+              "cleanup_status": "not_available"}
+    gate = trace_gate(events, hooks, before, after, returncode, timed_out, tool_router_errors, COLLABORATION_TOOLS)
+    if gate:
+        result.update(gate)
+        return result
+    calls = [h for h in hooks if h["event"] == "PostToolUse"]
+    spawns = [h for h in calls if h["tool"] == "spawn_agent"]
+    followups = [h for h in calls if h["tool"] == "followup_task"]
+    if len(spawns) != 1 or len(followups) != 1 or any(
+            h.get("success") is not True and not (h["tool"] == "followup_task" and h.get("acknowledgement") == "empty")
+            for h in calls):
+        return result
+    spawn, followup = spawns[0], followups[0]
+    receivers = spawn.get("receivers")
+    if spawn.get("role_requested") != "reviewer" or not isinstance(receivers, list) or len(receivers) != 1:
+        return result
+    child = receivers[0]
+    if not isinstance(child, str) or not re.fullmatch(r"[0-9a-f]{64}", child):
+        return result
+    result["role_status"] = "requested"
+    starts = [h for h in hooks if h["event"] == "SubagentStart"]
+    if len(starts) > 1 or any(h.get("agent_type") != "reviewer" for h in starts):
+        return result
+    if len(starts) == 1 and starts[0].get("agent_type") == "reviewer" and starts[0].get("agent_id") == child:
+        result["role_status"] = "observed"
+    if followup.get("target_ids") != [child] or calls.index(spawn) >= calls.index(followup):
+        return result
+    empty_seen = valid_seen = False
+    for index, call in enumerate(calls):
+        if call["tool"] != "list_agents":
+            continue
+        if call.get("target_ids") != [child] or index < calls.index(spawn):
+            return result
+        if call.get("inspection_valid") is not True or call.get("agent_ids") not in ([], [child]):
+            return result
+        completed = call.get("completed")
+        if not isinstance(completed, list) or len(completed) > 1:
+            return result
+        if not completed:
+            continue
+        payload = completed[0]
+        if not isinstance(payload, dict) or payload.get("agent_id") != child:
+            return result
+        if index < calls.index(followup):
+            if payload.get("payload") != "empty":
+                return result
+            empty_seen = True
+        else:
+            if payload.get("payload") != "valid" or not isinstance(payload.get("fingerprint"), str) or not re.fullmatch(r"[0-9a-f]{64}", payload["fingerprint"]):
+                return result
+            valid_seen = True
+    if empty_seen and valid_seen:
+        result.update(transport_status="passed", reason="cleanup_not_available")
+    return result
 
 
 def digest(value):
@@ -124,8 +195,10 @@ def normalize_hook(data, expected_hash):
     if record["event"] not in {"PreToolUse", "PostToolUse"}:
         return record
     name = data.get("tool_name", "")
-    record["tool"] = name.rsplit(".", 1)[-1] if isinstance(name, str) else "invalid"
+    record["tool"] = TOOL_ALIASES.get(name, name.rsplit(".", 1)[-1]) if isinstance(name, str) else "invalid"
     inputs, response = decode(data.get("tool_input")), decode(data.get("tool_response"))
+    if record["tool"] == "followup_task" and event == "PostToolUse" and "tool_response" in data:
+        record["acknowledgement"] = "empty" if response is None or response == "" or response == {} else "response"
     inputs = inputs if isinstance(inputs, dict) else {}
     response = response if isinstance(response, dict) else {}
     status = response.get("status")
@@ -135,11 +208,13 @@ def normalize_hook(data, expected_hash):
                          and response.get("timed_out") is not True and not failed_status)
     ids = inputs.get("ids", inputs.get("task_ids"))
     if ids is None:
-        ids = [inputs.get("id", inputs.get("agent_id", inputs.get("task_id")))]
+        ids = [inputs.get("target", inputs.get("path_prefix", inputs.get("id", inputs.get("agent_id", inputs.get("task_id")))))]
     record["target_ids"] = [identifier(i) for i in ids] if isinstance(ids, list) else []
     if record["tool"] == "spawn_agent":
-        record["receivers"] = [identifier(response.get("agent_id", response.get("task_id")))]
-    if record["tool"] == "wait":
+        record["receivers"] = [identifier(response.get("task_name", response.get("agent_id", response.get("task_id"))))]
+        if "agent_type" in inputs:
+            record["role_requested"] = inputs["agent_type"] if isinstance(inputs["agent_type"], str) else "invalid"
+    if record["tool"] in {"wait", "list_agents"}:
         completed = []
         states = response.get("status")
         if isinstance(states, dict):
@@ -151,6 +226,20 @@ def normalize_hook(data, expected_hash):
             for task in tasks:
                 if isinstance(task, dict) and task.get("state") == "completed":
                     completed.append((task.get("task_id"), task.get("task_result")))
+        agents = response.get("agents")
+        if record["tool"] == "list_agents":
+            record["inspection_valid"] = isinstance(agents, list)
+            record["agent_ids"] = []
+            for agent in agents if isinstance(agents, list) else []:
+                if not isinstance(agent, dict) or not isinstance(agent.get("agent_name"), str) or not agent["agent_name"]:
+                    record["inspection_valid"] = False
+                    continue
+                record["agent_ids"].append(identifier(agent["agent_name"]))
+                state = agent.get("agent_status")
+                if isinstance(state, dict) and set(state) == {"completed"}:
+                    completed.append((agent["agent_name"], state["completed"]))
+                elif not isinstance(state, str) or state not in {"running", "pending_init"}:
+                    record["inspection_valid"] = False
         record["completed"] = []
         for agent, raw in completed:
             payload = decode(raw)
@@ -211,6 +300,9 @@ def run_native(args):
     if os.name != "posix":
         raise ValueError("El runner live requiere POSIX; la evaluación offline es portable")
     repo = Path(__file__).resolve().parents[2]
+    transport = getattr(args, "transport", "legacy")
+    if transport not in {"legacy", "collaboration"}:
+        raise ValueError("Perfil de transporte desconocido")
     output = args.output.resolve()
     if output.is_relative_to(repo.resolve()):
         raise ValueError("La evidencia debe quedar fuera del checkout")
@@ -270,11 +362,25 @@ def run_native(args):
               "El segundo encargo es responder exactamente el siguiente JSON, sin herramientas ni markdown: " + json.dumps(contract, ensure_ascii=False) +
               "\nEspera el segundo resultado y cierra ese agente. Si no están disponibles las herramientas o reviewer exacto, declara blocked sin emularlo. "
               "Al finalizar responde sólo una breve descripción de lo observado; tu texto no es evidencia de capacidades.")
+    role_overrides = []
+    if transport == "collaboration":
+        role_overrides = ["-c", "agents.reviewer.description=" + json.dumps("Reviewer del fixture sintético Lufy"),
+                          "-c", "agents.reviewer.config_file=" + json.dumps(str(workspace / ".codex/agents/reviewer.toml"))]
+        prompt = ("Ensayo sintético autorizado de delegación nativa. No uses shell, archivos, exec ni otras herramientas. "
+                  "Usa sólo collaboration.spawn_agent, collaboration.wait_agent, collaboration.list_agents y collaboration.followup_task. "
+                  "Invoca exactamente UN agente con agent_type reviewer, fork_turns none y task_name native_reviewer. "
+                  "Su primer encargo: responder exactamente null, sin herramientas. Conserva el task_name canónico devuelto. "
+                  "Espera mediante wait_agent si hace falta y llama collaboration.list_agents con path_prefix IGUAL al nombre canónico para observar completed null. "
+                  "Sólo después envía UNA recuperación mediante collaboration.followup_task al MISMO target. El segundo encargo es responder literalmente este JSON, sin herramientas ni markdown: "
+                  + json.dumps(contract, ensure_ascii=False) +
+                  "\nEspera y llama otra vez collaboration.list_agents con ese mismo path_prefix para observar completed con el JSON. "
+                  "No envíes más recuperaciones ni crees otros agentes. Este perfil no expone cierre: informa cleanup not_available; completed no equivale a close. "
+                  "Si faltan herramientas o reviewer exacto, declara blocked sin emularlo. Tu texto final no prueba transporte ni capacidades.")
     argv = [codex, "exec", "--ignore-user-config", "--skip-git-repo-check", "--sandbox", "read-only",
             "--enable", "multi_agent", "--enable", "hooks", "--disable", "apps", "--disable", "plugins",
             "-c", "agents.enabled=true", "-c", "approval_policy=\"never\"", "-c", "model_reasoning_effort=" + json.dumps(args.reasoning_effort),
             "-c", "projects." + json.dumps(str(workspace)) + ".trust_level=\"trusted\"",
-            *inline_hooks, "--dangerously-bypass-hook-trust", "--model", args.model, "--json", "-C", str(workspace), "-"]
+            *role_overrides, *inline_hooks, "--dangerously-bypass-hook-trust", "--model", args.model, "--json", "-C", str(workspace), "-"]
     env = os.environ.copy()
     for key in ["CODEX_APP_TOOLS_PIPE_PATH", "CODEX_THREAD_ID", "CODEX_SESSION_ID", "CODEX_TOOL_CALL_ID"]:
         env.pop(key, None)
@@ -303,7 +409,8 @@ def run_native(args):
     stderr = (output / "stderr.log").read_text(errors="replace")
     router_errors = sum(bool(re.search(r"\bERROR\s+codex_core::tools::router:", line)) for line in stderr.splitlines())
     after = source_snapshot(workspace)
-    verdict = assess_native(events, observations, before, after, process.returncode, timed_out, router_errors)
+    assessor = assess_collaboration if transport == "collaboration" else assess_native
+    verdict = assessor(events, observations, before, after, process.returncode, timed_out, router_errors)
     lifecycle_records = [h for h in observations if isinstance(h, dict) and isinstance(h.get("event"), str) and h["event"] in LIFECYCLE]
     observed_events = {h["event"] for h in lifecycle_records}
     lifecycle_verified = LIFECYCLE.issubset(observed_events) and all(h.get("lufy_exit_code") == 0 for h in lifecycle_records)
@@ -312,6 +419,8 @@ def run_native(args):
     correlation = bool(observations) and all(isinstance(h, dict) and h.get("run_nonce") == nonce for h in observations)
     if verdict["status"] == "passed" and not correlation:
         verdict = {"status": "inconclusive", "reason": "hook_run_mismatch"}
+    if transport == "collaboration" and verdict.get("transport_status") == "passed" and not correlation:
+        verdict.update(transport_status="inconclusive", reason="hook_run_mismatch")
     if any(hashlib.sha256(path.read_bytes()).hexdigest() != provenance[key] for key, path in provenance_paths.items()):
         verdict = {"status": "failed", "reason": "external_source_mutation"}
     report = {"schema_version": "codex-native-regression/v1", **verdict, "returncode": process.returncode,
@@ -324,6 +433,12 @@ def run_native(args):
               "before": before, "after": after, "event_sha256": hashlib.sha256((output / "events.jsonl").read_bytes()).hexdigest(),
               "hooks_sha256": hashlib.sha256((output / "hooks.jsonl").read_bytes()).hexdigest() if (output / "hooks.jsonl").exists() else None,
               "instruction_sha256": hashlib.sha256(source.read_bytes()).hexdigest(), "template_sha256": hashlib.sha256(template.read_bytes()).hexdigest()}
+    if transport == "collaboration":
+        report.update(schema_version="codex-native-regression/v2", transport_profile=transport,
+                      cleanup_status="not_available", role_status=verdict.get("role_status", "not_available"),
+                      transport_status=verdict.get("transport_status", "inconclusive"),
+                      native_execution_verified=False,
+                      native_transport_verified=verdict.get("transport_status") == "passed")
     (output / "result.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
     return report
 
@@ -341,6 +456,7 @@ def main():
     parser.add_argument("--codex", required=True)
     parser.add_argument("--lufy", required=True)
     parser.add_argument("--hook-delivery", choices=["project", "inline"], default="project")
+    parser.add_argument("--transport", choices=["legacy", "collaboration"], default="legacy")
     parser.add_argument("--model", required=True)
     parser.add_argument("--reasoning-effort", default="medium", choices=["low", "medium", "high", "xhigh", "max", "ultra"])
     parser.add_argument("--timeout", type=int, default=240)

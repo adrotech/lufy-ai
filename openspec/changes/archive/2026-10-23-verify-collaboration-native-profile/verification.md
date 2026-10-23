@@ -1,0 +1,13 @@
+# Verificación: perfil collaboration nativo
+
+Estado snapshot delivered para publicación inicial del protocolo/elegibilidad archive; merge pendiente, PR https://github.com/adrotech/lufy-ai/pull/251, HEADfceb982d80cf9225d76e6b40005cc7f4d1df9d9c, siete source y seis artifacts futuros de archive (rango13). Propuesta T1 aprobada, perfil opt-in y legacy default conservado.
+
+Root confirmó scripts/validate.sh final exit0, 129offline0.332s, Go80.5%, vet/build; focal43GREEN0.067s, strict change/spec/mirror y whitespace origin/develop PASS. Shellcheck local ausente; CI requerido después. Validator válido fingerprint24adf73fb6fd7b309e98a44ba570ecb8d132ac2d74a5eee2779161ca82333ca7.
+
+Única corrida CLI exit0 sin timeout: evaluador original inconclusive/tool_unknown por nombres concatenados. Result original intacto. Todos lifecycle más dos SubagentStop exit0 y nonce correlacionado. Auditoría separada sólo thread/read del parent y único child, sin resume/modelos: rol reviewer, parentlink e identidad UUID/name, secuencia started/completed/interacted/completed, dos turnos completed. Null rechazadoexit3, JSONexpected aceptadoexit0 fingerprint7a41a92fd6c1cffe6ef403a529ebcad53309c2678bf964a544dd00765226133e. Hashes originales/snapshots/nonce coherentes. Acredita rol/recuperación en esta muestra por historia persistida, no cierre ni caso integral passed.
+
+Fix posterior aliases exactos/ack vacío con inspección posterior mismo target validado offline; no segundo live ni replay que reescriba resultado. Explicit errors se rechazan. Cleanup not_available y native_execution_verified false; texto del modelo no prueba capacidades. Reviewer fixture por overrides con ignore-user-config/read-only/never sin credenciales/globales.
+
+Review source/tests/doc y rerelectura limitada de fixes, sin findings pendientes. Graph/workflow_limits no disponibles, fallback dirigido sin budgets. Primary mixed y stores locales preservados.
+
+Root relay stage7/guards/whitespace/commit/push/PR attached, diagrama ASCII de flujo añadido al body por contrato delivery. INITIAL_CHECKS_SNAPSHOT: root confirma HEAD `fceb982d80cf9225d76e6b40005cc7f4d1df9d9c` CLEAN, run39952751288 cinco SUCCESS del2026-10-23; Quality12:23:25Z, Ubuntu12:22:34Z, macOS12:22:49Z, Windows12:25:06Z y Smoke12:25:29Z. Protocolo delivered; no full native close ni segundo live. Sólo entonces task publicación inicial/archive6 con skip-specs por sync previo y validación habilitada; nuevo HEAD requiere guard13/whitespace rango y cinco SUCCESS/CLEAN antes merge exacto autorizado. GitHub MERGED/mergeSHA acreditan closed después; snapshot previo no lo afirma.
