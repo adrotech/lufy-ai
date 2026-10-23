@@ -40,4 +40,20 @@ Después del ensayo se añadieron aliases exactos para los nombres concatenados 
 
 ## Validación
 
+### Seguimiento acotado T2: timeout de espera
+
+Alcance: normalización/evaluación de `wait_agent`, pruebas adversariales, documentación y escenario canónico con su mirror. Programa T1, slice T2 SDD Lite sin fast path; una única unidad revisable porque código, tests y aceptación representan el mismo comportamiento. Seis rutas estimadas, sin paralelismo ni inferencias adicionales. `workflow_limits` y context graph no disponibles en este worktree; se usó evidencia directa de archivos/Git. La autorización vigente cubre implementación, validación y entrega a develop; no promoción a main.
+
+Criterios WHEN/THEN: cuando una espera devuelve `timed_out: true` sin errores, sólo una inspección posterior del mismo agente con el contrato válido permite acreditar transporte. Cuando falta ese estado posterior, el booleano tiene tipo incorrecto, aparece un error explícito o la respuesta es desconocida, transporte permanece inconcluso. El resultado integral y cleanup conservan su limitación, y el perfil legacy conserva su aceptación.
+
+La segunda corrida autorizada, en `lufy-native-collaboration-20261023-b`, terminó con CLI exit 0 y evaluador exit 1 (`collaboration_evidence_missing`): hubo tres esperas; la intermedia agotó su tiempo antes de completar el child. La historia persistida del parent y su único child confirma reviewer y dos turnos completados: null y el envelope esperado. Hooks Lufy, nonce y snapshots pasaron. El resultado original se conserva intacto.
+
+La auditoría posterior sólo leyó esas historias y el rollout propio indicado por `thread/read`, sin reanudar ni invocar modelos. Vinculó siete outputs por `call_id`, comprobó igualdad de todos los campos normalizados originales y recuperó las esperas booleanas `false / true / false`. Una reevaluación offline del normalizador corregido obtuvo `transport_status=passed`, `role_status=requested`, `cleanup_status=not_available` y estado integral inconcluso. La historia acredita reviewer por su enlace UUID/nombre; el normalizador no inventa ese mapeo. No se presenta el replay como una nueva prueba live.
+
+Evidencia local separada: `/private/tmp/lufy-native-collaboration-20261023-b/persisted-history-audit.json`; SHA-256 del resultado original `0e36df8fa2497476f5c7411fe5d952c30171349098f39f6c6ab1bc0e53ed9cc8`, del rollout `07e16f154934cfd79e7cff4a2171489ea485e5110b5f822c1a985cd74a7765c2`. El digest del payload recuperado es `8cdadc1a3c6a3822ab604fe02168ca8b46fe0b30add518bbb0a77eea5756b544` (hash del evaluador; distinto del fingerprint del validador Result Contract). Los cuerpos completos permanecen locales.
+
+RED: dos pruebas nuevas fallaron antes del fix por ausencia de `wait_outcome`. GREEN final: 45 pruebas nativas, 0,066 s. La cobertura adversarial exige inspección posterior incluso si un timeout aparece después de una inspección válida; mantiene errores explícitos, respuestas desconocidas y legacy fuera de la excepción. `scripts/validate.sh` terminó exit 0 con 131 pruebas offline, cobertura Go 80,5%, vet/build y PR guard. Shellcheck no está disponible localmente; CI aplica su gate. OpenSpec strict, paridad del mirror, whitespace contra origin/develop y replay offline pasaron. Los checks remotos se registran en el reporte de entrega.
+
+### Evidencia del PR #251
+
 RED inicial: normalizador sin task_name/target/list_agents y evaluador ausente. RED adversarial: rol contradictorio y otro agente running omitido. RED de integración: un nonce incorrecto podía conservar transporte pasado por no evaluar el gate de una faceta independiente. RED posterior al live: nombres concatenados y ack vacío de followup. Los casos se corrigieron; 43 pruebas nativas focales pasaron. La validación agrupada final `scripts/validate.sh` terminó exit 0: 129 pruebas offline, cobertura Go 80,5%, vet y build. Shellcheck no está disponible localmente y CI aplica su gate. OpenSpec change/spec y paridad canonical/mirror pasaron.
