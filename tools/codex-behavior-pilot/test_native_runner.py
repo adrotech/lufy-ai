@@ -14,11 +14,12 @@ from unittest.mock import Mock, patch
 
 import native
 from test_native import lifecycle
+from test_native_collaboration import callback
 
 
 @unittest.skipUnless(os.name == "posix", "El runner native sólo soporta POSIX")
 class NativeRunnerOfflineTests(unittest.TestCase):
-    def fixture_run(self, wrong_nonce=False, hook_delivery="project"):
+    def fixture_run(self, wrong_nonce=False, hook_delivery="project", transport="legacy"):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         root = Path(temporary.name).resolve()
@@ -39,7 +40,8 @@ class NativeRunnerOfflineTests(unittest.TestCase):
         before = {path.relative_to(repo).as_posix(): path.read_bytes() for path in repo.rglob("*") if path.is_file()}
         output = root / "evidence"
         args = argparse.Namespace(output=output, codex="fixture-codex", lufy="fixture-lufy",
-                                  model="fixture-model", reasoning_effort="medium", timeout=10, hook_delivery=hook_delivery)
+                                  model="fixture-model", reasoning_effort="medium", timeout=10, hook_delivery=hook_delivery,
+                                  transport=transport)
         ambient = {"HOME": "/fixture/home", "PATH": "/fixture/bin", "OPENAI_API_KEY": "synthetic-auth-canary",
                    "CODEX_PERMISSION_PROFILE": "synthetic-profile", "CODEX_SANDBOX": "synthetic-sandbox",
                    **{name: "synthetic-host-handle" for name in ["CODEX_APP_TOOLS_PIPE_PATH", "CODEX_THREAD_ID", "CODEX_SESSION_ID", "CODEX_TOOL_CALL_ID"]}}
@@ -48,10 +50,26 @@ class NativeRunnerOfflineTests(unittest.TestCase):
             process = Mock(returncode=0)
 
             def communicate(prompt, timeout):
+                if transport == "collaboration":
+                    self.assertIn("collaboration.list_agents", prompt)
+                    self.assertIn("collaboration.followup_task", prompt)
+                    self.assertIn("not_available", prompt)
                 kwargs["stdout"].write(json.dumps({"type": "turn.completed"}) + "\n")
                 kwargs["stdout"].flush()
                 hooks = lifecycle()
                 hooks.insert(-1, {"event": "Stop"})
+                if transport == "collaboration":
+                    target = "/root/fixture-reviewer"
+                    expected = json.loads((output / "expected.json").read_text())
+                    def inspection(payload):
+                        return callback("list_agents", {"path_prefix": target}, {"agents": [
+                            {"agent_name": target, "agent_status": {"completed": payload}},
+                        ]}, expected)
+                    hooks = [{"event": "SessionStart"},
+                             callback("spawn_agent", {"agent_type": "reviewer"}, {"task_name": target}, expected),
+                             inspection("null"),
+                             callback("followup_task", {"target": target}, {"message": "queued"}, expected),
+                             inspection(json.dumps(expected)), {"event": "Stop"}, {"event": "SessionEnd"}]
                 observer = json.loads((output / "observer.json").read_text())
                 for hook in hooks:
                     hook["run_nonce"] = "other_run" if wrong_nonce else observer["run_nonce"]
@@ -83,6 +101,24 @@ class NativeRunnerOfflineTests(unittest.TestCase):
         self.assertEqual(validation.call_count, 2)
         self.assertEqual(validation.call_args_list[0].args[0][1], "doctor")
         return result, popen.call_args, validation.call_args_list[1], output, module, ambient
+
+    def test_collaboration_registers_only_fixture_reviewer_without_loading_user_config(self):
+        result, call, _, output, _, _ = self.fixture_run(transport="collaboration", hook_delivery="inline")
+        argv = call.args[0]
+        self.assertIn("--ignore-user-config", argv)
+        overrides = [argv[i + 1] for i in range(len(argv) - 1) if argv[i] == "-c"]
+        self.assertIn("agents.reviewer.config_file=" + json.dumps(str(output / "fixture/.codex/agents/reviewer.toml")), overrides)
+        self.assertEqual(result["transport_profile"], "collaboration")
+        self.assertEqual(result["cleanup_status"], "not_available")
+        self.assertIs(result["native_execution_verified"], False)
+
+    def test_collaboration_transport_requires_current_run_nonce_independently_of_cleanup(self):
+        result = self.fixture_run(transport="collaboration")[0]
+        self.assertIs(result["native_transport_verified"], True)
+        self.assertIs(result["lufy_lifecycle_verified"], False)
+        result = self.fixture_run(transport="collaboration", wrong_nonce=True)[0]
+        self.assertIs(result["native_transport_verified"], False)
+        self.assertEqual(result["reason"], "hook_run_mismatch")
 
     def test_read_only_native_invocation_preserves_hooks_without_ephemeral(self):
         _, call, validation, _, _, _ = self.fixture_run()

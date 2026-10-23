@@ -57,3 +57,15 @@ El experimento registra `execution_provenance_before/after`: versión, path can�
 `comparable` distingue aceptación/procedencia/métricas completas de `eligible`, que además exige mejora. `cases_invoked` cuenta intentos de `execute_case`, no identidades de modelos servidos. Fallos al iniciar el proceso conservan un summary honesto y detienen nuevas llamadas; cualquier caso incompleto invalida su par aunque un comparador guardado declare lo contrario. El hash del CLI no atesta identidad del modelo servido ni evita una mutación hostil concurrente; la configuración interna solicitada sigue sin considerarse verificada por un flag.
 
 La repetición del programa operativo se documenta en [el ensayo de eficiencia](../../docs/codex-efficiency-experiment-2026-10-22.md); no se mezcla con el timeout previo ni adopta la variante por referencia.
+
+## Perfil nativo collaboration
+
+`native.py --live --transport collaboration --hook-delivery inline --output <directorio-nuevo-externo> --codex <ejecutable> --lufy <ejecutable> --model <id> --timeout 180` prueba la API `collaboration` observada. El perfil `legacy` continúa por defecto y sus resultados históricos no cambian.
+
+El perfil nuevo registra la copia del reviewer mediante `agents.reviewer.description` y `agents.reviewer.config_file` sólo en esa invocación, manteniendo `--ignore-user-config`, read-only y never. No copia credenciales ni modifica confianza o configuración global. La compatibilidad de esos overrides se observó en el CLI `0.163.0-alpha.10.2`; otras versiones pueden producir inconclusive.
+
+Solicita un spawn explícito de reviewer, inspección de `list_agents` con resultado vacío, un `followup_task` al mismo target y otra inspección del envelope esperado; `wait_agent` sólo espera. Los callbacks seudonimizados deben conservar orden, identidad, clasificación del payload, fingerprint y nonce de la corrida. No usa el texto del modelo para acreditar transporte ni convierte UUIDs y nombres canónicos por inferencia.
+
+El reporte v2 separa `transport_status`, `role_status`, `lufy_lifecycle_verified` y `cleanup_status`. `native_transport_verified` sólo acredita la secuencia estructurada y correlacionada; el rol solicitado/aceptado no equivale a un `SubagentStart` con identidad coherente. El perfil no expone cierre: `cleanup_status=not_available`, `native_execution_verified=false` y el estado integral sigue inconclusive incluso si pasa transporte. Eso conserva el contrato de cierre completo. Shell, edición y mutaciones observadas siguen siendo failed; errores y formatos desconocidos no pasan.
+
+El normalizador admite aliases concatenados exactos de `collaboration` observados en hooks; no aprende nombres por similitud. Un ack vacío de `followup_task` no acredita ejecución por sí solo: necesita la inspección posterior del contrato válido del mismo agente; un error explícito siempre invalida el transporte. Los resultados históricos no se reescriben. El [reporte del perfil](../../docs/codex-native-collaboration-2026-10-23.md) distingue ensayo automático, auditoría read-only de historia persistida y correcciones posteriores cubiertas offline.
