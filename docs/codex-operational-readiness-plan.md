@@ -10,7 +10,9 @@ Programa T1 autorizado por el usuario el 2026-10-22 para implementar, validar y 
 | 4 | Eventos semánticos de review | Operaciones explícitas de revisión emiten eventos content-free e idempotentes; el lifecycle genérico no se convierte en review por inferencia | closed — PR 247 |
 | 5 | Evidencia ligada al candidato | Identidad de repositorio, base y candidato vinculan la evidencia; modificar el candidato invalida su vigencia sin reescribir el resultado original | closed — PR 248 |
 | 6 | Instrucciones Codex coherentes | Reglas comunes, mapping y mirrors tienen una fuente identificada; comprobaciones detectan divergencia y mensajes incompatibles con el lifecycle soportado | closed — PR 249 |
-| 7 | Experimento reproducible de eficiencia | Variantes usan fuentes, aceptación y runtime comparables; datos incompletos conservan baseline y ninguna variante se adopta automáticamente | delivery_pending — PR 250; keep_baseline; closed se confirma con MERGED del HEAD final y reporte global validado |
+| 7 | Experimento reproducible de eficiencia | Variantes usan fuentes, aceptación y runtime comparables; datos incompletos conservan baseline y ninguna variante se adopta automáticamente | closed — PR 250 integrado; reporte global validado; keep_baseline, adopted=false |
+
+Los siete bloques están integrados en `develop`. Los seguimientos PR 251 y PR 252 añaden el diagnóstico collaboration y corrigen los timeouts de espera con inspección posterior; no cambian el límite de cierre nativo. La promoción y release requieren sus propios checks y autorización, independientes de este cierre del programa.
 
 ## Ejecución y review
 

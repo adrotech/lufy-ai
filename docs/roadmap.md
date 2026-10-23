@@ -1,6 +1,6 @@
 # Roadmap de `lufy-ai`
 
-Este roadmap contiene líneas de evolución posteriores a `v0.6.24`. No es un backlog ejecutable ni implica compromiso de fecha. Toda iniciativa sustantiva debe entrar por routing T1/T2/T3 y adquirir su propia spec, issue, criterios observables y evidencia.
+Este roadmap contiene líneas de evolución posteriores a `v0.6.25`. No es un backlog ejecutable ni implica compromiso de fecha. Toda iniciativa sustantiva debe entrar por routing T1/T2/T3 y adquirir su propia spec, issue, criterios observables y evidencia.
 
 ## Principios
 
