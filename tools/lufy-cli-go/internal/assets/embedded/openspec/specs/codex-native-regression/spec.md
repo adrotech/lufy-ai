@@ -46,3 +46,7 @@ El runner SHALL ofrecer un perfil opt-in collaboration que conserve el aislamien
 #### Scenario: Missing or contradictory evidence
 - **WHEN** faltan callbacks, hay otro target, payload/orden incorrecto, followups adicionales o una violación observada
 - **THEN** no se acredita recuperación; las violaciones conservan precedencia failed y los gaps permanecen inconclusos
+
+#### Scenario: Bounded wait expires before recovery completes
+- **WHEN** wait_agent informa timed_out booleano true sin error explícito y una inspección posterior del mismo agente confirma el envelope esperado
+- **THEN** el timeout no invalida la faceta de transporte ni acredita recuperación por sí solo; errores, respuestas desconocidas o falta de inspección posterior mantienen el caso inconcluso y la aceptación legacy no cambia

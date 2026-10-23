@@ -128,6 +128,37 @@ class CollaborationProfileTests(unittest.TestCase):
             followup = callback("followup_task", {"target": self.target}, response, self.payload)
             self.assertEqual(self.assess(hooks=[self.spawn, self.empty, followup, self.valid])["transport_status"], "inconclusive")
 
+    def test_wait_timeout_requires_explicit_boolean_and_later_valid_state(self):
+        wait = callback("wait_agent", {}, {"message": "Wait timed out.", "timed_out": True}, self.payload)
+        self.assertEqual(wait.get("wait_outcome"), "timed_out")
+        self.assertFalse(wait["success"])
+        hooks = [self.spawn, self.empty, self.followup, wait, self.valid]
+        self.assertEqual(self.assess(hooks=hooks)["transport_status"], "passed")
+        self.assertEqual(self.assess(hooks=hooks)["status"], "inconclusive")
+        self.assertEqual(self.assess(hooks=hooks[:-1])["transport_status"], "inconclusive")
+        self.assertEqual(self.assess(hooks=[*self.hooks, wait])["transport_status"], "inconclusive")
+        for response in [{}, {"timed_out": "true"}, {"message": "Wait timed out."},
+                         {"timed_out": True, "error": "failure"},
+                         {"timed_out": True, "error_code": None},
+                         {"timed_out": True, "isError": True},
+                         {"timed_out": True, "is_error": True},
+                         {"timed_out": True, "status": "failed"}]:
+            with self.subTest(response=response):
+                wait = callback("wait_agent", {}, response, self.payload)
+                self.assertNotEqual(wait.get("wait_outcome"), "timed_out")
+                hooks[-2] = wait
+                self.assertEqual(self.assess(hooks=hooks)["transport_status"], "inconclusive")
+
+    def test_wait_timeout_does_not_exempt_legacy_wait_or_other_tool_errors(self):
+        for name in ["wait", "spawn_agent", "followup_task", "list_agents"]:
+            record = callback(name, {}, {"timed_out": True}, self.payload)
+            self.assertNotIn("wait_outcome", record)
+        wait = callback("wait_agent", {}, {"timed_out": False}, self.payload)
+        self.assertEqual(wait.get("wait_outcome"), "completed")
+        unknown = callback("wait_agent", {}, {"message": "unknown"}, self.payload)
+        self.assertEqual(unknown.get("wait_outcome"), "unknown")
+        self.assertFalse(unknown["success"])
+
 
 if __name__ == "__main__":
     unittest.main()

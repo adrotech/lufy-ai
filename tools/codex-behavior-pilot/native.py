@@ -114,7 +114,9 @@ def assess_collaboration(events, hooks, before, after, returncode=0, timed_out=F
     spawns = [h for h in calls if h["tool"] == "spawn_agent"]
     followups = [h for h in calls if h["tool"] == "followup_task"]
     if len(spawns) != 1 or len(followups) != 1 or any(
-            h.get("success") is not True and not (h["tool"] == "followup_task" and h.get("acknowledgement") == "empty")
+            h.get("success") is not True and not (
+                (h["tool"] == "followup_task" and h.get("acknowledgement") == "empty") or
+                (h["tool"] == "wait_agent" and h.get("wait_outcome") == "timed_out"))
             for h in calls):
         return result
     spawn, followup = spawns[0], followups[0]
@@ -132,8 +134,10 @@ def assess_collaboration(events, hooks, before, after, returncode=0, timed_out=F
         result["role_status"] = "observed"
     if followup.get("target_ids") != [child] or calls.index(spawn) >= calls.index(followup):
         return result
-    empty_seen = valid_seen = False
+    empty_seen = valid_seen = pending_wait_timeout = False
     for index, call in enumerate(calls):
+        if call["tool"] == "wait_agent" and call.get("wait_outcome") == "timed_out":
+            pending_wait_timeout = True
         if call["tool"] != "list_agents":
             continue
         if call.get("target_ids") != [child] or index < calls.index(spawn):
@@ -156,7 +160,8 @@ def assess_collaboration(events, hooks, before, after, returncode=0, timed_out=F
             if payload.get("payload") != "valid" or not isinstance(payload.get("fingerprint"), str) or not re.fullmatch(r"[0-9a-f]{64}", payload["fingerprint"]):
                 return result
             valid_seen = True
-    if empty_seen and valid_seen:
+            pending_wait_timeout = False
+    if empty_seen and valid_seen and not pending_wait_timeout:
         result.update(transport_status="passed", reason="cleanup_not_available")
     return result
 
@@ -206,6 +211,13 @@ def normalize_hook(data, expected_hash):
     record["success"] = (bool(response) and not any(k in response for k in ["error", "error_code"])
                          and response.get("isError") is not True and response.get("is_error") is not True
                          and response.get("timed_out") is not True and not failed_status)
+    if record["tool"] == "wait_agent" and event == "PostToolUse":
+        failed = (any(k in response for k in ["error", "error_code"])
+                  or response.get("isError") is True or response.get("is_error") is True or failed_status)
+        timeout = response.get("timed_out")
+        record["wait_outcome"] = ("error" if failed else "timed_out" if timeout is True
+                                  else "completed" if timeout is False else "unknown")
+        record["success"] = record["wait_outcome"] == "completed"
     ids = inputs.get("ids", inputs.get("task_ids"))
     if ids is None:
         ids = [inputs.get("target", inputs.get("path_prefix", inputs.get("id", inputs.get("agent_id", inputs.get("task_id")))))]
