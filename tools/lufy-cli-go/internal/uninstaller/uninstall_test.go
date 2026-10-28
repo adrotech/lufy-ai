@@ -19,7 +19,7 @@ func TestRunDryRunAndRealUninstallThenReinstall(t *testing.T) {
 	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install fixture error = %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte("# Project\n\nKeep me\n\n"+agentsref.Reference+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(target, "AGENTS.md"), []byte("# Project\n\nKeep me\n\n"+agentsref.ManagedBlock()), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,14 +52,14 @@ func TestRunDryRunAndRealUninstallThenReinstall(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(target, agentsref.HarnessFile)); !os.IsNotExist(err) {
 		t.Fatalf("harness should be removed, stat err=%v", err)
 	}
-	if _, err := os.Stat(filepath.Join(target, "opencode.json")); err != nil {
-		t.Fatalf("opencode.json should be preserved: %v", err)
+	if _, err := os.Stat(filepath.Join(target, ".codex", "agents")); !os.IsNotExist(err) {
+		t.Fatal("unexpected role assets")
 	}
 	agentsBody, err := os.ReadFile(filepath.Join(target, "AGENTS.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(agentsBody), agentsref.Reference) || strings.Contains(string(agentsBody), agentsref.BeginMarker) || !strings.Contains(string(agentsBody), "Keep me") {
+	if strings.Contains(string(agentsBody), agentsref.RetiredReference) || strings.Contains(string(agentsBody), agentsref.BeginMarker) || !strings.Contains(string(agentsBody), "Keep me") {
 		t.Fatalf("AGENTS.md integration removal unexpected: %q", string(agentsBody))
 	}
 	if matches, err := filepath.Glob(filepath.Join(target, ".lufy", "managed-state", "backups", "*", "manifest.json")); err != nil || len(matches) == 0 {

@@ -1,0 +1,666 @@
+{
+  "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+  "model_requested": "gpt-6.1-sol",
+  "sources": {
+    "comparison.py": "b2da71c68723a31175d2e6790da622c8613c3ca75aa021c0c0884a77e24a7df4",
+    "work.py": "d160967b87f974f8b988160df331e21df1dc4fcec99eb5ada49f21bf3c61da76",
+    "work-scenarios.json": "d069816c5b46c9b671d663b21db04371e5f3047cb14e911ba4b3251b0ba196e6",
+    "audit_work.py": "e3ce1999f8b8917c4af3f926cf703d9a9fd273a4177f4eb6cab5d94e67a5c624",
+    "work_policy": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc"
+  },
+  "product_binary_sha256": {
+    "A": "be4aa0503a99b128b0a7cb172c61317a24a840dddec3006bfb2384e2d5c94349",
+    "C": "b39e5c6e4bf319860d184124d1ed1ea11b4d07c573584ab71089d22b897479d9"
+  },
+  "protocol_sha256": "376ef5c7edb82aec0166a65f701817f73ef9ef82ec451870b0c6586d5c979fa0",
+  "adopted_from_comparison": false,
+  "conclusion": "inconclusive_for_general_advantage_or_human_cost",
+  "results": [
+    {
+      "case": "explain-code",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/explain-code",
+      "metrics": {
+        "input_tokens": 56724,
+        "cached_input_tokens": 39168,
+        "output_tokens": 355,
+        "reasoning_output_tokens": 18,
+        "duration_ms": 18584,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "68ae79a2b705a54ec79c1b7ad1d0e33a6c90fea9687f7ba40630d11319d28cc1",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "explain-code",
+      "variant": "B",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/explain-code",
+      "metrics": {
+        "input_tokens": 51199,
+        "cached_input_tokens": 47488,
+        "output_tokens": 252,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 15915,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "73c2bcca828bca85bab711967f521abaaef886044ca64c7ce0dd250f968bc956",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "explain-code",
+      "variant": "C",
+      "stage": "initial",
+      "status": "needs_review",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/explain-code",
+      "metrics": {
+        "input_tokens": 43185,
+        "cached_input_tokens": 37120,
+        "output_tokens": 296,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 12857,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [],
+      "changed_paths": [],
+      "record_sha256": "455d5c0a06207728e9de971a32f8aaeb5ad7b07ffeb5a2f550a351cdb23f7b72",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "propose-export",
+      "variant": "B",
+      "stage": "initial",
+      "status": "needs_review",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/propose-export",
+      "metrics": {
+        "input_tokens": 38349,
+        "cached_input_tokens": 34816,
+        "output_tokens": 564,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 24959,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [],
+      "changed_paths": [],
+      "record_sha256": "2a4b631f5a125c63545161d7b4cfc2f30ed98c7c0c3d5516fb2655bf14a2bd23",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "propose-export",
+      "variant": "C",
+      "stage": "initial",
+      "status": "needs_review",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/propose-export",
+      "metrics": {
+        "input_tokens": 28082,
+        "cached_input_tokens": 24064,
+        "output_tokens": 609,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 25292,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [],
+      "changed_paths": [],
+      "record_sha256": "7a6a6da77378ed17ed4875f5e4457a2078a577c907b8041c0f2447107fc7dc9d",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "propose-export",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/propose-export",
+      "metrics": {
+        "input_tokens": 80234,
+        "cached_input_tokens": 69760,
+        "output_tokens": 993,
+        "reasoning_output_tokens": 22,
+        "duration_ms": 40828,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "4ac0f13fe0877460710b9cd5a0ae9c2011c7b9a4c38f2a51229728536e1e4b0f",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "C",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/write-guide",
+      "metrics": {
+        "input_tokens": 43805,
+        "cached_input_tokens": 39168,
+        "output_tokens": 378,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 18333,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "4a370b13f0a9bc52ef5a4867d7277e0ee4eb4fb51e7886768a1e0e559eb2f30a",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/write-guide",
+      "metrics": {
+        "input_tokens": 90021,
+        "cached_input_tokens": 79232,
+        "output_tokens": 665,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 26457,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "705721d5f15a0f67e37aaa5003f5b8cb2cd9e5d34ecd48fe7a2020bb28f131d2",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "B",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/write-guide",
+      "metrics": {
+        "input_tokens": 51922,
+        "cached_input_tokens": 45952,
+        "output_tokens": 640,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 23177,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "63b0af8acc2839f274e384fd7abd5faf387a8d14b5c5609243d5c185577b4dcd",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "translate-guide",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/translate-guide",
+      "metrics": {
+        "input_tokens": 42046,
+        "cached_input_tokens": 35968,
+        "output_tokens": 450,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 16155,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "translation.md"
+      ],
+      "record_sha256": "38268c21f13dfd26e25c54a3fd8725fe03eade5927cea84cb29cf91b8623fa59",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "translate-guide",
+      "variant": "B",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/translate-guide",
+      "metrics": {
+        "input_tokens": 55121,
+        "cached_input_tokens": 45952,
+        "output_tokens": 415,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 17148,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "translation.md"
+      ],
+      "record_sha256": "1432afb3ff69a0f7d9995803543302c6456c6626a885192da2f5b09504e057a6",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "translate-guide",
+      "variant": "C",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/translate-guide",
+      "metrics": {
+        "input_tokens": 60028,
+        "cached_input_tokens": 54400,
+        "output_tokens": 489,
+        "reasoning_output_tokens": 13,
+        "duration_ms": 21258,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "translation.md"
+      ],
+      "record_sha256": "97cacfb5c8bcc8d854ff3bc1f295adc4eec6263469ca00ab9265798c27d182d7",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "B",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/fix-filter",
+      "metrics": {
+        "input_tokens": 38991,
+        "cached_input_tokens": 22272,
+        "output_tokens": 312,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 13609,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "ae045ca0f30dc709533f7863a10777403b50f07b8c58d593e17b5792842b9844",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "C",
+      "stage": "initial",
+      "status": "passed",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/fix-filter",
+      "metrics": {
+        "input_tokens": 45052,
+        "cached_input_tokens": 31104,
+        "output_tokens": 321,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 15307,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "4345c0b41267700aef8254e288b949bcc8d5bac977f37136b492388c7634ea0e",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/fix-filter",
+      "metrics": {
+        "input_tokens": 42988,
+        "cached_input_tokens": 39296,
+        "output_tokens": 416,
+        "reasoning_output_tokens": 12,
+        "duration_ms": 27577,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "29141a34dd04a0658dee3ccf6453e6ae59159421e3a066bfc05b36cb00b3765d",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "analyze-join",
+      "variant": "C",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/initial/analyze-join",
+      "metrics": {
+        "input_tokens": 61740,
+        "cached_input_tokens": 55680,
+        "output_tokens": 759,
+        "reasoning_output_tokens": 7,
+        "duration_ms": 25807,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "e8490abfb624f2b4db3700264eee6453ecfdf832352ad903124eb50231a64753",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "analyze-join",
+      "variant": "A",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/initial/analyze-join",
+      "metrics": {
+        "input_tokens": 59910,
+        "cached_input_tokens": 54912,
+        "output_tokens": 857,
+        "reasoning_output_tokens": 20,
+        "duration_ms": 25915,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "30d298861813ab582f46bbd5ed6a60122d13192d6f792ac94aee023ff8da9ed3",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "analyze-join",
+      "variant": "B",
+      "stage": "initial",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/initial/analyze-join",
+      "metrics": {
+        "input_tokens": 51824,
+        "cached_input_tokens": 47488,
+        "output_tokens": 615,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 20368,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [],
+      "record_sha256": "ab023f5877df75257ea1077ae7cd23ec0ce90c386ffdc79a48e4a1bcf97b5288",
+      "parent_record_sha256": null,
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "A",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/followup/fix-filter",
+      "metrics": {
+        "input_tokens": 68495,
+        "cached_input_tokens": 47616,
+        "output_tokens": 799,
+        "reasoning_output_tokens": 7,
+        "duration_ms": 27107,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "ec4e50cc18be676c0a0bb00e6fa3797af4f4773058b9dd929cc99dcd1a0058dc",
+      "parent_record_sha256": "29141a34dd04a0658dee3ccf6453e6ae59159421e3a066bfc05b36cb00b3765d",
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "B",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/followup/fix-filter",
+      "metrics": {
+        "input_tokens": 40787,
+        "cached_input_tokens": 36864,
+        "output_tokens": 563,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 16727,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "615275e5c2008bd74eb87e6d578e8714d82283180cab4f1ec9ccd2bdcd551fb8",
+      "parent_record_sha256": "ae045ca0f30dc709533f7863a10777403b50f07b8c58d593e17b5792842b9844",
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "fix-filter",
+      "variant": "C",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/followup/fix-filter",
+      "metrics": {
+        "input_tokens": 47657,
+        "cached_input_tokens": 39936,
+        "output_tokens": 651,
+        "reasoning_output_tokens": 6,
+        "duration_ms": 18925,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "app.py"
+      ],
+      "record_sha256": "cd7fb16fcceb87f4af32391c0e063a3ce60cf0c3bd692bceac9e22d463673aa3",
+      "parent_record_sha256": "4345c0b41267700aef8254e288b949bcc8d5bac977f37136b492388c7634ea0e",
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "A",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/A/followup/write-guide",
+      "metrics": {
+        "input_tokens": 42181,
+        "cached_input_tokens": 35840,
+        "output_tokens": 323,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 15739,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "d142437a540c0c61e688660196b02a56aa78bc31fcd8828862f8c51c5a9bf2ee",
+      "parent_record_sha256": "705721d5f15a0f67e37aaa5003f5b8cb2cd9e5d34ecd48fe7a2020bb28f131d2",
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "B",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/B/followup/write-guide",
+      "metrics": {
+        "input_tokens": 39637,
+        "cached_input_tokens": 33408,
+        "output_tokens": 496,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 18255,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "97b77743fef26de10036a8b54aa8326aadc98927f42420254808f49cde77bcd8",
+      "parent_record_sha256": "63b0af8acc2839f274e384fd7abd5faf387a8d14b5c5609243d5c185577b4dcd",
+      "post_snapshot_stable": true
+    },
+    {
+      "case": "write-guide",
+      "variant": "C",
+      "stage": "followup",
+      "status": "inconclusive",
+      "directory": "/private/tmp/lufy-comparison-20261028/live-v1/C/followup/write-guide",
+      "metrics": {
+        "input_tokens": 60796,
+        "cached_input_tokens": 55168,
+        "output_tokens": 430,
+        "reasoning_output_tokens": 0,
+        "duration_ms": 18084,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "timed_out": false,
+      "returncode": 0,
+      "launch_error": null,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "changed_paths": [
+        "guide.md"
+      ],
+      "record_sha256": "4651d1f73ab02da76b87b191057f785ddcc5e1123be3b1f9efc7780b9283a59a",
+      "parent_record_sha256": "4a370b13f0a9bc52ef5a4867d7277e0ee4eb4fb51e7886768a1e0e559eb2f30a",
+      "post_snapshot_stable": true
+    }
+  ]
+}

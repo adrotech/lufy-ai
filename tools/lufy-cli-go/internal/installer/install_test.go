@@ -12,12 +12,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -34,7 +35,7 @@ func TestBuildPlanClassifiesCopySkipConflictAndUpdateManaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildPlan(copy) error = %v", err)
 	}
-	if !hasAction(copyPlan.Actions, "copy", "lufy-ia.harness.md") || !hasAction(copyPlan.Actions, "agents-reference-create", "AGENTS.md") || !hasAction(copyPlan.Actions, "mkdir", ".opencode") || !hasAction(copyPlan.Actions, "merge-json", "opencode.json") || !hasAction(copyPlan.Actions, "verify", copyPlan.TargetRoot) {
+	if !hasAction(copyPlan.Actions, "copy", "lufy-ia.harness.md") || !hasAction(copyPlan.Actions, "agents-reference-create", "AGENTS.md") || !hasAction(copyPlan.Actions, "mkdir", ".codex") || !hasAction(copyPlan.Actions, "verify", copyPlan.TargetRoot) {
 		t.Fatalf("copy plan missing expected actions: %#v", copyPlan.Actions)
 	}
 
@@ -97,106 +98,30 @@ func TestPlanBuilderBuildsPlanWithoutApplyingMutations(t *testing.T) {
 	}
 }
 
-func TestInstallRendersImplementerValidationPermissionsFromProjectConfig(t *testing.T) {
+func TestInlineInstallPreservesValidationWithoutRoleInjection(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
-	writeInstallerFile(t, filepath.Join(source, ".opencode", "agents", "implementer.md"), `---
-permission:
-  edit:
-    "go test*": allow
-  task:
-    "*": deny
----
-
-body
-`)
 	target := t.TempDir()
-	writeInstallerFile(t, filepath.Join(target, projectconfig.ProjectConfigPath), `schema_version: 1
-validation:
-  allowed_commands:
-    implementer:
-      - pnpm typecheck*
-      - pnpm lint*
-      - pnpm test*
-      - pnpm build*
-`)
-
-	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(initial) error = %v", err)
-	}
-	body, err := os.ReadFile(filepath.Join(target, ".opencode", "agents", "implementer.md"))
+	cfg, err := projectconfig.Scan(target, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"pnpm typecheck*": allow`, `"pnpm lint*": allow`, `"pnpm test*": allow`, `"pnpm build*": allow`} {
-		if !strings.Contains(string(body), want) {
-			t.Fatalf("missing rendered permission %q in:\n%s", want, body)
-		}
+	cfg.Validation.AllowedCommands.Implementer = []string{"go test ./..."}
+	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
+		t.Fatal(err)
 	}
-	skipPlan, err := svc.BuildPlan(Options{Target: target})
-	if err != nil {
-		t.Fatalf("BuildPlan(skip) error = %v", err)
-	}
-	if hasAction(skipPlan.Actions, "update-managed", filepath.Join(".opencode", "agents", "implementer.md")) {
-		t.Fatalf("rendered implementer should be idempotent, actions=%#v", skipPlan.Actions)
-	}
-}
-
-func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	svc := NewService()
-	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(initial) error = %v", err)
-	}
-	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
-	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
-
-	plan, err := svc.BuildPlan(Options{Target: target})
-	if err != nil {
-		t.Fatalf("BuildPlan() error = %v", err)
-	}
-	if len(plan.Conflicts) != 0 || !hasAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
-		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
-	}
-	if err := svc.Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(lufy-new) error = %v", err)
-	}
-	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
-		t.Fatalf("no-replace original was overwritten: %q", got)
-	}
-	if got := string(readFileForTest(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
-		t.Fatalf("lufy-new content mismatch: %q", got)
-	}
-}
-
-func TestRunLufyNewCanBeConsumedByMergeAcceptTheirs(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(initial) error = %v", err)
+		t.Fatal(err)
 	}
-	writeInstallerFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
-	writeInstallerFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
-	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(lufy-new) error = %v", err)
+	got, err := projectconfig.Load(projectconfig.Path(target))
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	var out bytes.Buffer
-	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
-		t.Fatalf("merge accept-theirs error = %v", err)
+	if !reflect.DeepEqual(got.Validation.AllowedCommands.Implementer, cfg.Validation.AllowedCommands.Implementer) {
+		t.Fatal("project validation changed")
 	}
-	if got := string(readFileForTest(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
-		t.Fatalf("merge did not accept upstream .lufy-new: %q", got)
-	}
-	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
-		t.Fatalf("merge did not remove lufy-new, stat err=%v", err)
-	}
-	if got := stateMustLoadForTest(t, target).AssetMap()["tui.json"].LastAction; got != "merge-accept-theirs" {
-		t.Fatalf("merge did not update asset action, got %q", got)
+	if _, err := os.Stat(filepath.Join(target, ".codex", "agents")); !os.IsNotExist(err) {
+		t.Fatal("role chain installed")
 	}
 }
 
@@ -242,12 +167,11 @@ func TestRunInstallsCodexManagedSurface(t *testing.T) {
 	}
 
 	for _, rel := range []string{
-		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"),
-		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"),
+		filepath.Join(".lufy", "contracts", "work.md"),
 		filepath.Join(".codex", "config.toml"),
 		filepath.Join(".codex", "lufy-agent-mapping.md"),
-		filepath.Join(".codex", "agents", "implementer.toml"),
-		filepath.Join("openspec", "config.yaml"),
+		filepath.Join(".codex", "hooks.json"),
 	} {
 		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
 			t.Fatalf("codex install missing %s: %v", rel, err)
@@ -272,7 +196,7 @@ func TestRunInstallsCodexManagedSurface(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.MethodologyByTier, st.MethodologyByTier) {
+	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.Execution, st.Execution) {
 		t.Fatalf("project config and install state diverged: config=%#v state=%#v", cfg, st)
 	}
 	if _, ok := st.AssetMap()[filepath.Join(".codex", "config.toml")]; !ok {
@@ -291,7 +215,7 @@ func TestInstallRollsBackHarnessConfigWhenApplyFails(t *testing.T) {
 
 	svc := NewService()
 	svc.actionExecutor = failingInstallActionExecutor{err: errors.New("apply failed")}
-	err := svc.Run(Options{Target: target, Yes: true, Harness: domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}}, &bytes.Buffer{})
+	err := svc.Run(Options{Target: target, Yes: true, Harness: domain.HarnessConfig{Tool: domain.ToolCodex, Execution: domain.DefaultExecutionConfig()}}, &bytes.Buffer{})
 	if err == nil || !strings.Contains(err.Error(), "apply failed") {
 		t.Fatalf("expected apply failure, got %v", err)
 	}
@@ -325,47 +249,21 @@ func TestRunRecordsAncestorsForSuccessfulWrites(t *testing.T) {
 	}
 }
 
-func TestRunDefaultInstallDoesNotInstallLufySDDWithoutSelection(t *testing.T) {
+func TestRunDefaultInstallSelectsInlineOnly(t *testing.T) {
 	source := minimalInstallerSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(default install) error = %v", err)
+		t.Fatal(err)
 	}
-
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "sdd")); !os.IsNotExist(err) {
-		t.Fatalf("default install should not create .lufy/workflows/sdd, stat err=%v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); err != nil {
-		t.Fatalf("default install should keep openspec assets: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, ".opencode", "agents", "orchestrator.md")); err != nil {
-		t.Fatalf("default install should keep opencode assets: %v", err)
-	}
-	for _, rel := range []string{
-		filepath.Join(".opencode", "commands", "lufy.mem-search.md"),
-		filepath.Join(".opencode", "skills", "lufy.mem-search", "SKILL.md"),
-		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
-		filepath.Join(".opencode", "templates", "memory-note.md"),
-	} {
-		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
-			t.Fatalf("default install should include memory asset %s: %v", rel, err)
+	for _, rel := range []string{".opencode", "openspec", ".lufy/sdd", ".codex/agents"} {
+		if _, err := os.Stat(filepath.Join(target, rel)); !os.IsNotExist(err) {
+			t.Fatalf("installed retired asset %s", rel)
 		}
 	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "memory")); !os.IsNotExist(err) {
-		t.Fatalf("default install should not create user-owned .lufy/memory, stat err=%v", err)
-	}
-
 	st := stateMustLoadForTest(t, target)
-	if st.Tool != domain.ToolInitialDefault {
-		t.Fatalf("default install tool = %s", st.Tool)
-	}
-	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
-		t.Fatalf("default T1 methodology = %#v", got)
-	}
-	if hasInstalledTargetPrefix(st, filepath.Join(".lufy", "sdd")) {
-		t.Fatalf("default manifest should not register lufy-sdd assets: %#v", st.Assets)
+	if st.Tool != domain.ToolCodex || st.Execution != domain.DefaultExecutionConfig() {
+		t.Fatalf("inline not selected: %#v", st)
 	}
 }
 
@@ -528,106 +426,15 @@ func TestInstallDryRunPlanOutputRegression(t *testing.T) {
 	for _, want := range []string{
 		"Plan de instalación para " + resolvedTarget,
 		"Source root: ",
-		"- [mkdir] .opencode (directorio padre requerido)",
+		"- [mkdir] .codex (directorio gestionado ausente)",
 		"- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea integración mínima al harness)",
 		"- [copy] lufy-ia.harness.md (archivo gestionado ausente)",
-		"- [merge-json] opencode.json (configuración OpenCode gestionada con merge conservador)",
+
 		"Modo dry-run: sin mutaciones en filesystem",
 	} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("dry-run output missing %q:\n%s", want, out.String())
 		}
-	}
-}
-
-func TestInstallMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true},"provider":{"local":{"models":{"keep-me":{}}}}}`)
-
-	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(install) error = %v", err)
-	}
-	decoded := readOpenCodeForTest(t, target)
-	if decoded["custom"] == nil || decoded["provider"] == nil {
-		t.Fatalf("opencode.json perdió claves desconocidas: %#v", decoded)
-	}
-	if decoded["$schema"] == nil || decoded["plugin"] == nil {
-		t.Fatalf("opencode.json no contiene estructura gestionada mínima: %#v", decoded)
-	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if st.ToolVersion == "" || st.SourceRootFingerprint == "" || st.SourceRootFingerprint == "dev-checkout" || st.SourceChangeID == "install-managed-assets-with-hash-idempotency" {
-		t.Fatalf("install state metadata not populated from runtime/catalog: %#v", st)
-	}
-	if _, ok := st.AssetMap()["opencode.json"]; ok {
-		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
-	}
-
-	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(reinstall) error = %v", err)
-	}
-	decoded = readOpenCodeForTest(t, target)
-	if decoded["custom"] == nil || decoded["provider"] == nil {
-		t.Fatalf("reinstall perdió claves desconocidas: %#v", decoded)
-	}
-}
-
-func TestInstallRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
-
-	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
-	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
-		t.Fatalf("expected invalid opencode.json error, got %v", err)
-	}
-	if got := string(readFileForTest(t, filepath.Join(target, "opencode.json"))); got != `{bad-json` {
-		t.Fatalf("invalid opencode.json was overwritten: %q", got)
-	}
-	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
-		t.Fatalf("install wrote state after invalid opencode.json, stat err=%v", err)
-	}
-}
-
-func TestInstallRejectsUnsafeOpenCodePath(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	outside := filepath.Join(t.TempDir(), "opencode.json")
-	writeInstallerFile(t, outside, `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
-	if err := os.Symlink(outside, filepath.Join(target, "opencode.json")); err != nil {
-		t.Skipf("symlink no soportado en este entorno: %v", err)
-	}
-
-	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
-	if err == nil || !unsafeOpenCodeInstallError(err) {
-		t.Fatalf("expected unsafe opencode.json error, got %v", err)
-	}
-	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
-		t.Fatalf("install wrote state after unsafe opencode.json, stat err=%v", err)
-	}
-}
-
-func TestInstallRejectsInvalidOpenCodeManagedKeyTypes(t *testing.T) {
-	source := minimalInstallerSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	writeInstallerFile(t, filepath.Join(target, "opencode.json"), `{"$schema":false,"plugin":{}}`)
-
-	err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{})
-	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
-		t.Fatalf("expected managed key type error, got %v", err)
-	}
-	if got := string(readFileForTest(t, filepath.Join(target, "opencode.json"))); got != `{"$schema":false,"plugin":{}}` {
-		t.Fatalf("invalid opencode.json was overwritten: %q", got)
-	}
-	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
-		t.Fatalf("install wrote state after invalid opencode.json structure, stat err=%v", err)
 	}
 }
 
@@ -675,7 +482,7 @@ func TestBuildPlanConflictsOnTargetSymlinkParent(t *testing.T) {
 	chdirForTest(t, source)
 	target := t.TempDir()
 	outside := t.TempDir()
-	if err := os.Symlink(outside, filepath.Join(target, ".opencode")); err != nil {
+	if err := os.Symlink(outside, filepath.Join(target, ".codex")); err != nil {
 		t.Skipf("symlink no soportado en este entorno: %v", err)
 	}
 	plan, err := NewService().BuildPlan(Options{Target: target})
@@ -749,7 +556,7 @@ func TestInstallAndVerifyIntegration(t *testing.T) {
 	if !strings.Contains(out.String(), "ok: verify estructural completo") {
 		t.Fatalf("verify output unexpected: %s", out.String())
 	}
-	registry, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault})
+	registry, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolCodex})
 	if err != nil || registry.Status != "ready" {
 		t.Fatalf("install should ensure skill registry: report=%#v err=%v", registry, err)
 	}
@@ -890,6 +697,7 @@ func minimalInstallerSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"): "---\nname: lufy-mem-search\ndescription: Buscar memoria\n---\nBuscar memoria\n",
 		"AGENTS.md":                         "agents root\n",
 		"AGENTS.md.template":                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"lufy-ia.harness.md":                "harness template\n",
@@ -900,13 +708,12 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join(".lufy", "contracts", "result-contract.md"):               "result\n",
 		filepath.Join(".lufy", "contracts", "pr-review", "review-framework.md"): "review framework\n",
 		filepath.Join(".lufy", "contracts", "pr-review", "report.html"):         "<!DOCTYPE html>\n",
-		filepath.Join(".agents", "skills", "lufy-close", "SKILL.md"):            "close skill\n",
-		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):          "sdd skill\n",
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"):       "close skill\n",
+		filepath.Join(".lufy", "contracts", "work.md"):                          "sdd skill\n",
 		filepath.Join(".codex", "README.md"):                                    "codex readme\n",
 		filepath.Join(".codex", "config.toml"):                                  "project_doc_max_bytes = 32768\n\n[features]\nmulti_agent = true\n",
 		filepath.Join(".codex", "lufy-agent-mapping.md"):                        "agent_execution_mode\n",
-		filepath.Join(".codex", "agents", "implementer.toml"):                   "name = \"implementer\"\n",
-		filepath.Join(".codex", "hooks.json"):                                   "{\"hooks\":{}}\n",
+		filepath.Join(".codex", "hooks.json"):                                   "name = \"implementer\"\n",
 		filepath.Join(".codex", "rules", "lufy.rules"):                          "# rules\n",
 		filepath.Join(".opencode", ".gitignore"):                                "node_modules\n",
 		filepath.Join(".opencode", "README.md"):                                 "readme\n",
@@ -935,6 +742,17 @@ func minimalInstallerSource(t *testing.T) string {
 		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                      "",
 		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):               "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                         "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
+	}
+	c, e := assets.BuildEmbeddedCatalog()
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, rel := range []string{".codex/config.toml", ".codex/hooks.json", ".codex/rules/lufy.rules"} {
+		b, e := assets.ReadSourceFile(c.SourceRoot, rel)
+		if e != nil {
+			t.Fatal(e)
+		}
+		files[rel] = string(b)
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

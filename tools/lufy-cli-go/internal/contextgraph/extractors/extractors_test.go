@@ -81,9 +81,9 @@ func TestRun() {}
 	assertEdge(t, jsonRes.Edges, "file:data.json#json_key:skill.path", "references", "file:.opencode/skills/demo/SKILL.md")
 	assertEdge(t, jsonRes.Edges, "file:data.json#json_key:codex_skill.path", "references", "file:.agents/skills/demo/SKILL.md")
 
-	assertNode(t, Extract(root, ".opencode/agents/explorer.md").Nodes, "file:.opencode/agents/explorer.md", "opencode_agent")
-	assertNode(t, Extract(root, ".opencode/skills/demo/SKILL.md").Nodes, "file:.opencode/skills/demo/SKILL.md", "opencode_skill")
-	assertNode(t, Extract(root, ".opencode/commands/demo.md").Nodes, "file:.opencode/commands/demo.md", "opencode_command")
+	assertNode(t, Extract(root, ".opencode/agents/explorer.md").Nodes, "file:.opencode/agents/explorer.md", "file")
+	assertNode(t, Extract(root, ".opencode/skills/demo/SKILL.md").Nodes, "file:.opencode/skills/demo/SKILL.md", "file")
+	assertNode(t, Extract(root, ".opencode/commands/demo.md").Nodes, "file:.opencode/commands/demo.md", "file")
 	assertNode(t, Extract(root, ".agents/skills/demo/SKILL.md").Nodes, "file:.agents/skills/demo/SKILL.md", "codex_skill")
 }
 
@@ -152,4 +152,17 @@ func assertEdge(t *testing.T, edges []domain.Edge, from, typ, to string) {
 		}
 	}
 	t.Fatalf("missing edge %s --%s--> %s in %#v", from, typ, to, edges)
+}
+
+func TestFormerWorkflowMarkdownIsOrdinaryText(t *testing.T) {
+	root := t.TempDir()
+	rel := "notes/proposal.md"
+	writeExtractorFixture(t, root, rel, "# Decision\n### Requirement: Content\n#### Scenario: Example\n- [ ] 1.1 task <!-- scenario=example -->\n")
+	got := Extract(root, rel)
+	assertNode(t, got.Nodes, "file:"+rel+"#markdown", "markdown_document")
+	for _, node := range got.Nodes {
+		if node.Type != "file" && node.Type != "directory" && node.Type != "markdown_document" && node.Type != "markdown_heading" {
+			t.Fatalf("workflow interpretation survived: %#v", node)
+		}
+	}
 }

@@ -274,7 +274,7 @@ func emptyDirsFor(actions []Action) []string {
 		case "remove-file", "remove-ancestor":
 			dir := filepath.ToSlash(filepath.Dir(action.Target))
 			for dir != "." && dir != "/" && dir != "" {
-				if strings.HasPrefix(dir, lufypaths.Backups) || strings.HasPrefix(dir, lufypaths.LegacyBackups) {
+				if strings.HasPrefix(dir, lufypaths.Backups) {
 					break
 				}
 				seen[dir] = true

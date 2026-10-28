@@ -8,28 +8,28 @@ import (
 )
 
 const (
-	ProjectConfigPath       = lufypaths.ProjectConfig
-	LegacyProjectConfigPath = lufypaths.LegacyProjectConfig
-	SchemaVersion           = 1
+	ProjectConfigPath        = lufypaths.ProjectConfig
+	RetiredProjectConfigPath = lufypaths.RetiredProjectConfig
+	SchemaVersion            = 2
 )
 
 type ProjectConfig struct {
-	SchemaVersion     int                      `yaml:"schema_version"`
-	DetectedAt        time.Time                `yaml:"detected_at"`
-	Tool              domain.ToolID            `yaml:"tool"`
-	MethodologyByTier domain.MethodologyByTier `yaml:"methodology_by_tier"`
-	ProjectProfile    ProjectProfile           `yaml:"project_profile"`
-	Stacks            []Stack                  `yaml:"stacks"`
-	CI                CIConfig                 `yaml:"ci"`
-	TDD               TDDConfig                `yaml:"tdd"`
-	Validation        ValidationConfig         `yaml:"validation"`
-	WorkflowLimits    WorkflowLimits           `yaml:"workflow_limits"`
-	ContextGraph      ContextGraphConfig       `yaml:"context_graph"`
-	Memory            MemoryConfig             `yaml:"memory"`
-	RunLedger         RunLedgerConfig          `yaml:"run_ledger"`
-	AdaptiveRouting   AdaptiveRoutingConfig    `yaml:"adaptive_routing"`
-	ParallelExecution ParallelExecutionConfig  `yaml:"parallel_execution"`
-	Extra             map[string]any           `yaml:",inline,omitempty"`
+	SchemaVersion     int                     `yaml:"schema_version"`
+	DetectedAt        time.Time               `yaml:"detected_at"`
+	Tool              domain.ToolID           `yaml:"tool"`
+	Execution         domain.ExecutionConfig  `yaml:"execution"`
+	ProjectProfile    ProjectProfile          `yaml:"project_profile"`
+	Stacks            []Stack                 `yaml:"stacks"`
+	CI                CIConfig                `yaml:"ci"`
+	TDD               TDDConfig               `yaml:"tdd"`
+	Validation        ValidationConfig        `yaml:"validation"`
+	WorkflowLimits    WorkflowLimits          `yaml:"workflow_limits"`
+	ContextGraph      ContextGraphConfig      `yaml:"context_graph"`
+	Memory            MemoryConfig            `yaml:"memory"`
+	RunLedger         RunLedgerConfig         `yaml:"run_ledger"`
+	AdaptiveRouting   AdaptiveRoutingConfig   `yaml:"adaptive_routing"`
+	ParallelExecution ParallelExecutionConfig `yaml:"parallel_execution"`
+	Extra             map[string]any          `yaml:",inline,omitempty"`
 }
 
 type ProjectProfile struct {
@@ -133,7 +133,6 @@ type WorkflowReviewLimits struct {
 	MaxFilesPerSlice      int            `yaml:"max_files_per_slice,omitempty"`
 	MaxChurnLinesPerSlice int            `yaml:"max_churn_lines_per_slice,omitempty"`
 	MaxConcurrentSlices   int            `yaml:"max_concurrent_slices,omitempty"`
-	MinEvidenceItems      int            `yaml:"min_evidence_items,omitempty"`
 	Extra                 map[string]any `yaml:",inline,omitempty"`
 }
 

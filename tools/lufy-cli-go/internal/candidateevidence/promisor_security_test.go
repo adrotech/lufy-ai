@@ -48,7 +48,7 @@ func TestCaptureRejectsPromisorBeforeResolvingMissingObjects(t *testing.T) {
 	clone, base := localPromisorFixture(t)
 	objects := filepath.Join(clone, ".git", "objects")
 	before := fingerprintFixtureTree(t, objects)
-	_, err := candidateevidence.Capture(context.Background(), clone, base, fixtureEvidenceSHA, "reviewer")
+	_, err := candidateevidence.Capture(context.Background(), clone, base, fixtureEvidenceSHA)
 	if err == nil {
 		t.Error("partial clone/promisor must reject before resolving missing objects")
 	}

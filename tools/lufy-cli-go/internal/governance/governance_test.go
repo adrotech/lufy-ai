@@ -48,7 +48,7 @@ func TestInfoAndDoctorForInstalledTarget(t *testing.T) {
 	if !doctor.OK {
 		t.Fatalf("doctor should be ok: %#v", doctor)
 	}
-	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "info", "memoria Obsidian no inicializada") || !hasDoctorCheck(doctor.Checks, "ok", "OpenCode cargará plugin local") {
+	if !hasDoctorCheck(doctor.Checks, "warn", "context graph not_available") || !hasDoctorCheck(doctor.Checks, "info", "memoria Obsidian no inicializada") || !hasDoctorCheck(doctor.Checks, "ok", "SessionStart") {
 		t.Fatalf("doctor should report context recovery and memory lifecycle plugin: %#v", doctor.Checks)
 	}
 
@@ -80,7 +80,7 @@ func TestDoctorFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg.Tool = domain.ToolCodex
+	cfg.Execution.Delegation = domain.DelegationOff
 	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestDoctorFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if report.OK || !hasDoctorCheck(report.Checks, "fail", "tool project=codex install-state=opencode") {
+	if report.OK || !hasDoctorCheck(report.Checks, "fail", "execution.delegation project=off install-state=auto") {
 		t.Fatalf("doctor accepted harness mismatch: %#v", report)
 	}
 }
@@ -104,7 +104,7 @@ func TestDoctorReportsStaleSkillRegistryWithoutMutatingIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	skillPath := filepath.Join(target, ".opencode", "skills", "doctor-stale", "SKILL.md")
+	skillPath := filepath.Join(target, ".agents", "skills", "doctor-stale", "SKILL.md")
 	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -228,27 +228,6 @@ func writeGovernanceFile(t *testing.T, path, content string) {
 	}
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestDoctorFailsOnPendingLufyNewConflict(t *testing.T) {
-	target := t.TempDir()
-	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Scope: assets.ScopeProject}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("install fixture: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(target, "tui.json"), []byte("{\"user\":true}\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(target, "tui.json.lufy-new"), []byte("{\"new\":true}\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	report, err := NewService().BuildDoctor(Options{Target: target, Scope: assets.ScopeProject})
-	if err != nil {
-		t.Fatalf("BuildDoctor() error = %v", err)
-	}
-	if report.OK || !hasDoctorCheck(report.Checks, "fail", ".lufy-new=1") {
-		t.Fatalf("doctor should fail on pending lufy-new: %#v", report)
 	}
 }
 

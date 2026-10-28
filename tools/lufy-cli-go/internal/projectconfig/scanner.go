@@ -31,8 +31,8 @@ func (s Scanner) Scan(root string) (ProjectConfig, error) {
 	return ProjectConfig{
 		SchemaVersion:     SchemaVersion,
 		DetectedAt:        now().UTC(),
-		Tool:              domain.ToolInitialDefault,
-		MethodologyByTier: domain.DefaultMethodologyByTier(),
+		Tool:              domain.ToolCodex,
+		Execution:         domain.DefaultExecutionConfig(),
 		ProjectProfile:    detectProjectProfile(root, stacks),
 		Stacks:            stacks,
 		CI:                scanCI(root),

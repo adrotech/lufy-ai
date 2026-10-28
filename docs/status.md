@@ -1,62 +1,18 @@
 # Estado del producto
 
-Este documento describe el estado instalable de la release estable `v0.6.25`. El código en una rama, una proposal o un change activo no cuenta como capacidad publicada hasta completar validación, merge a `main`, tag y release.
+La rama de refactorización contiene el flujo inline; todavía no es una release publicada. La última estable pertenece al modelo anterior. Este documento distingue capacidades de código y evidencia experimental de disponibilidad pública.
 
-## Capacidades vigentes
+| Área | Estado de la rama |
+| --- | --- |
+| Trabajo inline | Configuración schema 2, política explícita de delegación, criterios según familia de tarea. |
+| Instalación Codex | 16 assets y cinco skills; manifest schema 4. |
+| Recuperación | Backup schema 2; restore de la generación actual y rollback transaccional. |
+| Contexto | Índice lexical, impacto y revisión Git; sin parser ni cobertura SDD. |
+| Memoria y skills | Obsidian portable y registro local derivado. |
+| Evidencia | Registro opcional explícito; ningún evento concede autorización. |
+| Asignación adaptativa | Experimental, opt-in; deshabilitada en el flujo personal. |
+| Comparación de procesos | 24 turnos ejecutados; muestra limitada, sin ganador universal ni medición de carga humana. |
 
-| Área | Estado | Superficie principal |
-| --- | --- | --- |
-| Tool adapters | Disponible | OpenCode es el default; Codex instala una superficie project-local autocontenida. |
-| Methodology adapters | Disponible | OpenSpec Full/Lite, Lufy SDD Full/Lite y `none` sólo donde la policy lo permite. |
-| Routing proporcional | Disponible | T1 Full SDD, T2 SDD Lite y T3 Express, con Review Workload Harness y slices revisables. |
-| Surface Execution Plan | Disponible | `lufy-ai plan` resuelve superficies, contratos conectados, capabilities y validaciones sin ejecutarlas. |
-| Result Contract | Disponible | `lufy-ai result validate|normalize|transition`; las transiciones usan policy, evidencia y CAS. |
-| Run Ledger | Disponible | `lufy-ai run record|checkpoint|status|summary|verify|prune`, con eventos append-only y payload content-free. |
-| Adaptive routing | Disponible y opt-in | `disabled` por default; `shadow` observa y `advisory` permite assign/yield explícitos con leases y budget. |
-| Context Graph | Disponible | Build/query/path/explain/diff más coverage, trace, review y metrics como índices secundarios. |
-| Memoria | Disponible | Obsidian portable bajo `.lufy/memory`, con capture, connect, validate, search e index. |
-| Skill registry | Disponible | `.lufy/skill-registry.json` derivado, local-first y con precedencia project-over-global. |
-| Managed assets | Disponible | Install/sync/uninstall, manifest schema v2, SHA-256, backup/restore, pin/unpin y merge seguro. |
-| Observabilidad humana | Disponible | Agent Observatory para OpenCode y reportes HTML offline de proposal, PR y tiempo. |
-| Release | Disponible | Binarios multi-OS/arch, checksums, SBOM, provenance, firma keyless y E2E post-release. |
-| Diagnóstico y evidencia Codex | Disponible | Diagnóstico de runtime, eventos explícitos de review y binding de evidencia al candidato Git. |
-| Regresión Codex | Disponible con límites | Suite offline en CI y perfil nativo opt-in con facetas independientes; cierre integral no disponible. |
+Los motores OpenSpec/Lufy SDD, los adapters OpenCode/Claude Code, sus parsers y los roles instalables fueron retirados de esta fuente. Sus informes históricos no constituyen instrucciones vigentes. El conocimiento útil y la situación de iniciativas anteriores se resumen en [estado del trabajo](estado-del-trabajo.md).
 
-## Roles del harness
-
-El núcleo instala ocho roles estables: `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. Adaptive routing puede sugerir un `role_hint`, pero no crea roles, no cambia identidad, no transfiere ownership y no amplía permisos.
-
-## Fuentes de estado
-
-En orden de autoridad:
-
-1. código, configuración y contratos actuales;
-2. tests, validaciones y resultados de CI;
-3. release/tag alcanzable desde `main`;
-4. specs activas y ADRs;
-5. Context Graph y memoria como orientación secundaria;
-6. roadmap como hipótesis futura, nunca como evidencia de disponibilidad.
-
-## Límites actuales
-
-- `claude-code` permanece como preview dry-run; no es un adapter escribible.
-- Codex no incluye todavía marketplace, Observatory TUI ni reporting avanzado equivalente a OpenCode.
-- `setup` usa defaults `opencode`/`project`; para otro tool, scope o metodología por tier se usan los comandos individuales.
-- No hay templates instalables por stack ni subagentes de dominio adicionales.
-- Context Graph es lexical y determinístico; sus inferencias no reemplazan archivos, tests, logs ni comandos.
-- Run Ledger no guarda prompts, respuestas, transcripts, diffs, secretos ni contenido libre.
-- Adaptive routing no avanza gates y preempta ante delivery, seguridad, contratos públicos, schema de base de datos o migraciones destructivas.
-- Delivery, commit, push, PR, merge y promoción siguen requiriendo autorización explícita.
-- Las auditorías nativas acreditan rol y recuperación en muestras concretas; no prueban cierre ni calidad del reviewer en tareas productivas. Los fixes posteriores se verificaron offline y por replay.
-- Se conserva el baseline inline: la comparación por referencia quedó inconclusa y no acredita ahorro de tokens, coste o latencia.
-
-## Cómo verificar un target
-
-```bash
-lufy-ai version
-lufy-ai status --target <repo> --verbose
-lufy-ai doctor --target <repo>
-lufy-ai verify --target <repo> --deep
-```
-
-Para el flujo completo y la relación entre componentes, ver [`harness-workflow.md`](harness-workflow.md).
+La validación y la sustitución personal de este bloque se registran en [la propuesta](propuestas/lufy-inline-2026-10-24/README.md). Commit y push de la rama fueron autorizados. La integración a `develop`, PR y publicación siguen pendientes; ver [entrega de la rama](propuestas/lufy-inline-2026-10-24/entrega.md).

@@ -15,7 +15,6 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
@@ -127,7 +126,7 @@ func TestRunEnsuresMissingSkillRegistryEvenWithoutManagedChanges(t *testing.T) {
 	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
-	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault})
+	report, err := skillregistry.NewService().Inspect(skillregistry.Options{Target: target, Tool: domain.ToolCodex})
 	if err != nil || report.Status != "ready" {
 		t.Fatalf("sync should ensure skill registry: report=%#v err=%v", report, err)
 	}
@@ -174,65 +173,6 @@ func TestRunSkipsPinnedAssetWithoutAdvancingManifest(t *testing.T) {
 	after := stateMustLoad(t, target).AssetMap()["lufy-ia.harness.md"]
 	if !after.Pinned || after.SourceSHA256 != before.SourceSHA256 || after.TargetSHA256 != before.TargetSHA256 || after.PinnedReason != "local override" {
 		t.Fatalf("pinned manifest state advanced unexpectedly: before=%#v after=%#v", before, after)
-	}
-}
-
-func TestBuildPlanWritesLufyNewForNoReplaceDriftWithSourceChange(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
-	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
-
-	plan, err := NewService().BuildPlan(Options{Target: target})
-	if err != nil {
-		t.Fatalf("BuildPlan() error = %v", err)
-	}
-	if len(plan.Conflicts) != 0 || !hasSyncAction(plan.Actions, "write-lufy-new", "tui.json.lufy-new") {
-		t.Fatalf("expected no-replace lufy-new action without conflicts, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
-	}
-	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(lufy-new) error = %v", err)
-	}
-	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"user\":true}\n" {
-		t.Fatalf("no-replace original was overwritten: %q", got)
-	}
-	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
-		t.Fatalf("lufy-new content mismatch: %q", got)
-	}
-}
-
-func TestRunLufyNewCanBeResolvedByMergerAcceptTheirs(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	writeFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
-	writeFile(t, filepath.Join(source, "tui.json"), "{\"upstream\":true}\n")
-
-	if err := NewService().Run(Options{Target: target, Yes: true}, &bytes.Buffer{}); err != nil {
-		t.Fatalf("Run(sync lufy-new) error = %v", err)
-	}
-	if got := string(readFile(t, filepath.Join(target, "tui.json.lufy-new"))); got != "{\"upstream\":true}\n" {
-		t.Fatalf("sync lufy-new content mismatch: %q", got)
-	}
-
-	var out bytes.Buffer
-	if err := merger.NewService().Run(merger.Options{Target: target, Path: "tui.json", AcceptTheirs: true}, &out); err != nil {
-		t.Fatalf("merge accept-theirs error = %v", err)
-	}
-	if got := string(readFile(t, filepath.Join(target, "tui.json"))); got != "{\"upstream\":true}\n" {
-		t.Fatalf("merge did not accept sync .lufy-new: %q", got)
-	}
-	if _, err := os.Stat(filepath.Join(target, "tui.json.lufy-new")); !os.IsNotExist(err) {
-		t.Fatalf("merge did not remove sync .lufy-new, stat err=%v", err)
-	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	asset := st.AssetMap()["tui.json"]
-	if asset.LastAction != "merge-accept-theirs" || asset.TargetSHA256 != asset.SourceSHA256 || asset.AncestorHash != asset.TargetSHA256 {
-		t.Fatalf("merge did not refresh synced asset state: %#v", asset)
 	}
 }
 
@@ -458,92 +398,6 @@ func TestSyncWarnsWhenAgentsReferenceMissingWithoutMutatingAgents(t *testing.T) 
 	}
 }
 
-func TestSyncMigratesLegacyManagedAgentsStateNonDestructively(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	agentsPath := filepath.Join(target, "AGENTS.md")
-	legacyAgents := []byte("legacy managed AGENTS\n")
-	writeFile(t, agentsPath, string(legacyAgents))
-	agentsHash, err := assets.FileSHA256(agentsPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st.Assets = append(st.Assets, state.AssetState{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: agentsHash, TargetSHA256: agentsHash, Policy: "merge-block", Scope: "project", LastAction: "legacy-managed"})
-	if err := state.WriteAtomic(target, *st); err != nil {
-		t.Fatal(err)
-	}
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
-		t.Fatalf("Run(sync legacy) error = %v, output=%s", err, out.String())
-	}
-	if got := readFile(t, agentsPath); !bytes.Equal(got, legacyAgents) {
-		t.Fatalf("legacy AGENTS.md was mutated: %q", got)
-	}
-	after, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := after.AssetMap()["AGENTS.md"]; ok {
-		t.Fatalf("legacy AGENTS.md entry remained in manifest: %#v", after.AssetMap()["AGENTS.md"])
-	}
-	if _, ok := after.AssetMap()["lufy-ia.harness.md"]; !ok {
-		t.Fatal("harness missing from manifest after legacy migration")
-	}
-}
-
-func TestSyncBlocksLegacyManagedAgentsDriftWithoutMutations(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	agentsPath := filepath.Join(target, "AGENTS.md")
-	legacyAgents := []byte("legacy managed AGENTS\n")
-	writeFile(t, agentsPath, string(legacyAgents))
-	agentsHash, err := assets.FileSHA256(agentsPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	st.Assets = append(st.Assets, state.AssetState{ID: "AGENTS.md", SourceRel: "AGENTS.md.template", TargetRel: "AGENTS.md", SourceSHA256: agentsHash, TargetSHA256: agentsHash, Policy: "merge-block", Scope: "project", LastAction: "legacy-managed"})
-	if err := state.WriteAtomic(target, *st); err != nil {
-		t.Fatal(err)
-	}
-	stateBefore := readFile(t, state.Path(target))
-	writeFile(t, agentsPath, "legacy managed AGENTS\nlocal drift\n")
-	agentsBefore := readFile(t, agentsPath)
-
-	plan, err := NewService().BuildPlan(Options{Target: target})
-	if err != nil {
-		t.Fatalf("BuildPlan() error = %v", err)
-	}
-	if !hasSyncConflict(plan.Conflicts, "AGENTS.md", "legacy gestionado tiene drift local") || hasSyncAction(plan.Actions, "warn-agents-reference", "AGENTS.md") {
-		t.Fatalf("expected actionable legacy drift conflict, actions=%#v conflicts=%#v", plan.Actions, plan.Conflicts)
-	}
-
-	var out bytes.Buffer
-	err = NewService().Run(Options{Target: target, Yes: true}, &out)
-	if err == nil || !strings.Contains(err.Error(), "sync bloqueado") {
-		t.Fatalf("Run(sync legacy drift) expected blocked conflict, err=%v output=%s", err, out.String())
-	}
-	if !strings.Contains(out.String(), "agrega el bloque gestionado manualmente") || !strings.Contains(out.String(), "recordedTarget") {
-		t.Fatalf("sync output missing actionable legacy drift details: %s", out.String())
-	}
-	if got := readFile(t, agentsPath); !bytes.Equal(got, agentsBefore) {
-		t.Fatalf("legacy drift AGENTS.md was mutated: before=%q after=%q", agentsBefore, got)
-	}
-	if got := readFile(t, state.Path(target)); !bytes.Equal(got, stateBefore) {
-		t.Fatalf("blocked sync rewrote install-state: before=%q after=%q", stateBefore, got)
-	}
-}
-
 func TestSyncRecoveryErrorRestoresBackup(t *testing.T) {
 	target := t.TempDir()
 	writeFile(t, filepath.Join(target, "AGENTS.md"), "before\n")
@@ -581,7 +435,7 @@ func TestRunKeepsRetiredManagedAssetsTracked(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
-	obsoleteRel := filepath.Join(".opencode", "commands", "opsx-apply.md")
+	obsoleteRel := filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md")
 	if err := os.Remove(filepath.Join(source, obsoleteRel)); err != nil {
 		t.Fatal(err)
 	}
@@ -614,7 +468,7 @@ func TestRunCreatesNewCatalogAssetsWhileUpdatingExistingManagedAssets(t *testing
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := installedTarget(t)
-	newRel := filepath.Join(".opencode", "commands", "new-command.md")
+	newRel := filepath.Join(".agents", "skills", "lufy-mem-search", "new.md")
 	writeFile(t, filepath.Join(source, newRel), "new command\n")
 	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed\n")
 
@@ -655,10 +509,10 @@ func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Tool != domain.ToolInitialDefault {
+	if st.Tool != domain.ToolCodex {
 		t.Fatalf("synced tool = %s", st.Tool)
 	}
-	if got := st.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull {
+	if got := st.Execution; got != domain.DefaultExecutionConfig() {
 		t.Fatalf("synced T1 methodology = %#v", got)
 	}
 	if st.AssetMap()["lufy-ia.harness.md"].LastAction != "sync-update-managed" {
@@ -674,76 +528,6 @@ func TestRunDefaultUpgradeDoesNotIntroduceLufySDDAndRemainsVerifiable(t *testing
 	}
 	if !strings.Contains(verifyOut.String(), "ok: verify estructural completo") {
 		t.Fatalf("verify after default sync output unexpected: %s", verifyOut.String())
-	}
-}
-
-func TestRunMergeManagedOpenCodePreservesUnknownKeysAndStateExcludesHash(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	writeFile(t, filepath.Join(target, "opencode.json"), `{"custom":{"keep":true}}`)
-
-	plan, err := NewService().BuildPlan(Options{Target: target})
-	if err != nil {
-		t.Fatalf("BuildPlan() error = %v", err)
-	}
-	if !hasSyncAction(plan.Actions, "merge-json", "opencode.json") || hasSyncAction(plan.Actions, "update-managed", "opencode.json") {
-		t.Fatalf("expected merge-json without update-managed for opencode.json: %#v", plan.Actions)
-	}
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Yes: true}, &out); err != nil {
-		t.Fatalf("Run(sync) error = %v, output=%s", err, out.String())
-	}
-	decoded := readOpenCodeForSyncTest(t, target)
-	if decoded["custom"] == nil || decoded["$schema"] == nil || decoded["plugin"] == nil {
-		t.Fatalf("opencode.json merge-managed unexpected: %#v", decoded)
-	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := st.AssetMap()["opencode.json"]; ok {
-		t.Fatal("opencode.json no debe registrarse como asset gestionado completo por hash")
-	}
-}
-
-func TestBuildPlanRejectsInvalidOpenCodeWithoutOverwrite(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	stateBefore := readFile(t, state.Path(target))
-	writeFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
-
-	_, err := NewService().BuildPlan(Options{Target: target})
-	if err == nil || !strings.Contains(err.Error(), "opencode.json inválido") {
-		t.Fatalf("expected invalid opencode.json error, got %v", err)
-	}
-	if got := string(readFile(t, filepath.Join(target, "opencode.json"))); got != `{bad-json` {
-		t.Fatalf("invalid opencode.json was overwritten: %q", got)
-	}
-	if got := readFile(t, state.Path(target)); string(got) != string(stateBefore) {
-		t.Fatal("sync BuildPlan rewrote state after invalid opencode.json")
-	}
-}
-
-func TestBuildPlanRejectsInvalidOpenCodeManagedKeyTypesWithoutAssetUpdates(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := installedTarget(t)
-	stateBefore := readFile(t, state.Path(target))
-	writeFile(t, filepath.Join(source, "lufy-ia.harness.md"), "upstream changed but must not apply\n")
-	writeFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":{}}`)
-
-	_, err := NewService().BuildPlan(Options{Target: target})
-	if err == nil || !strings.Contains(err.Error(), "$schema debe ser string") {
-		t.Fatalf("expected managed key type error, got %v", err)
-	}
-	if got := string(readFile(t, filepath.Join(target, "opencode.json"))); got != `{"$schema":123,"plugin":{}}` {
-		t.Fatalf("invalid opencode.json was overwritten: %q", got)
-	}
-	if got := readFile(t, state.Path(target)); string(got) != string(stateBefore) {
-		t.Fatal("sync BuildPlan rewrote state after invalid opencode.json structure")
 	}
 }
 
@@ -791,7 +575,7 @@ func TestSyncPreservesCodexHarnessAndReconcilesExplicitMismatch(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	harness := domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	harness := domain.HarnessConfig{Tool: domain.ToolCodex, Execution: domain.DefaultExecutionConfig()}
 	if err := installer.NewService().Run(installer.Options{Target: target, Yes: true, Harness: harness}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("install codex fixture: %v", err)
 	}
@@ -799,15 +583,15 @@ func TestSyncPreservesCodexHarnessAndReconcilesExplicitMismatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg.Tool = domain.ToolInitialDefault
+	cfg.Execution.Delegation = domain.DelegationOff
 	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := NewService().BuildPlan(Options{Target: target}); err == nil || !strings.Contains(err.Error(), "tool project=opencode install-state=codex") {
+	if _, err := NewService().BuildPlan(Options{Target: target}); err == nil || !strings.Contains(err.Error(), "execution.delegation project=") {
 		t.Fatalf("expected unresolved mismatch, got %v", err)
 	}
-	if err := NewService().Run(Options{Target: target, Yes: true, Harness: domain.HarnessConfig{Tool: domain.ToolCodex}}, &bytes.Buffer{}); err != nil {
+	if err := NewService().Run(Options{Target: target, Yes: true, Harness: domain.HarnessConfig{Tool: domain.ToolCodex, Execution: domain.ExecutionConfig{Mode: domain.ExecutionInline, Delegation: domain.DelegationOff}}}, &bytes.Buffer{}); err != nil {
 		t.Fatalf("sync explicit reconciliation: %v", err)
 	}
 
@@ -816,8 +600,8 @@ func TestSyncPreservesCodexHarnessAndReconcilesExplicitMismatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	afterState := stateMustLoadForSyncTest(t, target)
-	if afterConfig.Tool != domain.ToolCodex || afterState.Tool != domain.ToolCodex || !reflect.DeepEqual(afterConfig.MethodologyByTier, afterState.MethodologyByTier) {
-		t.Fatalf("sync changed or failed to reconcile harness: config=%#v state=%#v", afterConfig, afterState)
+	if afterState.Execution.Delegation != domain.DelegationOff || afterConfig.Tool != domain.ToolCodex || afterState.Tool != domain.ToolCodex || !reflect.DeepEqual(afterConfig.Execution, afterState.Execution) {
+		t.Fatalf("sync no persistió execution: config=%#v state=%#v", afterConfig.Execution, afterState.Execution)
 	}
 }
 
@@ -900,6 +684,8 @@ func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	files := map[string]string{
+		filepath.Join(".lufy", "contracts", "work.md"):                    "inline\n",
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"): "---\nname: lufy-mem-search\ndescription: Buscar memoria\n---\nBuscar memoria\n",
 		"AGENTS.md":                         "agents root\n",
 		"AGENTS.md.template":                "<!-- LUFY:BEGIN project-guide -->\nagents template\n<!-- LUFY:END project-guide -->\n",
 		"lufy-ia.harness.md":                "harness template\n",
@@ -923,7 +709,7 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".opencode", "package.json"):                              "{}\n",
 		filepath.Join(".opencode", "package-lock.json"):                         "{}\n",
 		filepath.Join(".opencode", "agents", "orchestrator.md"):                 "orchestrator\n",
-		filepath.Join(".opencode", "commands", "opsx-apply.md"):                 "apply\n",
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"):       "apply\n",
 		filepath.Join(".opencode", "hooks", "format-dispatch.sh"):               "hook\n",
 		filepath.Join(".opencode", "skills", "sdd-workflow", "x.md"):            "skill\n",
 		filepath.Join(".opencode", "templates", "sdd-lite.md"):                  "lite\n",
@@ -941,6 +727,17 @@ func minimalSource(t *testing.T) string {
 		filepath.Join(".lufy", "sdd", "specs", ".gitkeep"):                      "",
 		filepath.Join(".lufy", "sdd", "verification", ".gitkeep"):               "",
 		filepath.Join("tools", "lufy-cli-go", "go.mod"):                         "module github.com/adrianrojas/lufy-ai/tools/lufy-cli-go\n",
+	}
+	c, e := assets.BuildEmbeddedCatalog()
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, rel := range []string{".codex/config.toml", ".codex/hooks.json", ".codex/rules/lufy.rules"} {
+		b, e := assets.ReadSourceFile(c.SourceRoot, rel)
+		if e != nil {
+			t.Fatal(e)
+		}
+		files[rel] = string(b)
 	}
 	for rel, content := range files {
 		writeFile(t, filepath.Join(root, rel), content)
@@ -986,4 +783,25 @@ func stateMustLoad(t *testing.T, target string) *state.InstallState {
 		t.Fatal("missing install-state")
 	}
 	return st
+}
+
+func TestSyncRejectsWholeAgentsAssetWithoutConversion(t *testing.T) {
+	source := minimalSource(t)
+	chdirForTest(t, source)
+	target := t.TempDir()
+	st := state.New(target, nil, []state.AssetState{{ID: "AGENTS.md", TargetRel: "AGENTS.md", SourceRel: "AGENTS.md.template"}}, "test")
+	if err := state.WriteAtomic(target, st); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(state.Path(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewService().BuildPlan(Options{Target: target}); err == nil {
+		t.Fatal("whole AGENTS asset accepted")
+	}
+	after, _ := os.ReadFile(state.Path(target))
+	if !bytes.Equal(before, after) {
+		t.Fatal("state converted")
+	}
 }

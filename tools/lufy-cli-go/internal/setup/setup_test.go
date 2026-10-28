@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/versioncheck"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -145,7 +144,7 @@ func TestSetupApplyEndToEnd(t *testing.T) {
 
 func TestSetupPlansInstallConflictRecovery(t *testing.T) {
 	target := t.TempDir()
-	writeSetupTestFile(t, filepath.Join(target, ".opencode", "agents", "orchestrator.md"), "local agent\n")
+	writeSetupTestFile(t, filepath.Join(target, ".codex", "config.toml"), "local agent\n")
 	report, err := NewService().BuildReport(Options{Target: target, SkipVersionCheck: true})
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +222,6 @@ func TestChecklistModelRendersConflictDashboard(t *testing.T) {
 func TestConflictReviewModelRendersAndNavigates(t *testing.T) {
 	plan := conflictplan.Report{
 		TargetRoot: "/tmp/project",
-		Summary:    conflictplan.Summary{Conflicts: 2, Groups: 2, LegacyDeprecated: 1},
 		Groups: []conflictplan.Group{
 			{Category: ".opencode/agents", Risk: "medium", Count: 1, ParallelGroup: "opencode-agents"},
 			{Category: "openspec/specs", Risk: "medium", Count: 1, ParallelGroup: "openspec-specs"},
@@ -232,10 +230,9 @@ func TestConflictReviewModelRendersAndNavigates(t *testing.T) {
 			{Path: ".opencode/agents/orchestrator.md", Category: ".opencode/agents", Risk: "medium", Recommendation: "merge", Reason: "local", AvailableActions: []string{"keep-local", "merge"}},
 			{Path: "openspec/specs/foo/spec.md", Category: "openspec/specs", Risk: "medium", Recommendation: "merge", Reason: "spec", AvailableActions: []string{"keep-local", "merge"}},
 		},
-		LegacyDeprecated: []conflictplan.LegacyItem{{Path: ".lufy-ai/backups", Recommendation: "migrate-layout"}},
 	}
 	model := newConflictReviewModel(plan)
-	if view := model.View(); !strings.Contains(view, "Lufy setup: conflictos detectados") || !strings.Contains(view, ".opencode/agents") || !strings.Contains(view, "Legacy/deprecated") {
+	if view := model.View(); !strings.Contains(view, "Lufy setup: conflictos detectados") || !strings.Contains(view, ".opencode/agents") {
 		t.Fatalf("unexpected view:\n%s", view)
 	}
 	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRight})
@@ -414,29 +411,8 @@ func TestSetupPlanningHelpers(t *testing.T) {
 	if got := featureSpec("custom-feature"); got.ID != "custom-feature" || got.Name != "custom-feature" || got.Since != "" {
 		t.Fatalf("unexpected fallback feature spec: %#v", got)
 	}
-	if got := action("layout", "skip", "ready", ""); got.Name != "Layout .lufy" || got.Since == "" {
+	if got := action("install", "skip", "ready", ""); got.Name != featureSpec("install").Name || got.Since == "" {
 		t.Fatalf("action did not enrich known feature: %#v", got)
-	}
-
-	actions := []layout.Action{
-		{Kind: "noop", Target: ".lufy/ignored"},
-		{Kind: "migrate-copy", Target: ".lufy/config/project.yaml"},
-		{Kind: "write-readme", Target: ".lufy/README.md"},
-	}
-	if !hasLayoutMutations(actions) {
-		t.Fatalf("expected layout mutations")
-	}
-	summary := layoutSummary(actions)
-	for _, want := range []string{"migrate-copy:.lufy/config/project.yaml", "write-readme:.lufy/README.md"} {
-		if !strings.Contains(summary, want) {
-			t.Fatalf("layout summary missing %q: %q", want, summary)
-		}
-	}
-	if hasLayoutMutations([]layout.Action{{Kind: "noop", Target: ".lufy/ignored"}}) {
-		t.Fatalf("noop action should not count as layout mutation")
-	}
-	if got := layoutSummary(nil); got != "Layout .lufy listo" {
-		t.Fatalf("empty layout summary = %q", got)
 	}
 
 	features := []FeatureAction{
@@ -540,5 +516,37 @@ func writeSetupTestFile(t *testing.T, path, body string) {
 	}
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSetupLeavesHistoricalSddSourceInPlace(t *testing.T) {
+	target := t.TempDir()
+	source := filepath.Join(target, ".lufy", "sdd", "actions", "source.md")
+	if err := os.MkdirAll(filepath.Dir(source), 0755); err != nil {
+		t.Fatal(err)
+	}
+	body := []byte("# Fuente histórica\n")
+	if err := os.WriteFile(source, body, 0644); err != nil {
+		t.Fatal(err)
+	}
+	report, err := NewService().BuildReport(Options{Target: target, SkipVersionCheck: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, feature := range report.Features {
+		if feature.ID == "layout" {
+			t.Fatal("setup propuso migración retirada")
+		}
+	}
+	var out bytes.Buffer
+	if err := NewService().Run(Options{Target: target, Yes: true, SkipVersionCheck: true}, &out); err != nil {
+		t.Fatalf("setup: %v\n%s", err, out.String())
+	}
+	got, err := os.ReadFile(source)
+	if err != nil || !bytes.Equal(got, body) {
+		t.Fatal("setup alteró historia")
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("setup instaló metodología retirada: %v", err)
 	}
 }

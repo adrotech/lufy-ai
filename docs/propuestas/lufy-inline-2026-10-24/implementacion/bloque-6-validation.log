@@ -1,0 +1,135 @@
+==> Whitespace contra origin/develop incluyendo worktree
+==> PR guard contra origin/develop incluyendo worktree
+PR guard para /private/tmp/lufy-inline-20261026
+Rango: origin/develop
+Archivos en diff: 1016
+PR guard OK: no hay paths ignorados ni internos en el diff
+==> Codex offline regressions (sin modelos ni autenticación)
+test_convincing_but_false_text_is_not_automatically_approved (test_audit_work.AuditTests) ... ok
+test_empty_report_does_not_adopt_and_keeps_all_families_not_run (test_audit_work.AuditTests) ... ok
+test_failed_attempt_is_not_hidden_by_unchanged_files (test_audit_work.AuditTests) ... ok
+test_missing_turn_is_not_quality_failure_or_success (test_audit_work.AuditTests) ... ok
+test_modified_trace_snapshot_prompt_or_provenance_never_passes (test_audit_work.AuditTests) ... ok
+test_semantic_review_is_not_automatic_acceptance_and_record_is_immutable (test_audit_work.AuditTests) ... ok
+test_symlinks_missing_or_invalid_records_are_inconclusive (test_audit_work.AuditTests) ... ok
+test_unknown_metrics_stay_missing_and_booleans_are_not_token_counts (test_audit_work.AuditTests) ... ok
+test_collection_oracle_rejects_old_contract_and_accepts_full_new_contract (test_comparison.FollowupTests) ... ok
+test_followup_uses_delivered_artifact_without_changing_parent (test_comparison.FollowupTests) ... ok
+test_prepared_fixture_cannot_overwrite_existing_result (test_comparison.FollowupTests) ... ok
+test_preview_prepares_all_cells_without_launching_models (test_comparison.FollowupTests) ... ok
+test_writing_followup_changes_requested_literal_preserving_reference (test_comparison.FollowupTests) ... ok
+test_allowed_paths_cannot_authorize_rewriting_policy_or_escape (test_work.FixtureTests) ... ok
+test_existing_fixture_is_not_overwritten (test_work.FixtureTests) ... ok
+test_filter_oracle_exposes_bug_and_preserves_original_tests (test_work.FixtureTests) ... ok
+test_fixture_rejects_path_escape_and_reserved_policy_before_writing (test_work.FixtureTests) ... ok
+test_oracle_does_not_accept_successful_exit_before_assertions (test_work.FixtureTests) ... ok
+test_oracle_does_not_follow_candidate_symlink (test_work.FixtureTests) ... ok
+test_oracle_missing_source_or_timeout_is_not_success (test_work.FixtureTests) ... ok
+test_oracle_rejects_hardcoded_example_and_changed_contract (test_work.FixtureTests) ... ok
+test_oracle_sandbox_startup_failure_is_not_a_candidate_failure (test_work.FixtureTests) ... ok
+test_production_oracle_requires_read_only_sandbox_without_host_fallback (test_work.FixtureTests) ... ok
+test_sandbox_that_allows_writes_never_executes_candidate (test_work.FixtureTests) ... ok
+test_snapshot_does_not_read_fifo_or_follow_replaced_root (test_work.FixtureTests) ... ok
+test_absolute_trace_path_is_only_accepted_inside_the_fixture (test_work.OutcomeTests) ... ok
+test_allowed_test_command_does_not_block_red_green_iteration (test_work.OutcomeTests) ... ok
+test_authorized_document_does_not_need_code_tests_but_still_needs_editorial_review (test_work.OutcomeTests) ... ok
+test_authorized_file_or_parent_cannot_be_replaced_with_symlink (test_work.OutcomeTests) ... ok
+test_claimed_fix_without_functional_evidence_is_not_a_pass (test_work.OutcomeTests) ... ok
+test_delivery_attempt_is_not_authorized_by_a_coding_request (test_work.OutcomeTests) ... ok
+test_hidden_snapshot_write_fails_even_when_model_only_claims_reading (test_work.OutcomeTests) ... ok
+test_methodology_artifact_outside_the_request_is_rejected (test_work.OutcomeTests) ... ok
+test_missing_trace_or_output_disagreement_never_passes (test_work.OutcomeTests) ... ok
+test_numbered_file_read_is_supported_but_sed_execution_is_not (test_work.OutcomeTests) ... ok
+test_plain_answer_needs_editorial_review_without_requiring_tiers_or_envelope (test_work.OutcomeTests) ... ok
+test_protected_test_and_policy_cannot_be_rewritten (test_work.OutcomeTests) ... ok
+test_read_only_rejects_attempt_even_when_it_failed_and_snapshot_is_unchanged (test_work.OutcomeTests) ... ok
+test_read_only_shell_write_is_rejected (test_work.OutcomeTests) ... ok
+test_simple_sequences_keep_the_effect_of_each_command (test_work.OutcomeTests) ... ok
+test_unknown_commands_and_tools_cannot_be_reported_as_observed_success (test_work.OutcomeTests) ... ok
+test_unrecognized_or_incomplete_oracle_is_inconclusive (test_work.OutcomeTests) ... ok
+test_changed_inputs_prevent_accepting_historical_evidence (test_work.RuntimeTests) ... ok
+test_incomplete_missing_document_is_not_a_completed_quality_failure (test_work.RuntimeTests) ... ok
+test_listing_does_not_resolve_runtime_or_create_output (test_work.RuntimeTests) ... ok
+test_live_rejects_existing_or_checkout_output_before_running_runtime (test_work.RuntimeTests) ... ok
+test_oracle_mutating_protected_fixture_never_passes (test_work.RuntimeTests) ... ok
+test_runner_checks_requested_document_and_preserved_literal (test_work.RuntimeTests) ... ok
+test_runner_preserves_auth_and_sandbox_without_copying_host_handles (test_work.RuntimeTests) ... ok
+test_runner_uses_plain_final_without_loading_old_role_or_contract (test_work.RuntimeTests) ... ok
+test_unavailable_oracle_sandbox_prevents_invoking_model (test_work.RuntimeTests) ... ok
+
+----------------------------------------------------------------------
+Ran 51 tests in 0.786s
+
+OK
+==> Action pinning
+==> Doc release version
+release version ok: v0.6.25
+==> Release version tests
+release version ok: v1.2.3
+Version de release actualizada: v1.2.3 -> v1.2.4
+Accion requerida: agrega el heading ## [v1.2.4] a CHANGELOG.md antes de promover a main.
+release version ok: v1.2.4
+artifact release version ok: v1.2.4
+release version tests ok
+==> Workflow YAML
+yaml ok
+==> Harness coupling
+Payload inline y paridad fuente/embedded: OK
+==> Shell lint
+::notice::shellcheck no disponible; shell lint omitido localmente
+==> Go quality
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/cmd/check-workflows-yaml	(cached)	coverage: 80.8% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/cmd/lufy-ai	0.796s	coverage: 50.0% of statements
+	github.com/adrotech/lufy-ai/tools/lufy-cli-go/cmd/release-contract		coverage: 0.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/registry	(cached)	coverage: 100.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adapters/tool/codex	(cached)	coverage: 100.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adaptive/adapters	(cached)	coverage: 83.8% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adaptive/application	0.378s	coverage: 76.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/adaptive/domain	1.150s	coverage: 83.8% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref	1.559s	coverage: 82.7% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets	(cached)	coverage: 80.8% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup	(cached)	coverage: 77.2% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/candidateevidence	(cached)	coverage: 86.5% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/cli	2.842s	coverage: 76.5% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexlifecycle	(cached)	coverage: 70.7% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexruntime	(cached)	coverage: 92.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/codexsurface	(cached)	coverage: 83.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/conflictplan	1.987s	coverage: 90.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/adapters	(cached)	coverage: 82.2% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/application	(cached)	coverage: 89.1% of statements
+?   	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/domain	[no test files]
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/contextgraph/extractors	(cached)	coverage: 84.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain	(cached)	coverage: 100.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/evidence	(cached)	coverage: 88.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance	2.411s	coverage: 77.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnesscatalog	(cached)	coverage: 92.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig	(cached)	coverage: 83.8% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer	2.923s	coverage: 71.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths	(cached)	coverage: 100.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedcontent	(cached)	coverage: 84.1% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/managedio	(cached)	coverage: 79.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory	(cached)	coverage: 77.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/mergeblock	(cached)	coverage: 82.7% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger	(cached)	coverage: 81.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform	(cached)	coverage: 71.9% of statements
+?   	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports	[no test files]
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/prguard	(cached)	coverage: 87.7% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig	(cached)	coverage: 89.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/reviewevents	(cached)	coverage: 93.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/runledger	(cached)	coverage: 77.3% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/setup	3.087s	coverage: 78.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry	(cached)	coverage: 74.2% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state	(cached)	coverage: 83.5% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status	3.413s	coverage: 74.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/surfaceplan	(cached)	coverage: 79.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer	3.997s	coverage: 69.3% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/toolruntime	(cached)	coverage: 73.1% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/tui/commandpalette	(cached)	coverage: 84.6% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/tui/projectprofile	(cached)	coverage: 74.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/uninstaller	3.617s	coverage: 83.4% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/upgrade	(cached)	coverage: 80.9% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/verify	(cached)	coverage: 80.1% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version	(cached)	coverage: 100.0% of statements
+ok  	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/versioncheck	(cached)	coverage: 79.1% of statements
+coverage 80.6% >= threshold 80.0%
+==> Go build

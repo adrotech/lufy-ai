@@ -38,18 +38,18 @@ type Options struct {
 }
 
 type Report struct {
-	OK                bool    `json:"ok"`
-	TargetRoot        string  `json:"targetRoot"`
-	Scope             string  `json:"scope,omitempty"`
-	GlobalRoot        string  `json:"globalRoot,omitempty"`
-	SchemaVersion     int     `json:"schemaVersion,omitempty"`
-	Tool              string  `json:"tool,omitempty"`
-	MethodologyByTier any     `json:"methodologyByTier,omitempty"`
-	Assets            int     `json:"assets,omitempty"`
-	Failures          int     `json:"failures"`
-	Warnings          int     `json:"warnings"`
-	Infos             int     `json:"infos"`
-	Checks            []Check `json:"checks"`
+	OK            bool    `json:"ok"`
+	TargetRoot    string  `json:"targetRoot"`
+	Scope         string  `json:"scope,omitempty"`
+	GlobalRoot    string  `json:"globalRoot,omitempty"`
+	SchemaVersion int     `json:"schemaVersion,omitempty"`
+	Tool          string  `json:"tool,omitempty"`
+	Execution     any     `json:"execution,omitempty"`
+	Assets        int     `json:"assets,omitempty"`
+	Failures      int     `json:"failures"`
+	Warnings      int     `json:"warnings"`
+	Infos         int     `json:"infos"`
+	Checks        []Check `json:"checks"`
 }
 
 type Check struct {
@@ -88,30 +88,12 @@ func NewService() Service {
 	}
 }
 
-var fallbackRequiredDirs = []string{
-	filepath.Join(".opencode", "agents"),
-	filepath.Join(".opencode", "commands"),
-	filepath.Join(".opencode", "skills"),
-	filepath.Join(".opencode", "templates"),
-	filepath.Join(".opencode", "plugins"),
-	filepath.Join(".opencode", "policies"),
-}
-
-var fallbackRequiredManagedFiles = []string{
-	agentsref.HarnessFile,
-	filepath.Join(".opencode", "plugins", "agent-observatory.tsx"),
-	"tui.json",
-}
+var fallbackRequiredDirs = []string{".codex", ".lufy/contracts"}
+var fallbackRequiredManagedFiles = []string{agentsref.HarnessFile, ".lufy/contracts/work.md", ".codex/config.toml", ".codex/hooks.json", ".codex/rules/lufy.rules"}
 
 var requiredStateFiles = []string{lufypaths.InstallState}
 
-var jsonValidationFiles = []string{
-	toolruntime.OpenCodeProjectConfigFile,
-	"tui.json",
-	filepath.Join(".opencode", "package.json"),
-	filepath.Join(".opencode", "package-lock.json"),
-	filepath.Join("openspec", "UPSTREAM.json"),
-}
+var jsonValidationFiles = []string{".codex/hooks.json"}
 
 func (s Service) Run(opts Options, stdout io.Writer) error {
 	target, err := platform.ResolveTargetPath(opts.Target)
@@ -126,7 +108,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
 		tool := opts.ExpectedTool
 		if tool == "" {
-			tool = domain.ToolInitialDefault
+			tool = domain.ToolCodex
 		}
 		globalRoot, err := toolruntime.GlobalRoot(tool)
 		if err != nil {
@@ -172,18 +154,18 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		return fmt.Errorf("fail: install-state.json inválido: %w", err)
 	}
 	if st == nil {
-		recorder.emit("fail", state.Path(target), "falta estado de instalación; ejecuta lufy-ai conflicts plan --target <dir> si este repo ya tiene assets LUFY/OpenCode/OpenSpec")
+		recorder.emit("fail", state.Path(target), "falta estado de instalación; ejecuta lufy-ai conflicts plan --target <dir> si este repo ya tiene assets LUFY")
 		return nil
 	}
 	report.SchemaVersion = st.SchemaVersion
 	report.Tool = string(st.Tool)
-	report.MethodologyByTier = st.MethodologyByTier
+	report.Execution = st.Execution
 	report.Assets = len(st.Assets)
 	if configPath, pathErr := projectconfig.ExistingPath(target); pathErr != nil {
 		recorder.emit("fail", projectconfig.ProjectConfigPath, "no se pudo resolver project config para reconciliar harness: %s", pathErr.Error())
 	} else if cfg, loadErr := projectconfig.Load(configPath); loadErr == nil {
-		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}
-		installedHarness := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}
+		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, Execution: cfg.Execution}
+		installedHarness := domain.HarnessConfig{Tool: st.Tool, Execution: st.Execution}
 		for _, drift := range harnessconfig.Compare(&projectHarness, &installedHarness) {
 			recorder.emit("fail", projectconfig.ProjectConfigPath, "%s", harnessconfig.RecoveryMessage(drift))
 		}
@@ -199,15 +181,15 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		recorder.emit("info", "", "requirements derivados dirs=%d files=%d", len(requiredDirs), len(requiredManagedFiles))
 	}
 	for _, rel := range requiredStateFiles {
-		resolved, err := lufypaths.ResolveExisting(target, lufypaths.InstallState, lufypaths.LegacyInstallState)
+		path, err := platform.SafeJoin(target, rel)
 		if err != nil {
 			return err
 		}
-		if !regularFile(resolved.Path) {
+		if !regularFile(path) {
 			recorder.emit("fail", rel, "falta archivo crítico")
 			continue
 		}
-		recorder.emit("ok", resolved.Rel, "archivo crítico")
+		recorder.emit("ok", rel, "archivo crítico")
 	}
 	if st.SourceChangeID == "" || st.SourceRootFingerprint == "" {
 		recorder.emit("fail", "install-state.json", "install-state.json no contiene fingerprint de catálogo")
@@ -223,16 +205,10 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		}
 	}
 	if opts.Deep {
-		runDeepVerify(st.Tool, target, recorder.emit)
 		runDeepSkillRegistryVerify(st.Tool, target, recorder.emit)
 		runDeepMemoryVerify(target, recorder.emit)
 		runDeepContextVerify(target, recorder.emit)
-		switch st.Tool {
-		case domain.ToolCodex:
-			runDeepCodexLifecycleVerify(target, recorder.emit)
-		case domain.ToolInitialDefault:
-			runDeepOpenCodeMemoryHookVerify(target, recorder.emit)
-		}
+		runDeepCodexLifecycleVerify(target, recorder.emit)
 	} else {
 		runMemoryContextDiagnostics(target, recorder.emit)
 	}
@@ -295,7 +271,6 @@ func (b CheckBuilder) Build(opts Options, report *Report) error {
 		recorder.emit("ok", clean, "archivo crítico")
 	}
 	verifyAgentsReference(target, opts.AllowMissingAgentsRef, recorder.emitAsset)
-	verifyCodexPRReviewerSkillContract(target, recorder.emit)
 
 	for _, asset := range st.Assets {
 		clean, err := platform.EnsureRelativeSafe(asset.TargetRel)
@@ -348,43 +323,6 @@ func runDeepSkillRegistryVerify(tool domain.ToolID, target string, emit func(lev
 	for _, warning := range report.Warnings {
 		emit("warn", warning.Path, "skill registry: %s", warning.Message)
 	}
-}
-
-func verifyCodexPRReviewerSkillContract(target string, emit func(string, string, string, ...any)) {
-	rel := filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md")
-	path, err := platform.SafeJoin(target, rel)
-	if err != nil {
-		emit("fail", rel, "skill Codex PR review inseguro: %s", err.Error())
-		return
-	}
-	if !regularFile(path) {
-		return
-	}
-	body, err := os.ReadFile(path)
-	if err != nil {
-		emit("fail", rel, "no se pudo leer skill Codex PR review: %s", err.Error())
-		return
-	}
-	text := string(body)
-	required := []string{
-		"pr_review/",
-		"pr-review-<number>-<yyyyMMdd-HHmm>.html",
-		"references/review-framework.md",
-		"assets/report.html",
-		"lufy-ai pr guard --base <base>",
-		"git check-ignore -v --no-index --stdin",
-		"Desk check",
-		"Scoring",
-		"Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)",
-		"open pr_review/pr-review-<...>.html",
-	}
-	for _, want := range required {
-		if !strings.Contains(text, want) {
-			emit("fail", rel, "skill Codex PR review no cumple contrato HTML Lufy: falta %q", want)
-			return
-		}
-	}
-	emit("ok", rel, "skill Codex PR review conserva contrato HTML Lufy")
 }
 
 func (e reportRecorder) emit(level, path, format string, args ...any) {
@@ -467,13 +405,13 @@ func verifyAgentsReference(target string, allowMissing bool, emitAsset func(leve
 
 func catalogRequirements(st *state.InstallState) ([]string, []string) {
 	assetMap := st.AssetMap()
-	catalog, err := currentCatalogForHarness(domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier})
+	catalog, err := currentCatalogForHarness(domain.HarnessConfig{Tool: st.Tool, Execution: st.Execution})
 	if err != nil {
 		return fallbackRequiredDirs, fallbackRequiredManagedFiles
 	}
 	dirs := map[string]bool{}
 	files := map[string]bool{}
-	if st.Tool == domain.ToolInitialDefault {
+	{
 		for _, dir := range fallbackRequiredDirs {
 			dirs[dir] = true
 		}
@@ -556,17 +494,6 @@ func validateJSONFile(target, rel string) (string, error) {
 	return "ok", nil
 }
 
-func runDeepVerify(tool domain.ToolID, target string, emit func(level, path, format string, args ...any)) {
-	files, err := toolruntime.PluginConfigFiles(tool)
-	if err != nil {
-		emit("fail", "", "runtime de configuración inválido: %s", err.Error())
-		return
-	}
-	for _, rel := range files {
-		validatePluginConfig(target, rel, emit)
-	}
-}
-
 func runDeepMemoryVerify(target string, emit func(level, path, format string, args ...any)) {
 	report, err := memory.NewService().BuildValidate(memory.Options{Target: target})
 	if err != nil {
@@ -623,7 +550,7 @@ func runDeepContextVerify(target string, emit func(level, path, format string, a
 
 func isGuardrailAsset(rel string) bool {
 	rel = filepath.ToSlash(rel)
-	guardrailPrefixes := []string{".opencode/agents/", ".opencode/skills/", ".opencode/templates/", ".opencode/plugins/", ".opencode/policies/", ".agents/skills/"}
+	guardrailPrefixes := []string{".codex/", ".lufy/contracts/", ".agents/skills/"}
 	for _, prefix := range guardrailPrefixes {
 		if strings.HasPrefix(rel, prefix) {
 			return true
@@ -632,83 +559,9 @@ func isGuardrailAsset(rel string) bool {
 	return rel == "lufy-ia.harness.md"
 }
 
-func runDeepOpenCodeMemoryHookVerify(target string, emit func(level, path, format string, args ...any)) {
-	hooks := []string{
-		filepath.Join(".opencode", "hooks", "skills-ensure.sh"),
-		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
-		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
-	}
-	for _, rel := range hooks {
-		path, err := platform.SafeJoin(target, rel)
-		if err != nil || !regularFile(path) {
-			emit("warn", filepath.ToSlash(rel), "hook lifecycle OpenCode no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
-			return
-		}
-	}
-	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
-	path, err := platform.SafeJoin(target, plugin)
-	if err != nil || !regularFile(path) {
-		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de skills/memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
-		return
-	}
-	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
-}
-
 func runDeepCodexLifecycleVerify(target string, emit func(level, path, format string, args ...any)) {
 	for _, check := range codexsurface.Validate(target) {
 		emit(check.Level, check.Path, "%s", check.Message)
-	}
-}
-
-func validatePluginConfig(target, rel string, emit func(level, path, format string, args ...any)) {
-	path, err := platform.SafeJoin(target, rel)
-	if err != nil {
-		emit("fail", rel, "config plugin insegura: %s", err.Error())
-		return
-	}
-	body, err := os.ReadFile(path)
-	if os.IsNotExist(err) {
-		return
-	}
-	if err != nil {
-		emit("fail", rel, "no se pudo leer config plugin: %s", err.Error())
-		return
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(body, &decoded); err != nil {
-		return
-	}
-	plugins, exists := decoded["plugin"]
-	if !exists {
-		return
-	}
-	items, ok := plugins.([]any)
-	if !ok {
-		emit("fail", rel, "plugin debe ser array para deep verify")
-		return
-	}
-	for _, item := range items {
-		pluginRel, ok := item.(string)
-		if !ok {
-			emit("fail", rel, "plugin contiene entrada no string")
-			continue
-		}
-		pluginRel = filepath.Clean(pluginRel)
-		clean, err := platform.EnsureRelativeSafe(pluginRel)
-		if err != nil {
-			emit("fail", rel, "plugin path inseguro %q: %s", pluginRel, err.Error())
-			continue
-		}
-		pluginPath, err := platform.SafeJoin(target, clean)
-		if err != nil {
-			emit("fail", clean, "plugin inseguro: %s", err.Error())
-			continue
-		}
-		if !regularFile(pluginPath) {
-			emit("fail", clean, "plugin referenciado no existe o no es archivo regular seguro")
-			continue
-		}
-		emit("ok", clean, "plugin referenciado por %s", rel)
 	}
 }
 

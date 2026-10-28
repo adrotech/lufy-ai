@@ -1,0 +1,9 @@
+{
+  "protected_existing_files": 1350,
+  "git_head_index_branch_unchanged": "passed",
+  "three_executables_same_candidate": "passed",
+  "embedded_and_repository_sync_without_retired_assets": "passed",
+  "strict_wrapper_current_local_binary": "passed",
+  "protected_files_unchanged_after_sync": "passed",
+  "durable_backup_and_completed_journal": "passed"
+}

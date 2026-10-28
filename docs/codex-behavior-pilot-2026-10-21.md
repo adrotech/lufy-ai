@@ -1,3 +1,5 @@
+> Informe histórico del modelo anterior. Sus resultados se conservan; sus comandos y roles no describen la rama inline actual. Ver [estado vigente](status.md).
+
 # Piloto conductual de Lufy en Codex — 2026-10-21
 
 ## Resultado

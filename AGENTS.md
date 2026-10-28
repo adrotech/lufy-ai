@@ -1,236 +1,27 @@
 # AGENTS.md
 
-Guía operativa para agentes que trabajan en este repositorio `lufy-ai`.
+Guía de trabajo para `lufy-ai`.
 
-## Snapshot del proyecto
+- Respuestas, documentación humana y comentarios en español; conserva identificadores técnicos.
+- CLI Go: `tools/lufy-cli-go`. `scripts/install.sh` es su wrapper estricto.
+- No hay package.json ni toolchain Node raíz. No inventes comandos de validación.
+- Usa `scripts/validate.sh` para la validación agrupada pertinente; reporta comandos y resultados reales.
+- Analiza dependencias e interconexiones antes de modificar. Preserva trabajo local ajeno.
+- Mantén paridad entre assets fuente seleccionados y sus mirrors en `tools/lufy-cli-go/internal/assets/embedded`.
+- `workflow_limits` es la única fuente de límites del proyecto; no consumas aliases top-level.
+- El catálogo activo es Codex inline. No reintroduzcas selección de metodología por tier ni lectores de formatos anteriores.
+- `develop` es integración, `main` estable; entrega sólo con autorización explícita.
 
-- **Repositorio**: configuración local de OpenCode y flujo SDD/OpenSpec para `lufy-ai`.
-- **Foco de mejoras**: aplicar el plan comparativo con `Gentleman-Programming/gentle-ai` a Lufy en Codex. No desarrollar mejoras de OpenCode ni migraciones a Pi dentro de este plan.
-- **CLI del producto**: la CLI Go vive en `tools/lufy-cli-go`; no asumir una CLI legacy fuera de esa ruta.
-- **Instalador**: `scripts/install.sh` es un wrapper estricto del CLI Go y no debe reintroducir fallback legacy.
-- **Tooling raíz**: no hay `package.json` ni `tsconfig*.json` en la raíz; no asumir comandos Node/TS globales.
-- **Tooling `.opencode`**: `.opencode/package.json` contiene dependencias del plugin TUI, no una suite de validación del producto.
-- **Validación real**: normalmente estática/documental salvo que la tarea indique un toolchain específico. Siempre reportar comandos ejecutados y resultados reales.
-- **Workflow limits**: `.lufy/config/project.yaml` usa `workflow_limits` como única fuente canónica; no consumir `loc_budget` ni `delivery_strategy` top-level como límites válidos.
-- **Multi-artifact branching**: para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar hasta 2 candidates de artifacts; `orchestrator` debe hacer join antes de diseño/tareas/implementación y no se crean roles nuevos.
-- **Result Contract envelope v1**: handoffs y resultados sustantivos deben usar el envelope YAML canónico con estado, evidencia, riesgos, siguiente acción y decisión de workflow cuando aplique.
-- **Surface execution**: preferir `lufy-ai plan --target <repo> --json` como fuente read-only de superficies frontend/backend/fullstack, contratos conectados y reglas de validación; el alcance explícito del usuario conserva precedencia.
-- **Workflow sistémico**: analizar archivos existentes, dependencias e interconexiones al inicio; evitar relecturas repetidas durante implementación; releer al final solo archivos viejos modificados/afectados o casos justificados.
-- **Idioma**: respuestas, documentación humana, PRs y comentarios en español; preservar identificadores técnicos, rutas, flags y nombres de comandos.
-- **Ramas y releases**: `develop` es la base normal de integración; `main` es productiva/estable; los releases estables se publican solo desde tags `v*` sobre commits alcanzables desde `main`.
+<!-- LUFY:BEGIN codex-harness -->
+# Lufy AI Harness
 
-## Estructura relevante
-
-- `.opencode/agents/`: definiciones de agentes (`orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer`, `delivery`).
-- `.opencode/commands/`: slash commands del flujo OpenSpec (`opsx-explore`, `opsx-propose`, `opsx-apply`, `opsx-verify`, `opsx-sync`, `opsx-archive`) y comandos LUFY (`lufy.close`, `lufy.pr-review`, `lufy.onboard`, `lufy.timereport`).
-- `.opencode/skills/sdd-workflow/`: skills para explorar, proponer, aplicar, verificar, sincronizar y archivar cambios OpenSpec; skills LUFY transversales viven en `.opencode/skills/lufy.*`.
-- `.opencode/plugins/agent-observatory.tsx`: plugin TUI local Agent Observatory.
-- `.lufy/contracts/delivery.md`: fuente canónica neutral para delivery, branch safety, validación y gates; `.opencode/policies/delivery.md` es solo un overlay de compatibilidad.
-- `openspec/`: propuestas, especificaciones y tareas del flujo OpenSpec.
-- `tools/lufy-cli-go/`: implementación actual de la CLI Go usada por el instalador.
-- `scripts/install.sh`: wrapper estricto hacia `tools/lufy-cli-go`, sin fallback legacy.
-- `docs/`: documentación del proyecto cuando exista.
-- `AGENTS.md.template`: plantilla genérica; este archivo es la guía real del repo.
-
-## Comandos disponibles y límites
-
-Ejecutar desde la raíz salvo que se indique otra ruta.
-
-- OpenSpec/OpenCode: usar `/opsx-explore`, `/opsx-propose`, `/opsx-apply`, `/opsx-verify`, `/opsx-sync`, `/opsx-archive` cuando corresponda; usar `/lufy.close` para cierre transversal del workflow con PR/branch cleanup; usar `/lufy.pr-review` para reviews HTML de PR en español.
-- Observatory TUI: `/observatory`, `/observatory-agents`, `/observatory-subagents`, `/observatory-cost`.
-- Validación agrupada local: `scripts/validate.sh` ejecuta el whitespace check con rango/base de PR y la validación Go disponible.
-- Git inspección: `git status --short`, `git diff`, `git diff --check`, `git diff --check origin/develop`, `git diff --check origin/develop...HEAD`, `git log` según permisos del rol.
-- No inventar `npm test`, `npm run typecheck`, `tsc` u otros comandos si el toolchain no existe para el alcance actual.
-- En proyectos frontend con `pnpm` configurado, declarar validaciones no mutantes en `.lufy/config/project.yaml` bajo `validation.allowed_commands.implementer` para que `implementer` las herede sin hardcodearlas en el agente; siguen sujetas a validación agrupada y a que el toolchain exista.
-- Respetar la preferencia de validación agrupada: no correr tests constantemente; agrupar tests, coverage y validación completa al final de todas las tareas de un bloque/proposal salvo bloqueo, cambio riesgoso o diagnóstico.
-- Evaluar gates por task, bloque coherente o review slice; los micro-checkboxes internos no implican cierre, archive-ready ni delivery por sí solos.
-- Para cambios que terminarán en PR contra `develop`, el chequeo de whitespace debe reproducir el rango del PR: usar `git diff --check origin/develop...HEAD` sobre commits ya preparados y `git diff --check origin/develop` cuando haya cambios pendientes en worktree. No basta `git diff --check` local, porque puede omitir whitespace introducido en commits anteriores de la rama.
-- Si se requiere validación no disponible, reportar la limitación y la evidencia estática/manual realizada.
-
-## Reglas de arquitectura y workflow
-
-1. Mantener cambios enfocados y mínimos.
-2. No revertir ni sobrescribir trabajo local no relacionado.
-3. Mantener handlers/controllers delgados; servicios contienen reglas de negocio.
-4. No exponer entidades de persistencia como contratos HTTP/API.
-5. Usar inyección por constructor donde aplique.
-6. Mantener scopes transaccionales estrechos.
-7. No cambiar puertos, defaults de auth, esquema de base de datos ni contratos públicos salvo autorización explícita.
-8. Añadir o actualizar pruebas/documentación solo cuando estén ligadas al cambio.
-9. Nunca afirmar validación exitosa sin evidencia de comando o revisión manual concreta.
-10. Preferir lectura y edición específicas sobre exploración amplia.
-11. En handoffs y gestión de contexto, resumir decisiones, evitar dumps largos y preservar solo la evidencia mínima útil.
-12. Mantener `scripts/install.sh` como wrapper estricto de `tools/lufy-cli-go`; no reintroducir rutas legacy.
-13. Aplicar pensamiento sistémico: entender el todo, interconexiones, dependencias, bucles de feedback y cómo la estructura estática produce comportamiento dinámico.
-14. Durante una propuesta, concentrar el análisis de código viejo al inicio y la revisión final en archivos viejos modificados/afectados; no releer archivos ya analizados salvo conflicto, bloqueo, nueva evidencia, cambio de alcance o riesgo explícito.
-15. Usar routing proporcional T1/T2/T3 para propuestas, funcionalidades y tareas: elegir el flujo más pequeño que resuelva el pedido con seguridad.
-16. Mantener aislamiento de subagentes: pasar contexto mínimo, permisos mínimos y contrato de salida claro.
-17. En Codex, `@orchestrator` o `@<rol-lufy>` es una solicitud de delegación: usar subagent tooling con spawn/wait/close cuando esté disponible; no responder como ese rol en el mismo hilo para luego seguir ejecutando.
-18. Si Codex no expone subagent tooling para una delegación solicitada o requerida, reportar el bloqueo y no convertir silenciosamente la solicitud en ejecución inline.
-19. Resolver skills local-first desde `.lufy/skill-registry.json` cuando esté ready y pasar paths exactos a `SKILL.md`; si falta o está stale, usar la raíz del adapter como fallback y recomendar `lufy-ai skills ensure --target <repo>`. AutoSkills puede sugerirse solo como bootstrap/fallback opcional con `npx autoskills --dry-run` y autorización explícita antes de comandos mutantes.
-20. Aplicar Review Workload Harness en T1 y T2 con varios riesgos: pensar en el reviewer humano, dividir features grandes en slices revisables y entregar por partes cuando reduzca carga cognitiva; no fragmentar T3 artificialmente.
-
-## Routing SDD proporcional
-
-- **T1 Full SDD**: nuevas capabilities, impacto transversal, arquitectura, contratos públicos, seguridad, delivery policy o alta incertidumbre; usar OpenSpec completo.
-- **T2 SDD Lite**: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar mini-spec o handoff estructurado con criterios WHEN/THEN y validación agrupada.
-- **T3 Express**: cambio trivial, mecánico, documental o local sin riesgo relevante; permitir implementación directa acotada y validación proporcional.
-- **Fast path OpenSpec/docs-only**: si el programa global es T1 pero el siguiente micro-slice toca solo 1-2 artefactos OpenSpec/docs, no cambia runtime, no requiere delivery y tiene aceptación clara, clasificar el slice como T2/T3 con `fast_path_allowed: true`; validación esperada: `openspec validate "<change>" --strict` cuando aplique y revisión estática de archivos/checklists.
-- Escalar T3 → T2 si aparece comportamiento incierto, criterios no observables o alcance mayor al previsto.
-- Escalar T2 → T1 si aparecen decisiones de arquitectura, impacto transversal, contratos públicos, seguridad o alta incertidumbre.
-- Para T1 y T2 con varios ejes de riesgo, definir `review_slices` con objetivo, archivos esperados, criterios WHEN/THEN, validación, riesgo y guía de PR.
-- Para T1 o T2 multi-risk con alta incertidumbre, `sdd-router` puede recomendar `artifact_branching` solo si comparar alternatives aporta valor real; máximo 2 candidates, preferentemente `proposal`, `design` opcional tras proposal canónica y `tasks` excepcional por riesgo de estrategia de implementación.
-- Si existen candidates de artifacts, `orchestrator` debe coordinar `branching_candidate_generation`, paths aislados no sobrescritos, merge plan y `join/decision`; no se puede pasar a implementación hasta tener un único artifact set canónico, y candidates no seleccionados quedan solo como contexto.
-- Escalar al humano diferencias entre candidates sobre contrato público, seguridad, dirección de producto, UX significativa o trade-offs no objetivos; `reviewer` compara calidad/riesgo/completitud/claridad de validación, no arbitra esas decisiones.
-- Para sizing/routing/slicing, leer `workflow_limits.sizing`, `workflow_limits.routing` y `workflow_limits.proposal_slicing_strategy`; no confundirlo con `workflow_limits.delivery_batch_strategy`.
-- Para paralelismo, leer `parallel_execution`; recomendar agentes paralelos solo para `review_slices` o `artifact candidates` con archivos/artifacts independientes, plan de merge/join y validación agrupada después del join. No paralelizar delivery/Git/GH, migraciones schema/db, contratos públicos o seguridad no resueltos, decisiones API no cerradas ni slices/candidates que tocan los mismos archivos o artifacts.
-- Delivery nunca queda autorizado por el tier; requiere autorización explícita del usuario y rol `delivery`.
-- Estados de gate por bloque: `implemented` = cambios aplicados y validación pendiente; `validated` = evidencia proporcional registrada; `delivery_pending` = falta autorización/ejecución Git/GH, checks remotos existentes aún pendientes o sync; `delivered` = delivery autorizado ejecutado con checks remotos requeridos exitosos y evidenciados; `closed` = implementación, validación, delivery/checks remotos/sync requeridos y precondiciones satisfechas.
-
-## Result Contract envelope v1
-
-Antes de aceptar automáticamente un handoff sustantivo, validar con `lufy-ai result validate`. Las mutaciones usan `result-transition/v1` mediante `lufy-ai result transition`; un substring del schema nunca avanza gates.
-
-Usar este envelope para handoffs y resultados sustantivos de agentes locales. Para T3 simples, mantenerlo compacto con `not_applicable`; para salidas legacy/terceros, `orchestrator` puede normalizar con `legacy_fallback: true` y marcar evidencia faltante como `not_available`.
-
-```yaml
-schema_version: result-contract/v1
-status: ready | implemented | validated | delivery_pending | sync_pending | blocked | escalated | delivered | closed
-legacy_fallback: false
-executive_summary: <1-3 lineas en espanol>
-artifacts:
-  changed:
-    - <path or none>
-  referenced:
-    - <path/spec/PR or none>
-ledger: # bloque opcional; su ausencia preserva compatibilidad Result Contract v1
-  run_id: <local run id or not_applicable>
-  event_id: <local event id or not_applicable>
-  status: recorded | duplicate_noop | conflict | unavailable | disabled | not_applicable
-evidence:
-  commands:
-    - command: <command or none>
-      result: passed | failed | blocked | not_run
-      notes: <key output or reason>
-  static:
-    - <manual/static evidence or not_applicable>
-surface_execution:
-  schema_version: surface-execution-plan/v1 | not_available | not_applicable
-  source: explicit | files | git_diff | carried_handoff | not_available | not_applicable
-  primary_surface: <surface id or not_available>
-  mode: single | composed | not_available | not_applicable
-  active_surfaces:
-    - <surface id or not_applicable>
-  validation_rule_ids:
-    - <rule id or not_applicable>
-workflow_decision:
-  tier: T1 | T2 | T3 | not_applicable
-  program_tier: T1 | T2 | T3 | not_applicable
-  slice_tier: T1 | T2 | T3 | not_applicable
-  fast_path_allowed: true | false | not_applicable
-  adapter_context:
-    tool_id: opencode | not_applicable
-    methodology_id: openspec | lufy-sdd | none | not_applicable
-    methodology_mode: full | lite | none | not_applicable
-    methodology_required: true | false | not_applicable
-    execution_mode: full-sdd | sdd-lite | express | not_applicable
-  workflow_limits_source: workflow_limits | not_available
-  workflow_limits_paths:
-    sizing: workflow_limits.sizing | not_available
-    routing: workflow_limits.routing | not_available
-    proposal_slicing: workflow_limits.proposal_slicing_strategy | not_available
-    delivery_batching: workflow_limits.delivery_batch_strategy | not_applicable
-    preflight: workflow_limits.preflight | not_available
-    stop_rules: workflow_limits.stop_rules | not_available
-  workload_decision_needed: true | false
-  review_slices:
-    - <slice summary or not_applicable>
-  preflight_status: passed | blocked | not_applicable | not_available
-  stop_rule_status: clear | triggered | not_applicable | not_available
-  delivery_batching_guidance: <guidance or not_applicable>
-  artifact_branching:
-    status: recommended | not_needed | disabled | not_applicable
-    stage: proposal | design | tasks | not_applicable
-    candidate_count: 1 | 2 | not_applicable
-    reason: <short rationale or not_applicable>
-    parallel_allowed: true | false | not_applicable
-    requires_join: true | false | not_applicable
-    candidate_isolation: <isolated path convention or not_applicable>
-    merge_plan_required: true | false | not_applicable
-    human_escalation_triggers:
-      - public_contract | security | product_direction | significant_ux | non_objective_tradeoff | not_applicable
-risks:
-  - <risk/follow-up or none>
-next_recommended:
-  owner: orchestrator | explorer | implementer | test-writer | validator | reviewer | delivery | user | none
-  action: <next action>
-skill_resolution:
-  local_skills_used:
-    - <skill or none>
-  selected_skill_paths:
-    - <exact path to SKILL.md or none>
-  bootstrap_recommended: true | false
-  notes: <notes or none>
-```
-
-## Roles de agentes
-
-- `orchestrator`: coordina y enruta; no edita ni ejecuta shell.
-- `sdd-router`: clasifica T1/T2/T3 en modo read-only/no-shell, recomienda execution mode, contexto mínimo, skill status y review workload; no ejecuta shell/Git/OpenSpec/validación y deriva a `explorer`, `validator` o `delivery` cuando se requiere estado, evidencia o Git/GH.
-- `explorer`: investiga en modo read-only y produce handoff para implementación.
-- `implementer`: implementa cambios acotados; no hace commit, push, PR ni sync de Projects.
-- `test-writer`: escribe o ajusta pruebas TDD stack-aware para cambios T1/T2 sustantivos y reporta evidencia RED/GREEN/TRIANGULATE/REFACTOR; no hace delivery.
-- `validator`: valida y diagnostica en modo read-only; no edita.
-- `reviewer`: revisa calidad, riesgos y cobertura con scoring L1-L5 stack-aware; no edita.
-- `delivery`: con autorización explícita, maneja Git/GH, PRs y trazabilidad siguiendo `.lufy/contracts/delivery.md`.
-
-## OpenSpec workflow
-
-- Explorar idea o impacto: `opsx-explore` / skill `openspec-explore`.
-- Crear propuesta completa: `opsx-propose` / skill `openspec-propose`.
-- Implementar tareas: `opsx-apply` / skill `openspec-apply-change`.
-- Verificar implementación contra artefactos: `opsx-verify` / skill `openspec-verify-change`.
-- Sincronizar deltas validados a specs principales: `opsx-sync` / skill `openspec-sync`.
-- Archivar cambio completado: `opsx-archive` / skill `openspec-archive-change`.
-- Cerrar/finalizar spec activa o cambio LUFY con gates de validación, sync, delivery, PR cerrado/merged y limpieza segura de rama: `/lufy.close` / skill `lufy.close`.
-- Una tarea OpenSpec marcada en `tasks.md` no equivale por sí sola a `closed` ni `archive-ready`; solo se considera cerrada si cumple los gates de `.lufy/contracts/delivery.md` con estado explícito.
-- En `opsx-apply`, completar tareas por bloque sin test loops ni relecturas rutinarias; en `opsx-verify`, correr la validación final agrupada disponible, incluyendo tests/coverage solo si existen para el alcance real.
-- Foco activo actual: `install-managed-assets-with-hash-idempotency` (assets gestionados, SHA-256, manifest, idempotencia, backup/restore y verify estructural).
-- No archivar `migrate-installer-to-go-cli` mientras tenga tasks incompletas; tasks incompletas implican `blocked`, no archive.
-
-## Workflow de memoria Obsidian
-
-- Obsidian es la memoria canónica portable cuando `.lufy/config/project.yaml` declara `memory.provider: obsidian`; usar `lufy-ai memory status/search/validate/capture/connect/index` y los skills locales `lufy.mem-*` cuando el contexto histórico aporte.
-- Para trabajo T1/T2 no trivial, y para T3 con contexto histórico probable, buscar en Obsidian con consultas cortas por issue/spec/ruta/concepto y resumir hallazgos como `memory_hints` compactos (path, línea, status, relevancia); no pasar dumps completos.
-- Después de trabajo significativo, guardar en Obsidian solo aprendizajes durables: decisiones de arquitectura, reglas, flows, lessons, patrones reutilizables, cambios de configuración, gotchas, outcomes de delivery o resúmenes de sesión. No guardar ruido rutinario ni estados duplicados.
-- Si el usuario pide guardar/recordar algo o corrige una decisión técnica de la IA, persistirlo como `rule`, `lesson` o `decision` con `lufy-ai memory capture`; conectar notas relacionadas con `lufy-ai memory connect` y validar memoria.
-- Nunca tratar memoria como evidencia más fuerte que archivos, comandos o instrucciones explícitas. La trazabilidad durable de memoria se registra en Obsidian.
-
-## Política de delivery
-
-- Consultar `.lufy/contracts/delivery.md` para validación por tiers, branch safety, PRs, sync y estados `blocked` / `sync_pending`.
-- PR normal: ramas `feature/*`, `fix/*`, `chore/*` o equivalentes → `develop`.
-- Promoción productiva: `develop` → `main` con autorización y evidencia de validación.
-- `main` no es base de trabajo diario; se reserva para producción, release y hotfix explícitamente autorizado.
-- Tags de release estable: `v*` creados desde commits alcanzables desde `origin/main`; no publicar releases desde `develop` sin promoción.
-- No hacer commit, push, PR ni actualizar GitHub Projects sin autorización explícita del usuario y rol `delivery`.
-- No crear PR desde ramas protegidas como `develop`, `main`, `master` o `development`, salvo promoción `develop` → `main` explícitamente autorizada.
-- Al crear PR, `delivery` debe consultar/esperar checks remotos con evidencia (`gh pr checks <PR>` o `gh pr view ... statusCheckRollup/mergeStateStatus`) y no reportar `delivered`/`closed` si fallan, quedan pendientes o falta evidencia; usar `blocked` o `delivery_pending` con recovery.
-- Nunca usar force push salvo solicitud explícita.
-
-## Formato de reporte
-
-- Incluir objetivo, cambios/evidencia, riesgos y estado listo/bloqueado.
-- Mantener resúmenes concisos; usar rutas y líneas cuando ayuden.
-- Si falta contexto o una decisión, pedirla o devolver el bloqueo exacto.
-
-## Decisiones proporcionales
-
-Aplicar `.lufy/contracts/delivery.md`: el tier depende de riesgo, incertidumbre e impacto; el recuento de archivos por sí solo no eleva el tier. Una línea de auth runtime o configuración sensible conserva router previo, al menos T2 y `fast_path_allowed: false`.
-
-- Un archivo significativo requiere una decisión sustantiva de comportamiento, aceptación, contrato, configuración operacional o instrucciones; ser documental no lo excluye.
-- Con cuatro o más archivos significativos, comprobar cobertura por un plan/slice vigente con alcance, aceptación y validación. Con cobertura y gates satisfechos, continuar sin repetir aprobación sólo por recuento; sin cobertura o con alcance nuevo no cubierto, pausar en una frontera segura y requerir decisión de workload/plan antes de escrituras amplias.
-- Con cinco o más archivos estimados, emitir una decisión de workload; proponer slices si reducen carga o riesgo, o una única unidad justificada si dividir no aporta valor; no fragmentar T3 artificialmente.
-- Límites configurables sólo desde `workflow_limits`; distinguir configuración leída de checkpoints del harness. Si falta configuración, reportar `not_available` y no inventar budgets desde defaults o aliases legacy.
-- Un plan no sustituye aprobación post-plan, seguridad, contratos, validación, delivery ni una stop rule independiente. Con regla activa, reportar `blocked` o `escalated`, evidencia y recovery; ante ambigüedad de autorización/seguridad, preservar restricciones y requerir diagnóstico. `auto-chain` y next owner no conceden permiso.
-- Fuente y mirror pueden reflejar la misma decisión lógica; conservar ambos y su churn real en Git/review, comprobar paridad y no excluir mirrors del assessment ejecutable.
+- Responde en español y trabaja como agente principal inline.
+- Lee `execution` en `.lufy/config/project.yaml` y aplica `.lufy/contracts/work.md`.
+- Entiende el resultado pedido y el contexto existente; actúa dentro del alcance autorizado hasta comprobarlo.
+- Adapta la evidencia a análisis, propuestas, escritura, código, datos u operaciones. No exijas tiers, metodología ni handoffs para avanzar.
+- Delega según `execution.delegation`: `off`, `on_request` o `auto`. Una instrucción inline del usuario prevalece; delegar nunca amplía permisos.
+- Usa capacidades y skills locales pertinentes, con contexto mínimo, sin imponer una cadena de roles.
+- Consulta sólo decisiones materiales que no puedas resolver; continúa el trabajo independiente mientras esperas.
+- Preserva trabajo ajeno, comprueba el resultado y reporta evidencia real y límites pendientes.
+- Commit, push, PR, publicación y operaciones externas requieren autorización explícita; aplica `.lufy/contracts/delivery.md` cuando corresponda.
+<!-- LUFY:END codex-harness -->

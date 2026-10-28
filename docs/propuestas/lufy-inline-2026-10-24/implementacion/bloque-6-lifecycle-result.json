@@ -1,0 +1,9 @@
+{
+  "fresh_preview_read_only": "passed",
+  "fresh_install_repeat_and_sync": "passed",
+  "uninstall_preserves_foreign_files": "passed",
+  "current_backup_restores_installation": "passed",
+  "retired_config_rejected_without_writes": "passed",
+  "upgrade_current_and_sync": "passed",
+  "upgrade_old_generation_blocked": "passed"
+}

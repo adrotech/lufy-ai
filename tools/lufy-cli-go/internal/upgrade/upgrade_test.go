@@ -46,7 +46,7 @@ func TestUpgradeReplacesExecutableFromFileRelease(t *testing.T) {
 		t.Fatal(err)
 	}
 	hash := sha256.Sum256(body)
-	checksums := fmt.Sprintf("%x  %s\n", hash, artifact)
+	checksums := RuntimeContractHeader() + fmt.Sprintf("%x  %s\n", hash, artifact)
 	if err := os.WriteFile(filepath.Join(releaseDir, fmt.Sprintf("lufy-ai_%s_checksums.txt", version)), []byte(checksums), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -208,4 +208,38 @@ func zipBinary(t *testing.T, name, content string) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+func TestUpgradeRejectsPreviousRuntimeWithoutReplacingExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("fixture tar de plataforma Unix")
+	}
+	releaseRoot := t.TempDir()
+	v := "v9.9.9"
+	dir := filepath.Join(releaseRoot, v)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	artifact := artifactName(v, runtime.GOOS, runtime.GOARCH)
+	body := tarGzBinary(t, "previous-runtime")
+	sum := sha256.Sum256(body)
+	if err := os.WriteFile(filepath.Join(dir, artifact), body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "lufy-ai_"+v+"_checksums.txt"), []byte(fmt.Sprintf("%x  %s\n", sum, artifact)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(t.TempDir(), "lufy-ai")
+	before := []byte("current-inline-runtime")
+	if err := os.WriteFile(target, before, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	err := NewService().Run(Options{To: v, BaseURL: "file://" + releaseRoot, ExecPath: target}, &bytes.Buffer{})
+	if err == nil {
+		t.Fatal("previous generation replaced current binary")
+	}
+	after, readErr := os.ReadFile(target)
+	if readErr != nil || !bytes.Equal(before, after) {
+		t.Fatal("rejected upgrade mutated binary")
+	}
 }

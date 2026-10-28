@@ -16,14 +16,11 @@ type Options struct {
 	Requested       domain.HarnessConfig
 	BlockOnMismatch bool
 }
-
 type Drift struct {
 	Field          string
-	Tier           domain.Tier
 	ProjectValue   string
 	InstalledValue string
 }
-
 type Resolution struct {
 	Config        domain.HarnessConfig
 	ProjectConfig *projectconfig.ProjectConfig
@@ -45,92 +42,77 @@ func Resolve(opts Options) (Resolution, error) {
 		return Resolution{}, err
 	}
 	result, err := ResolveLoaded(opts.Requested, cfg, st, opts.BlockOnMismatch)
-	if err != nil {
-		return Resolution{}, err
-	}
-	result.ProjectConfig = cfg
-	result.InstallState = st
-	return result, nil
+	result.ProjectConfig, result.InstallState = cfg, st
+	return result, err
 }
-
-func ResolveLoaded(requested domain.HarnessConfig, cfg *projectconfig.ProjectConfig, st *state.InstallState, blockOnMismatch bool) (Resolution, error) {
-	projectHarness := harnessFromProject(cfg)
-	installedHarness := harnessFromState(st)
-	drifts := Compare(projectHarness, installedHarness)
-
-	if blockOnMismatch {
-		unresolved := unresolvedDrifts(drifts, requested)
-		if len(unresolved) > 0 {
-			return Resolution{}, mismatchError(unresolved)
+func ResolveLoaded(requested domain.HarnessConfig, cfg *projectconfig.ProjectConfig, st *state.InstallState, block bool) (Resolution, error) {
+	project, installed := harnessFromProject(cfg), harnessFromState(st)
+	for _, value := range []*domain.HarnessConfig{project, installed} {
+		if value != nil {
+			if err := value.ValidateSupported(); err != nil {
+				return Resolution{}, err
+			}
 		}
 	}
-
-	defaults := domain.DefaultHarnessConfig()
-	effective := defaults
+	drifts := Compare(project, installed)
+	if block {
+		var unresolved []string
+		for _, drift := range drifts {
+			if drift.Field == "tool" && requested.ToolIsExplicit() {
+				continue
+			}
+			if drift.Field == "execution" && requested.ExecutionIsExplicit() {
+				continue
+			}
+			unresolved = append(unresolved, RecoveryMessage(drift))
+		}
+		if len(unresolved) > 0 {
+			return Resolution{}, fmt.Errorf("harness inconsistente; no se modificaron archivos: %s", strings.Join(unresolved, "; "))
+		}
+	}
+	effective := domain.DefaultHarnessConfig()
+	if installed != nil {
+		effective = *installed
+		effective.Provenance = domain.HarnessProvenance{Tool: domain.HarnessSourceInstallState, Execution: domain.HarnessSourceInstallState}
+	}
+	if project != nil {
+		effective = *project
+		effective.Provenance = domain.HarnessProvenance{Tool: domain.HarnessSourceProjectConfig, Execution: domain.HarnessSourceProjectConfig}
+	}
 	if requested.ToolIsExplicit() {
 		effective.Tool = requested.Tool
 		effective.Provenance.Tool = domain.HarnessSourceExplicit
-	} else if projectHarness != nil {
-		effective.Tool = projectHarness.Tool
-		effective.Provenance.Tool = domain.HarnessSourceProjectConfig
-	} else if installedHarness != nil {
-		effective.Tool = installedHarness.Tool
-		effective.Provenance.Tool = domain.HarnessSourceInstallState
 	}
-	for _, tier := range []domain.Tier{domain.TierT1, domain.TierT2, domain.TierT3} {
-		switch {
-		case requested.TierIsExplicit(tier):
-			effective.MethodologyByTier[tier] = requested.MethodologyByTier[tier]
-			effective.Provenance.MethodologyByTier[tier] = domain.HarnessSourceExplicit
-		case projectHarness != nil:
-			effective.MethodologyByTier[tier] = projectHarness.MethodologyByTier[tier]
-			effective.Provenance.MethodologyByTier[tier] = domain.HarnessSourceProjectConfig
-		case installedHarness != nil:
-			effective.MethodologyByTier[tier] = installedHarness.MethodologyByTier[tier]
-			effective.Provenance.MethodologyByTier[tier] = domain.HarnessSourceInstallState
-		}
+	if requested.ExecutionIsExplicit() {
+		effective.Execution = requested.Execution
+		effective.Provenance.Execution = domain.HarnessSourceExplicit
 	}
+	effective = effective.WithDefaults()
 	if err := effective.ValidateSupported(); err != nil {
-		return Resolution{}, err
-	}
-	if err := effective.MethodologyByTier.ValidateRoutingPolicy(domain.RoutingPolicyOptions{}); err != nil {
 		return Resolution{}, err
 	}
 	return Resolution{Config: effective, Drifts: drifts}, nil
 }
-
-func Compare(projectHarness, installedHarness *domain.HarnessConfig) []Drift {
-	if projectHarness == nil || installedHarness == nil {
+func Compare(project, installed *domain.HarnessConfig) []Drift {
+	if project == nil || installed == nil {
 		return nil
 	}
-	project := projectHarness.WithDefaults()
-	installed := installedHarness.WithDefaults()
-	drifts := []Drift{}
-	if project.Tool != installed.Tool {
-		drifts = append(drifts, Drift{Field: "tool", ProjectValue: string(project.Tool), InstalledValue: string(installed.Tool)})
+	p, i := project.WithDefaults(), installed.WithDefaults()
+	var result []Drift
+	if p.Tool != i.Tool {
+		result = append(result, Drift{Field: "tool", ProjectValue: string(p.Tool), InstalledValue: string(i.Tool)})
 	}
-	for _, tier := range []domain.Tier{domain.TierT1, domain.TierT2, domain.TierT3} {
-		projectSelection := project.MethodologyByTier[tier]
-		installedSelection := installed.MethodologyByTier[tier]
-		if projectSelection != installedSelection {
-			drifts = append(drifts, Drift{
-				Field:          "methodology",
-				Tier:           tier,
-				ProjectValue:   formatSelection(projectSelection),
-				InstalledValue: formatSelection(installedSelection),
-			})
-		}
+	if p.Execution != i.Execution {
+		result = append(result, Drift{Field: "execution", ProjectValue: string(p.Execution.Delegation), InstalledValue: string(i.Execution.Delegation)})
 	}
-	return drifts
+	return result
 }
-
 func RecoveryMessage(drift Drift) string {
 	if drift.Field == "tool" {
-		return fmt.Sprintf("tool project=%s install-state=%s; Recovery: ejecuta install con --tool explícito para reconciliar sin sobrescribir otros campos", drift.ProjectValue, drift.InstalledValue)
+		return fmt.Sprintf("tool project=%s install-state=%s; usa install --tool codex para reconciliar", drift.ProjectValue, drift.InstalledValue)
 	}
-	return fmt.Sprintf("methodology %s project=%s install-state=%s; Recovery: ejecuta install con --methodology-tier %s:<methodology>/<mode> explícito", drift.Tier, drift.ProjectValue, drift.InstalledValue, drift.Tier)
+	return fmt.Sprintf("execution.delegation project=%s install-state=%s; usa install --delegation %s para reconciliar", drift.ProjectValue, drift.InstalledValue, drift.ProjectValue)
 }
-
 func loadProjectConfig(target string) (*projectconfig.ProjectConfig, error) {
 	path, err := projectconfig.ExistingPath(target)
 	if err != nil {
@@ -141,49 +123,21 @@ func loadProjectConfig(target string) (*projectconfig.ProjectConfig, error) {
 		return nil, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("leer project config para resolver harness: %w", err)
+		return nil, fmt.Errorf("leer project config: %w", err)
 	}
 	return &cfg, nil
 }
-
 func harnessFromProject(cfg *projectconfig.ProjectConfig) *domain.HarnessConfig {
 	if cfg == nil {
 		return nil
 	}
-	harness := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}.WithDefaults()
-	return &harness
+	value := domain.HarnessConfig{Tool: cfg.Tool, Execution: cfg.Execution}.WithDefaults()
+	return &value
 }
-
 func harnessFromState(st *state.InstallState) *domain.HarnessConfig {
 	if st == nil {
 		return nil
 	}
-	harness := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}.WithDefaults()
-	return &harness
-}
-
-func unresolvedDrifts(drifts []Drift, requested domain.HarnessConfig) []Drift {
-	unresolved := []Drift{}
-	for _, drift := range drifts {
-		if drift.Field == "tool" && requested.ToolIsExplicit() {
-			continue
-		}
-		if drift.Field == "methodology" && requested.TierIsExplicit(drift.Tier) {
-			continue
-		}
-		unresolved = append(unresolved, drift)
-	}
-	return unresolved
-}
-
-func mismatchError(drifts []Drift) error {
-	messages := make([]string, 0, len(drifts))
-	for _, drift := range drifts {
-		messages = append(messages, RecoveryMessage(drift))
-	}
-	return fmt.Errorf("harness inconsistente; no se modificaron archivos: %s", strings.Join(messages, "; "))
-}
-
-func formatSelection(selection domain.MethodologySelection) string {
-	return fmt.Sprintf("%s/%s(required=%t)", selection.ID, selection.Mode, selection.Required)
+	value := domain.HarnessConfig{Tool: st.Tool, Execution: st.Execution}.WithDefaults()
+	return &value
 }

@@ -1,0 +1,6 @@
+{
+  "upgrade_current_generation": "passed",
+  "sync_does_not_reinstall_retired_assets": "passed",
+  "upgrade_previous_generation_blocked_without_binary_change": "passed",
+  "checksum_tool_accepts_contract_header": "passed"
+}

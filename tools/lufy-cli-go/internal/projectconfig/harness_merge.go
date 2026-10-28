@@ -41,9 +41,6 @@ func (s Service) MergeHarnessSelection(targetValue string, harness domain.Harnes
 	if err := harness.ValidateSupported(); err != nil {
 		return HarnessMerge{}, err
 	}
-	if err := harness.MethodologyByTier.ValidateRoutingPolicy(domain.RoutingPolicyOptions{}); err != nil {
-		return HarnessMerge{}, err
-	}
 
 	canonicalPath := Path(target)
 	readPath, err := ExistingPath(target)
@@ -57,13 +54,13 @@ func (s Service) MergeHarnessSelection(targetValue string, harness domain.Harnes
 	if err != nil {
 		return HarnessMerge{}, fmt.Errorf("preparar project config para harness: %w", err)
 	}
-	current := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}.WithDefaults()
+	current := domain.HarnessConfig{Tool: cfg.Tool, Execution: cfg.Execution}.WithDefaults()
 	canonicalBody, readErr := os.ReadFile(canonicalPath)
 	canonicalExists := readErr == nil
 	if readErr != nil && !os.IsNotExist(readErr) {
 		return HarnessMerge{}, readErr
 	}
-	if canonicalExists && reflect.DeepEqual(current.Tool, harness.Tool) && reflect.DeepEqual(current.MethodologyByTier, harness.MethodologyByTier) {
+	if canonicalExists && reflect.DeepEqual(current.Tool, harness.Tool) && reflect.DeepEqual(current.Execution, harness.Execution) {
 		return HarnessMerge{path: canonicalPath}, nil
 	}
 
@@ -74,7 +71,7 @@ func (s Service) MergeHarnessSelection(targetValue string, harness domain.Harnes
 		}
 	}
 	cfg.Tool = harness.Tool
-	cfg.MethodologyByTier = harness.MethodologyByTier
+	cfg.Execution = harness.Execution
 	if err := s.store.Write(canonicalPath, cfg); err != nil {
 		return HarnessMerge{}, err
 	}
@@ -96,7 +93,7 @@ func HarnessSelectionNeedsMerge(targetValue string, harness domain.HarnessConfig
 	if err != nil {
 		return false, err
 	}
-	current := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}.WithDefaults()
+	current := domain.HarnessConfig{Tool: cfg.Tool, Execution: cfg.Execution}.WithDefaults()
 	expected := harness.WithDefaults()
-	return current.Tool != expected.Tool || !reflect.DeepEqual(current.MethodologyByTier, expected.MethodologyByTier), nil
+	return current.Tool != expected.Tool || !reflect.DeepEqual(current.Execution, expected.Execution), nil
 }

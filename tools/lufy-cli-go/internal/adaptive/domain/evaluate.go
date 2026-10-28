@@ -71,7 +71,7 @@ func Evaluate(request EvaluationRequest, policy Policy) (Decision, error) {
 	if decision.Action == "" {
 		decision.Action = ActionNoCandidate
 		decision.Reason = "no_eligible_candidate"
-		decision.NextOwner = "orchestrator"
+		decision.NextOwner = "agent"
 	}
 	decision.Fingerprint = fingerprintDecision(request, policy, decision)
 	return decision, nil

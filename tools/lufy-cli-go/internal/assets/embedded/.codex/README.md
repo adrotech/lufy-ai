@@ -1,14 +1,10 @@
-# Superficie Lufy para Codex
+# Lufy inline en Codex
 
-Esta carpeta contiene assets locales gestionados por `lufy-ai`.
+El principal trabaja con `execution.mode: inline` y la política de delegación del proyecto. No se instala una cadena de roles.
 
-- `agents/`: instrucciones de los roles Lufy; conservan límites particulares y autorización de delivery.
-- `lufy-agent-mapping.md`: fuente Codex para modos native/emulated/inline, menciones `@<rol>`, recuperación de handoffs y resolución de skills. Leerla antes de delegar; evita repetir el procedimiento en cada entrada.
-- `instructions/proportional-workflow.md`: wording compartido materializado inline en tres roles; la autoridad sigue en `.lufy/contracts/delivery.md`.
-- `hooks.json`: lifecycle para orientación, diagnóstico de handoffs, SDD y validación best-effort de memoria; sin transcripts ni avance de gates.
-- `rules/`: controles conservadores de delivery y comandos destructivos; `prompt` nunca sustituye autorización humana.
-- `config.toml`: configuración local mínima con multi-agent y hooks habilitados; los flags no prueban disponibilidad efectiva.
+- `config.toml` habilita capacidades del host; no concede permisos ni prueba que una delegación haya ocurrido.
+- `hooks.json` sólo orienta `SessionStart`; no procesa reportes ni registra mensajes o sesiones.
+- `rules/lufy.rules` conserva controles de entrega y comandos destructivos.
+- `lufy-agent-mapping.md` describe la ejecución y las capacidades reales.
 
-Las capas del proyecto requieren confianza. Revisar cambios de hooks con `/hooks`; si falta `lufy-ai`, SessionStart informa recovery y conserva el workflow. Consultar [el protocolo de regresión](https://github.com/adrotech/lufy-ai/blob/develop/docs/codex-native-regression-2026-10-22.md) para distinguir configuración de callbacks/handoffs observados. Una instrucción read-only no crea por sí sola un sandbox independiente: se conserva la política efectiva del padre.
-
-En el repositorio fuente de Lufy, antes de publicar cambios, ejecutar `python3 scripts/render-codex-instructions.py --check`. Para materializar una edición compartida autorizada, usar `--write`; después ejecutar la validación agrupada. Los mirrors deben coincidir y permanecen visibles en Git/review. No se adopta una variante de menor contexto sin el experimento controlado del bloque 7.
+La política de trabajo y comprobación vive en `.lufy/contracts/work.md` y `.lufy/contracts/evidence.md`. Los datos y decisiones explícitas del proyecto viven en `.lufy/config/project.yaml`. Usa capacidades de `.agents/skills` cuando sean pertinentes; un registro estructurado no es requisito para responder al usuario.

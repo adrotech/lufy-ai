@@ -15,7 +15,6 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/harnessconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
@@ -74,11 +73,10 @@ type FeatureSpec struct {
 }
 
 var featureRegistry = []FeatureSpec{
-	{ID: "layout", Name: "Layout .lufy", Since: "v0.6.0"},
 	{ID: "install", Name: "Assets gestionados", Since: "v0.1.0"},
 	{ID: "project-config", Name: "Project config", Since: "v0.3.0"},
 	{ID: "stack-profile", Name: "Stack y superficies", Since: "v0.4.0"},
-	{ID: "sdd-methodology", Name: "Metodologia SDD", Since: "v0.6.0"},
+	{ID: "inline-execution", Name: "Ejecución inline", Since: "v0.6.25"},
 	{ID: "memory", Name: "Memoria Obsidian", Since: "v0.6.0"},
 	{ID: "context-graph", Name: "Context graph", Since: "v0.6.0"},
 	{ID: "verify", Name: "Verify final", Since: "v0.1.0"},
@@ -211,16 +209,6 @@ func validateSetupTargetInput(raw string) error {
 
 func (s Service) planFeatures(target string, scope assets.Scope, harness domain.HarnessConfig) []FeatureAction {
 	features := []FeatureAction{}
-	layoutReport, err := layout.BuildPlan(target)
-	if err != nil {
-		features = append(features, action("layout", "apply", err.Error(), "lufy-ai migrate-layout --target <dir> --dry-run"))
-	} else if len(layoutReport.Conflicts) > 0 {
-		features = append(features, action("layout", "conflict", fmt.Sprintf("%d conflicto(s) de layout legacy", len(layoutReport.Conflicts)), "lufy-ai migrate-layout --target <dir> --dry-run"))
-	} else if hasLayoutMutations(layoutReport.Actions) {
-		features = append(features, action("layout", "apply", layoutSummary(layoutReport.Actions), "lufy-ai migrate-layout --target <dir> --yes"))
-	} else {
-		features = append(features, action("layout", "skip", "Layout .lufy listo", ""))
-	}
 	if _, err := state.Load(target); err != nil || !existingInstallState(target) {
 		if plan, planErr := conflictplan.NewService().Build(conflictplan.Options{Target: target, Scope: scope, Harness: harness}); planErr == nil && len(plan.Items) > 0 {
 			features = append(features, action("install", "conflict", fmt.Sprintf("manifest ausente y %d conflicto(s) de assets no gestionados", len(plan.Items)), "lufy-ai conflicts plan --target <dir>"))
@@ -233,7 +221,7 @@ func (s Service) planFeatures(target string, scope assets.Scope, harness domain.
 	configPath := projectconfig.Path(target)
 	if !fileExists(configPath) {
 		if existing, err := projectconfig.ExistingPath(target); err == nil && fileExists(existing) {
-			features = append(features, action("project-config", "skip", "Config legacy/canonica existente", ""))
+			features = append(features, action("project-config", "skip", "Configuración existente", ""))
 		} else {
 			features = append(features, action("project-config", "apply", "Falta .lufy/config/project.yaml", "lufy-ai init --target <dir>"))
 		}
@@ -241,7 +229,7 @@ func (s Service) planFeatures(target string, scope assets.Scope, harness domain.
 		features = append(features, action("project-config", "skip", "Project config presente", ""))
 	}
 	features = append(features, s.planStackProfile(target))
-	features = append(features, s.planSDDMethodology(target))
+	features = append(features, s.planInlineExecution(target))
 	memStatus, memErr := memory.NewService().BuildStatus(memory.Options{Target: target})
 	if memErr != nil || !memStatus.Status.Initialized {
 		reason := "Memoria Obsidian no inicializada"
@@ -296,15 +284,6 @@ func (s Service) applyFeature(opts Options, report *Report, index int, stdout io
 	harness := resolution.Config
 	var err error
 	switch feature.ID {
-	case "layout":
-		layoutPlan, buildErr := layout.BuildPlan(report.TargetRoot)
-		if buildErr != nil {
-			err = buildErr
-		} else if len(layoutPlan.Conflicts) > 0 {
-			err = fmt.Errorf("layout bloqueado por %d conflicto(s); ejecuta lufy-ai migrate-layout --target %s --dry-run", len(layoutPlan.Conflicts), report.TargetRoot)
-		} else {
-			_, err = layout.Apply(report.TargetRoot, layoutPlan.Actions, stdout)
-		}
 	case "install":
 		err = installer.NewService().Run(installer.Options{Target: report.TargetRoot, Yes: true, Scope: scope, Harness: harness}, stdout)
 	case "project-config":
@@ -316,7 +295,7 @@ func (s Service) applyFeature(opts Options, report *Report, index int, stdout io
 		err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot}, stdout)
 	case "memory":
 		err = memory.NewService().Init(memory.Options{Target: report.TargetRoot}, stdout)
-	case "stack-profile", "sdd-methodology":
+	case "stack-profile", "inline-execution":
 		err = projectconfig.NewService().Run(projectconfig.Options{Target: report.TargetRoot, Rescan: true}, stdout)
 	case "context-graph":
 		_, err = contextapp.NewService().Build(report.TargetRoot)
@@ -349,19 +328,19 @@ func (s Service) planStackProfile(target string) FeatureAction {
 	return action("stack-profile", "skip", "Stacks y superficies presentes", "")
 }
 
-func (s Service) planSDDMethodology(target string) FeatureAction {
+func (s Service) planInlineExecution(target string) FeatureAction {
 	path, err := projectconfig.ExistingPath(target)
 	if err != nil || !fileExists(path) {
-		return action("sdd-methodology", "skip", "Se configura junto con project-config/install", "lufy-ai install --target <dir> --yes")
+		return action("inline-execution", "skip", "Se configura junto con project-config/install", "lufy-ai install --target <dir> --yes")
 	}
 	cfg, err := projectconfig.Load(path)
 	if err != nil {
-		return action("sdd-methodology", "apply", "Project config no se pudo leer para validar metodologia", "lufy-ai init --target <dir> --rescan")
+		return action("inline-execution", "apply", "Project config no se pudo leer para validar ejecución", "lufy-ai init --target <dir> --rescan")
 	}
-	if len(cfg.MethodologyByTier) == 0 || cfg.Tool == "" {
-		return action("sdd-methodology", "apply", "Falta tool o methodology_by_tier", "lufy-ai init --target <dir> --rescan")
+	if cfg.Execution.Mode == "" || cfg.Tool == "" {
+		return action("inline-execution", "apply", "Falta tool o execution", "lufy-ai init --target <dir> --rescan")
 	}
-	return action("sdd-methodology", "skip", "Tool y methodology_by_tier presentes", "")
+	return action("inline-execution", "skip", "Tool y execution presentes", "")
 }
 
 func printReport(out io.Writer, report Report) {
@@ -441,28 +420,6 @@ func featureSpec(id string) FeatureSpec {
 		}
 	}
 	return FeatureSpec{ID: id, Name: id}
-}
-
-func hasLayoutMutations(actions []layout.Action) bool {
-	for _, item := range actions {
-		if item.Kind == "migrate-copy" || item.Kind == "write-readme" {
-			return true
-		}
-	}
-	return false
-}
-
-func layoutSummary(actions []layout.Action) string {
-	parts := []string{}
-	for _, item := range actions {
-		if item.Kind == "migrate-copy" || item.Kind == "write-readme" {
-			parts = append(parts, item.Kind+":"+item.Target)
-		}
-	}
-	if len(parts) == 0 {
-		return "Layout .lufy listo"
-	}
-	return strings.Join(parts, ", ")
 }
 
 func existingInstallState(target string) bool {
@@ -922,16 +879,14 @@ func featureStatusLabel(feature FeatureAction, selected bool) string {
 
 func featureExplanation(id string) string {
 	switch id {
-	case "layout":
-		return "ordena la carpeta .lufy y migra rutas antiguas si existen."
 	case "install":
-		return "instala agentes, skills, comandos y politicas gestionadas por Lufy."
+		return "instala la guía inline, skills y políticas gestionadas por Lufy."
 	case "project-config":
 		return "crea .lufy/config/project.yaml, el perfil local del repositorio."
 	case "stack-profile":
 		return "detecta stacks y superficies para orientar validacion y reviews."
-	case "sdd-methodology":
-		return "configura el routing T1/T2/T3 y los limites de workflow."
+	case "inline-execution":
+		return "configura ejecución inline y política de delegación sin metodología."
 	case "memory":
 		return "prepara memoria Obsidian portable para aprendizajes durables."
 	case "context-graph":
@@ -945,11 +900,9 @@ func featureExplanation(id string) string {
 
 func featureEffect(id string) string {
 	switch id {
-	case "layout":
-		return "puede escribir o mover archivos dentro de .lufy."
 	case "install":
-		return "puede escribir archivos bajo .opencode, .agents, openspec y .lufy gestionados."
-	case "project-config", "stack-profile", "sdd-methodology":
+		return "puede escribir archivos gestionados bajo .codex, .agents y .lufy."
+	case "project-config", "stack-profile", "inline-execution":
 		return "actualiza solo configuracion del proyecto bajo .lufy/config."
 	case "memory":
 		return "crea estructura de memoria bajo .lufy/memory."
@@ -1717,7 +1670,7 @@ func (m conflictReviewModel) View() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s\n", title)
 	fmt.Fprintf(&b, "Target: %s\n", m.plan.TargetRoot)
-	fmt.Fprintf(&b, "Conflictos: %d · grupos: %d · legacy/deprecated: %d\n\n", m.plan.Summary.Conflicts, m.plan.Summary.Groups, m.plan.Summary.LegacyDeprecated)
+	fmt.Fprintf(&b, "Conflictos: %d · grupos: %d\n\n", m.plan.Summary.Conflicts, m.plan.Summary.Groups)
 	if len(m.plan.Groups) == 0 {
 		fmt.Fprintln(&b, "No hay grupos de conflicto. enter/q para salir.")
 		return b.String()
@@ -1740,9 +1693,6 @@ func (m conflictReviewModel) View() string {
 		selected := items[m.itemIndex]
 		fmt.Fprintf(&b, "\nDetalle: %s\n", selected.Reason)
 		fmt.Fprintf(&b, "Acciones disponibles: %s\n", strings.Join(selected.AvailableActions, ", "))
-	}
-	if len(m.plan.LegacyDeprecated) > 0 {
-		fmt.Fprintln(&b, "\nLegacy/deprecated: ejecutar migrate-layout antes de borrar rutas legacy.")
 	}
 	fmt.Fprintln(&b, "\nRecovery: lufy-ai conflicts plan --target <dir> --json")
 	fmt.Fprintf(&b, "%s · %s · %s · %s · %s\n", m.keys.Left.Help().Key, m.keys.Right.Help().Key, m.keys.Up.Help().Key, m.keys.Down.Help().Key, m.keys.Quit.Help().Key)

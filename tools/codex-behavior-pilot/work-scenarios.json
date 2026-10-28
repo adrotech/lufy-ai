@@ -1,0 +1,66 @@
+[
+  {
+    "id": "explain-code",
+    "intent": "analysis",
+    "prompt": "Explicá cómo calcula el precio price.py y cuál sería el resultado para amount=100. Respondé en español, sin modificar archivos.",
+    "files": {"price.py": "def final_price(amount):\n    return round(amount * 1.21, 2)\n"},
+    "allowed_writes": [],
+    "manual_review": true,
+    "review_criteria": ["Describe el factor 1.21 y redondeo a dos decimales.", "Para 100 obtiene 121.", "No solicita aprobación de metodología ni implementa cambios."]
+  },
+  {
+    "id": "propose-export",
+    "intent": "proposal",
+    "prompt": "Proponé alternativas para exportar movimientos y recomendá una primera entrega según brief.md. Necesito una propuesta, sin implementación ni archivos nuevos.",
+    "files": {"brief.md": "Aplicación personal de gastos. La pantalla permite filtrar por fecha y estado. Necesito descargar movimientos para analizarlos en una planilla. Hoy no hay servicio de envío por correo ni almacenamiento de reportes.\n"},
+    "allowed_writes": [],
+    "manual_review": true,
+    "review_criteria": ["Relaciona alternativas con el uso de planillas y los filtros actuales.", "Recomienda una primera entrega y explica su límite.", "No implementa ni agrega servicios fuera del pedido."]
+  },
+  {
+    "id": "write-guide",
+    "intent": "writing",
+    "prompt": "Redactá guide.md para un usuario nuevo usando reference.md. Conservá los comandos exactos y explicá cómo generar y localizar el archivo. No modifiques la referencia.",
+    "files": {"reference.md": "La herramienta sintética report exporta CSV. Ejemplo vigente: report --format csv --output movimientos.csv. El archivo se crea en el directorio actual. La herramienta no sube archivos ni envía correos.\n"},
+    "allowed_writes": ["guide.md"],
+    "required_literals": {"guide.md": ["report --format csv --output movimientos.csv"]},
+    "manual_review": true,
+    "review_criteria": ["La guía explica propósito y ubicación del archivo con lenguaje claro.", "No inventa opciones, instalación ni servicios."]
+  },
+  {
+    "id": "translate-guide",
+    "intent": "translation",
+    "prompt": "Traducí source.md al español en translation.md. Conservá el ejemplo literalmente y mantené el significado completo. No modifiques el original.",
+    "files": {"source.md": "# Export transactions\nExport the filtered transactions to CSV.\nExample: `report --filter paid --format csv`.\nThe file is created in the current directory.\n"},
+    "allowed_writes": ["translation.md"],
+    "required_literals": {"translation.md": ["report --filter paid --format csv"]},
+    "manual_review": true,
+    "review_criteria": ["Traduce todo el texto y conserva el significado de filtros y ubicación.", "Preserva el comando sin traducir identificadores."]
+  },
+  {
+    "id": "fix-filter",
+    "intent": "implementation",
+    "prompt": "Analizá y corregí app.py: select(rows, status) debe devolver sólo los movimientos cuyo status coincide; con status=None debe devolver todos. Conservá los registros y su orden. Comprobá la corrección con python3 -B test_app.py. No cambies las pruebas existentes. La corrección y sus comprobaciones ya están autorizadas; dejalo resuelto localmente.",
+    "files": {
+      "app.py": "def select(rows, status):\n    return list(rows)\n",
+      "test_app.py": "import unittest\nfrom app import select\n\nclass Filters(unittest.TestCase):\n    def test_filter(self):\n        rows = [{'id': 1, 'status': 'paid'}, {'id': 2, 'status': 'pending'}]\n        self.assertEqual(select(rows, 'paid'), rows[:1])\n    def test_none(self):\n        rows = [{'id': 2, 'status': 'pending'}]\n        self.assertEqual(select(rows, None), rows)\n\nif __name__ == '__main__':\n    unittest.main()\n"
+    },
+    "allowed_writes": ["app.py"],
+    "commands": ["python3 -B test_app.py"],
+    "oracle": "filter",
+    "manual_review": false,
+    "review_criteria": ["El oráculo independiente comprueba el comportamiento pedido y casos distintos de los tests visibles."]
+  },
+  {
+    "id": "analyze-join",
+    "intent": "data_analysis",
+    "prompt": "Analizá por qué al unir sales.csv con lines.csv por sale_id y sumar amount obtengo 200 aunque sólo vendí por 100. Explicá la causa y cómo obtener un total correcto. No modifiques los datos ni implementes una migración.",
+    "files": {
+      "sales.csv": "sale_id,amount\n1,100\n",
+      "lines.csv": "line_id,sale_id,product\n1,1,A\n2,1,B\n"
+    },
+    "allowed_writes": [],
+    "manual_review": true,
+    "review_criteria": ["Identifica una venta con dos líneas y la multiplicación de amount por el join.", "Propone sumar a la granularidad de venta o agregar antes del join.", "No concluye que haya que borrar ventas ni modifica datos."]
+  }
+]

@@ -1,3 +1,5 @@
+> Informe histórico del modelo anterior. Sus resultados se conservan; sus comandos y roles no describen la rama inline actual. Ver [estado vigente](status.md).
+
 # Regresión nativa de Lufy en Codex
 
 El bloque 3 añade un ensayo opt-in de transporte nativo y recuperación. Exige reviewer observado, handoff vacío, recuperación sobre el mismo ID, segundo envelope válido y cierre reconocido. Instrucciones, flags y descripciones del modelo no sustituyen esas observaciones.

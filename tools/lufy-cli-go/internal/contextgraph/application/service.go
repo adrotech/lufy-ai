@@ -24,9 +24,9 @@ type Service struct{ store adapters.Store }
 func NewService() Service { return Service{store: adapters.NewStore()} }
 
 const (
-	maxGraphDiagnostics  = 128
-	maxCoverageScenarios = 128
-	maxTraceVisited      = 4096
+	maxGraphDiagnostics   = 128
+	maxReviewObservations = 128
+	maxTraceVisited       = 4096
 )
 
 type Options struct {
@@ -119,39 +119,9 @@ type DiffResult struct {
 	Recovery     string             `json:"recovery,omitempty"`
 }
 
-type CoverageResult struct {
-	Status         string             `json:"status"`
-	GraphStatus    string             `json:"graph_status"`
-	Recovery       string             `json:"recovery,omitempty"`
-	TotalScenarios int                `json:"total_scenarios"`
-	Truncated      bool               `json:"truncated"`
-	Scenarios      []ScenarioCoverage `json:"scenarios"`
-}
-
-type ScenarioCoverage struct {
-	ScenarioID      string        `json:"scenario_id"`
-	Status          string        `json:"status"`
-	Missing         []string      `json:"missing,omitempty"`
-	SupportingEdges []domain.Edge `json:"supporting_edges,omitempty"`
-	Path            string        `json:"path,omitempty"`
-	Span            *domain.Span  `json:"span,omitempty"`
-	Recovery        string        `json:"recovery,omitempty"`
-}
-
-type TraceResult struct {
-	Status          string        `json:"status"`
-	GraphStatus     string        `json:"graph_status"`
-	Traced          bool          `json:"traced"`
-	Path            []string      `json:"path,omitempty"`
-	SupportingEdges []domain.Edge `json:"supporting_edges,omitempty"`
-	Reason          string        `json:"reason,omitempty"`
-	Recovery        string        `json:"recovery,omitempty"`
-}
-
 type ReviewOptions struct {
 	Base             string
 	ConcurrentSlices int
-	EvidenceItems    int
 }
 
 type ReviewObservation struct {
@@ -160,7 +130,6 @@ type ReviewObservation struct {
 	Deletions        int `json:"deletions"`
 	Churn            int `json:"churn"`
 	ConcurrentSlices int `json:"concurrent_slices"`
-	EvidenceItems    int `json:"evidence_items"`
 }
 
 type ReviewLimit struct {
@@ -173,7 +142,6 @@ type ReviewLimits struct {
 	MaxFilesPerSlice      ReviewLimit `json:"max_files_per_slice"`
 	MaxChurnLinesPerSlice ReviewLimit `json:"max_churn_lines_per_slice"`
 	MaxConcurrentSlices   ReviewLimit `json:"max_concurrent_slices"`
-	MinEvidenceItems      ReviewLimit `json:"min_evidence_items"`
 }
 
 type ReviewViolation struct {
@@ -184,16 +152,13 @@ type ReviewViolation struct {
 }
 
 type ReviewResult struct {
-	Action        string            `json:"action"`
-	GraphStatus   string            `json:"graph_status"`
-	Traceability  string            `json:"traceability"`
-	Observations  ReviewObservation `json:"observations"`
-	Limits        ReviewLimits      `json:"limits"`
-	TracedFiles   []string          `json:"traced_files,omitempty"`
-	UntracedFiles []string          `json:"untraced_files,omitempty"`
-	Violations    []ReviewViolation `json:"violations,omitempty"`
-	Truncated     bool              `json:"truncated"`
-	Recovery      string            `json:"recovery,omitempty"`
+	Action       string            `json:"action"`
+	GraphStatus  string            `json:"graph_status"`
+	Observations ReviewObservation `json:"observations"`
+	Limits       ReviewLimits      `json:"limits"`
+	Violations   []ReviewViolation `json:"violations,omitempty"`
+	Truncated    bool              `json:"truncated"`
+	Recovery     string            `json:"recovery,omitempty"`
 }
 
 type MetricsResult struct {
@@ -263,123 +228,10 @@ func (s Service) Status(root string) StatusResult {
 	}
 	status := "ready"
 	reason := ""
-	if currentHash != graph.Manifest.SourcesHash || graph.Manifest.ExtractorVersion != extractors.Version || !ledgerProjectionMatches(graph, adapters.LoadWorkflowProjection(root)) {
+	if currentHash != graph.Manifest.SourcesHash || graph.Manifest.ExtractorVersion != extractors.Version || !ledgerProjectionMatches(graph, adapters.LoadRunProjection(root)) {
 		status, reason = "stale", "inputs or extractor version changed"
 	}
 	return StatusResult{Status: status, Reason: reason, Recovery: recoveryIf(status), NextCommands: statusNextCommands(root, status), Sources: len(graph.Sources), Nodes: len(graph.Nodes), Edges: len(graph.Edges), GraphPath: adapters.GraphPathFor(root, cfg.Root), CandidatePaths: candidatePaths(graph, 5), Health: graph.Health}
-}
-
-func (s Service) Coverage(root string) CoverageResult {
-	graph, graphStatus := s.loadFreshGraph(root)
-	if graphStatus != "ready" {
-		return CoverageResult{Status: "unknown", GraphStatus: graphStatus, Recovery: "lufy-ai context build", Scenarios: []ScenarioCoverage{}}
-	}
-	nodeTypes := make(map[string]string, len(graph.Nodes))
-	scenarios := make([]domain.Node, 0)
-	for _, node := range graph.Nodes {
-		nodeTypes[node.ID] = node.Type
-		if node.Type == "workflow_scenario" {
-			scenarios = append(scenarios, node)
-		}
-	}
-	support := make(map[string][]domain.Edge, len(scenarios))
-	hasTask := make(map[string]bool, len(scenarios))
-	hasTest := make(map[string]bool, len(scenarios))
-	for _, edge := range graph.Edges {
-		if nodeTypes[edge.To] != "workflow_scenario" {
-			continue
-		}
-		switch {
-		case edge.Type == "implements" && nodeTypes[edge.From] == "workflow_task":
-			hasTask[edge.To] = true
-			support[edge.To] = append(support[edge.To], edge)
-		case edge.Type == "verifies" && nodeTypes[edge.From] == "workflow_test":
-			hasTest[edge.To] = true
-			support[edge.To] = append(support[edge.To], edge)
-		}
-	}
-	total := len(scenarios)
-	limit := total
-	if limit > maxCoverageScenarios {
-		limit = maxCoverageScenarios
-	}
-	result := CoverageResult{Status: "ready", GraphStatus: "ready", TotalScenarios: total, Truncated: total > limit, Scenarios: make([]ScenarioCoverage, 0, limit)}
-	for _, scenario := range scenarios[:limit] {
-		item := ScenarioCoverage{ScenarioID: scenario.ID, Status: "covered", SupportingEdges: support[scenario.ID], Path: scenario.Path, Span: scenario.Span}
-		if !hasTask[scenario.ID] {
-			item.Missing = append(item.Missing, "missing_task")
-		}
-		if !hasTest[scenario.ID] {
-			item.Missing = append(item.Missing, "missing_test")
-		}
-		if len(item.Missing) > 0 {
-			item.Status = "gap"
-			item.Recovery = "add explicit task and test workflow markers for this scenario"
-		}
-		result.Scenarios = append(result.Scenarios, item)
-	}
-	return result
-}
-
-func (s Service) Trace(root, start string) TraceResult {
-	graph, graphStatus := s.loadFreshGraph(root)
-	if graphStatus != "ready" {
-		return TraceResult{Status: "unknown", GraphStatus: graphStatus, Recovery: "lufy-ai context build"}
-	}
-	nodeTypes := make(map[string]string, len(graph.Nodes))
-	for _, node := range graph.Nodes {
-		nodeTypes[node.ID] = node.Type
-	}
-	if _, ok := nodeTypes[start]; !ok {
-		return TraceResult{Status: "gap", GraphStatus: "ready", Reason: traceGapReason(start), Recovery: "add the node to the graph and declare explicit workflow markers"}
-	}
-	adjacency := map[string][]domain.Edge{}
-	for _, edge := range graph.Edges {
-		if traceForwardRelation(edge.Type) {
-			adjacency[edge.From] = append(adjacency[edge.From], edge)
-		}
-	}
-	for from := range adjacency {
-		sort.Slice(adjacency[from], func(i, j int) bool {
-			left, right := adjacency[from][i], adjacency[from][j]
-			if left.Type != right.Type {
-				return left.Type < right.Type
-			}
-			return left.To < right.To
-		})
-	}
-	queue := []string{start}
-	seen := map[string]bool{start: true}
-	previous := map[string]domain.Edge{}
-	goal := ""
-	for len(queue) > 0 && len(seen) <= maxTraceVisited {
-		current := queue[0]
-		queue = queue[1:]
-		if current != start && nodeTypes[current] == "workflow_scenario" {
-			goal = current
-			break
-		}
-		for _, edge := range adjacency[current] {
-			if seen[edge.To] {
-				continue
-			}
-			seen[edge.To] = true
-			previous[edge.To] = edge
-			queue = append(queue, edge.To)
-		}
-	}
-	if goal == "" {
-		return TraceResult{Status: "gap", GraphStatus: "ready", Reason: traceGapReason(start), Recovery: "add explicit defines and workflow markers leading to a scenario"}
-	}
-	path := []string{goal}
-	edges := []domain.Edge{}
-	for current := goal; current != start; {
-		edge := previous[current]
-		edges = append([]domain.Edge{edge}, edges...)
-		current = edge.From
-		path = append([]string{current}, path...)
-	}
-	return TraceResult{Status: "ready", GraphStatus: "ready", Traced: true, Path: path, SupportingEdges: edges}
 }
 
 func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error) {
@@ -392,17 +244,16 @@ func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error
 		return ReviewResult{}, err
 	}
 	result := ReviewResult{
-		Action:       "proceed",
-		GraphStatus:  "not_available",
-		Traceability: "unknown",
+		Action:      "proceed",
+		GraphStatus: "not_available",
 		Observations: ReviewObservation{
 			Files: stats.TotalFiles, Additions: stats.Additions, Deletions: stats.Deletions, Churn: stats.Churn,
-			ConcurrentSlices: options.ConcurrentSlices, EvidenceItems: options.EvidenceItems,
+			ConcurrentSlices: options.ConcurrentSlices,
 		},
 		Limits:    limits,
 		Truncated: stats.Truncated,
 	}
-	escalate, split := false, false
+	adjust, split := false, false
 	for _, limit := range []struct {
 		name  string
 		value ReviewLimit
@@ -410,50 +261,18 @@ func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error
 		{name: "max_files_per_slice_unavailable", value: limits.MaxFilesPerSlice},
 		{name: "max_churn_lines_per_slice_unavailable", value: limits.MaxChurnLinesPerSlice},
 		{name: "max_concurrent_slices_unavailable", value: limits.MaxConcurrentSlices},
-		{name: "min_evidence_items_unavailable", value: limits.MinEvidenceItems},
 	} {
 		if !limit.value.Available {
-			escalate = true
 			appendReviewViolation(&result, ReviewViolation{Code: limit.name})
 		}
 	}
 
-	graph, graphStatus := s.loadFreshGraph(root)
-	result.GraphStatus = graphStatus
-	if graphStatus != "ready" {
-		escalate = true
-		result.Recovery = "lufy-ai context build"
-		appendReviewViolation(&result, ReviewViolation{Code: "traceability_unknown"})
-	} else {
-		reachable := workflowReachableNodes(graph)
-		for _, file := range stats.Files {
-			if reachable["file:"+file.Path] {
-				result.TracedFiles = append(result.TracedFiles, file.Path)
-				continue
-			}
-			result.UntracedFiles = append(result.UntracedFiles, file.Path)
-			escalate = true
-			appendReviewViolation(&result, ReviewViolation{Code: "untraced_file", Path: file.Path})
-		}
-		switch {
-		case stats.Truncated:
-			result.Traceability = "unknown"
-			escalate = true
-			appendReviewViolation(&result, ReviewViolation{Code: "traceability_output_truncated", Observed: stats.TotalFiles, Allowed: len(stats.Files)})
-		case len(result.UntracedFiles) > 0:
-			result.Traceability = "incomplete"
-		default:
-			result.Traceability = "complete"
-		}
-	}
+	// El grafo aporta contexto opcional; no determina aceptación ni trazabilidad metodológica.
+	result.GraphStatus = s.Status(root).Status
 
 	if limits.MaxConcurrentSlices.Available && options.ConcurrentSlices > limits.MaxConcurrentSlices.Value {
-		escalate = true
+		adjust = true
 		appendReviewViolation(&result, ReviewViolation{Code: "max_concurrent_slices_exceeded", Observed: options.ConcurrentSlices, Allowed: limits.MaxConcurrentSlices.Value})
-	}
-	if limits.MinEvidenceItems.Available && options.EvidenceItems < limits.MinEvidenceItems.Value {
-		escalate = true
-		appendReviewViolation(&result, ReviewViolation{Code: "min_evidence_items_not_met", Observed: options.EvidenceItems, Allowed: limits.MinEvidenceItems.Value})
 	}
 	if limits.MaxFilesPerSlice.Available && stats.TotalFiles > limits.MaxFilesPerSlice.Value {
 		split = true
@@ -463,8 +282,8 @@ func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error
 		split = true
 		appendReviewViolation(&result, ReviewViolation{Code: "max_churn_lines_per_slice_exceeded", Observed: stats.Churn, Allowed: limits.MaxChurnLinesPerSlice.Value})
 	}
-	if escalate {
-		result.Action = "escalate"
+	if adjust {
+		result.Action = "adjust"
 	} else if split {
 		result.Action = "split"
 	}
@@ -472,10 +291,10 @@ func (s Service) Review(root string, options ReviewOptions) (ReviewResult, error
 }
 
 func (s Service) Metrics(root string) MetricsResult {
-	return metricsFromProjection(adapters.LoadWorkflowProjection(root))
+	return metricsFromProjection(adapters.LoadRunProjection(root))
 }
 
-func metricsFromProjection(projection adapters.WorkflowProjection) MetricsResult {
+func metricsFromProjection(projection adapters.RunProjection) MetricsResult {
 	result := MetricsResult{Status: "unavailable", LedgerAvailability: projection.Availability, Truncated: projection.Truncated}
 	if projection.Availability == "unavailable" {
 		result.Recovery = projection.Recovery
@@ -556,7 +375,7 @@ func appendMetricMissing(result *MetricsResult, value string) {
 			return
 		}
 	}
-	if len(result.Missing) < maxCoverageScenarios {
+	if len(result.Missing) < maxReviewObservations {
 		result.Missing = append(result.Missing, value)
 	}
 }
@@ -578,7 +397,6 @@ func loadReviewLimits(root string) (ReviewLimits, error) {
 		MaxFilesPerSlice:      canonicalReviewLimit(review.MaxFilesPerSlice),
 		MaxChurnLinesPerSlice: canonicalReviewLimit(review.MaxChurnLinesPerSlice),
 		MaxConcurrentSlices:   canonicalReviewLimit(review.MaxConcurrentSlices),
-		MinEvidenceItems:      canonicalReviewLimit(review.MinEvidenceItems),
 	}, nil
 }
 
@@ -590,40 +408,11 @@ func canonicalReviewLimit(value int) ReviewLimit {
 }
 
 func appendReviewViolation(result *ReviewResult, violation ReviewViolation) {
-	if len(result.Violations) >= maxCoverageScenarios {
+	if len(result.Violations) >= maxReviewObservations {
 		result.Truncated = true
 		return
 	}
 	result.Violations = append(result.Violations, violation)
-}
-
-func workflowReachableNodes(graph domain.Graph) map[string]bool {
-	reverse := map[string][]string{}
-	reachable := map[string]bool{}
-	queue := []string{}
-	for _, node := range graph.Nodes {
-		if node.Type == "workflow_task" || node.Type == "workflow_scenario" {
-			reachable[node.ID] = true
-			queue = append(queue, node.ID)
-		}
-	}
-	for _, edge := range graph.Edges {
-		if traceForwardRelation(edge.Type) {
-			reverse[edge.To] = append(reverse[edge.To], edge.From)
-		}
-	}
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-		for _, previous := range reverse[current] {
-			if reachable[previous] {
-				continue
-			}
-			reachable[previous] = true
-			queue = append(queue, previous)
-		}
-	}
-	return reachable
 }
 
 // loadFreshGraph loads one immutable graph snapshot and then validates its
@@ -637,26 +426,10 @@ func (s Service) loadFreshGraph(root string) (domain.Graph, string) {
 		return domain.Graph{}, "not_available"
 	}
 	currentHash, err := s.currentSourcesHash(root, cfg)
-	if err != nil || currentHash != graph.Manifest.SourcesHash || graph.Manifest.ExtractorVersion != extractors.Version || !ledgerProjectionMatches(graph, adapters.LoadWorkflowProjection(root)) {
+	if err != nil || currentHash != graph.Manifest.SourcesHash || graph.Manifest.ExtractorVersion != extractors.Version || !ledgerProjectionMatches(graph, adapters.LoadRunProjection(root)) {
 		return domain.Graph{}, "stale"
 	}
 	return graph, "ready"
-}
-
-func traceForwardRelation(relation string) bool {
-	switch relation {
-	case "defines", "implements", "verifies", "depends_on", "caused_by", "reviewed_by", "supersedes":
-		return true
-	default:
-		return false
-	}
-}
-
-func traceGapReason(node string) string {
-	if strings.HasPrefix(node, "file:") {
-		return "untraced_file"
-	}
-	return "untraced_node"
 }
 
 func (s Service) Query(root, term string) (QueryResult, error) {
@@ -776,9 +549,9 @@ func (s Service) buildGraph(root string) (domain.Graph, []string, buildMeta, pro
 		combined.Edges = append(combined.Edges, res.Edges...)
 		combined.Diagnostics = append(combined.Diagnostics, res.Diagnostics...)
 	}
-	resolved := extractors.ResolveWorkflowReferences(combined)
-	ledgerProjection := adapters.LoadWorkflowProjection(root)
-	resolved = projectWorkflowLedger(resolved, ledgerProjection)
+	resolved := combined
+	ledgerProjection := adapters.LoadRunProjection(root)
+	resolved = projectRunLedger(resolved, ledgerProjection)
 	diagnostics := limitGraphDiagnostics(resolved.Diagnostics)
 	nodes, edges := resolved.Nodes, resolved.Edges
 	sort.Slice(sources, func(i, j int) bool { return sources[i].Path < sources[j].Path })
@@ -794,7 +567,7 @@ func (s Service) buildGraph(root string) (domain.Graph, []string, buildMeta, pro
 	return graph, errs, meta, cfg, nil
 }
 
-func projectWorkflowLedger(result domain.ExtractResult, projection adapters.WorkflowProjection) domain.ExtractResult {
+func projectRunLedger(result domain.ExtractResult, projection adapters.RunProjection) domain.ExtractResult {
 	if projection.Availability == "unavailable" {
 		return result
 	}
@@ -810,25 +583,25 @@ func projectWorkflowLedger(result domain.ExtractResult, projection adapters.Work
 	for _, event := range projection.Events {
 		runID := "run:" + event.RunID
 		eventID := "event:" + event.EventID
-		nodes[runID] = domain.Node{ID: runID, Type: "workflow_run", Label: event.RunID, Reason: "validated Run Ledger metadata"}
-		nodes[eventID] = domain.Node{ID: eventID, Type: workflowEventNodeType(event.EventName), Label: event.EventName, Reason: "validated Run Ledger event metadata"}
+		nodes[runID] = domain.Node{ID: runID, Type: "run", Label: event.RunID, Reason: "validated Run Ledger metadata"}
+		nodes[eventID] = domain.Node{ID: eventID, Type: runEventNodeType(event.EventName), Label: event.EventName, Reason: "validated Run Ledger event metadata"}
 		addEdge(domain.Edge{From: eventID, Type: "belongs_to", To: runID, Reason: "Run Ledger run_id"})
 		if event.ParentRunID != "" {
 			parentID := "run:" + event.ParentRunID
-			nodes[parentID] = domain.Node{ID: parentID, Type: "workflow_run", Label: event.ParentRunID, Reason: "validated Run Ledger parent metadata"}
+			nodes[parentID] = domain.Node{ID: parentID, Type: "run", Label: event.ParentRunID, Reason: "validated Run Ledger parent metadata"}
 			addEdge(domain.Edge{From: runID, Type: "caused_by", To: parentID, Reason: "Run Ledger parent_run_id"})
 		}
 		if event.CausedByEventID != "" {
 			causeID := "event:" + event.CausedByEventID
 			if _, ok := nodes[causeID]; !ok {
-				nodes[causeID] = domain.Node{ID: causeID, Type: "workflow_event", Label: event.CausedByEventID, Reason: "validated Run Ledger causal reference"}
+				nodes[causeID] = domain.Node{ID: causeID, Type: "run_event", Label: event.CausedByEventID, Reason: "validated Run Ledger causal reference"}
 			}
 			addEdge(domain.Edge{From: eventID, Type: "caused_by", To: causeID, Reason: "Run Ledger caused_by_event_id"})
 		}
 		taskID := ""
 		if event.TaskRef != "" {
 			taskID = "task-ref:" + event.TaskRef
-			nodes[taskID] = domain.Node{ID: taskID, Type: "workflow_task", Label: event.TaskRef, Reason: "validated Run Ledger task_ref"}
+			nodes[taskID] = domain.Node{ID: taskID, Type: "work_item", Label: event.TaskRef, Reason: "validated Run Ledger task_ref"}
 			addEdge(domain.Edge{From: runID, Type: "verifies", To: taskID, Reason: "Run Ledger task_ref"})
 		}
 		for index, evidence := range event.Evidence {
@@ -837,7 +610,7 @@ func projectWorkflowLedger(result domain.ExtractResult, projection adapters.Work
 				identity = fmt.Sprintf("%s:%s:%s:%d", event.EventID, evidence.Category, evidence.Result, index)
 			}
 			evidenceID := "evidence:" + identity
-			nodes[evidenceID] = domain.Node{ID: evidenceID, Type: "workflow_evidence", Label: evidence.Category + ":" + evidence.Result, Reason: "validated Run Ledger evidence_ref"}
+			nodes[evidenceID] = domain.Node{ID: evidenceID, Type: "run_evidence", Label: evidence.Category + ":" + evidence.Result, Reason: "validated Run Ledger evidence_ref"}
 			addEdge(domain.Edge{From: runID, Type: "produced", To: evidenceID, Reason: "Run Ledger evidence_ref"})
 			if taskID != "" {
 				addEdge(domain.Edge{From: evidenceID, Type: "verifies", To: taskID, Reason: "Run Ledger evidence_ref and task_ref"})
@@ -848,20 +621,20 @@ func projectWorkflowLedger(result domain.ExtractResult, projection adapters.Work
 	return result
 }
 
-func workflowEventNodeType(eventName string) string {
+func runEventNodeType(eventName string) string {
 	switch eventName {
 	case "review.started", "review.completed":
-		return "workflow_review"
+		return "run_review"
 	case "review.rework":
-		return "workflow_rework"
+		return "run_rework"
 	case "defect.reopened":
-		return "workflow_failure"
+		return "run_failure"
 	default:
-		return "workflow_event"
+		return "run_event"
 	}
 }
 
-func ledgerProjectionMatches(graph domain.Graph, projection adapters.WorkflowProjection) bool {
+func ledgerProjectionMatches(graph domain.Graph, projection adapters.RunProjection) bool {
 	if graph.Manifest.Options == nil {
 		return false
 	}

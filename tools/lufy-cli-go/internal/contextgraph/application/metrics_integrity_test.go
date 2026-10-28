@@ -44,7 +44,7 @@ func TestMetricsIntegrityMissingObservationTimestampRetainsCountsAndDegrades(t *
 		t.Run(eventName, func(t *testing.T) {
 			// El store normaliza timestamps vacíos. La proyección legacy permite
 			// verificar el read-side sin adulterar eventos persistidos ni defaults.
-			projection := adapters.WorkflowProjection{Availability: "available", Events: []adapters.WorkflowLedgerEvent{
+			projection := adapters.RunProjection{Availability: "available", Events: []adapters.RunLedgerEvent{
 				{RunID: "run-metrics", EventName: "review.started", OccurredAt: time.Unix(10, 0).UTC()},
 				{RunID: "run-metrics", EventName: "review.completed", OccurredAt: time.Unix(30, 0).UTC()},
 				{RunID: "run-metrics", EventName: eventName},

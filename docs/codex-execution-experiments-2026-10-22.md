@@ -1,3 +1,5 @@
+> Informe histórico del modelo anterior. Sus resultados se conservan; sus comandos y roles no describen la rama inline actual. Ver [estado vigente](status.md).
+
 # Experimentos de ejecución de Lufy en Codex — 2026-10-22
 
 ## Decisión

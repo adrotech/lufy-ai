@@ -18,7 +18,7 @@ func TestBuildPrefersProjectSkillAndPreservesExactEvidence(t *testing.T) {
 	projectPath := writeSkill(t, projectRoot, "reviewer", "reviewer", "project\nmultiline description")
 	writeSkill(t, globalRoot, "delivery", "delivery", "deliver safely")
 
-	index, err := Build(domain.ToolInitialDefault, []ports.SkillRoot{{Path: globalRoot, Scope: "global"}, {Path: projectRoot, Scope: "project"}})
+	index, err := Build(domain.ToolCodex, []ports.SkillRoot{{Path: globalRoot, Scope: "global"}, {Path: projectRoot, Scope: "project"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestBuildUsesAdapterPriorityWithinProjectScope(t *testing.T) {
 	compatibleRoot := filepath.Join(target, ".agents", "skills")
 	nativePath := writeSkill(t, nativeRoot, "reviewer", "reviewer", "native")
 	compatiblePath := writeSkill(t, compatibleRoot, "reviewer", "reviewer", "compatible")
-	index, err := Build(domain.ToolInitialDefault, []ports.SkillRoot{
+	index, err := Build(domain.ToolCodex, []ports.SkillRoot{
 		{Path: compatibleRoot, Scope: "project", Priority: 10},
 		{Path: nativeRoot, Scope: "project", Priority: 0},
 	})
@@ -97,7 +97,7 @@ func TestBuildSkipsSymlinkedSkills(t *testing.T) {
 	if err := os.Symlink(external, filepath.Join(root, "linked")); err != nil {
 		t.Skipf("symlinks unavailable: %v", err)
 	}
-	index, err := Build(domain.ToolInitialDefault, []ports.SkillRoot{{Path: root, Scope: "project"}})
+	index, err := Build(domain.ToolCodex, []ports.SkillRoot{{Path: root, Scope: "project"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestBuildWarnsAndSkipsInvalidMetadata(t *testing.T) {
 	if err := os.WriteFile(path, []byte("# missing frontmatter\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	index, err := Build(domain.ToolInitialDefault, []ports.SkillRoot{{Path: root, Scope: "project"}})
+	index, err := Build(domain.ToolCodex, []ports.SkillRoot{{Path: root, Scope: "project"}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
@@ -28,147 +29,62 @@ func TestRunInstallDryRun(t *testing.T) {
 	}
 }
 
-func TestRunMigrateLayoutDryRunDoesNotWrite(t *testing.T) {
+func TestRemovedLayoutMigrationDoesNotWrite(t *testing.T) {
+	target := t.TempDir()
+	old := filepath.Join(target, ".lufy-ai", "install-state.json")
+	writeCLITestFile(t, old, "{}\n")
+	var out, errOut bytes.Buffer
+	if code := Run([]string{"migrate-layout", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitUsageErr {
+		t.Fatalf("comando retirado aceptado: %d", code)
+	}
+	if got, err := os.ReadFile(old); err != nil || string(got) != "{}\n" {
+		t.Fatal("comando retirado modificó datos")
+	}
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatal("comando retirado creó estado")
+	}
+}
+
+func TestRunInstallRejectsLegacyLayoutWithoutWriting(t *testing.T) {
+	for _, flag := range []string{"--dry-run", "--yes"} {
+		target := t.TempDir()
+		old := filepath.Join(target, ".lufy", "project.yaml")
+		body := "schema_version: 1\n"
+		writeCLITestFile(t, old, body)
+		var out, errOut bytes.Buffer
+		code := Run([]string{"install", "--target", target, flag}, Dependencies{Stdout: &out, Stderr: &errOut})
+		if code != ExitRuntimeErr || !strings.Contains(errOut.String(), "ruta retirada") {
+			t.Fatalf("legacy accepted: %d %s", code, errOut.String())
+		}
+		b, err := os.ReadFile(old)
+		if err != nil || string(b) != body {
+			t.Fatal("legacy mutated")
+		}
+		if _, err := os.Stat(projectconfig.Path(target)); !os.IsNotExist(err) {
+			t.Fatal("canonical config created")
+		}
+	}
+}
+
+func TestCurrentPathsRejectRetiredStateWithoutWrites(t *testing.T) {
 	target := t.TempDir()
 	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
-
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"migrate-layout", "--target", target, "--dry-run"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("migrate-layout dry-run expected ExitOK, got %d stderr=%s", code, errOut.String())
+	if err := ensureCurrentInstallationPaths(target); err == nil || !strings.Contains(err.Error(), "ruta retirada") {
+		t.Fatalf("estado retirado aceptado: %v", err)
 	}
-	if !bytes.Contains(out.Bytes(), []byte("[dry-run]")) {
-		t.Fatalf("expected dry-run plan, got %s", out.String())
-	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(err) {
-		t.Fatalf("dry-run wrote install-state: %v", err)
+	if _, err := os.Stat(state.Path(target)); !os.IsNotExist(err) {
+		t.Fatal("preflight escribió estado")
 	}
 }
 
-func TestRunMigrateLayoutRequiresYesForMutations(t *testing.T) {
+func TestCurrentPathsAllowHistoricalDocumentsWithoutWrites(t *testing.T) {
 	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
-
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"migrate-layout", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitRuntimeErr {
-		t.Fatalf("migrate-layout without --yes expected ExitRuntimeErr, got %d stdout=%s stderr=%s", code, out.String(), errOut.String())
-	}
-	if !bytes.Contains(errOut.Bytes(), []byte("requiere --yes")) {
-		t.Fatalf("expected --yes error, got %s", errOut.String())
-	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(err) {
-		t.Fatalf("run without --yes wrote install-state: %v", err)
-	}
-}
-
-func TestRunMigrateLayoutJSONAppliesWithoutHumanLogs(t *testing.T) {
-	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
-
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"migrate-layout", "--target", target, "--yes", "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("migrate-layout json expected ExitOK, got %d stderr=%s", code, errOut.String())
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
-		t.Fatalf("invalid json output %q: %v", out.String(), err)
-	}
-	if decoded["applied"] != true {
-		t.Fatalf("expected applied=true, got %#v", decoded)
-	}
-	if bytes.Contains(out.Bytes(), []byte("[migrate-layout]")) {
-		t.Fatalf("json output contains human log: %s", out.String())
-	}
-}
-
-func TestRunInstallDryRunShowsLayoutMigrationWithoutWriting(t *testing.T) {
-	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy", "project.yaml"), "schema_version: 1\n")
-
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"install", "--target", target, "--dry-run"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("install dry-run expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
-	}
-	if !bytes.Contains(out.Bytes(), []byte("[layout-migrate-copy] .lufy/project.yaml -> .lufy/config/project.yaml")) {
-		t.Fatalf("expected layout migration plan, got %s", out.String())
-	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "config", "project.yaml")); !os.IsNotExist(err) {
-		t.Fatalf("install dry-run wrote project config: %v", err)
-	}
-}
-
-func TestEnsureLayoutForMutationBlocksLegacyWithoutAllowApply(t *testing.T) {
-	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{}\n")
-
-	var out bytes.Buffer
-	err := ensureLayoutForMutation(target, false, false, &out)
-	if err == nil || !bytes.Contains([]byte(err.Error()), []byte("--yes")) {
-		t.Fatalf("expected --yes layout error, got %v", err)
-	}
-	if _, statErr := os.Stat(filepath.Join(target, ".lufy", "managed-state", "install-state.json")); !os.IsNotExist(statErr) {
-		t.Fatalf("preflight wrote canonical state: %v", statErr)
-	}
-}
-
-func TestEnsureLayoutForMutationWithoutAllowApplyIgnoresReadmeOnlyPlan(t *testing.T) {
-	target := t.TempDir()
-
-	var out bytes.Buffer
-	if err := ensureLayoutForMutation(target, false, false, &out); err != nil {
+	writeCLITestFile(t, filepath.Join(target, ".lufy", "sdd", "README.md"), "historia\n")
+	if err := ensureCurrentInstallationPaths(target); err != nil {
 		t.Fatal(err)
 	}
-	if _, statErr := os.Stat(filepath.Join(target, ".lufy", "README.md")); !os.IsNotExist(statErr) {
-		t.Fatalf("preflight wrote README without confirmation: %v", statErr)
-	}
-}
-
-func TestEnsureLayoutForMutationDryRunReportsConflicts(t *testing.T) {
-	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy", "managed-state", "install-state.json"), "{\"new\":true}\n")
-	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{\"legacy\":true}\n")
-
-	var out bytes.Buffer
-	if err := ensureLayoutForMutation(target, true, false, &out); err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Contains(out.Bytes(), []byte("[layout-conflict]")) {
-		t.Fatalf("expected layout conflict output, got %s", out.String())
-	}
-}
-
-func TestReportLegacyLayoutForReadOnly(t *testing.T) {
-	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".lufy", "managed-state", "install-state.json"), "{\"new\":true}\n")
-	writeCLITestFile(t, filepath.Join(target, ".lufy-ai", "install-state.json"), "{\"legacy\":true}\n")
-	writeCLITestFile(t, filepath.Join(target, ".lufy", "project.yaml"), "schema_version: 1\n")
-
-	var out bytes.Buffer
-	if err := reportLegacyLayoutForReadOnly(target, &out); err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Contains(out.Bytes(), []byte("legacy layout detectado: .lufy/project.yaml, .lufy-ai/install-state.json")) {
-		t.Fatalf("expected legacy list, got %s", out.String())
-	}
-	if !bytes.Contains(out.Bytes(), []byte("legacy layout conflictivo")) {
-		t.Fatalf("expected conflict warning, got %s", out.String())
-	}
-}
-
-func TestReportLegacyLayoutForReadOnlyNoopWhenClean(t *testing.T) {
-	var out bytes.Buffer
-	if err := reportLegacyLayoutForReadOnly(t.TempDir(), &out); err != nil {
-		t.Fatal(err)
-	}
-	if out.Len() != 0 {
-		t.Fatalf("expected no output, got %s", out.String())
+	if _, err := os.Stat(projectconfig.Path(target)); !os.IsNotExist(err) {
+		t.Fatal("preflight escribió configuración")
 	}
 }
 
@@ -206,8 +122,6 @@ func TestRunUnknownCommand(t *testing.T) {
 func TestRunHelpBranches(t *testing.T) {
 	tests := [][]string{
 		{"help"},
-		{"opsx", "--help"},
-		{"opsx", "render", "--help"},
 		{"pr", "--help"},
 		{"pr", "guard", "--help"},
 		{"memory", "--help"},
@@ -218,7 +132,6 @@ func TestRunHelpBranches(t *testing.T) {
 		{"memory", "index", "--help"},
 		{"init", "--help"},
 		{"scan", "--help"},
-		{"migrate-layout", "--help"},
 		{"merge", "--help"},
 		{"pin", "--help"},
 		{"unpin", "--help"},
@@ -515,26 +428,20 @@ func TestRunInstallUnknownFlag(t *testing.T) {
 
 func TestRunInstallPersistsHarnessSelection(t *testing.T) {
 	target := t.TempDir()
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-
-	code := Run([]string{"install", "--target", target, "--yes", "--tool", "opencode", "--methodology-tier", "T3:openspec/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	var out, errOut bytes.Buffer
+	if code := Run([]string{"install", "--target", target, "--yes", "--delegation", "off"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("install: %d %s", code, errOut.String())
 	}
 	st, err := state.Load(target)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st == nil {
-		t.Fatal("expected install state")
+	cfg, err := projectconfig.Load(projectconfig.Path(target))
+	if err != nil {
+		t.Fatal(err)
 	}
-	if st.Tool != domain.ToolInitialDefault {
-		t.Fatalf("tool = %s", st.Tool)
-	}
-	got := st.MethodologyByTier[domain.TierT3]
-	if got.ID != domain.MethodologySpecWorkflow || got.Mode != domain.MethodologyModeFull || !got.Required {
-		t.Fatalf("T3 methodology = %#v", got)
+	if st.Execution.Delegation != domain.DelegationOff || cfg.Execution != st.Execution {
+		t.Fatalf("execution not persisted: %#v %#v", st, cfg)
 	}
 }
 
@@ -545,9 +452,6 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 
 	code := Run([]string{
 		"install", "--target", target, "--yes", "--tool", "codex",
-		"--methodology-tier", "T1:lufy-sdd/full",
-		"--methodology-tier", "T2:lufy-sdd/lite",
-		"--methodology-tier", "T3:none",
 	}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
@@ -566,16 +470,16 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.MethodologyByTier, st.MethodologyByTier) {
+	if cfg.Tool != st.Tool || !reflect.DeepEqual(cfg.Execution, st.Execution) {
 		t.Fatalf("project config and install state diverged: config=%#v state=%#v", cfg, st)
 	}
-	if got := cfg.MethodologyByTier[domain.TierT1]; got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeFull {
-		t.Fatalf("T1 methodology = %#v", got)
+	if cfg.Execution.Mode != domain.ExecutionInline {
+		t.Fatalf("execution: %#v", cfg.Execution)
 	}
 	for _, path := range []string{
-		filepath.Join(target, ".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(target, ".agents", "skills", "lufy-mem-search", "SKILL.md"),
 		filepath.Join(target, ".codex", "config.toml"),
-		filepath.Join(target, ".codex", "agents", "implementer.toml"),
+		filepath.Join(target, ".lufy", "contracts", "work.md"),
 		filepath.Join(target, ".codex", "hooks.json"),
 		filepath.Join(target, ".codex", "rules", "lufy.rules"),
 	} {
@@ -613,41 +517,16 @@ func TestRunInstallPersistsCodexSelection(t *testing.T) {
 	}
 }
 
-func TestRunInstallPersistsLufySDDSelection(t *testing.T) {
+func TestRunInstallRejectsRetiredMethodologyFlagWithoutWrites(t *testing.T) {
 	target := t.TempDir()
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-
-	code := Run([]string{
-		"install",
-		"--target", target,
-		"--yes",
-		"--methodology-tier", "T1:lufy-sdd/full",
-		"--methodology-tier", "T2:lufy-sdd/lite",
-		"--methodology-tier", "T3:none",
-	}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("install expected ExitOK, got %d stderr=%s stdout=%s", code, errOut.String(), out.String())
+	var out, errOut bytes.Buffer
+	code := Run([]string{"install", "--target", target, "--yes", "--methodology-tier", "T1:lufy-sdd/full"}, Dependencies{Stdout: &out, Stderr: &errOut})
+	if code != ExitUsageErr {
+		t.Fatalf("retired flag: %d %s", code, errOut.String())
 	}
-	st, err := state.Load(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if st == nil {
-		t.Fatal("expected install state")
-	}
-	got := st.MethodologyByTier[domain.TierT2]
-	if got.ID != domain.MethodologyLufyWorkflow || got.Mode != domain.MethodologyModeLite || !got.Required {
-		t.Fatalf("T2 methodology = %#v", got)
-	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd", "changes", ".gitkeep")); err != nil {
-		t.Fatalf("expected lufy-sdd changes asset: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd", "specs", ".gitkeep")); err != nil {
-		t.Fatalf("expected lufy-sdd specs asset for full mode: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, "openspec", "config.yaml")); !os.IsNotExist(err) {
-		t.Fatalf("openspec config should not be installed when no tier selects openspec, err=%v", err)
+	entries, err := os.ReadDir(target)
+	if err != nil || len(entries) != 0 {
+		t.Fatal("invalid request wrote target")
 	}
 }
 
@@ -662,8 +541,8 @@ func TestRunInstallWithCodexHarness(t *testing.T) {
 	}
 	for _, rel := range []string{
 		filepath.Join(".codex", "lufy-agent-mapping.md"),
-		filepath.Join(".codex", "agents", "implementer.toml"),
-		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"),
+		filepath.Join(".lufy", "contracts", "work.md"),
+		filepath.Join(".agents", "skills", "lufy-mem-search", "SKILL.md"),
 	} {
 		if _, err := os.Stat(filepath.Join(target, rel)); err != nil {
 			t.Fatalf("codex install missing %s: %v", rel, err)
@@ -706,7 +585,7 @@ func TestRunInstallHelpIncludesHarnessFlags(t *testing.T) {
 	if code != ExitOK {
 		t.Fatalf("install --help expected ExitOK, got %d", code)
 	}
-	for _, want := range []string{"--tool codex|opencode", "--methodology-tier T3:none"} {
+	for _, want := range []string{"--tool codex", "--delegation auto|on_request|off"} {
 		if !bytes.Contains(errOut.Bytes(), []byte(want)) {
 			t.Fatalf("install help missing %q: %s", want, errOut.String())
 		}
@@ -1127,7 +1006,7 @@ func TestRunStatusJSON(t *testing.T) {
 
 func TestRunConflictsPlanJSON(t *testing.T) {
 	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".opencode", "agents", "orchestrator.md"), "local agent\n")
+	writeCLITestFile(t, filepath.Join(target, ".codex", "config.toml"), "local agent\n")
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	code := Run([]string{"conflicts", "plan", "--target", target, "--json"}, Dependencies{Stdout: &out, Stderr: &errOut})
@@ -1146,7 +1025,7 @@ func TestRunConflictsPlanJSON(t *testing.T) {
 
 func TestRunConflictsPlanHuman(t *testing.T) {
 	target := t.TempDir()
-	writeCLITestFile(t, filepath.Join(target, ".opencode", "package.json"), `{"local":true}`)
+	writeCLITestFile(t, filepath.Join(target, "lufy-ia.harness.md"), `{"local":true}`)
 	var out bytes.Buffer
 	var errOut bytes.Buffer
 	code := Run([]string{"conflicts", "plan", "--target", target}, Dependencies{Stdout: &out, Stderr: &errOut})
@@ -1266,11 +1145,12 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 		t.Fatal(err)
 	}
 	manifest, err := json.Marshal(struct {
-		SchemaVersion int      `json:"schemaVersion"`
-		ToolVersion   string   `json:"toolVersion"`
-		TargetRoot    string   `json:"targetRoot"`
-		Files         []string `json:"files"`
-	}{SchemaVersion: 1, ToolVersion: "dev", TargetRoot: target, Files: []string{}})
+		RuntimeStateSchema int      `json:"runtimeStateSchema"`
+		SchemaVersion      int      `json:"schemaVersion"`
+		ToolVersion        string   `json:"toolVersion"`
+		TargetRoot         string   `json:"targetRoot"`
+		Files              []string `json:"files"`
+	}{SchemaVersion: 2, RuntimeStateSchema: 4, ToolVersion: "dev", TargetRoot: target, Files: []string{}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1282,76 +1162,6 @@ func TestRunRestoreDryRunParsesRequiredBackup(t *testing.T) {
 	code := Run([]string{"restore", "--target", target, "--backup", backupDir, "--dry-run", "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
 	if code != ExitOK {
 		t.Fatalf("restore dry-run expected ExitOK, got %d stderr=%s", code, errOut.String())
-	}
-}
-
-func TestRunOpsxRenderGeneratesHTML(t *testing.T) {
-	target := t.TempDir()
-	changeDir := filepath.Join(target, "openspec", "changes", "render-demo")
-	writeCLITestFile(t, filepath.Join(changeDir, "proposal.md"), "# Proposal")
-	writeCLITestFile(t, filepath.Join(changeDir, "design.md"), "# Design")
-	writeCLITestFile(t, filepath.Join(changeDir, "tasks.md"), "# Tasks")
-	writeCLITestFile(t, filepath.Join(changeDir, "specs", "demo", "spec.md"), "## ADDED Requirements\n\n### Requirement: Demo\n\n#### Scenario: View\nWHEN opened\nTHEN visible")
-
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"opsx", "render", "--target", target, "--change", "render-demo"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("opsx render expected ExitOK, got %d stderr=%s", code, errOut.String())
-	}
-	if !bytes.Contains(out.Bytes(), []byte("HTML OpenSpec generado")) {
-		t.Fatalf("unexpected stdout: %s", out.String())
-	}
-	if !bytes.Contains(out.Bytes(), []byte("file://")) || !bytes.Contains(out.Bytes(), []byte("Abrir: open")) {
-		t.Fatalf("stdout missing clickable link/open fallback: %s", out.String())
-	}
-	body := readCLITestFile(t, filepath.Join(changeDir, "change-overview.html"))
-	for _, want := range [][]byte{[]byte("Proposal"), []byte("Design"), []byte("Tasks"), []byte(`class="tabs"`)} {
-		if !bytes.Contains(body, want) {
-			t.Fatalf("generated html missing %q", want)
-		}
-	}
-	for _, unwanted := range [][]byte{[]byte("Plan"), []byte("plan.md"), []byte("Notion dark"), []byte("Offline HTML"), []byte("Artifacts disponibles:"), []byte("Sin recursos remotos")} {
-		if bytes.Contains(body, unwanted) {
-			t.Fatalf("generated html should not include %q", unwanted)
-		}
-	}
-	if bytes.Contains(body, []byte("specs/demo/spec.md")) {
-		t.Fatalf("generated html should not include nested spec artifact")
-	}
-}
-
-func TestRunOpsxRenderRejectsPositionalArgs(t *testing.T) {
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"opsx", "render", "extra"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitUsageErr {
-		t.Fatalf("opsx render positional expected ExitUsageErr, got %d", code)
-	}
-	if !bytes.Contains(errOut.Bytes(), []byte("opsx render no acepta argumentos posicionales")) {
-		t.Fatalf("unexpected stderr: %s", errOut.String())
-	}
-}
-
-func TestRunOpsxHelpAndUnknownSubcommand(t *testing.T) {
-	var out bytes.Buffer
-	var errOut bytes.Buffer
-	code := Run([]string{"opsx", "--help"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitOK {
-		t.Fatalf("opsx help expected ExitOK, got %d", code)
-	}
-	if !bytes.Contains(out.Bytes(), []byte("render")) {
-		t.Fatalf("opsx help missing render: %s", out.String())
-	}
-
-	out.Reset()
-	errOut.Reset()
-	code = Run([]string{"opsx", "unknown"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitUsageErr {
-		t.Fatalf("unknown opsx expected ExitUsageErr, got %d", code)
-	}
-	if !bytes.Contains(errOut.Bytes(), []byte("Subcomando opsx desconocido")) {
-		t.Fatalf("unexpected stderr: %s", errOut.String())
 	}
 }
 
@@ -1390,4 +1200,74 @@ func stateMustLoadForCLITest(t *testing.T, target string) *state.InstallState {
 		t.Fatal("missing install-state")
 	}
 	return st
+}
+
+func TestInstallRejectsOldAndMixedModelsWithoutMutatingTarget(t *testing.T) {
+	cases := []struct{ path, body string }{
+		{projectconfig.ProjectConfigPath, "schema_version: 1\ntool: codex\n"},
+		{projectconfig.ProjectConfigPath, "schema_version: 2\ntool: codex\nmethodology_by_tier: null\n"},
+		{projectconfig.ProjectConfigPath, "schema_version: 2\nexecution: {mode: inline, delegation: always}\n"},
+		{".lufy/managed-state/install-state.json", `{"schemaVersion":2,"tool":"codex"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.body, func(t *testing.T) {
+			target := t.TempDir()
+			writeCLITestFile(t, filepath.Join(target, tc.path), tc.body)
+			snapshot := func() map[string]string {
+				result := map[string]string{}
+				err := filepath.Walk(target, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					rel, err := filepath.Rel(target, path)
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						result[rel] = "directory"
+						return nil
+					}
+					body, err := os.ReadFile(path)
+					result[rel] = string(body)
+					return err
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				return result
+			}
+			before := snapshot()
+			var out, errOut bytes.Buffer
+			code := Run([]string{"install", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut})
+			if code != ExitRuntimeErr {
+				t.Fatalf("old model accepted: %d %s", code, errOut.String())
+			}
+			if after := snapshot(); !reflect.DeepEqual(before, after) {
+				t.Fatalf("rejected install mutated target: before=%v after=%v", before, after)
+			}
+		})
+	}
+}
+
+func TestSyncIgnoresHistoricalSddSource(t *testing.T) {
+	target := t.TempDir()
+	var out, errOut bytes.Buffer
+	if code := Run([]string{"install", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("install: %d %s", code, errOut.String())
+	}
+	source := filepath.Join(target, ".lufy", "sdd", "actions", "source.md")
+	body := "# Fuente histórica del producto\n"
+	writeCLITestFile(t, source, body)
+	out.Reset()
+	errOut.Reset()
+	if code := Run([]string{"sync", "--target", target, "--yes"}, Dependencies{Stdout: &out, Stderr: &errOut}); code != ExitOK {
+		t.Fatalf("sync rechazó fuente histórica: %d %s", code, errOut.String())
+	}
+	got, err := os.ReadFile(source)
+	if err != nil || string(got) != body {
+		t.Fatal("sync alteró la fuente histórica")
+	}
+	if _, err := os.Stat(filepath.Join(target, ".lufy", "workflows", "sdd")); !os.IsNotExist(err) {
+		t.Fatalf("sync creó metodología retirada: %v", err)
+	}
 }

@@ -41,14 +41,8 @@ type SkillRootProvider interface {
 }
 
 type HarnessModel struct {
-	Tool              domain.ToolID
-	MethodologyByTier domain.MethodologyByTier
-	Roles             []domain.RoleID
-}
-
-type WorkflowModel struct {
-	Tier      domain.Tier
-	Selection domain.MethodologySelection
+	Tool      domain.ToolID
+	Execution domain.ExecutionConfig
 }
 
 type ToolAdapter interface {
@@ -57,11 +51,4 @@ type ToolAdapter interface {
 	Detect(context.Context, Env) DetectionResult
 	RenderSurface(HarnessModel) ([]AssetSpec, error)
 	Verify(Target) ([]Check, error)
-}
-
-type MethodologyAdapter interface {
-	ID() domain.MethodologyID
-	SupportedModes() []domain.MethodologyMode
-	RenderWorkflow(WorkflowModel) ([]AssetSpec, error)
-	VerifyWorkflow(Target, domain.Tier) ([]Check, error)
 }

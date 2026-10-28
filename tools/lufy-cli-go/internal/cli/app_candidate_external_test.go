@@ -48,7 +48,7 @@ func candidateCLIFixture(t *testing.T) (string, string, string) {
 	}
 	root := t.TempDir()
 	candidateCLIGit(t, root, "init", "--initial-branch=fixture", "--object-format=sha1")
-	for _, name := range []string{"delivery.md", "result-contract.md"} {
+	for _, name := range []string{"delivery.md", "work.md", "evidence.md"} {
 		candidateCLIWrite(t, filepath.Join(root, ".lufy/contracts", name), []byte("Política sintética.\n"))
 	}
 	candidateCLIWrite(t, filepath.Join(root, "product.txt"), []byte("baseline\n"))
@@ -58,10 +58,7 @@ func candidateCLIFixture(t *testing.T) (string, string, string) {
 	candidateCLIWrite(t, filepath.Join(root, "product.txt"), []byte("candidate\n"))
 	candidateCLIGit(t, root, "add", "product.txt")
 	candidateCLIGit(t, root, "-c", "core.hooksPath="+os.DevNull, "commit", "-m", "candidate")
-	body, err := os.ReadFile(filepath.Join("..", "resultcontract", "testdata", "valid-minimal.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	body := []byte(`{"checks":[{"name":"regresión CLI","result":"passed","evidence":"go test; exit 0"}]}`)
 	evidence := filepath.Join(t.TempDir(), "evidence.json")
 	candidateCLIWrite(t, evidence, body)
 	return root, base, evidence
@@ -85,7 +82,7 @@ func candidateFileSHA(t *testing.T, path string) [32]byte {
 func TestCandidateCLICaptureVerifyJSONAndRejectStaleCommitWithoutRewritingEvidence(t *testing.T) {
 	root, base, evidence := candidateCLIFixture(t)
 	evidenceSHA := candidateFileSHA(t, evidence)
-	code, stdout, stderr := candidateCLIInvoke("candidate", "capture", "--target", root, "--base", base, "--evidence", evidence, "--role", "reviewer", "--json")
+	code, stdout, stderr := candidateCLIInvoke("candidate", "capture", "--target", root, "--base", base, "--evidence", evidence, "--json")
 	if code != cli.ExitOK || !json.Valid([]byte(stdout)) {
 		t.Fatalf("capture failed: %d %s", code, stderr)
 	}
@@ -93,7 +90,7 @@ func TestCandidateCLICaptureVerifyJSONAndRejectStaleCommitWithoutRewritingEviden
 	if err := json.Unmarshal([]byte(stdout), &binding); err != nil {
 		t.Fatal(err)
 	}
-	if binding["schema_version"] != "candidate-evidence/v1" {
+	if binding["schema_version"] != "candidate-evidence/v2" {
 		t.Fatal("capture schema missing")
 	}
 	if strings.Contains(stdout, root) || strings.Contains(stdout, evidence) {
@@ -102,7 +99,7 @@ func TestCandidateCLICaptureVerifyJSONAndRejectStaleCommitWithoutRewritingEviden
 	path := filepath.Join(t.TempDir(), "binding.json")
 	candidateCLIWrite(t, path, []byte(stdout))
 	bindingSHA := candidateFileSHA(t, path)
-	verify := []string{"candidate", "verify", "--target", root, "--base", base, "--evidence", evidence, "--role", "reviewer", "--binding", path, "--json"}
+	verify := []string{"candidate", "verify", "--target", root, "--base", base, "--evidence", evidence, "--binding", path, "--json"}
 	code, stdout, stderr = candidateCLIInvoke(verify...)
 	if code != cli.ExitOK {
 		t.Fatalf("current binding rejected: %d %s", code, stderr)
@@ -128,14 +125,14 @@ func TestCandidateCLIRejectsUnknownRoleAndMalformedEvidenceWithoutLeakingBody(t 
 	root, base, evidence := candidateCLIFixture(t)
 	evidenceSHA := candidateFileSHA(t, evidence)
 	code, _, _ := candidateCLIInvoke("candidate", "capture", "--target", root, "--base", base, "--evidence", evidence, "--role", "unregistered-role", "--json")
-	if code != cli.ExitResultRejected {
-		t.Fatal("unregistered claim role must not be accepted")
+	if code != cli.ExitUsageErr {
+		t.Fatal("retired role flag must not be accepted")
 	}
 	canary := "PRIVATE CANDIDATE EVIDENCE CANARY"
 	malformed := filepath.Join(t.TempDir(), "invalid.txt")
 	candidateCLIWrite(t, malformed, []byte(canary))
 	malformedSHA := candidateFileSHA(t, malformed)
-	code, stdout, stderr := candidateCLIInvoke("candidate", "capture", "--target", root, "--base", base, "--evidence", malformed, "--role", "reviewer", "--json")
+	code, stdout, stderr := candidateCLIInvoke("candidate", "capture", "--target", root, "--base", base, "--evidence", malformed, "--json")
 	if code != cli.ExitResultRejected || strings.Contains(stdout+stderr, canary) {
 		t.Fatal("malformed evidence must reject without disclosing input")
 	}

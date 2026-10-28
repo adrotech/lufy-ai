@@ -63,7 +63,7 @@ func TestCaptureRejectsConfiguredFiltersBeforeAnyCallbackExecutes(t *testing.T) 
 			}
 			t.Run(name, func(t *testing.T) {
 				root, base, marker := configureFixtureFilter(t, kind, included)
-				_, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer")
+				_, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA)
 				if err == nil {
 					t.Error("configured Git callbacks must be rejected before status refresh")
 				}

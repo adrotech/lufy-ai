@@ -5,7 +5,7 @@ description: Search portable Lufy Obsidian memory for compact hints without trea
 
 # Lufy Memory Search
 
-Use before non-trivial T1/T2 work when historical context may matter.
+Úsalo cuando el contexto histórico pueda aportar decisiones o aprendizajes relevantes al pedido actual.
 
 1. Search with short queries by issue, spec, path, concept, or blocker.
 2. Return compact hints: path, line when available, status, relevance.

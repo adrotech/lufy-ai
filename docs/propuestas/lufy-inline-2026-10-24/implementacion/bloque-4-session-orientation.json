@@ -1,0 +1,8 @@
+{
+  "continue": true,
+  "suppressOutput": false,
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "LUFY orientation (metadata only); skills=ready count=5 path=.lufy/skill-registry.json; memory=ready notes=15 root=.lufy/memory; context=stale recovery=lufy-ai context build --target <repo>"
+  }
+}

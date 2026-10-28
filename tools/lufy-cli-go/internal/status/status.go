@@ -27,14 +27,14 @@ type Report struct {
 	Scope                 string        `json:"scope,omitempty"`
 	GlobalRoot            string        `json:"globalRoot,omitempty"`
 	Installed             bool          `json:"installed"`
-	MigrationState        string        `json:"migrationState,omitempty"`
+	InstallationState     string        `json:"installationState,omitempty"`
 	Recovery              string        `json:"recovery,omitempty"`
 	SchemaVersion         int           `json:"schemaVersion,omitempty"`
 	ToolVersion           string        `json:"toolVersion,omitempty"`
 	ToolCommit            string        `json:"toolCommit,omitempty"`
 	ToolBuildDate         string        `json:"toolBuildDate,omitempty"`
 	Tool                  string        `json:"tool,omitempty"`
-	MethodologyByTier     any           `json:"methodologyByTier,omitempty"`
+	Execution             any           `json:"execution,omitempty"`
 	SourceRootFingerprint string        `json:"sourceRootFingerprint,omitempty"`
 	InstalledAt           string        `json:"installedAt,omitempty"`
 	UpdatedAt             string        `json:"updatedAt,omitempty"`
@@ -53,7 +53,6 @@ type AssetDetail struct {
 	Policy            string `json:"policy,omitempty"`
 	Scope             string `json:"scope,omitempty"`
 	Tool              string `json:"tool,omitempty"`
-	Methodology       string `json:"methodology,omitempty"`
 	Component         string `json:"component,omitempty"`
 	Expected          string `json:"expected,omitempty"`
 	Actual            string `json:"actual,omitempty"`
@@ -85,8 +84,8 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	}
 	if !report.Installed {
 		fmt.Fprintf(stdout, "Status para %s: no instalado\n", report.TargetRoot)
-		if report.MigrationState != "" {
-			fmt.Fprintf(stdout, "Estado migracion: %s\n", report.MigrationState)
+		if report.InstallationState != "" {
+			fmt.Fprintf(stdout, "Estado instalación: %s\n", report.InstallationState)
 		}
 		if report.Recovery != "" {
 			fmt.Fprintf(stdout, "Recovery: %s\n", report.Recovery)
@@ -136,7 +135,7 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	}
 	report := Report{TargetRoot: resolved, OK: true, Scope: string(scope)}
 	if scope == assets.ScopeGlobal || scope == assets.ScopeBoth {
-		globalRoot, err := toolruntime.GlobalRoot(domain.ToolInitialDefault)
+		globalRoot, err := toolruntime.GlobalRoot(domain.ToolCodex)
 		if err != nil {
 			return Report{}, err
 		}
@@ -148,11 +147,11 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	}
 	if st == nil {
 		report.Installed = false
-		report.MigrationState = "manifest_missing"
+		report.InstallationState = "manifest_missing"
 		report.Recovery = "lufy-ai install --target <dir> --dry-run"
 		conflicts, planErr := conflictplan.NewService().Build(conflictplan.Options{Target: resolved, Scope: scope})
-		if planErr == nil && (len(conflicts.Items) > 0 || len(conflicts.LegacyDeprecated) > 0) {
-			report.MigrationState = "migration_blocked"
+		if planErr == nil && len(conflicts.Items) > 0 {
+			report.InstallationState = "conflicts_pending"
 			report.ConflictsPending = len(conflicts.Items)
 			report.Recovery = "lufy-ai conflicts plan --target <dir>"
 		}
@@ -164,13 +163,13 @@ func (s Service) Build(target string, verbose bool, rawScope assets.Scope) (Repo
 	report.ToolCommit = st.ToolCommit
 	report.ToolBuildDate = st.ToolBuildDate
 	report.Tool = string(st.Tool)
-	report.MethodologyByTier = st.MethodologyByTier
+	report.Execution = st.Execution
 	report.SourceRootFingerprint = st.SourceRootFingerprint
 	report.InstalledAt = st.InstalledAt
 	report.UpdatedAt = st.UpdatedAt
 	report.Assets = len(st.Assets)
 	for _, asset := range st.Assets {
-		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Tool: asset.Tool, Methodology: asset.Methodology, Component: asset.Component, Expected: asset.TargetSHA256, Pinned: asset.Pinned, PinnedReason: asset.PinnedReason}
+		detail := AssetDetail{TargetRel: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Tool: asset.Tool, Component: asset.Component, Expected: asset.TargetSHA256, Pinned: asset.Pinned, PinnedReason: asset.PinnedReason}
 		if asset.Pinned {
 			report.Pinned++
 		}

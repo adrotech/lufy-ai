@@ -1,0 +1,29 @@
+{
+  "status": "ready",
+  "graph_path": "/Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/context/graph.json",
+  "summary_path": "/Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/context/graph-summary.md",
+  "report_path": "/Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/context/GRAPH_REPORT.md",
+  "manifest_path": "/Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/context/manifest.json",
+  "sources": 1182,
+  "nodes": 19398,
+  "edges": 34095,
+  "changed": true,
+  "cache_hits": 1147,
+  "cache_misses": 15,
+  "health": {
+    "total_files": 1182,
+    "indexed_files": 1162,
+    "skipped_files": 20,
+    "errored_files": 0,
+    "supported_formats": [
+      ".go",
+      ".md",
+      ".yaml",
+      ".yml",
+      ".json"
+    ],
+    "warnings": [
+      "20 archivos omitidos por patrones sensibles"
+    ]
+  }
+}

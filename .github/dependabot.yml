@@ -15,11 +15,3 @@ updates:
     labels:
       - dependencies
       - go
-
-  - package-ecosystem: npm
-    directory: /.opencode
-    schedule:
-      interval: weekly
-    labels:
-      - dependencies
-      - npm

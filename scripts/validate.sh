@@ -87,9 +87,6 @@ main() {
   log "Shell lint"
   "$REPO_ROOT/scripts/check-shell.sh"
 
-  log "Format dispatch hook smoke"
-  "$REPO_ROOT/tools/lufy-cli-go/scripts/smoke-format-dispatch.sh"
-
   log "Go quality"
   "$REPO_ROOT/scripts/quality-go.sh"
 

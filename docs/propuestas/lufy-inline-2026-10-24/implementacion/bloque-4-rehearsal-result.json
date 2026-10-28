@@ -1,0 +1,8 @@
+{
+  "drift_blocks_before_writes": "passed",
+  "joint_restore_after_interruption": "passed",
+  "sync_without_retired_assets": "passed",
+  "resume_without_duplicates": "passed",
+  "deep_verify_and_memory": "passed",
+  "later_drift_blocks_restore": "passed"
+}

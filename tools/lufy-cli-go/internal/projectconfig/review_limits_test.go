@@ -12,14 +12,14 @@ func TestScanAndMarshalProvideCanonicalReviewDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertReviewLimits(t, cfg.WorkflowLimits.Review, 8, 800, 3, 2)
+	assertReviewLimits(t, cfg.WorkflowLimits.Review, 8, 800, 3)
 
 	body, err := Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := string(body)
-	for _, want := range []string{"review:", "max_files_per_slice: 8", "max_churn_lines_per_slice: 800", "max_concurrent_slices: 3", "min_evidence_items: 2"} {
+	for _, want := range []string{"review:", "max_files_per_slice: 8", "max_churn_lines_per_slice: 800", "max_concurrent_slices: 3"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("canonical review config missing %q:\n%s", want, text)
 		}
@@ -28,7 +28,7 @@ func TestScanAndMarshalProvideCanonicalReviewDefaults(t *testing.T) {
 
 func TestLoadPartialReviewLimitsKeepsMissingUnavailableAndExtras(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "project.yaml")
-	body := []byte("schema_version: 1\nworkflow_limits:\n  review:\n    max_files_per_slice: 5\n    future_review_policy: keep\nmax_churn_lines_per_slice: 17\n")
+	body := []byte("schema_version: 2\nworkflow_limits:\n  review:\n    max_files_per_slice: 5\n    future_review_policy: keep\nmax_churn_lines_per_slice: 17\n")
 	if err := os.WriteFile(path, body, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestLoadPartialReviewLimitsKeepsMissingUnavailableAndExtras(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertReviewLimits(t, cfg.WorkflowLimits.Review, 5, 0, 0, 0)
+	assertReviewLimits(t, cfg.WorkflowLimits.Review, 5, 0, 0)
 	if cfg.WorkflowLimits.Review.Extra["future_review_policy"] != "keep" {
 		t.Fatalf("review extras lost: %#v", cfg.WorkflowLimits.Review.Extra)
 	}
@@ -55,18 +55,18 @@ func TestRescanCompletesReviewDefaultsAndPreservesOverrides(t *testing.T) {
 		t.Fatal(err)
 	}
 	merged := MergeRescan(current, detected)
-	assertReviewLimits(t, merged.WorkflowLimits.Review, 5, 800, 3, 2)
+	assertReviewLimits(t, merged.WorkflowLimits.Review, 5, 800, 3)
 	if merged.WorkflowLimits.Review.Extra["future_review_policy"] != "keep" {
 		t.Fatalf("review extras lost on rescan: %#v", merged.WorkflowLimits.Review.Extra)
 	}
 }
 
 func TestLoadRejectsNegativeReviewLimitsWithCanonicalPath(t *testing.T) {
-	fields := []string{"max_files_per_slice", "max_churn_lines_per_slice", "max_concurrent_slices", "min_evidence_items"}
+	fields := []string{"max_files_per_slice", "max_churn_lines_per_slice", "max_concurrent_slices"}
 	for _, field := range fields {
 		t.Run(field, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "project.yaml")
-			body := []byte("schema_version: 1\nworkflow_limits:\n  review:\n    " + field + ": -1\n")
+			body := []byte("schema_version: 2\nworkflow_limits:\n  review:\n    " + field + ": -1\n")
 			if err := os.WriteFile(path, body, 0o644); err != nil {
 				t.Fatal(err)
 			}
@@ -78,9 +78,9 @@ func TestLoadRejectsNegativeReviewLimitsWithCanonicalPath(t *testing.T) {
 	}
 }
 
-func assertReviewLimits(t *testing.T, got WorkflowReviewLimits, files, churn, concurrent, evidence int) {
+func assertReviewLimits(t *testing.T, got WorkflowReviewLimits, files, churn, concurrent int) {
 	t.Helper()
-	if got.MaxFilesPerSlice != files || got.MaxChurnLinesPerSlice != churn || got.MaxConcurrentSlices != concurrent || got.MinEvidenceItems != evidence {
-		t.Fatalf("review limits = %#v, want files=%d churn=%d concurrent=%d evidence=%d", got, files, churn, concurrent, evidence)
+	if got.MaxFilesPerSlice != files || got.MaxChurnLinesPerSlice != churn || got.MaxConcurrentSlices != concurrent {
+		t.Fatalf("review limits = %#v, want files=%d churn=%d concurrent=%d", got, files, churn, concurrent)
 	}
 }

@@ -123,10 +123,10 @@ func TestStatusHumanOutputAndShortHash(t *testing.T) {
 		t.Fatal(err)
 	}
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Verbose: true, Scope: assets.ScopeBoth}, &out); err != nil {
+	if err := NewService().Run(Options{Target: target, Verbose: true, Scope: assets.ScopeProject}, &out); err != nil {
 		t.Fatalf("Run() error = %v", err)
 	}
-	for _, want := range []string{"Status para", "Scope: both", "globalRoot=", "Instalado: sí", "expected=" + hash[:12]} {
+	for _, want := range []string{"Status para", "Scope: project", "Instalado: sí", "expected=" + hash[:12]} {
 		if !bytes.Contains(out.Bytes(), []byte(want)) {
 			t.Fatalf("human status output missing %q: %s", want, out.String())
 		}

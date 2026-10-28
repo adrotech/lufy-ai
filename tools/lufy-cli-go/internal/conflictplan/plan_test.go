@@ -14,8 +14,8 @@ func TestBuildGroupsUnmanagedConflicts(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	writeFile(t, filepath.Join(target, ".opencode", "agents", "orchestrator.md"), "local agent\n")
-	writeFile(t, filepath.Join(target, "openspec", "specs", "sdd-harness-routing", "spec.md"), "local spec\n")
+	writeFile(t, filepath.Join(target, ".codex", "config.toml"), "local agent\n")
+	writeFile(t, filepath.Join(target, ".lufy", "contracts", "work.md"), "local spec\n")
 
 	report, err := NewService().Build(Options{Target: target})
 	if err != nil {
@@ -24,7 +24,7 @@ func TestBuildGroupsUnmanagedConflicts(t *testing.T) {
 	if report.OK || report.Summary.Conflicts != 2 || report.Summary.Groups != 2 {
 		t.Fatalf("unexpected summary: %#v", report.Summary)
 	}
-	want := map[string]bool{".opencode/agents": false, "openspec/specs": false}
+	want := map[string]bool{".codex": false, ".lufy": false}
 	for _, item := range report.Items {
 		want[item.Category] = true
 		if item.Recommendation != "merge" || len(item.AvailableActions) == 0 || item.ParallelGroup == "" {
@@ -42,7 +42,7 @@ func TestRunJSONIsParseable(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	writeFile(t, filepath.Join(target, ".opencode", "package.json"), `{"local":true}`)
+	writeFile(t, filepath.Join(target, "lufy-ia.harness.md"), `{"local":true}`)
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target, JSON: true}, &out); err != nil {
 		t.Fatal(err)
@@ -53,20 +53,6 @@ func TestRunJSONIsParseable(t *testing.T) {
 	}
 	if len(report.Items) != 1 || report.Items[0].Category != "root/config" || report.Items[0].Recommendation != "block" {
 		t.Fatalf("unexpected report: %#v", report.Items)
-	}
-}
-
-func TestLegacyDeprecatedLayoutIsReported(t *testing.T) {
-	source := minimalSource(t)
-	chdirForTest(t, source)
-	target := t.TempDir()
-	writeFile(t, filepath.Join(target, ".lufy-ai", "backups", "legacy.txt"), "legacy\n")
-	report, err := NewService().Build(Options{Target: target})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(report.LegacyDeprecated) == 0 || report.LegacyDeprecated[0].Recommendation != "migrate-layout" {
-		t.Fatalf("missing legacy deprecated item: %#v", report.LegacyDeprecated)
 	}
 }
 
@@ -87,7 +73,7 @@ func TestUnsafeTargetRecommendsBlock(t *testing.T) {
 	source := minimalSource(t)
 	chdirForTest(t, source)
 	target := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(target, ".opencode", "agents", "orchestrator.md"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(target, ".codex", "config.toml"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	report, err := NewService().Build(Options{Target: target})
@@ -108,13 +94,8 @@ func TestUnsafeTargetRecommendsBlock(t *testing.T) {
 
 func TestCategoryFallbacks(t *testing.T) {
 	tests := map[string]string{
-		".opencode/commands/foo.md":      ".opencode/commands",
-		".opencode/skills/foo/SKILL.md":  ".opencode/skills",
-		".opencode/templates/foo.md":     ".opencode/templates",
 		".agents/skills/foo/SKILL.md":    ".agents/skills",
 		".codex/agents/implementer.toml": ".codex",
-		".lufy/workflows/sdd/README.md":  ".lufy",
-		"openspec/config.yaml":           "openspec",
 		"lufy-ia.harness.md":             "root/config",
 		"some-user-file.txt":             "other",
 	}
@@ -132,10 +113,10 @@ func TestRecommendationAndStatusHelpers(t *testing.T) {
 	if got := statusFor("otra razon"); got != "blocked_conflict" {
 		t.Fatalf("blocked status = %s", got)
 	}
-	if got := recommendationFor("AGENTS.md", "archivo existente no gestionado", ""); got != "merge" {
+	if got := recommendationFor("AGENTS.md", "archivo existente no gestionado", ""); got != "block" {
 		t.Fatalf("AGENTS recommendation = %s", got)
 	}
-	if got := recommendationFor(".opencode/README.md", "archivo existente no gestionado", ""); got != "block" {
+	if got := recommendationFor("lufy-ia.harness.md", "archivo existente no gestionado", ""); got != "block" {
 		t.Fatalf("root config recommendation = %s", got)
 	}
 	if got := recommendationFor("foo.md", "archivo", assets.PolicyMergeBlock); got != "merge" {
@@ -147,7 +128,7 @@ func TestRecommendationAndStatusHelpers(t *testing.T) {
 	if got := riskRank("low"); got != 1 {
 		t.Fatalf("low risk rank = %d", got)
 	}
-	if got := parallelGroupFor(".opencode/skills"); got != "opencode-skills" {
+	if got := parallelGroupFor(".agents/skills"); got != "agents-skills" {
 		t.Fatalf("parallel group = %s", got)
 	}
 	if got := reasonWithComponent("reason", "component"); got != "reason; component=component" {
@@ -158,27 +139,26 @@ func TestRecommendationAndStatusHelpers(t *testing.T) {
 	}
 }
 
-func TestPrintReportIncludesLegacyAndGroupDetails(t *testing.T) {
+func TestPrintReportIncludesGroupDetails(t *testing.T) {
 	report := Report{
 		TargetRoot: "/tmp/project",
 		Items: []Item{{
-			Path:             ".opencode/skills/foo/SKILL.md",
-			Category:         ".opencode/skills",
+			Path:             ".agents/skills/foo/SKILL.md",
+			Category:         ".agents/skills",
 			Status:           "unmanaged_conflict",
 			Risk:             "medium",
 			Recommendation:   "merge",
 			Reason:           "local plus managed",
 			AvailableActions: []string{"keep-local", "merge"},
-			ParallelGroup:    "opencode-skills",
+			ParallelGroup:    "agents-skills",
 		}},
-		Groups:           []Group{{Category: ".opencode/skills", Risk: "medium", Count: 1, Paths: []string{".opencode/skills/foo/SKILL.md"}, ParallelGroup: "opencode-skills"}},
-		LegacyDeprecated: []LegacyItem{{Path: ".lufy-ai/backups", CanonicalPath: ".lufy/managed-state/backups", Status: "deprecated_layout", Recommendation: "migrate-layout"}},
-		NextActions:      []string{"next"},
+		Groups:      []Group{{Category: ".agents/skills", Risk: "medium", Count: 1, Paths: []string{".agents/skills/foo/SKILL.md"}, ParallelGroup: "agents-skills"}},
+		NextActions: []string{"next"},
 	}
 	report.Summary = summaryFor(report)
 	var out bytes.Buffer
 	printReport(report, &out)
-	for _, want := range []string{".opencode/skills", "acciones: keep-local, merge", "Legacy/deprecated", "next"} {
+	for _, want := range []string{".agents/skills", "acciones: keep-local, merge", "next"} {
 		if !bytes.Contains(out.Bytes(), []byte(want)) {
 			t.Fatalf("output missing %q:\n%s", want, out.String())
 		}
@@ -189,26 +169,13 @@ func minimalSource(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	paths := map[string]string{
-		"lufy-ia.harness.md":                                                 "harness\n",
-		"tui.json":                                                           "{}\n",
-		filepath.Join(".opencode", "README.md"):                              "readme\n",
-		filepath.Join(".opencode", "package.json"):                           "{}\n",
-		filepath.Join(".opencode", "package-lock.json"):                      "{}\n",
-		filepath.Join(".opencode", ".gitignore"):                             "node_modules\n",
-		filepath.Join(".opencode", "agents", "orchestrator.md"):              "agent\n",
-		filepath.Join(".opencode", "commands", "opsx-sync.md"):               "command\n",
-		filepath.Join(".opencode", "skills", "sdd-workflow", "SKILL.md"):     "skill\n",
-		filepath.Join(".opencode", "templates", "result-contract.md"):        "template\n",
-		filepath.Join(".opencode", "plugins", "agent-observatory.tsx"):       "plugin\n",
-		filepath.Join(".opencode", "policies", "delivery.md"):                "policy\n",
-		filepath.Join("openspec", "config.yaml"):                             "version: 2\n",
-		filepath.Join("openspec", "UPSTREAM.json"):                           "{}\n",
-		filepath.Join("openspec", "specs", "sdd-harness-routing", "spec.md"): "spec\n",
-		filepath.Join(".agents", "skills", "sdd-workflow", "SKILL.md"):       "skill\n",
-		filepath.Join(".codex", "config.toml"):                               "config\n",
-		filepath.Join(".lufy", "README.md"):                                  "readme\n",
-		filepath.Join(".lufy", "workflows", "sdd", "README.md"):              "sdd\n",
+		"lufy-ia.harness.md":                 "harness\n",
+		".agents/skills/lufy-check/SKILL.md": "skill\n",
+		".codex/config.toml":                 "config\n",
+		".lufy/README.md":                    "readme\n",
+		".lufy/contracts/work.md":            "work\n",
 	}
+
 	for path, body := range paths {
 		writeFile(t, filepath.Join(root, path), body)
 	}

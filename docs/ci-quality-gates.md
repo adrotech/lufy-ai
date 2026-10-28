@@ -16,7 +16,7 @@ El comando ejecuta:
 - pinning de GitHub Actions en workflows;
 - sintaxis YAML de workflows mediante helper Go local;
 - ShellCheck para scripts versionados cuando `shellcheck` está instalado;
-- tests Go con coverage de módulo completo (`-coverpkg=./...`) y threshold objetivo;
+- regresiones Python offline, paridad del payload y tests Go con coverage y threshold objetivo;
 - `go vet ./...`;
 - build de `./cmd/lufy-ai`.
 
@@ -24,13 +24,9 @@ Si `shellcheck` no está instalado localmente, el gate lo reporta explícitament
 
 ## Coverage
 
-El threshold objetivo es `80.0%`, medido con `go test ./... -coverpkg=./...` para incluir cobertura ejercitada por tests de integración entre paquetes del módulo.
+El threshold objetivo es `80.0%`, medido con `go test ./... -coverprofile=<archivo>` y agregado por `go tool cover`.
 
-Puede ajustarse temporalmente con:
-
-```bash
-LUFY_AI_COVERAGE_MIN=75.0 scripts/quality-go.sh
-```
+El bloque inline conserva el umbral de 80%; no se reduce para compensar el retiro de código.
 
 ## Multi-plataforma
 

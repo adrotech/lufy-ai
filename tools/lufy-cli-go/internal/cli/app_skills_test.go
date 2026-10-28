@@ -33,7 +33,7 @@ func TestSkillsRefreshAndStatusCommands(t *testing.T) {
 func TestSkillsRejectsUnsupportedTool(t *testing.T) {
 	var out, errOut bytes.Buffer
 	code := Run([]string{"skills", "refresh", "--tool", "claude-code"}, Dependencies{Stdout: &out, Stderr: &errOut})
-	if code != ExitUsageErr || !strings.Contains(errOut.String(), "disponibles: codex, opencode") {
+	if code != ExitUsageErr || !strings.Contains(errOut.String(), "disponibles: codex") {
 		t.Fatalf("code=%d stderr=%s", code, errOut.String())
 	}
 }

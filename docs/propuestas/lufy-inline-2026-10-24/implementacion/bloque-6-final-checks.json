@@ -1,0 +1,17 @@
+{
+  "source_whitespace": "passed",
+  "reports_links_whitespace": "passed",
+  "protected_files": 7868,
+  "unchanged_protected_files": 7866,
+  "intentional_changes": [
+    "docs/propuestas/lufy-inline-2026-10-24/README.md",
+    ".lufy/memory/index/backlinks.json"
+  ],
+  "memory_notes": 18,
+  "broken_backlinks": 0,
+  "git_head_and_staging_preserved": true,
+  "context_extractor": "contextgraph-extractors/v3",
+  "linux_windows_cross_build": "passed",
+  "session_start_metadata": "LUFY orientation (metadata only); skills=ready count=5 path=.lufy/skill-registry.json; memory=ready notes=18 root=.lufy/memory; context=ready nodes=19398 edges=34095",
+  "graph_without_sdd_nodes": true
+}

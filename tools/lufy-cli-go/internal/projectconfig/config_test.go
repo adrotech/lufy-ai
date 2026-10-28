@@ -458,31 +458,24 @@ func TestScanGeneratesCanonicalWorkflowLimits(t *testing.T) {
 }
 
 func TestScanGeneratesHarnessDefaults(t *testing.T) {
-	root := t.TempDir()
-	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-
-	cfg, err := Scan(root, fixedTime())
+	cfg, err := Scan(t.TempDir(), fixedTime())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Tool != domain.ToolInitialDefault {
-		t.Fatalf("unexpected tool default: %s", cfg.Tool)
+	if cfg.Tool != domain.ToolCodex || cfg.Execution != domain.DefaultExecutionConfig() {
+		t.Fatalf("defaults: %#v", cfg)
 	}
-	if cfg.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow || cfg.MethodologyByTier[domain.TierT1].Mode != domain.MethodologyModeFull {
-		t.Fatalf("unexpected T1 methodology default: %#v", cfg.MethodologyByTier[domain.TierT1])
-	}
-	if cfg.MethodologyByTier[domain.TierT3].ID != domain.MethodologyNone || cfg.MethodologyByTier[domain.TierT3].Mode != domain.MethodologyModeNone {
-		t.Fatalf("unexpected T3 methodology default: %#v", cfg.MethodologyByTier[domain.TierT3])
-	}
-	data, err := Marshal(cfg)
+	b, err := Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(data)
-	for _, want := range []string{"tool: opencode", "methodology_by_tier:", "T1:", "id: openspec", "mode: full", "T3:", "id: none"} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("generated config missing harness default %q:\n%s", want, text)
+	for _, v := range []string{"schema_version: 2", "tool: codex", "mode: inline", "delegation: auto"} {
+		if !strings.Contains(string(b), v) {
+			t.Fatalf("missing %q", v)
 		}
+	}
+	if strings.Contains(string(b), "methodology") {
+		t.Fatal("retired configuration emitted")
 	}
 }
 
@@ -534,53 +527,32 @@ func TestRescanPreservesOverridesAndAddsStack(t *testing.T) {
 	_ = requireStack(t, merged, "typescript")
 }
 
-func TestRescanMergesPartialMethodologyByTierWithDefaults(t *testing.T) {
+func TestRescanPreservesExecution(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
-detected_at: 2026-05-20T14:00:00Z
-tool: opencode
-methodology_by_tier:
-  T3:
-    id: openspec
-    mode: lite
-    required: false
-stacks: []
-ci:
-  detected: false
-  workflows: []
-tdd:
-  strict: true
-  triangulate_required: true
-  edge_case_categories: [boundary]
-workflow_limits:
-  sizing:
-    loc_budget: 250
-`)
-
-	var out strings.Builder
-	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &out); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(out.String(), "category=harness") || !strings.Contains(out.String(), "status=applied") {
-		t.Fatalf("rescan did not report harness default completion: %s", out.String())
-	}
-	merged, err := Load(filepath.Join(root, ProjectConfigPath))
+	cfg, err := Scan(root, fixedTime())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if merged.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow || merged.MethodologyByTier[domain.TierT2].Mode != domain.MethodologyModeLite {
-		t.Fatalf("rescan did not fill missing methodology defaults: %#v", merged.MethodologyByTier)
+	cfg.Execution.Delegation = domain.DelegationOff
+	if err := (ConfigStore{}).Write(Path(root), cfg); err != nil {
+		t.Fatal(err)
 	}
-	if merged.MethodologyByTier[domain.TierT3].ID != domain.MethodologySpecWorkflow || merged.MethodologyByTier[domain.TierT3].Mode != domain.MethodologyModeLite {
-		t.Fatalf("rescan did not preserve T3 override: %#v", merged.MethodologyByTier)
+	if err := (Service{Now: fixedTime}).Run(Options{Target: root, Rescan: true}, &strings.Builder{}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(Path(root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Execution.Delegation != domain.DelegationOff {
+		t.Fatal("execution override lost")
 	}
 }
 
 func TestRescanMergesPartialWorkflowLimitsWithDefaults(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
 stacks: []
 ci:
@@ -616,7 +588,7 @@ workflow_limits:
 func TestRescanMergesMemoryAndParallelExecutionDefaults(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
 stacks: []
 ci:
@@ -659,22 +631,12 @@ func TestRescanPreservesProjectProfileAndAddsDetectedSurfaces(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
 	writeFile(t, root, "cmd/app/main.go", "package main\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
-tool: opencode
-methodology_by_tier:
-  T1:
-    id: openspec
-    mode: full
-    required: true
-  T2:
-    id: openspec
-    mode: lite
-    required: true
-  T3:
-    id: none
-    mode: none
-    required: false
+tool: codex
+execution:
+  mode: inline
+  delegation: auto
 project_profile:
   surfaces:
     - id: custom-product
@@ -729,7 +691,7 @@ workflow_limits:
 
 func TestLoadRejectsUnsupportedHarnessConfig(t *testing.T) {
 	root := t.TempDir()
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
 tool: other
 stacks: []
@@ -845,7 +807,7 @@ func TestWorkflowLimitsNestedExtrasDoNotDropDefaults(t *testing.T) {
 func TestRescanReportsAndRemovesLegacyWorkflowFields(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
 stacks: []
 ci:
@@ -967,7 +929,7 @@ func TestRescanMarksRemovedStackDeprecated(t *testing.T) {
 func TestRescanPreservesUnknownFieldsAndOverrides(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "go.mod", "module example.com/app\n\ngo 1.22\n")
-	writeFile(t, root, ProjectConfigPath, `schema_version: 1
+	writeFile(t, root, ProjectConfigPath, `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
 custom_top: keep-me
 stacks:
@@ -1098,12 +1060,11 @@ func TestProjectConfigHelpers(t *testing.T) {
 func TestMergeHarnessSelectionPreservesProjectFieldsAndCanRollback(t *testing.T) {
 	target := t.TempDir()
 	path := Path(target)
-	writeFile(t, target, ProjectConfigPath, `schema_version: 1
-tool: opencode
-methodology_by_tier:
-  T1: {id: openspec, mode: full, required: true}
-  T2: {id: openspec, mode: lite, required: true}
-  T3: {id: none, mode: none, required: false}
+	writeFile(t, target, ProjectConfigPath, `schema_version: 2
+tool: codex
+execution:
+  mode: inline
+  delegation: auto
 stacks:
   - id: go
     supported: true
@@ -1136,7 +1097,7 @@ custom_root_key: keep-root
 	}
 	harness := domain.DefaultHarnessConfig()
 	harness.Tool = domain.ToolCodex
-	harness.MethodologyByTier[domain.TierT2] = domain.MethodologySelection{ID: domain.MethodologyLufyWorkflow, Mode: domain.MethodologyModeLite, Required: true}
+	harness.Execution.Delegation = domain.DelegationOff
 
 	merge, err := NewService().MergeHarnessSelection(target, harness)
 	if err != nil {
@@ -1149,7 +1110,7 @@ custom_root_key: keep-root
 	if err != nil {
 		t.Fatal(err)
 	}
-	if merged.Tool != domain.ToolCodex || merged.MethodologyByTier[domain.TierT2].ID != domain.MethodologyLufyWorkflow {
+	if merged.Tool != domain.ToolCodex || merged.Execution.Delegation != domain.DelegationOff {
 		t.Fatalf("harness selection not merged: %#v", merged)
 	}
 	if merged.WorkflowLimits.Sizing.LOCBudget != 321 || merged.Extra["custom_root_key"] != "keep-root" || merged.WorkflowLimits.Extra["custom_limit_key"] != "keep-limit" || merged.Stacks[0].Extra["custom_stack_key"] != "keep-stack" {
@@ -1169,7 +1130,7 @@ custom_root_key: keep-root
 
 func TestMergeHarnessSelectionCreatesCanonicalProjectConfig(t *testing.T) {
 	target := t.TempDir()
-	harness := domain.HarnessConfig{Tool: domain.ToolCodex, MethodologyByTier: domain.DefaultMethodologyByTier()}
+	harness := domain.HarnessConfig{Tool: domain.ToolCodex, Execution: domain.DefaultExecutionConfig()}
 	merge, err := NewService().MergeHarnessSelection(target, harness)
 	if err != nil {
 		t.Fatal(err)

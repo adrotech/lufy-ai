@@ -12,7 +12,7 @@ Cuando una versión nueva de `lufy-ai` agrega assets al catálogo, un target exi
 
 `sync` no instala automáticamente assets nuevos del catálogo que están ausentes del target y no estaban registrados previamente.
 
-`verify` deriva requirements del catálogo de forma compatible: exige sentinels mínimos históricos y assets catalogados que ya están registrados en el manifest.
+`verify` deriva requirements del catálogo desde los assets catalogados que ya están registrados en el manifest.
 
 ## Consecuencias
 

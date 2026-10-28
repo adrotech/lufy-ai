@@ -1,0 +1,9 @@
+{
+  "file": "bloques-1-a-6-inline.patch",
+  "base": "1cc18d4647afc61ea1f6b1cb726ba74128fded5f",
+  "sha256": "d506631c8aee4a2cbfa69126fc18d2bde4ab77c8d08e48122cb6d02f8ea302df",
+  "bytes": 5327739,
+  "untracked_source_files_included": 29,
+  "reverse_check": "passed",
+  "proposal_evidence_in_separate_files": true
+}

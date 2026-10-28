@@ -39,20 +39,15 @@ func savedReviewEvents(t *testing.T, target string) []runledger.Event {
 
 func evidenceFile(t *testing.T, status string) string {
 	t.Helper()
-	body, err := os.ReadFile(filepath.Join("..", "resultcontract", "testdata", "valid-minimal.json"))
+	result := "passed"
+	if status == "blocked" || status == "escalated" {
+		result = "failed"
+	}
+	body, err := json.Marshal(map[string]any{"checks": []map[string]string{{"name": "verificación observada", "result": result, "evidence": "PRIVATE-REVIEW-BODY-CANARY"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var contract map[string]any
-	if err := json.Unmarshal(body, &contract); err != nil {
-		t.Fatal(err)
-	}
-	contract["status"] = status
-	contract["executive_summary"] = "PRIVATE-REVIEW-BODY-CANARY"
-	body, err = json.Marshal(contract)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	path := filepath.Join(t.TempDir(), "review.json")
 	if err := os.WriteFile(path, body, 0o600); err != nil {
 		t.Fatal(err)
@@ -161,7 +156,7 @@ func TestReviewCLIDisabledLedgerRejectsWithoutAnyWrites(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(config), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(config, []byte("schema_version: 1\ntool: codex\nrun_ledger:\n  enabled: false\n"), 0o600); err != nil {
+	if err := os.WriteFile(config, []byte("schema_version: 2\ntool: codex\nrun_ledger:\n  enabled: false\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	before := fingerprintTree(t, target)
@@ -177,4 +172,47 @@ func TestReviewCLIIsVisibleInRootHelpAndStartNeedsNoResult(t *testing.T) {
 		t.Fatal("explicit review command must be discoverable in root help")
 	}
 	startReviewCLI(t, t.TempDir())
+}
+
+func TestReviewNeverReportsCriticalOrInconclusiveEvidenceAsPassed(t *testing.T) {
+	for _, body := range []string{
+		`{"checks":[{"name":"CLI","result":"passed","evidence":"test observado"}],"findings":[{"severity":"critical","summary":"PRIVATE-CRITICAL"}]}`,
+		`{"checks":[{"name":"dato","result":"inconclusive","evidence":"consulta incompleta"}]}`,
+		`{"checks":[{"name":"build","result":"not_applicable","reason":"es una redacción"}]}`,
+	} {
+		target := t.TempDir()
+		startReviewCLI(t, target)
+		path := filepath.Join(t.TempDir(), "checks.json")
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		code, out, errOut := invokeReviewCLI("review", "complete", "--target", target, "--run", "run-review", "--review", "review-one", "--result", "passed", "--evidence", path, "--json")
+		if code != cli.ExitResultRejected || len(savedReviewEvents(t, target)) != 1 {
+			t.Fatal("unsupported success was recorded")
+		}
+		if strings.Contains(out+errOut, "PRIVATE-CRITICAL") {
+			t.Fatal("finding body leaked")
+		}
+	}
+}
+func TestReviewRetainsNotApplicableAsAnExplicitOutcome(t *testing.T) {
+	target := t.TempDir()
+	startReviewCLI(t, target)
+	path := filepath.Join(t.TempDir(), "checks.json")
+	if err := os.WriteFile(path, []byte(`{"checks":[{"name":"build","result":"not_applicable","reason":"No es código"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	args := []string{"review", "complete", "--target", target, "--run", "run-review", "--review", "review-one", "--result", "not_applicable", "--evidence", path, "--json"}
+	code, _, errOut := invokeReviewCLI(args...)
+	if code != cli.ExitOK {
+		t.Fatal(errOut)
+	}
+	code, _, errOut = invokeReviewCLI(args...)
+	if code != cli.ExitOK {
+		t.Fatal(errOut)
+	}
+	events := savedReviewEvents(t, target)
+	if len(events) != 2 || events[1].EvidenceRefs[0].Result != "not_applicable" {
+		t.Fatalf("N/A became success or retry duplicated event: %#v", events)
+	}
 }
