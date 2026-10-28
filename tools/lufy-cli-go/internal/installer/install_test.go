@@ -752,7 +752,7 @@ func minimalInstallerSource(t *testing.T) string {
 		if e != nil {
 			t.Fatal(e)
 		}
-		files[rel] = string(b)
+		files[filepath.FromSlash(rel)] = string(b)
 	}
 	for rel, content := range files {
 		path := filepath.Join(root, rel)

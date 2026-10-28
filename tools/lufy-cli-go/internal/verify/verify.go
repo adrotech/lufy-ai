@@ -413,10 +413,10 @@ func catalogRequirements(st *state.InstallState) ([]string, []string) {
 	files := map[string]bool{}
 	{
 		for _, dir := range fallbackRequiredDirs {
-			dirs[dir] = true
+			dirs[filepath.Clean(dir)] = true
 		}
 		for _, file := range fallbackRequiredManagedFiles {
-			files[file] = true
+			files[filepath.Clean(file)] = true
 		}
 	}
 	for _, asset := range catalog.Assets {
@@ -426,7 +426,7 @@ func catalogRequirements(st *state.InstallState) ([]string, []string) {
 		if asset.Kind == assets.KindFile && assetMap[asset.TargetRel].TargetRel != "" {
 			files[asset.TargetRel] = true
 			for _, dir := range parentDirs(asset.TargetRel) {
-				dirs[dir] = true
+				dirs[filepath.Clean(dir)] = true
 			}
 		}
 	}

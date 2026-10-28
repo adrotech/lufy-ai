@@ -184,7 +184,7 @@ func NewWithHarness(targetRoot string, previous *InstallState, assets []AssetSta
 func (s InstallState) AssetMap() map[string]AssetState {
 	out := make(map[string]AssetState, len(s.Assets))
 	for _, asset := range s.Assets {
-		out[asset.TargetRel] = asset
+		out[filepath.Clean(asset.TargetRel)] = asset
 	}
 	return out
 }

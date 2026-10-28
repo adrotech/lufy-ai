@@ -53,7 +53,7 @@ func TestEmbeddedCatalogHasInlineSources(t *testing.T) {
 	}
 	found := false
 	for _, a := range c.Assets {
-		if a.TargetRel == ".lufy/contracts/work.md" {
+		if filepath.ToSlash(a.TargetRel) == ".lufy/contracts/work.md" {
 			found = true
 		}
 		if strings.HasPrefix(a.TargetRel, ".opencode") || strings.HasPrefix(a.TargetRel, "openspec") {

@@ -569,3 +569,39 @@ func verifyFileContent(rel string) string {
 	}
 	return rel + "\n"
 }
+
+func TestVerifyAcceptsNativeAndSlashManifestPaths(t *testing.T) {
+	for name, normalize := range map[string]func(string) string{"native": filepath.FromSlash, "slash": filepath.ToSlash} {
+		t.Run(name, func(t *testing.T) {
+			target := validVerifyTarget(t)
+			st, err := state.Load(target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := range st.Assets {
+				st.Assets[i].TargetRel = normalize(st.Assets[i].TargetRel)
+			}
+			if err := state.WriteAtomic(target, *st); err != nil {
+				t.Fatal(err)
+			}
+			var out bytes.Buffer
+			if err := NewService().Run(Options{Target: target, JSON: true}, &out); err != nil {
+				t.Fatalf("verify: %v\n%s", err, out.String())
+			}
+			var report Report
+			if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+				t.Fatal(err)
+			}
+			for _, check := range report.Checks {
+				if check.Message != "archivo extra en directorio gestionado" {
+					continue
+				}
+				for _, asset := range st.Assets {
+					if check.Path == filepath.ToSlash(asset.TargetRel) {
+						t.Fatalf("managed file reported as extra: %#v", check)
+					}
+				}
+			}
+		})
+	}
+}
