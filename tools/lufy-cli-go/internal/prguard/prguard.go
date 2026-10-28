@@ -14,16 +14,10 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
-var defaultInternalPrefixes = []string{"openspec/", ".lufy/", ".lufy-ai/", "pr_review/"}
+var defaultInternalPrefixes = []string{".lufy/", "pr_review/"}
 
 var versionableLufyPrefixes = []string{
 	".lufy/contracts/",
-	".lufy/sdd/",
-	".lufy/workflows/sdd/changes/",
-	".lufy/workflows/sdd/specs/",
-	".lufy/workflows/sdd/decisions/",
-	".lufy/workflows/sdd/verification/",
-	".lufy/workflows/sdd/archive/",
 }
 
 type Options struct {
@@ -95,7 +89,13 @@ func (s Service) Build(opts Options) (Report, error) {
 		return Report{}, err
 	}
 	files := changedFilePaths(entries)
-	ignored, err := ignoredFiles(target, files)
+	var written []string
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Status, "D") {
+			written = append(written, entry.Path)
+		}
+	}
+	ignored, err := ignoredFiles(target, written)
 	if err != nil {
 		return Report{}, err
 	}
@@ -159,11 +159,11 @@ func internalFiles(files []string) []Violation {
 func internalFileEntries(files []changedFile) []Violation {
 	var out []Violation
 	for _, file := range files {
-		slash := filepath.ToSlash(file.Path)
-		if isAllowedOpenSpecPath(changedFile{Path: slash, Status: file.Status}) {
+		if strings.HasPrefix(file.Status, "D") {
 			continue
 		}
-		if hasAnyPrefix(slash, versionableLufyPrefixes) {
+		slash := filepath.ToSlash(file.Path)
+		if slash == ".lufy/README.md" || hasAnyPrefix(slash, versionableLufyPrefixes) {
 			continue
 		}
 		for _, prefix := range defaultInternalPrefixes {
@@ -174,20 +174,6 @@ func internalFileEntries(files []changedFile) []Violation {
 		}
 	}
 	return out
-}
-
-func isAllowedOpenSpecPath(file changedFile) bool {
-	slash := filepath.ToSlash(file.Path)
-	switch {
-	case strings.HasPrefix(slash, "openspec/specs/"):
-		return true
-	case strings.HasPrefix(slash, "openspec/changes/archive/"):
-		return true
-	case strings.HasPrefix(slash, "openspec/changes/") && strings.HasPrefix(file.Status, "D"):
-		return true
-	default:
-		return false
-	}
 }
 
 func changedFilePaths(files []changedFile) []string {

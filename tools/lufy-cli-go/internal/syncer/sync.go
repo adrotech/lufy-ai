@@ -310,28 +310,9 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 	}
 	for _, prev := range previous.Assets {
 		if prev.TargetRel == agentsref.AgentsFile {
-			if prev.Pinned {
-				plan.Actions = append(plan.Actions, Action{Kind: ActionPinnedSkip, Target: prev.TargetRel, Reason: "asset legacy pinned; sync no lo modifica", RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
-				continue
-			}
-			exists, hasReference, err := agentsref.Status(target)
-			if err != nil {
-				plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: err.Error(), RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
-				continue
-			}
-			if exists && !hasReference {
-				currentHash, hashErr := assets.FileSHA256(filepath.Join(target, prev.TargetRel))
-				if hashErr != nil {
-					return Plan{}, hashErr
-				}
-				if currentHash != prev.TargetSHA256 {
-					plan.Conflicts = append(plan.Conflicts, Conflict{Path: prev.TargetRel, Reason: "AGENTS.md legacy gestionado tiene drift local y falta integración LUFY; preservado, agrega el bloque gestionado manualmente o resuelve el drift antes de reintentar sync", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
-				} else {
-					plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: prev.TargetRel, Reason: "AGENTS.md legacy gestionado sale del manifest; agrega el bloque gestionado LUFY con install --yes o edición manual", CurrentHash: currentHash, RecordedSourceHash: prev.SourceSHA256, RecordedTargetHash: prev.TargetSHA256})
-				}
-			}
-			continue
+			return Plan{}, fmt.Errorf("AGENTS.md registrado como asset completo: formato de instalación no soportado; preservado sin convertir")
 		}
+
 		if catalogTargets[prev.TargetRel] {
 			continue
 		}
@@ -374,18 +355,6 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			plan.Actions = append(plan.Actions, Action{Kind: ActionWarnAgentsReference, Target: agentsref.AgentsFile, Reason: "sync preserva AGENTS.md; agrega el bloque gestionado LUFY con install --yes o edición manual"})
 		}
 	}
-	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target)
-	if err != nil {
-		return Plan{}, err
-	}
-	if configPlan.Action == string(ActionMergeJSON) {
-		if managedio.FileExists(filepath.Join(target, configPlan.File)) {
-			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado conservadoramente"})
-		}
-		plan.Actions = append(plan.Actions, Action{Kind: ActionMergeJSON, Target: configPlan.File, Reason: "configuración OpenCode merge-managed parcial"})
-	} else if configPlan.Action != "" {
-		plan.Actions = append(plan.Actions, Action{Kind: ActionSkip, Target: configPlan.File, Reason: "configuración OpenCode merge-managed sin cambios"})
-	}
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
 		if actionOrder[plan.Actions[i].Kind] == actionOrder[plan.Actions[j].Kind] {
 			return plan.Actions[i].Target < plan.Actions[j].Target
@@ -405,9 +374,9 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 	}
 	updates := managedio.UniqueTargets(append(append(targetsForKind(plan.Actions, ActionCreateManaged), targetsForKind(plan.Actions, ActionUpdateManaged)...), targetsForKind(plan.Actions, ActionMergeBlock)...))
 	lufyNew := targetsForKind(plan.Actions, ActionWriteLufyNew)
-	merges := targetsForKind(plan.Actions, ActionMergeJSON)
-	stateOnly := hasActionKind(plan.Actions, ActionRetired) || hasActionKind(plan.Actions, ActionWarnAgentsReference)
-	if len(updates) == 0 && len(lufyNew) == 0 && len(merges) == 0 && !stateOnly {
+	harnessChanged := plan.Previous != nil && (plan.Previous.Tool != plan.Harness.Tool || plan.Previous.Execution != plan.Harness.Execution)
+	stateOnly := harnessChanged || hasActionKind(plan.Actions, ActionRetired) || hasActionKind(plan.Actions, ActionWarnAgentsReference)
+	if len(updates) == 0 && len(lufyNew) == 0 && !stateOnly {
 		fmt.Fprintln(stdout, "- [skip] sin cambios gestionados")
 		return nil
 	}
@@ -465,12 +434,6 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
-		case ActionMergeJSON:
-			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot); err != nil {
-				return syncRecoveryError(err, plan.TargetRoot, manifestPath, applied)
-			}
-			applied++
-			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
 		case ActionBackup, ActionRetired, ActionWarnAgentsReference, ActionPinnedSkip, ActionSkip:
 			continue
 		default:
@@ -545,7 +508,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if updated[asset.TargetRel] {
 			lastAction = "sync-update-managed"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: installedAt, LastAction: lastAction}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Component: asset.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: installedAt, LastAction: lastAction}
 		if asset.Policy.SupportsAncestor() && updated[asset.TargetRel] {
 			ancestorRel, err := state.AncestorRel(asset.TargetRel)
 			if err != nil {
@@ -587,7 +550,7 @@ func buildAssetStates(plan Plan, updates []string) ([]state.AssetState, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Methodology: prev.Methodology, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: prev.InstalledAt, LastAction: "retired"})
+		out = append(out, state.AssetState{ID: prev.ID, SourceRel: prev.SourceRel, TargetRel: prev.TargetRel, SourceSHA256: prev.SourceSHA256, TargetSHA256: currentHash, Policy: prev.Policy, Scope: prev.Scope, Tool: prev.Tool, Component: prev.Component, AncestorRel: prev.AncestorRel, AncestorHash: prev.AncestorHash, Pinned: prev.Pinned, PinnedAt: prev.PinnedAt, PinnedReason: prev.PinnedReason, InstalledAt: prev.InstalledAt, LastAction: "retired"})
 	}
 	return out, nil
 }

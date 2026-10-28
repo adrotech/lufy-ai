@@ -42,7 +42,7 @@ type InfoReport struct {
 	TargetRoot            string                   `json:"targetRoot"`
 	Installed             bool                     `json:"installed"`
 	Tool                  string                   `json:"tool"`
-	MethodologyByTier     any                      `json:"methodologyByTier,omitempty"`
+	Execution             any                      `json:"execution,omitempty"`
 	CatalogAssets         int                      `json:"catalogAssets"`
 	ManifestAssets        int                      `json:"manifestAssets,omitempty"`
 	Pinned                int                      `json:"pinned,omitempty"`
@@ -205,7 +205,7 @@ func (s Service) BuildInfo(opts Options) (InfoReport, error) {
 	report := InfoReport{
 		TargetRoot:        target,
 		Tool:              string(harness.Tool),
-		MethodologyByTier: harness.MethodologyByTier,
+		Execution:         harness.Execution,
 		CatalogAssets:     catalogAssets,
 		ProjectConfig:     cfgStatus,
 		HarnessProvenance: harness.Provenance,
@@ -262,7 +262,7 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 	} else {
 		emit("ok", projectconfig.ProjectConfigPath, fmt.Sprintf("project config parseable; stacks=%d surfaces=%d", len(cfg.Stacks), len(cfg.ProjectProfile.Surfaces)))
 	}
-	tool := domain.ToolInitialDefault
+	tool := domain.ToolCodex
 	if opts.CodexExecutable != "" {
 		tool = domain.ToolCodex
 	}
@@ -281,8 +281,8 @@ func (s Service) BuildDoctor(opts Options) (DoctorReport, error) {
 		return report, nil
 	}
 	if cfg != nil {
-		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier}
-		installedHarness := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}
+		projectHarness := domain.HarnessConfig{Tool: cfg.Tool, Execution: cfg.Execution}
+		installedHarness := domain.HarnessConfig{Tool: st.Tool, Execution: st.Execution}
 		for _, drift := range harnessconfig.Compare(&projectHarness, &installedHarness) {
 			emit("fail", projectconfig.ProjectConfigPath, harnessconfig.RecoveryMessage(drift))
 		}
@@ -372,34 +372,12 @@ func reportContextDoctor(target string, emit func(level, path, message string)) 
 	}
 }
 
-func reportOpenCodeMemoryHookDoctor(target string, emit func(level, path, message string)) {
-	hooks := []string{
-		filepath.Join(".opencode", "hooks", "skills-ensure.sh"),
-		filepath.Join(".opencode", "hooks", "memory-orient.sh"),
-		filepath.Join(".opencode", "hooks", "memory-validate.sh"),
-	}
-	for _, rel := range hooks {
-		if !regularFileForGovernance(filepath.Join(target, rel)) {
-			emit("warn", filepath.ToSlash(rel), "hook lifecycle OpenCode no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
-			return
-		}
-	}
-	plugin := filepath.Join(".opencode", "plugins", "lufy-memory-context.ts")
-	if !regularFileForGovernance(filepath.Join(target, plugin)) {
-		emit("warn", filepath.ToSlash(plugin), "plugin lifecycle de skills/memoria/contexto no instalado; ejecuta lufy-ai sync --tool opencode --scope project")
-		return
-	}
-	emit("ok", filepath.ToSlash(plugin), "OpenCode cargará plugin local para skill registry, orientación y validación best-effort de memoria")
-}
-
 func reportToolLifecycleDoctor(target string, tool domain.ToolID, emit func(level, path, message string)) {
 	switch tool {
 	case domain.ToolCodex:
 		for _, check := range codexsurface.Validate(target) {
 			emit(check.Level, check.Path, check.Message)
 		}
-	case domain.ToolInitialDefault:
-		reportOpenCodeMemoryHookDoctor(target, emit)
 	default:
 		emit("info", "", fmt.Sprintf("tool %s sin lifecycle profundo gestionado", tool))
 	}

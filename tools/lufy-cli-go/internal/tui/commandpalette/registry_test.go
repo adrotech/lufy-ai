@@ -2,6 +2,7 @@ package commandpalette
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -47,34 +48,18 @@ func TestRegistryContainsSetupAndUpgrade(t *testing.T) {
 	for _, spec := range Registry() {
 		seen[spec.ID] = true
 	}
-	for _, id := range []string{"setup", "upgrade", "plan", "context-build", "memory-search", "skills-refresh", "skills-status", "pr-guard", "run-status", "run-verify", "adaptive-recommend", "adaptive-assign", "adaptive-yield", "adaptive-status", "result-validate", "result-normalize", "result-transition"} {
+	for _, id := range []string{"setup", "upgrade", "plan", "context-build", "memory-search", "skills-refresh", "skills-status", "pr-guard", "run-status", "run-verify", "adaptive-recommend", "adaptive-assign", "adaptive-yield", "adaptive-status", "evidence-inspect"} {
 		if !seen[id] {
 			t.Fatalf("registry missing %s", id)
 		}
 	}
 }
 
-func TestResultCommandsExposeSafeInputAndMutationFlags(t *testing.T) {
-	wantFlags := map[string]map[string]bool{
-		"result-validate":   {"--stdin": true, "--file": true, "--role": true, "--json": true},
-		"result-normalize":  {"--stdin": true, "--file": true, "--json": true},
-		"result-transition": {"--stdin": true, "--file": true, "--record": true, "--json": true},
-	}
+func TestRegistryHasNoResultContractOrTransitionCommands(t *testing.T) {
 	for _, spec := range Registry() {
-		flags, relevant := wantFlags[spec.ID]
-		if !relevant {
-			continue
+		if strings.HasPrefix(spec.ID, "result-") {
+			t.Fatal("retired contract command exposed")
 		}
-		for _, param := range spec.Params {
-			delete(flags, param.Flag)
-		}
-		if len(flags) != 0 {
-			t.Fatalf("%s missing flags: %v", spec.ID, flags)
-		}
-		delete(wantFlags, spec.ID)
-	}
-	if len(wantFlags) != 0 {
-		t.Fatalf("registry missing result commands: %v", wantFlags)
 	}
 }
 
@@ -84,27 +69,17 @@ func TestSkillsCommandsOnlyOfferWritableSkillAdapters(t *testing.T) {
 			continue
 		}
 		for _, param := range spec.Params {
-			if param.Name == "tool" && !reflect.DeepEqual(param.Choices, []string{"opencode", "codex"}) {
+			if param.Name == "tool" && !reflect.DeepEqual(param.Choices, []string{"codex"}) {
 				t.Fatalf("%s tool choices = %v", spec.ID, param.Choices)
 			}
 		}
 	}
 }
 
-func TestSDDNewOffersFullAndLiteModes(t *testing.T) {
-	for _, spec := range Registry() {
-		if spec.ID != "sdd-new" {
-			continue
+func TestRegistryOmitsMethodologyCommands(t *testing.T) {
+	for _, c := range Registry() {
+		if strings.HasPrefix(c.ID, "sdd-") || strings.HasPrefix(c.ID, "opsx-") {
+			t.Fatalf("retired command: %s", c.ID)
 		}
-		for _, param := range spec.Params {
-			if param.Name == "mode" {
-				if param.Default != "full" || !reflect.DeepEqual(param.Choices, []string{"full", "lite"}) {
-					t.Fatalf("sdd-new mode = %#v", param)
-				}
-				return
-			}
-		}
-		t.Fatal("sdd-new missing mode parameter")
 	}
-	t.Fatal("registry missing sdd-new")
 }

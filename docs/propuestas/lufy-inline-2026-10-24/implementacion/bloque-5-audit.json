@@ -1,0 +1,366 @@
+{
+  "status": "inconclusive",
+  "adopted_from_comparison": false,
+  "samples": [
+    {
+      "directory": "/private/tmp/lufy-inline-pilot-20261026-a/explain-code",
+      "case": "explain-code",
+      "family": "analysis",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Falta turn.completed.",
+        "Proceso incompleto o error de herramientas.",
+        "Respuesta ausente o no vinculada a la traza."
+      ],
+      "metrics": {
+        "input_tokens": null,
+        "cached_input_tokens": null,
+        "output_tokens": null,
+        "reasoning_output_tokens": null,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "af7f041debe829cd14f7fba2488041e0e52537112720269797bed72123209ef0",
+        "trace": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "prompt": "1158d4a8fc1f80a720338fe0362b8d1b41c09c92e0f38e3da866fa60a4687616"
+      },
+      "comparison_eligible": false,
+      "execution": "incomplete",
+      "policy_sha256": "ebe75e43da0971f62d8133e475467205a356645ec5813a539e2a6b3354d7a328",
+      "runtime_sha256": "5e29ab10ca1171be158f7335dd6bd8ce1aaf9af1556939db36a5ee338be6f5f2",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-pilot-20261026-b/explain-code",
+      "case": "explain-code",
+      "family": "analysis",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Falta turn.completed.",
+        "Proceso incompleto o error de herramientas.",
+        "Respuesta ausente o no vinculada a la traza."
+      ],
+      "metrics": {
+        "input_tokens": null,
+        "cached_input_tokens": null,
+        "output_tokens": null,
+        "reasoning_output_tokens": null,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "d2c596dc1166dd5b860ac00f4daa0f780eea875305eb4cbbf78723e58bd4c9b4",
+        "trace": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "prompt": "1158d4a8fc1f80a720338fe0362b8d1b41c09c92e0f38e3da866fa60a4687616"
+      },
+      "comparison_eligible": false,
+      "execution": "incomplete",
+      "policy_sha256": "ebe75e43da0971f62d8133e475467205a356645ec5813a539e2a6b3354d7a328",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-pilot-20261026-c/explain-code",
+      "case": "explain-code",
+      "family": "analysis",
+      "original_status": "inconclusive",
+      "audit_status": "needs_review",
+      "scope_checks_passed": true,
+      "reasons": [],
+      "metrics": {
+        "input_tokens": 40808,
+        "cached_input_tokens": 37888,
+        "output_tokens": 225,
+        "reasoning_output_tokens": 0,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "766765d9f52abc2d1e5a89344ae81e27cb46fde5449e3fdfe3fb1e88752a68d7",
+        "trace": "51213e9dcbab09c2dc38d70194f76fd73c4653ddb412820cb663c92086870124",
+        "prompt": "1158d4a8fc1f80a720338fe0362b8d1b41c09c92e0f38e3da866fa60a4687616"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "ebe75e43da0971f62d8133e475467205a356645ec5813a539e2a6b3354d7a328",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-pilot-20261027-d/propose-export",
+      "case": "propose-export",
+      "family": "proposal",
+      "original_status": "inconclusive",
+      "audit_status": "needs_review",
+      "scope_checks_passed": true,
+      "reasons": [],
+      "metrics": {
+        "input_tokens": 40880,
+        "cached_input_tokens": 38016,
+        "output_tokens": 592,
+        "reasoning_output_tokens": 0,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "ca84599fbbeccb1bf62af94060672fe6514be84db31132f43209b71212327799",
+        "trace": "1ab4faf6fc7c222a54588495b6226cfd3a1ce5407db3da132b5cbd55862fdcf5",
+        "prompt": "4041b713803acac33b6d13702ca9df59835bde781220767d67659c1cf5fc6dea"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "ebe75e43da0971f62d8133e475467205a356645ec5813a539e2a6b3354d7a328",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-families-20261027-e/write-guide",
+      "case": "write-guide",
+      "family": "writing",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "metrics": {
+        "input_tokens": 73440,
+        "cached_input_tokens": 63232,
+        "output_tokens": 627,
+        "reasoning_output_tokens": 7,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "d52356498bf57d7acea2690332829b42d006080af11628bd8b000428ae02deea",
+        "trace": "06090639e2725db7b79008057f84c0a18701a40a8fa481aa7198b3081f58f621",
+        "prompt": "23e6e067e1025de2cb428ac6145a2f6e79e8ad5b1f8acf922e0c1a7b49f017e0"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-families-20261027-f/translate-guide",
+      "case": "translate-guide",
+      "family": "translation",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "metrics": {
+        "input_tokens": 58837,
+        "cached_input_tokens": 49408,
+        "output_tokens": 425,
+        "reasoning_output_tokens": 7,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "a625e08b3917370f9aaa05888ad64e77e47a64fb10a0864b125e504f2954a13d",
+        "trace": "3109310bf7d8b7479beefcbadd630580e8df14fed29773429494230d8a4c4466",
+        "prompt": "ddf6277f33f650521e88e93894b08a64098a9446c80ea8abdcf35b79ba8753b9"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-families-20261027-f/fix-filter",
+      "case": "fix-filter",
+      "family": "implementation",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Falta evidencia funcional completa.",
+        "Falta turn.completed.",
+        "Proceso incompleto o error de herramientas.",
+        "Respuesta ausente o no vinculada a la traza."
+      ],
+      "metrics": {
+        "input_tokens": null,
+        "cached_input_tokens": null,
+        "output_tokens": null,
+        "reasoning_output_tokens": null,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "a3f63898a5bd2988b14d33e76707b0832cd9bea6e9b009ddb1a9e5903f8bf8d5",
+        "trace": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "prompt": "9468a3a45a8ff545c051d66cd6ce496baa15bd559da1cab1684fa08f818acb08"
+      },
+      "comparison_eligible": false,
+      "execution": "incomplete",
+      "policy_sha256": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "recorded_oracle"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-families-20261027-g/fix-filter",
+      "case": "fix-filter",
+      "family": "implementation",
+      "original_status": "passed",
+      "audit_status": "passed",
+      "scope_checks_passed": true,
+      "reasons": [],
+      "metrics": {
+        "input_tokens": 41575,
+        "cached_input_tokens": 36096,
+        "output_tokens": 275,
+        "reasoning_output_tokens": 0,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "7a26b953cb941ceb8a7cc8c6c5d2bb37e4834b503093aeb4f513b57c2c7b6147",
+        "trace": "eebefd31000569cd95f860e18a92d5f7c29f46e3aa5538f84e37e8837f0c41f4",
+        "prompt": "9468a3a45a8ff545c051d66cd6ce496baa15bd559da1cab1684fa08f818acb08"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "recorded_oracle"
+    },
+    {
+      "directory": "/private/tmp/lufy-inline-families-20261027-g/analyze-join",
+      "case": "analyze-join",
+      "family": "data_analysis",
+      "original_status": "inconclusive",
+      "audit_status": "inconclusive",
+      "scope_checks_passed": false,
+      "reasons": [
+        "Efectos del comando no evaluables por este piloto."
+      ],
+      "metrics": {
+        "input_tokens": 55354,
+        "cached_input_tokens": 46848,
+        "output_tokens": 628,
+        "reasoning_output_tokens": 10,
+        "duration_ms": null,
+        "human_interventions": null,
+        "monetary_cost": null
+      },
+      "fingerprints": {
+        "record": "32c6644059ecfd92908a80c796a5f95c3f4f0b4e6f81ceb0baa90b2d24fdff18",
+        "trace": "6c3464073e679de0fdcc3399bbde1630c1932a8013eea0e032e197c5ad0f001c",
+        "prompt": "cec9ec62b99dc166c7ef5b13cdd90d7517f2bcdd205fa6b8a5d52043b1f17e84"
+      },
+      "comparison_eligible": false,
+      "execution": "completed",
+      "policy_sha256": "90947f7e8e70e45066d9c6473a99a935c460dbf3510df5d8ee1ec765f56b23fc",
+      "runtime_sha256": "50ab38ba21d0d9f8346f32f41848382f15b556190f3c7a07e885a4fb73e379c8",
+      "model_identity_verified": false,
+      "oracle_reexecuted": false,
+      "semantic_review": "required"
+    }
+  ],
+  "families": [
+    {
+      "case": "explain-code",
+      "family": "analysis",
+      "attempts": 3,
+      "statuses": [
+        "inconclusive",
+        "inconclusive",
+        "needs_review"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    },
+    {
+      "case": "propose-export",
+      "family": "proposal",
+      "attempts": 1,
+      "statuses": [
+        "needs_review"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    },
+    {
+      "case": "write-guide",
+      "family": "writing",
+      "attempts": 1,
+      "statuses": [
+        "inconclusive"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    },
+    {
+      "case": "translate-guide",
+      "family": "translation",
+      "attempts": 1,
+      "statuses": [
+        "inconclusive"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    },
+    {
+      "case": "fix-filter",
+      "family": "implementation",
+      "attempts": 2,
+      "statuses": [
+        "inconclusive",
+        "passed"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    },
+    {
+      "case": "analyze-join",
+      "family": "data_analysis",
+      "attempts": 1,
+      "statuses": [
+        "inconclusive"
+      ],
+      "completed_attempts": 1,
+      "coverage": "observed"
+    }
+  ],
+  "limitations": [
+    "Sin pares A/B/C con condiciones fijadas no hay comparación causal.",
+    "needs_review requiere juicio semántico explícito; no es aprobación automática.",
+    "Los registros auditados conservan su veredicto original.",
+    "No hay evidencia de segunda modificación en este corpus."
+  ]
+}

@@ -10,92 +10,47 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/ports"
 )
 
-func Effective(base assets.Catalog, harness domain.HarnessConfig) (assets.Catalog, error) {
-	return EffectiveWithRegistry(base, harness, registry.Default())
-}
-
-func EffectiveWithRegistry(base assets.Catalog, harness domain.HarnessConfig, reg adapterRegistry) (assets.Catalog, error) {
-	normalized := harness.WithDefaults()
-	if err := normalized.ValidateSupported(); err != nil {
-		return assets.Catalog{}, err
-	}
-
-	toolAdapter, err := reg.Tool(normalized.Tool)
-	if err != nil {
-		return assets.Catalog{}, err
-	}
-	toolSpecs, err := toolAdapter.RenderSurface(ports.HarnessModel{
-		Tool:              normalized.Tool,
-		MethodologyByTier: normalized.MethodologyByTier,
-	})
-	if err != nil {
-		return assets.Catalog{}, err
-	}
-
-	methodSpecs := map[domain.MethodologyID][]ports.AssetSpec{}
-	selectedMethodologies := map[domain.MethodologyID]bool{}
-	for tier, selection := range normalized.MethodologyByTier {
-		selectedMethodologies[selection.ID] = true
-		adapter, err := reg.Methodology(selection.ID)
-		if err != nil {
-			return assets.Catalog{}, err
-		}
-		rendered, err := adapter.RenderWorkflow(ports.WorkflowModel{Tier: tier, Selection: selection})
-		if err != nil {
-			return assets.Catalog{}, err
-		}
-		methodSpecs[selection.ID] = append(methodSpecs[selection.ID], rendered...)
-	}
-
-	out := make([]assets.Asset, 0, len(base.Assets))
-	for _, asset := range base.Assets {
-		if shouldInclude(asset, toolSpecs, methodSpecs, selectedMethodologies) {
-			out = append(out, asset)
-		}
-	}
-	return assets.Catalog{SourceRoot: base.SourceRoot, Assets: out}, nil
-}
-
 type adapterRegistry interface {
 	Tool(domain.ToolID) (ports.ToolAdapter, error)
-	Methodology(domain.MethodologyID) (ports.MethodologyAdapter, error)
 }
 
-func shouldInclude(asset assets.Asset, toolSpecs []ports.AssetSpec, methodSpecs map[domain.MethodologyID][]ports.AssetSpec, selectedMethodologies map[domain.MethodologyID]bool) bool {
-	if isCoreAsset(asset) {
-		return true
-	}
-
-	toolMatched := matchesSpecs(asset.TargetRel, toolSpecs)
-	if asset.Methodology == "" || asset.Methodology == domain.MethodologyNone {
-		return toolMatched
-	}
-
-	if !selectedMethodologies[asset.Methodology] {
-		return false
-	}
-	if matchesSpecs(asset.TargetRel, methodSpecs[asset.Methodology]) {
-		return true
-	}
-	return toolMatched && isMethodologyInstructionAsset(asset)
+func Effective(base assets.Catalog, cfg domain.HarnessConfig) (assets.Catalog, error) {
+	return EffectiveWithRegistry(base, cfg, registry.Default())
 }
 
-func isCoreAsset(asset assets.Asset) bool {
-	return asset.Methodology == domain.MethodologyNone && (asset.Component == "harness-core" || asset.Component == "harness-reference")
+func EffectiveWithRegistry(base assets.Catalog, cfg domain.HarnessConfig, reg adapterRegistry) (assets.Catalog, error) {
+	cfg = cfg.WithDefaults()
+	if err := cfg.ValidateSupported(); err != nil {
+		return assets.Catalog{}, err
+	}
+	adapter, err := reg.Tool(cfg.Tool)
+	if err != nil {
+		return assets.Catalog{}, err
+	}
+	specs, err := adapter.RenderSurface(ports.HarnessModel{Tool: cfg.Tool, Execution: cfg.Execution})
+	if err != nil {
+		return assets.Catalog{}, err
+	}
+	for _, path := range []string{"lufy-ia.harness.md", ".lufy/README.md", ".lufy/contracts/README.md", ".lufy/contracts/work.md", ".lufy/contracts/evidence.md", ".lufy/contracts/delivery.md"} {
+		specs = append(specs, ports.AssetSpec{TargetRel: path, Policy: "managed", Scope: "project"})
+	}
+	out := assets.Catalog{SourceRoot: base.SourceRoot}
+	for _, asset := range base.Assets {
+		if matchesSpecs(asset, specs) {
+			out.Assets = append(out.Assets, asset)
+		}
+	}
+	return out, nil
 }
 
-func isMethodologyInstructionAsset(asset assets.Asset) bool {
-	return asset.Component == "methodology-skill" || asset.Component == "methodology-command"
-}
-
-func matchesSpecs(targetRel string, specs []ports.AssetSpec) bool {
-	target := filepath.ToSlash(targetRel)
+func matchesSpecs(asset assets.Asset, specs []ports.AssetSpec) bool {
+	target := filepath.ToSlash(asset.TargetRel)
 	for _, spec := range specs {
 		if spec.Scope == "preview" || spec.Policy == "dry-run" || spec.Policy == "merge-json" {
 			continue
 		}
-		specTarget := filepath.ToSlash(spec.TargetRel)
-		if target == specTarget || strings.HasPrefix(target, specTarget+"/") {
+		path := filepath.ToSlash(spec.TargetRel)
+		if target == path || strings.HasPrefix(target, path+"/") || (asset.Kind == assets.KindDir && strings.HasPrefix(path, target+"/")) {
 			return true
 		}
 	}

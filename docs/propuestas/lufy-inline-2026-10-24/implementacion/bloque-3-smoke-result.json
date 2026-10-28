@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "root": "/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/lufy-evidence-smoke-j_3dwuak",
+  "checks": [
+    "inline install and selected verification capability",
+    "deep verify",
+    "orientation without automatic ledger",
+    "ignored lifecycle without writes",
+    "editorial and factual observations",
+    "review idempotency",
+    "critical finding blocks success without writes",
+    "inconclusive is not success",
+    "not applicable is not success",
+    "retired result command rejected",
+    "candidate evidence bound without role",
+    "new commit invalidates evidence",
+    "Git observation is read only",
+    "ledger excludes raw content"
+  ]
+}

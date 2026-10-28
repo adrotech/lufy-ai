@@ -32,7 +32,7 @@ func TestBackupAndRestoreMultiassetCreatesPreRestoreRecovery(t *testing.T) {
 	if err := json.Unmarshal(body, &manifest); err != nil {
 		t.Fatal(err)
 	}
-	if len(manifest.Files) != 2 || manifest.Files[0].SHA256 == "" || manifest.Files[0].Size == 0 {
+	if len(manifest.Files) != 3 || manifest.Files[0].SHA256 == "" || manifest.Files[0].Size == 0 {
 		t.Fatalf("manifest incompleto: %#v", manifest.Files)
 	}
 	if manifest.ToolVersion == "" || manifest.ToolCommit == "" || manifest.ToolBuildDate == "" {
@@ -79,7 +79,7 @@ func TestRestoreRejectsTargetMismatchAndPathEscape(t *testing.T) {
 	if err := os.MkdirAll(backupDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	manifest := Manifest{SchemaVersion: SchemaVersion, TargetRoot: t.TempDir(), Files: []FileItem{{Path: "AGENTS.md", BackupPath: "AGENTS.md", Status: "captured"}}}
+	manifest := Manifest{SchemaVersion: SchemaVersion, RuntimeStateSchema: state.SchemaVersion, TargetRoot: t.TempDir(), Files: []FileItem{{Path: "AGENTS.md", BackupPath: "AGENTS.md", Status: "captured"}}}
 	writeManifest(t, filepath.Join(backupDir, "manifest.json"), manifest)
 	if err := NewService().Restore(target, backupDir, true, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "otro target") {
 		t.Fatalf("expected target mismatch error, got %v", err)
@@ -109,7 +109,7 @@ func TestRestorePartialFailureReportsRecoveryBackup(t *testing.T) {
 	writeFile(t, filepath.Join(backupDir, "blocked", "child.txt"), "restored child\n")
 	agentsHash := hashFile(t, filepath.Join(backupDir, "AGENTS.md"))
 	childHash := hashFile(t, filepath.Join(backupDir, "blocked", "child.txt"))
-	manifest := Manifest{SchemaVersion: SchemaVersion, TargetRoot: target, Files: []FileItem{
+	manifest := Manifest{SchemaVersion: SchemaVersion, RuntimeStateSchema: state.SchemaVersion, TargetRoot: target, Files: []FileItem{
 		{Path: "AGENTS.md", BackupPath: "AGENTS.md", SHA256: agentsHash, Status: "captured"},
 		{Path: filepath.Join("blocked", "child.txt"), BackupPath: filepath.Join("blocked", "child.txt"), SHA256: childHash, Status: "captured"},
 	}}
@@ -187,8 +187,8 @@ func TestRestoreCapturedFilesRestoresWithoutRecoveryBackup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RestoreCapturedFiles() error = %v", err)
 	}
-	if restored != 1 {
-		t.Fatalf("RestoreCapturedFiles() restored %d, want 1", restored)
+	if restored != 2 {
+		t.Fatalf("RestoreCapturedFiles() restored %d, want 2", restored)
 	}
 	if got := readFile(t, filepath.Join(target, "AGENTS.md")); got != "original\n" {
 		t.Fatalf("RestoreCapturedFiles() did not restore file: %q", got)
@@ -227,9 +227,7 @@ func TestBackupPrunesOldBackups(t *testing.T) {
 	backupsRoot := filepath.Join(target, ".lufy", "managed-state", "backups")
 	for i := 0; i < defaultBackupRetention; i++ {
 		path := filepath.Join(backupsRoot, "20000101T000000.00000000"+string(rune('0'+i))+"Z")
-		if err := os.MkdirAll(path, 0o755); err != nil {
-			t.Fatal(err)
-		}
+		writeManifest(t, filepath.Join(path, "manifest.json"), Manifest{SchemaVersion: SchemaVersion, RuntimeStateSchema: state.SchemaVersion, TargetRoot: target})
 	}
 
 	backupDir, err := NewService().Run(Options{Target: target}, &bytes.Buffer{})

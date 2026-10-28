@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "targetRoot": "/Users/adrianrojas/Desktop/projects/lufy-ai",
+  "provider": "obsidian",
+  "root": ".lufy/memory",
+  "status": {
+    "configured": true,
+    "initialized": true,
+    "availability": "ready",
+    "schemaVersion": 1,
+    "notes": 18,
+    "drafts": 0,
+    "deprecated": 0,
+    "superseded": 0,
+    "brokenBacklinks": 0,
+    "backlinksIndexed": true
+  },
+  "checks": []
+}

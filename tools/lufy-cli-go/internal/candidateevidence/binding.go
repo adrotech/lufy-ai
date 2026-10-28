@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const SchemaVersion = "candidate-evidence/v1"
+const SchemaVersion = "candidate-evidence/v2"
 
 type Binding struct {
 	SchemaVersion           string `json:"schema_version"`
@@ -29,18 +29,16 @@ type Binding struct {
 	ChangedPathsModesSHA256 string `json:"changed_paths_modes_sha256"`
 	PolicySHA256            string `json:"policy_sha256"`
 	EvidenceSHA256          string `json:"evidence_sha256"`
-	Role                    string `json:"role"`
 }
 
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var oidPattern = regexp.MustCompile(`^([a-f0-9]{40}|[a-f0-9]{64})$`)
-var rolePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,63}$`)
 
 func digest(value []byte) string { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }
 
 func (b Binding) validate() error {
-	if b.SchemaVersion != SchemaVersion || !rolePattern.MatchString(b.Role) {
-		return fmt.Errorf("binding schema o rol inválido")
+	if b.SchemaVersion != SchemaVersion {
+		return fmt.Errorf("binding schema inválido")
 	}
 	for _, value := range []string{b.RepositorySHA256, b.ChangedPathsModesSHA256, b.PolicySHA256, b.EvidenceSHA256} {
 		if !hashPattern.MatchString(value) {
@@ -77,7 +75,7 @@ func Decode(input io.Reader) (Binding, error) {
 			return Binding{}, fmt.Errorf("binding clave duplicada o inválida")
 		}
 		switch name {
-		case "schema_version", "repository_sha256", "base_commit", "base_tree", "candidate_commit", "candidate_tree", "changed_paths_modes_sha256", "policy_sha256", "evidence_sha256", "role":
+		case "schema_version", "repository_sha256", "base_commit", "base_tree", "candidate_commit", "candidate_tree", "changed_paths_modes_sha256", "policy_sha256", "evidence_sha256":
 		default:
 			return Binding{}, fmt.Errorf("binding clave desconocida")
 		}
@@ -147,7 +145,7 @@ func policyHash(root string) (string, error) {
 		SHA256  string
 	}
 	parts := []part{}
-	for _, path := range []string{".lufy/contracts/delivery.md", ".lufy/contracts/result-contract.md", ".lufy/config/project.yaml"} {
+	for _, path := range []string{".lufy/contracts/delivery.md", ".lufy/contracts/work.md", ".lufy/contracts/evidence.md", ".lufy/config/project.yaml"} {
 		full := filepath.Join(root, filepath.FromSlash(path))
 		info, err := os.Lstat(full)
 		if os.IsNotExist(err) && path == ".lufy/config/project.yaml" {
@@ -177,11 +175,10 @@ func policyHash(root string) (string, error) {
 	return digest(body), nil
 }
 
-func snapshot(ctx context.Context, root, base, evidenceSHA, role string) (Binding, error) {
+func snapshot(ctx context.Context, root, base, evidenceSHA string) (Binding, error) {
 	var b Binding
 	b.SchemaVersion = SchemaVersion
 	b.EvidenceSHA256 = evidenceSHA
-	b.Role = role
 	common, err := textGit(ctx, root, "rev-parse", "--path-format=absolute", "--git-common-dir")
 	if err != nil {
 		return b, err
@@ -239,7 +236,7 @@ func snapshot(ctx context.Context, root, base, evidenceSHA, role string) (Bindin
 			return b, fmt.Errorf("candidato no limpio; comprometer o aislar cambios antes de capturar")
 		}
 	}
-	if _, err := git(ctx, root, "ls-files", "--error-unmatch", "--", ".lufy/contracts/delivery.md", ".lufy/contracts/result-contract.md"); err != nil {
+	if _, err := git(ctx, root, "ls-files", "--error-unmatch", "--", ".lufy/contracts/delivery.md", ".lufy/contracts/work.md", ".lufy/contracts/evidence.md"); err != nil {
 		return b, fmt.Errorf("políticas canónicas deben pertenecer al candidato comprometido")
 	}
 	flags, err := git(ctx, root, "ls-files", "-v", "-z")
@@ -264,9 +261,9 @@ func snapshot(ctx context.Context, root, base, evidenceSHA, role string) (Bindin
 }
 
 // Capture sólo observa commits; no crea árboles, actualiza índices ni toma locks.
-func Capture(ctx context.Context, target, base, evidenceSHA, role string) (Binding, error) {
-	if base == "" || !hashPattern.MatchString(evidenceSHA) || !rolePattern.MatchString(role) {
-		return Binding{}, fmt.Errorf("base, evidencia o rol inválidos")
+func Capture(ctx context.Context, target, base, evidenceSHA string) (Binding, error) {
+	if base == "" || !hashPattern.MatchString(evidenceSHA) {
+		return Binding{}, fmt.Errorf("base o evidencia inválidas")
 	}
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
@@ -278,11 +275,11 @@ func Capture(ctx context.Context, target, base, evidenceSHA, role string) (Bindi
 	if err != nil {
 		return Binding{}, fmt.Errorf("repositorio no disponible")
 	}
-	first, err := snapshot(ctx, root, base, evidenceSHA, role)
+	first, err := snapshot(ctx, root, base, evidenceSHA)
 	if err != nil {
 		return Binding{}, err
 	}
-	second, err := snapshot(ctx, root, base, evidenceSHA, role)
+	second, err := snapshot(ctx, root, base, evidenceSHA)
 	if err != nil {
 		return Binding{}, err
 	}
@@ -292,16 +289,16 @@ func Capture(ctx context.Context, target, base, evidenceSHA, role string) (Bindi
 	return first, nil
 }
 
-func Verify(ctx context.Context, target, base, evidenceSHA, role string, b Binding) error {
+func Verify(ctx context.Context, target, base, evidenceSHA string, b Binding) error {
 	if err := b.validate(); err != nil {
 		return err
 	}
-	current, err := Capture(ctx, target, base, evidenceSHA, role)
+	current, err := Capture(ctx, target, base, evidenceSHA)
 	if err != nil {
 		return err
 	}
 	if current != b {
-		return fmt.Errorf("evidencia obsoleta para candidato, base, repositorio, política o claim; repetir revisión y captura")
+		return fmt.Errorf("evidencia obsoleta para candidato, base, repositorio, política o comprobación; repetir revisión y captura")
 	}
 	return nil
 }

@@ -48,6 +48,24 @@ main() {
     "$REPO_ROOT/scripts/install.sh" --target "$target" --yes
     "$BIN" verify --target "$target"
 
+    # Un wrapper de esta generación rechaza un ejecutable previo antes de instalar.
+    local stale_repo="$work_root/stale-repo"
+    mkdir -p "$stale_repo/scripts" "$stale_repo/tools/lufy-cli-go/bin" "$stale_repo/target"
+    cp "$REPO_ROOT/scripts/install.sh" "$stale_repo/scripts/install.sh"
+    cat >"$stale_repo/tools/lufy-cli-go/bin/lufy-ai" <<'SH'
+#!/usr/bin/env bash
+if [ "$1" = version ]; then printf '%s\n' 'v0.6.25'; exit 0; fi
+printf '%s\n' 'WRONG GENERATION EXECUTED' >"$2"
+exit 0
+SH
+    chmod +x "$stale_repo/tools/lufy-cli-go/bin/lufy-ai"
+    if "$stale_repo/scripts/install.sh" --target "$stale_repo/target" --yes >"$work_root/stale.log" 2>&1; then
+        fail "wrapper aceptó CLI de generación anterior"
+    fi
+    assert_empty_dir "$stale_repo/target"
+    if ! grep -q 'contrato inline actual' "$work_root/stale.log"; then
+        fail "wrapper no diagnosticó generación incompatible"
+    fi
     printf 'Smoke wrapper completado\n'
 }
 

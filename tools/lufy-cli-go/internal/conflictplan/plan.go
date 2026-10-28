@@ -11,7 +11,6 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -23,13 +22,12 @@ type Options struct {
 }
 
 type Report struct {
-	TargetRoot       string       `json:"targetRoot"`
-	OK               bool         `json:"ok"`
-	Summary          Summary      `json:"summary"`
-	Groups           []Group      `json:"groups"`
-	Items            []Item       `json:"items"`
-	LegacyDeprecated []LegacyItem `json:"legacyDeprecated,omitempty"`
-	NextActions      []string     `json:"nextActions"`
+	TargetRoot  string   `json:"targetRoot"`
+	OK          bool     `json:"ok"`
+	Summary     Summary  `json:"summary"`
+	Groups      []Group  `json:"groups"`
+	Items       []Item   `json:"items"`
+	NextActions []string `json:"nextActions"`
 }
 
 type Summary struct {
@@ -37,7 +35,6 @@ type Summary struct {
 	Groups             int `json:"groups"`
 	HighRisk           int `json:"highRisk"`
 	MediumRisk         int `json:"mediumRisk"`
-	LegacyDeprecated   int `json:"legacyDeprecated"`
 	ParallelCandidates int `json:"parallelCandidates"`
 }
 
@@ -61,14 +58,6 @@ type Item struct {
 	ParallelGroup    string   `json:"parallelGroup"`
 	CurrentHash      string   `json:"currentHash,omitempty"`
 	SourceHash       string   `json:"sourceHash,omitempty"`
-}
-
-type LegacyItem struct {
-	Path           string `json:"path"`
-	CanonicalPath  string `json:"canonicalPath,omitempty"`
-	Status         string `json:"status"`
-	Recommendation string `json:"recommendation"`
-	Reason         string `json:"reason"`
 }
 
 type Service struct {
@@ -114,7 +103,6 @@ func (s Service) Build(opts Options) (Report, error) {
 		item := itemFromConflict(conflict, assetByPath)
 		report.Items = append(report.Items, item)
 	}
-	report.LegacyDeprecated = legacyItems(target)
 	sort.Slice(report.Items, func(i, j int) bool {
 		if report.Items[i].Category == report.Items[j].Category {
 			return report.Items[i].Path < report.Items[j].Path
@@ -154,25 +142,13 @@ func itemFromConflict(conflict installer.Conflict, assetByPath map[string]assets
 
 func categoryFor(path string) string {
 	switch {
-	case strings.HasPrefix(path, ".opencode/agents/"):
-		return ".opencode/agents"
-	case strings.HasPrefix(path, ".opencode/commands/"):
-		return ".opencode/commands"
-	case strings.HasPrefix(path, ".opencode/skills/"):
-		return ".opencode/skills"
-	case strings.HasPrefix(path, ".opencode/templates/"):
-		return ".opencode/templates"
-	case strings.HasPrefix(path, "openspec/specs/"):
-		return "openspec/specs"
-	case strings.HasPrefix(path, "openspec/"):
-		return "openspec"
 	case strings.HasPrefix(path, ".agents/skills/"):
 		return ".agents/skills"
 	case strings.HasPrefix(path, ".codex/"):
 		return ".codex"
 	case strings.HasPrefix(path, ".lufy/"):
 		return ".lufy"
-	case path == ".opencode/README.md" || path == ".opencode/package.json" || path == ".opencode/package-lock.json" || path == ".opencode/.gitignore" || path == "tui.json" || path == "lufy-ia.harness.md":
+	case path == "lufy-ia.harness.md" || path == "AGENTS.md":
 		return "root/config"
 	default:
 		return "other"
@@ -210,8 +186,6 @@ func recommendationFor(path, reason string, policy assets.Policy) string {
 		return "merge"
 	}
 	switch categoryFor(path) {
-	case ".opencode/agents", ".opencode/commands", ".opencode/skills", ".opencode/templates", "openspec/specs":
-		return "merge"
 	case "root/config":
 		return "block"
 	default:
@@ -275,7 +249,7 @@ func riskRank(risk string) int {
 }
 
 func summaryFor(report Report) Summary {
-	summary := Summary{Conflicts: len(report.Items), Groups: len(report.Groups), LegacyDeprecated: len(report.LegacyDeprecated), ParallelCandidates: len(report.Groups)}
+	summary := Summary{Conflicts: len(report.Items), Groups: len(report.Groups), ParallelCandidates: len(report.Groups)}
 	for _, item := range report.Items {
 		switch item.Risk {
 		case "high":
@@ -287,44 +261,11 @@ func summaryFor(report Report) Summary {
 	return summary
 }
 
-func legacyItems(target string) []LegacyItem {
-	report, err := layout.BuildPlan(target)
-	if err != nil {
-		return nil
-	}
-	items := []LegacyItem{}
-	seen := map[string]bool{}
-	for _, action := range report.Actions {
-		if action.Source == "" || !strings.Contains(action.Kind, "legacy") && action.Kind != "migrate-copy" {
-			continue
-		}
-		path := filepath.ToSlash(action.Source)
-		if seen[path] {
-			continue
-		}
-		seen[path] = true
-		items = append(items, LegacyItem{Path: path, CanonicalPath: filepath.ToSlash(action.Target), Status: "deprecated_layout", Recommendation: "migrate-layout", Reason: action.Reason})
-	}
-	for _, conflict := range report.Conflicts {
-		path := filepath.ToSlash(conflict.Source)
-		if seen[path] {
-			continue
-		}
-		seen[path] = true
-		items = append(items, LegacyItem{Path: path, CanonicalPath: filepath.ToSlash(conflict.Target), Status: "deprecated_layout_conflict", Recommendation: "block", Reason: conflict.Reason})
-	}
-	sort.Slice(items, func(i, j int) bool { return items[i].Path < items[j].Path })
-	return items
-}
-
 func nextActions(report Report) []string {
 	actions := []string{}
 	if len(report.Items) > 0 {
 		actions = append(actions, "Revisar grupos por categoria; no sobrescribir conflictos no gestionados sin decision humana.")
 		actions = append(actions, "Usar lufy-ai install --target <dir> --dry-run para ver acciones completas de instalacion.")
-	}
-	if len(report.LegacyDeprecated) > 0 {
-		actions = append(actions, "Ejecutar lufy-ai migrate-layout --target <dir> --dry-run antes de borrar rutas legacy .lufy-ai/*.")
 	}
 	if len(actions) == 0 {
 		actions = append(actions, "No hay conflictos de instalacion detectados; puedes continuar con setup/install.")
@@ -334,7 +275,7 @@ func nextActions(report Report) []string {
 
 func printReport(report Report, stdout io.Writer) {
 	fmt.Fprintf(stdout, "Plan de conflictos para %s\n", report.TargetRoot)
-	fmt.Fprintf(stdout, "Conflictos: %d grupos=%d legacy_deprecated=%d\n", report.Summary.Conflicts, report.Summary.Groups, report.Summary.LegacyDeprecated)
+	fmt.Fprintf(stdout, "Conflictos: %d grupos=%d\n", report.Summary.Conflicts, report.Summary.Groups)
 	if len(report.Items) == 0 {
 		fmt.Fprintln(stdout, "No hay conflictos de instalacion detectados")
 	}
@@ -347,12 +288,6 @@ func printReport(report Report, stdout io.Writer) {
 			fmt.Fprintf(stdout, "- %s status=%s recomendacion=%s riesgo=%s\n", item.Path, item.Status, item.Recommendation, item.Risk)
 			fmt.Fprintf(stdout, "  razon: %s\n", item.Reason)
 			fmt.Fprintf(stdout, "  acciones: %s\n", strings.Join(item.AvailableActions, ", "))
-		}
-	}
-	if len(report.LegacyDeprecated) > 0 {
-		fmt.Fprintln(stdout, "\nLegacy/deprecated detectado:")
-		for _, item := range report.LegacyDeprecated {
-			fmt.Fprintf(stdout, "- %s -> %s status=%s recomendacion=%s\n", item.Path, item.CanonicalPath, item.Status, item.Recommendation)
 		}
 	}
 	fmt.Fprintln(stdout, "\nSiguientes acciones:")

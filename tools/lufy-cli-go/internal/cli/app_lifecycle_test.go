@@ -15,7 +15,7 @@ func TestRunLifecycleCodexDispatchesHookPayload(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	code := Run([]string{"lifecycle", "codex"}, Dependencies{Stdin: bytes.NewReader(payload), Stdout: &stdout, Stderr: &stderr})
-	if code != ExitOK || !strings.Contains(stdout.String(), "resultado vacío") || stderr.Len() != 0 {
+	if code != ExitOK || !strings.Contains(stdout.String(), `"suppressOutput":true`) || stderr.Len() != 0 {
 		t.Fatalf("code=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
 }

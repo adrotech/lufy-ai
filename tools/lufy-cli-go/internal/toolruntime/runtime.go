@@ -5,12 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/config"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
-const OpenCodeProjectConfigFile = config.OpenCodeFile
 const CodexProjectConfigFile = ".codex/config.toml"
 
 type ProjectConfigResult struct {
@@ -21,8 +18,6 @@ type ProjectConfigResult struct {
 
 func GlobalRoot(tool domain.ToolID) (string, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		return platform.ResolveOpenCodeConfigRoot()
 	default:
 		return "", unsupportedToolError(tool)
 	}
@@ -30,8 +25,6 @@ func GlobalRoot(tool domain.ToolID) (string, error) {
 
 func ProjectConfigFile(tool domain.ToolID) (string, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		return OpenCodeProjectConfigFile, nil
 	case domain.ToolCodex:
 		return CodexProjectConfigFile, nil
 	default:
@@ -41,9 +34,6 @@ func ProjectConfigFile(tool domain.ToolID) (string, error) {
 
 func PlanProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigResult, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		result, err := config.NewService().Plan(config.Options{TargetRoot: targetRoot})
-		return fromConfigResult(result), err
 	case domain.ToolCodex:
 		return ProjectConfigResult{File: CodexProjectConfigFile}, nil
 	default:
@@ -53,9 +43,6 @@ func PlanProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigResu
 
 func EnsureProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigResult, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		result, err := config.NewService().Ensure(config.Options{TargetRoot: targetRoot})
-		return fromConfigResult(result), err
 	case domain.ToolCodex:
 		return ProjectConfigResult{File: CodexProjectConfigFile}, nil
 	default:
@@ -65,9 +52,6 @@ func EnsureProjectConfig(tool domain.ToolID, targetRoot string) (ProjectConfigRe
 
 func ValidateProjectConfig(tool domain.ToolID, targetRoot string) (bool, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		result, err := config.NewService().ValidateManagedStructure(targetRoot)
-		return result.Exists, err
 	case domain.ToolCodex:
 		info, err := os.Lstat(filepath.Join(targetRoot, CodexProjectConfigFile))
 		if os.IsNotExist(err) {
@@ -84,8 +68,6 @@ func ValidateProjectConfig(tool domain.ToolID, targetRoot string) (bool, error) 
 
 func PluginConfigFiles(tool domain.ToolID) ([]string, error) {
 	switch normalizeTool(tool) {
-	case domain.ToolInitialDefault:
-		return []string{"tui.json", OpenCodeProjectConfigFile}, nil
 	case domain.ToolCodex:
 		return []string{CodexProjectConfigFile}, nil
 	default:
@@ -95,15 +77,11 @@ func PluginConfigFiles(tool domain.ToolID) ([]string, error) {
 
 func normalizeTool(tool domain.ToolID) domain.ToolID {
 	if tool == "" {
-		return domain.ToolInitialDefault
+		return domain.ToolCodex
 	}
 	return tool
 }
 
 func unsupportedToolError(tool domain.ToolID) error {
 	return fmt.Errorf("tool runtime no soporta configuración escribible para %s", normalizeTool(tool))
-}
-
-func fromConfigResult(result config.Result) ProjectConfigResult {
-	return ProjectConfigResult{File: OpenCodeProjectConfigFile, Action: result.Action, Changed: result.Changed}
 }

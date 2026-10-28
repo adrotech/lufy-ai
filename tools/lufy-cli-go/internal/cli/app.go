@@ -20,15 +20,14 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/governance"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/installer"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/layout"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/merger"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/opsx"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/prguard"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/setup"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/skillregistry"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/status"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/syncer"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/tui/commandpalette"
@@ -75,8 +74,6 @@ func Run(args []string, deps Dependencies) int {
 		return runRestore(args[1:], deps)
 	case "merge":
 		return runMerge(args[1:], deps)
-	case "migrate-layout":
-		return runMigrateLayout(args[1:], deps)
 	case "memory":
 		return runMemory(args[1:], deps)
 	case "skills":
@@ -97,10 +94,6 @@ func Run(args []string, deps Dependencies) int {
 		return runUpgrade(args[1:], deps)
 	case "setup":
 		return runSetup(args[1:], deps)
-	case "opsx":
-		return runOpsx(args[1:], deps)
-	case "sdd":
-		return runSDD(args[1:], deps)
 	case "run":
 		return runRun(args[1:], deps)
 	case "review":
@@ -109,8 +102,8 @@ func Run(args []string, deps Dependencies) int {
 		return runCandidate(args[1:], deps)
 	case "adaptive":
 		return runAdaptive(args[1:], deps)
-	case "result":
-		return runResult(args[1:], deps)
+	case "evidence":
+		return runEvidence(args[1:], deps)
 	case "pr":
 		return runPR(args[1:], deps)
 	case "context":
@@ -360,10 +353,6 @@ func runContext(args []string, deps Dependencies) int {
 		return runContextExplain(args[1:], deps)
 	case "diff":
 		return runContextDiff(args[1:], deps)
-	case "coverage":
-		return runContextCoverage(args[1:], deps)
-	case "trace":
-		return runContextTrace(args[1:], deps)
 	case "review":
 		return runContextReview(args[1:], deps)
 	case "metrics":
@@ -489,7 +478,7 @@ func runContextPath(args []string, deps Dependencies) int {
 			fmt.Fprintln(deps.Stdout, "path: not_found")
 			return
 		}
-		fmt.Fprintf(deps.Stdout, "path: %s\n", joinComma(res.Nodes))
+		fmt.Fprintf(deps.Stdout, "path: %s\n", strings.Join(res.Nodes, ", "))
 	})
 }
 
@@ -532,78 +521,12 @@ func runContextDiff(args []string, deps Dependencies) int {
 	})
 }
 
-func runContextCoverage(args []string, deps Dependencies) int {
-	fs, target, jsonOutput := contextFlagSet("coverage", deps)
-	fs.Usage = func() {
-		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context coverage [--target <dir>] [--json]")
-	}
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return ExitOK
-		}
-		return ExitUsageErr
-	}
-	if len(fs.Args()) != 0 {
-		fs.Usage()
-		return ExitUsageErr
-	}
-	res := contextapp.NewService().Coverage(*target)
-	return writeContextResult(deps, *jsonOutput, res, func() {
-		fmt.Fprintf(deps.Stdout, "context coverage: %s (graph=%s scenarios=%d truncated=%t)\n", res.Status, res.GraphStatus, res.TotalScenarios, res.Truncated)
-		for _, scenario := range res.Scenarios {
-			fmt.Fprintf(deps.Stdout, "%s: %s", scenario.ScenarioID, scenario.Status)
-			if len(scenario.Missing) > 0 {
-				fmt.Fprintf(deps.Stdout, " missing=%s", strings.Join(scenario.Missing, ","))
-			}
-			fmt.Fprintln(deps.Stdout)
-		}
-		if res.Recovery != "" {
-			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
-		}
-	})
-}
-
-func runContextTrace(args []string, deps Dependencies) int {
-	fs, target, jsonOutput := contextFlagSet("trace", deps)
-	fs.Usage = func() {
-		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context trace [--target <dir>] [--json] <node>")
-	}
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return ExitOK
-		}
-		return ExitUsageErr
-	}
-	if len(fs.Args()) != 1 {
-		fs.Usage()
-		return ExitUsageErr
-	}
-	res := contextapp.NewService().Trace(*target, fs.Args()[0])
-	return writeContextResult(deps, *jsonOutput, res, func() {
-		label := res.Status
-		if res.Traced {
-			label = "traced"
-		}
-		fmt.Fprintf(deps.Stdout, "context trace: %s (graph=%s)\n", label, res.GraphStatus)
-		if len(res.Path) > 0 {
-			fmt.Fprintf(deps.Stdout, "path: %s\n", strings.Join(res.Path, " -> "))
-		}
-		if res.Reason != "" {
-			fmt.Fprintf(deps.Stdout, "reason: %s\n", res.Reason)
-		}
-		if res.Recovery != "" {
-			fmt.Fprintf(deps.Stdout, "recovery: %s\n", res.Recovery)
-		}
-	})
-}
-
 func runContextReview(args []string, deps Dependencies) int {
 	fs, target, jsonOutput := contextFlagSet("review", deps)
 	base := fs.String("base", "", "Referencia Git base")
 	concurrentSlices := fs.Int("concurrent-slices", 0, "Slices concurrentes observados")
-	evidenceItems := fs.Int("evidence-items", 0, "Items de evidencia observados")
 	fs.Usage = func() {
-		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context review --base <ref> [--target <dir>] [--concurrent-slices <n>] [--evidence-items <n>] [--json]")
+		fmt.Fprintln(deps.Stdout, "Uso: lufy-ai context review --base <ref> [--target <dir>] [--concurrent-slices <n>] [--json]")
 	}
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -611,17 +534,17 @@ func runContextReview(args []string, deps Dependencies) int {
 		}
 		return ExitUsageErr
 	}
-	if *base == "" || len(fs.Args()) != 0 || *concurrentSlices < 0 || *evidenceItems < 0 {
+	if *base == "" || len(fs.Args()) != 0 || *concurrentSlices < 0 {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	res, err := contextapp.NewService().Review(*target, contextapp.ReviewOptions{Base: *base, ConcurrentSlices: *concurrentSlices, EvidenceItems: *evidenceItems})
+	res, err := contextapp.NewService().Review(*target, contextapp.ReviewOptions{Base: *base, ConcurrentSlices: *concurrentSlices})
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
 	return writeContextResult(deps, *jsonOutput, res, func() {
-		fmt.Fprintf(deps.Stdout, "context review: %s (graph=%s traceability=%s files=%d churn=%d)\n", res.Action, res.GraphStatus, res.Traceability, res.Observations.Files, res.Observations.Churn)
+		fmt.Fprintf(deps.Stdout, "context review: %s (graph=%s files=%d churn=%d)\n", res.Action, res.GraphStatus, res.Observations.Files, res.Observations.Churn)
 		for _, violation := range res.Violations {
 			fmt.Fprintf(deps.Stdout, "violation: %s", violation.Code)
 			if violation.Path != "" {
@@ -687,58 +610,6 @@ func contextGraphErr(deps Dependencies, err error, jsonOutput bool) int {
 	}
 	fmt.Fprintln(deps.Stderr, err.Error())
 	return ExitRuntimeErr
-}
-
-func runOpsx(args []string, deps Dependencies) int {
-	if len(args) == 0 {
-		printOpsxHelp(deps.Stderr)
-		return ExitUsageErr
-	}
-	switch args[0] {
-	case "render":
-		return runOpsxRender(args[1:], deps)
-	case "-h", "--help", "help":
-		printOpsxHelp(deps.Stdout)
-		return ExitOK
-	default:
-		fmt.Fprintf(deps.Stderr, "Subcomando opsx desconocido: %s\n\n", args[0])
-		printOpsxHelp(deps.Stderr)
-		return ExitUsageErr
-	}
-}
-
-func runOpsxRender(args []string, deps Dependencies) int {
-	fs := flag.NewFlagSet("opsx render", flag.ContinueOnError)
-	fs.SetOutput(deps.Stderr)
-	target := fs.String("target", ".", "Repositorio target")
-	change := fs.String("change", "", "Nombre del change OpenSpec")
-	format := fs.String("format", "html", "Formato de salida: html")
-	theme := fs.String("theme", "notion-dark", "Tema HTML: notion-dark")
-	output := fs.String("output", "", "Ruta de salida opcional")
-	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai opsx render --change <name> [--target <dir>] [--format html] [--theme notion-dark] [--output <path>]")
-		fmt.Fprintln(deps.Stderr, "Renderiza artifacts OpenSpec proposal/design/tasks/specs en un HTML offline opcional.")
-	}
-	if err := fs.Parse(args); err != nil {
-		if errors.Is(err, flag.ErrHelp) {
-			return ExitOK
-		}
-		fs.Usage()
-		return ExitUsageErr
-	}
-	if len(fs.Args()) > 0 {
-		fmt.Fprintln(deps.Stderr, "opsx render no acepta argumentos posicionales")
-		fs.Usage()
-		return ExitUsageErr
-	}
-	res, err := opsx.NewChangeRenderer().Render(opsx.RenderOptions{Target: *target, Change: *change, Format: *format, Theme: *theme, Output: *output})
-	if err != nil {
-		fmt.Fprintln(deps.Stderr, err.Error())
-		return ExitRuntimeErr
-	}
-	fmt.Fprintf(deps.Stdout, "HTML OpenSpec generado: [%s](%s)\n", res.OutputPath, fileURL(res.OutputPath))
-	fmt.Fprintf(deps.Stdout, "Abrir: open %s\n", res.OutputPath)
-	return ExitOK
 }
 
 func fileURL(path string) string {
@@ -811,7 +682,7 @@ func runMemoryInit(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "memory init no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -834,12 +705,6 @@ func runMemoryStatus(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "memory status no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	if err := memory.NewService().Status(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -858,12 +723,6 @@ func runMemoryValidate(args []string, deps Dependencies) int {
 	if len(fs.Args()) > 0 {
 		fmt.Fprintln(deps.Stderr, "memory validate no acepta argumentos posicionales")
 		return ExitUsageErr
-	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
 	}
 	if err := memory.NewService().Validate(memory.Options{Target: *target, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -890,12 +749,6 @@ func runMemorySearch(args []string, deps Dependencies) int {
 	if len(fs.Args()) != 1 {
 		fs.Usage()
 		return ExitUsageErr
-	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
 	}
 	if err := memory.NewService().Search(memory.Options{Target: *target, Query: fs.Args()[0], JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -929,12 +782,6 @@ func runMemoryCapture(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	if err := memory.NewService().Capture(memory.CaptureOptions{Target: *target, Title: *title, Type: *noteType, Body: body, Links: links, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -963,12 +810,6 @@ func runMemoryConnect(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	if err := memory.NewService().Connect(memory.ConnectOptions{Target: *target, From: fs.Args()[0], To: fs.Args()[1], Bidirectional: *bidirectional, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
@@ -995,12 +836,6 @@ func runMemoryIndex(args []string, deps Dependencies) int {
 	if len(fs.Args()) > 0 {
 		fs.Usage()
 		return ExitUsageErr
-	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
 	}
 	if err := memory.NewService().Index(memory.IndexOptions{Target: *target, DryRun: *dryRun, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -1032,7 +867,7 @@ func runUninstall(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1071,7 +906,7 @@ func runInit(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "init no permite combinar --force y --rescan")
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1080,36 +915,6 @@ func runInit(args []string, deps Dependencies) int {
 		opts.ProfilePrompt = surfaceProfilePrompt(deps)
 	}
 	if err := projectconfig.NewService().Run(opts, deps.Stdout); err != nil {
-		fmt.Fprintln(deps.Stderr, err.Error())
-		return ExitRuntimeErr
-	}
-	return ExitOK
-}
-
-func runMigrateLayout(args []string, deps Dependencies) int {
-	fs := flag.NewFlagSet("migrate-layout", flag.ContinueOnError)
-	fs.SetOutput(deps.Stderr)
-	target := fs.String("target", ".", "Directorio destino")
-	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
-	yes := fs.Bool("yes", false, "Aceptar migracion real")
-	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
-	fs.Usage = func() {
-		fmt.Fprintln(deps.Stderr, "Uso: lufy-ai migrate-layout [--target <dir>] [--dry-run] [--yes] [--json]")
-		fmt.Fprintln(deps.Stderr, "Migra rutas legacy .lufy-ai/ y .lufy/project.yaml al layout unificado .lufy/.")
-	}
-	if err := fs.Parse(args); err != nil {
-		fs.Usage()
-		if errors.Is(err, flag.ErrHelp) {
-			return ExitOK
-		}
-		return ExitUsageErr
-	}
-	if len(fs.Args()) > 0 {
-		fmt.Fprintln(deps.Stderr, "migrate-layout no acepta argumentos posicionales")
-		fs.Usage()
-		return ExitUsageErr
-	}
-	if err := layout.NewService().Run(layout.Options{Target: *target, DryRun: *dryRun, Yes: *yes, JSON: *jsonOutput}, deps.Stdout); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1137,7 +942,7 @@ func runScan(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1177,7 +982,7 @@ func runMerge(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "merge no permite combinar --accept-theirs y --accept-ours")
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1307,12 +1112,6 @@ func runStatus(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "status no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	scope, err := assets.ParseScope(*scopeValue)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -1364,12 +1163,6 @@ func runDoctor(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "doctor no acepta argumentos posicionales")
 		return ExitUsageErr
 	}
-	if !*jsonOutput {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	scope, err := assets.ParseScope(*scopeValue)
 	if err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
@@ -1402,7 +1195,7 @@ func runPin(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1432,7 +1225,7 @@ func runUnpin(args []string, deps Dependencies) int {
 		fs.Usage()
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1446,12 +1239,17 @@ func runUnpin(args []string, deps Dependencies) int {
 func runVersion(args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
+	contract := fs.Bool("runtime-contract", false, "Mostrar el contrato de ejecución de este binario")
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
 	if len(fs.Args()) > 0 {
 		fmt.Fprintln(deps.Stderr, "version no acepta argumentos posicionales")
 		return ExitUsageErr
+	}
+	if *contract {
+		fmt.Fprint(deps.Stdout, upgrade.RuntimeContractHeader())
+		return ExitOK
 	}
 	fmt.Fprintln(deps.Stdout, version.Current().String())
 	return ExitOK
@@ -1465,10 +1263,10 @@ func runSync(args []string, deps Dependencies) int {
 	scopeValue := fs.String("scope", "project", "Scope efectivo: project, global o both")
 	dryRun := fs.Bool("dry-run", false, "Mostrar plan sin mutaciones")
 	yes := fs.Bool("yes", false, "Aceptar confirmaciones")
-	harnessFlags := addToolFlag(fs)
+	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool %s] [--dry-run] [--yes]\n", writableToolUsage())
+		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai sync [--target <dir>] [--scope project|global|both] [--tool %s] [--delegation auto|on_request|off] [--dry-run] [--yes]\n", writableToolUsage())
 		fmt.Fprintln(deps.Stderr, "Sincroniza assets gestionados con manifest/hash/backup sin tocar drift local ni archivos no gestionados.")
 	}
 
@@ -1496,7 +1294,7 @@ func runSync(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	service := syncer.NewService()
-	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1532,12 +1330,6 @@ func runVerify(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitUsageErr
 	}
-	if !*jsonOutput && !*quiet {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
-	}
 	expectedTool := domain.ToolID("")
 	if harness.ToolIsExplicit() {
 		expectedTool = harness.Tool
@@ -1556,7 +1348,7 @@ func runBackup(args []string, deps Dependencies) int {
 	if err := fs.Parse(args); err != nil {
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, false, true, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1580,10 +1372,6 @@ func runRestore(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	if *list {
-		if err := reportLegacyLayoutForReadOnly(*target, deps.Stdout); err != nil {
-			fmt.Fprintln(deps.Stderr, err.Error())
-			return ExitRuntimeErr
-		}
 		if err := backup.NewService().List(*target, deps.Stdout); err != nil {
 			fmt.Fprintln(deps.Stderr, err.Error())
 			return ExitRuntimeErr
@@ -1594,7 +1382,7 @@ func runRestore(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, "restore requiere --backup <ruta>")
 		return ExitUsageErr
 	}
-	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1618,7 +1406,7 @@ func runInstall(args []string, deps Dependencies) int {
 	harnessFlags := addHarnessFlags(fs)
 
 	fs.Usage = func() {
-		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool %s] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]\n", writableToolUsage())
+		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai install [--target <dir>] [--scope project|global|both] [--tool %s] [--delegation auto|on_request|off] [--dry-run] [--yes] [--backup]\n", writableToolUsage())
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -1646,7 +1434,7 @@ func runInstall(args []string, deps Dependencies) int {
 		return ExitUsageErr
 	}
 	service := installer.NewService()
-	if err := ensureLayoutForMutation(*target, *dryRun, *yes, deps.Stdout); err != nil {
+	if err := ensureCurrentInstallationPaths(*target); err != nil {
 		fmt.Fprintln(deps.Stderr, err.Error())
 		return ExitRuntimeErr
 	}
@@ -1674,87 +1462,18 @@ func runInstall(args []string, deps Dependencies) int {
 	return ExitOK
 }
 
-func ensureLayoutForMutation(target string, dryRun bool, allowApply bool, stdout io.Writer) error {
-	if dryRun {
-		resolved, err := platform.ResolveTargetPath(target)
-		if err != nil {
-			return err
-		}
-		report, err := layout.BuildPlan(resolved)
-		if err != nil {
-			return err
-		}
-		if len(report.Actions) == 0 && len(report.Conflicts) == 0 {
-			return nil
-		}
-		for _, conflict := range report.Conflicts {
-			fmt.Fprintf(stdout, "[dry-run] [layout-conflict] %s -> %s: %s\n", conflict.Source, conflict.Target, conflict.Reason)
-		}
-		for _, action := range report.Actions {
-			if action.Source != "" {
-				fmt.Fprintf(stdout, "[dry-run] [layout-%s] %s -> %s\n", action.Kind, action.Source, action.Target)
-				continue
-			}
-			fmt.Fprintf(stdout, "[dry-run] [layout-%s] %s\n", action.Kind, action.Target)
-		}
-		return nil
-	}
+// Historical documents and source directories do not identify an active installation.
+// Only retired configuration/state paths block mutations; typed services validate schemas.
+func ensureCurrentInstallationPaths(target string) error {
 	resolved, err := platform.ResolveTargetPath(target)
 	if err != nil {
 		return err
 	}
-	report, err := layout.BuildPlan(resolved)
-	if err != nil {
+	if _, err := projectconfig.ExistingPath(resolved); err != nil {
 		return err
 	}
-	if len(report.Conflicts) > 0 {
-		return fmt.Errorf("layout .lufy bloqueado por %d conflicto(s); ejecuta lufy-ai migrate-layout --target %s --dry-run", len(report.Conflicts), target)
-	}
-	if len(report.Actions) == 0 {
-		return nil
-	}
-	if !allowApply {
-		for _, action := range report.Actions {
-			if action.Kind == "migrate-copy" {
-				return fmt.Errorf("layout legacy detectado; vuelve a ejecutar con --yes para migrar primero o revisa con lufy-ai migrate-layout --target %s --dry-run", target)
-			}
-		}
-		return nil
-	}
-	_, err = layout.Apply(resolved, report.Actions, stdout)
+	_, err = state.ExistingPath(resolved)
 	return err
-}
-
-func reportLegacyLayoutForReadOnly(target string, stdout io.Writer) error {
-	resolved, err := platform.ResolveTargetPath(target)
-	if err != nil {
-		return err
-	}
-	report, err := layout.BuildPlan(resolved)
-	if err != nil {
-		return err
-	}
-	if len(report.Legacy) == 0 && len(report.Conflicts) == 0 {
-		return nil
-	}
-	if len(report.Legacy) > 0 {
-		fmt.Fprintf(stdout, "legacy layout detectado: %s; revisa con lufy-ai migrate-layout --target %s --dry-run\n", joinComma(report.Legacy), target)
-	}
-	for _, conflict := range report.Conflicts {
-		fmt.Fprintf(stdout, "legacy layout conflictivo: %s -> %s: %s\n", conflict.Source, conflict.Target, conflict.Reason)
-	}
-	return nil
-}
-
-func joinComma(values []string) string {
-	if len(values) == 0 {
-		return ""
-	}
-	out := values[0]
-	for _, value := range values[1:] {
-		out += ", " + value
-	}
-	return out
 }
 
 func printGeneralHelp(out io.Writer) {
@@ -1769,7 +1488,6 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")
 	fmt.Fprintln(out, "  restore   Restaura desde backup")
 	fmt.Fprintln(out, "  merge     Reconcilia .lufy-new con edits locales")
-	fmt.Fprintln(out, "  migrate-layout Migra rutas legacy al layout unificado .lufy/")
 	fmt.Fprintln(out, "  memory    Inicializa, valida, busca, captura y conecta memoria Obsidian portable")
 	fmt.Fprintln(out, "  skills    Refresca y diagnostica el registry portable de skills")
 	fmt.Fprintln(out, "  sync      Sincroniza assets gestionados con manifest/hash/backup")
@@ -1780,13 +1498,11 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  doctor    Diagnostica project.yaml, manifest y drift sin mutar")
 	fmt.Fprintln(out, "  pin       Congela un asset gestionado para preservar edits locales")
 	fmt.Fprintln(out, "  unpin     Remueve el freeze de un asset gestionado")
-	fmt.Fprintln(out, "  opsx      Utilidades OpenSpec auxiliares")
-	fmt.Fprintln(out, "  sdd       Lifecycle nativo de Lufy SDD")
 	fmt.Fprintln(out, "  run       Registra y consulta ejecuciones causales locales")
 	fmt.Fprintln(out, "  review    Registra eventos semánticos explícitos de review sin avanzar gates")
 	fmt.Fprintln(out, "  candidate Vincula y verifica evidencia contra un candidato Git limpio")
 	fmt.Fprintln(out, "  adaptive  Recomienda y registra asignaciones/yields adaptativos acotados")
-	fmt.Fprintln(out, "  result    Valida, normaliza y evalúa Result Contracts")
+	fmt.Fprintln(out, "  evidence  Inspecciona comprobaciones declaradas, sin avanzar workflow")
 	fmt.Fprintln(out, "  pr        Guardrails de Pull Request")
 	fmt.Fprintln(out, "  context   Construye y consulta el grafo de contexto local")
 	fmt.Fprintln(out, "  lifecycle Ejecuta lifecycle portable para adapters soportados")
@@ -1825,26 +1541,8 @@ func printContextHelp(out io.Writer) {
 	fmt.Fprintln(out, "  path      Calcula un camino explicable entre nodos")
 	fmt.Fprintln(out, "  explain   Explica por qué existe un nodo o edge")
 	fmt.Fprintln(out, "  diff      Resume impacto desde git diff --base <ref>")
-	fmt.Fprintln(out, "  coverage  Reporta cobertura explícita scenario-task-test")
-	fmt.Fprintln(out, "  trace     Sigue trazabilidad forward desde un nodo")
 	fmt.Fprintln(out, "  review    Evalúa diff, trazabilidad y budgets de revisión")
 	fmt.Fprintln(out, "  metrics   Deriva métricas content-free desde Run Ledger")
-}
-
-func printOpsxHelp(out io.Writer) {
-	fmt.Fprintln(out, "Uso: lufy-ai opsx <subcomando> [flags]")
-	fmt.Fprintln(out, "Subcomandos:")
-	fmt.Fprintln(out, "  render    Renderiza un change OpenSpec a HTML offline")
-}
-
-func printSDDHelp(out io.Writer) {
-	fmt.Fprintln(out, "Uso: lufy-ai sdd <subcomando> [flags]")
-	fmt.Fprintln(out, "Subcomandos:")
-	fmt.Fprintln(out, "  new       Crea un change Lufy SDD Full o Lite con overview HTML")
-	fmt.Fprintln(out, "  status    Resume artifacts, tareas y gates locales")
-	fmt.Fprintln(out, "  validate  Valida artifacts y refresca el overview HTML")
-	fmt.Fprintln(out, "  sync      Aplica deltas validados a specs activas")
-	fmt.Fprintln(out, "  archive   Archiva un change con gates locales completos")
 }
 
 func printMemoryHelp(out io.Writer) {

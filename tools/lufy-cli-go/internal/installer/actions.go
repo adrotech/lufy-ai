@@ -12,7 +12,6 @@ const (
 	ActionWriteLufyNew          ActionKind = "write-lufy-new"
 	ActionAgentsReferenceCreate ActionKind = "agents-reference-create"
 	ActionAgentsReferenceInsert ActionKind = "agents-reference-insert"
-	ActionMergeJSON             ActionKind = "merge-json"
 	ActionVerify                ActionKind = "verify"
 	ActionAgentsReferenceSkip   ActionKind = "agents-reference-skip"
 	ActionSkip                  ActionKind = "skip"
@@ -28,7 +27,6 @@ var actionOrder = map[ActionKind]int{
 	ActionWriteLufyNew:          6,
 	ActionAgentsReferenceCreate: 7,
 	ActionAgentsReferenceInsert: 8,
-	ActionMergeJSON:             9,
 	ActionVerify:                10,
 	ActionAgentsReferenceSkip:   11,
 	ActionSkip:                  12,
@@ -47,7 +45,7 @@ func targetsForKind(actions []Action, kind ActionKind) []string {
 func hasContentMutation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
-		case ActionCopy, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionMergeJSON, ActionAgentsReferenceCreate, ActionAgentsReferenceInsert:
+		case ActionCopy, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionAgentsReferenceCreate, ActionAgentsReferenceInsert:
 			return true
 		}
 	}
@@ -57,7 +55,7 @@ func hasContentMutation(actions []Action) bool {
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
-		case ActionMkdir, ActionCopy, ActionUpdateManaged, ActionMergeBlock, ActionAdoptMergeBlock, ActionWriteLufyNew, ActionMergeJSON, ActionAgentsReferenceCreate, ActionAgentsReferenceInsert, ActionBackup:
+		case ActionMkdir, ActionCopy, ActionUpdateManaged, ActionMergeBlock, ActionAdoptMergeBlock, ActionWriteLufyNew, ActionAgentsReferenceCreate, ActionAgentsReferenceInsert, ActionBackup:
 			return true
 		}
 	}

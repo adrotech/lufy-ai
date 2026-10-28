@@ -13,11 +13,12 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/projectconfig"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/state"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 const defaultBackupRetention = 10
 
@@ -26,15 +27,16 @@ type Options struct {
 }
 
 type Manifest struct {
-	SchemaVersion int        `json:"schemaVersion"`
-	CreatedAt     string     `json:"createdAt"`
-	ToolVersion   string     `json:"toolVersion"`
-	ToolCommit    string     `json:"toolCommit,omitempty"`
-	ToolBuildDate string     `json:"toolBuildDate,omitempty"`
-	TargetRoot    string     `json:"targetRoot"`
-	Cause         string     `json:"cause"`
-	Files         []FileItem `json:"files"`
-	Actions       []Action   `json:"actions"`
+	SchemaVersion      int        `json:"schemaVersion"`
+	RuntimeStateSchema int        `json:"runtimeStateSchema"`
+	CreatedAt          string     `json:"createdAt"`
+	ToolVersion        string     `json:"toolVersion"`
+	ToolCommit         string     `json:"toolCommit,omitempty"`
+	ToolBuildDate      string     `json:"toolBuildDate,omitempty"`
+	TargetRoot         string     `json:"targetRoot"`
+	Cause              string     `json:"cause"`
+	Files              []FileItem `json:"files"`
+	Actions            []Action   `json:"actions"`
 }
 
 type FileItem struct {
@@ -91,7 +93,7 @@ func BackupFiles(target string, rels []string, cause string, stdout io.Writer) (
 	}
 
 	toolInfo := version.Current()
-	manifest := Manifest{SchemaVersion: SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), ToolVersion: toolInfo.Version, ToolCommit: toolInfo.Commit, ToolBuildDate: toolInfo.BuildDate, TargetRoot: target, Cause: cause}
+	manifest := Manifest{SchemaVersion: SchemaVersion, RuntimeStateSchema: state.SchemaVersion, CreatedAt: time.Now().UTC().Format(time.RFC3339), ToolVersion: toolInfo.Version, ToolCommit: toolInfo.Commit, ToolBuildDate: toolInfo.BuildDate, TargetRoot: target, Cause: cause}
 	for _, rel := range uniqueStrings(rels) {
 		clean, err := platform.EnsureRelativeSafe(rel)
 		if err != nil {
@@ -176,7 +178,16 @@ func pruneBackups(backupRoot, current string, keep int) error {
 		if !entry.IsDir() {
 			continue
 		}
-		dirs = append(dirs, filepath.Join(backupRoot, entry.Name()))
+		dir := filepath.Join(backupRoot, entry.Name())
+		body, err := os.ReadFile(filepath.Join(dir, "manifest.json"))
+		if err != nil {
+			continue
+		}
+		var manifest Manifest
+		if json.Unmarshal(body, &manifest) != nil || validateGeneration(manifest) != nil {
+			continue
+		}
+		dirs = append(dirs, dir)
 	}
 	sort.Strings(dirs)
 	if len(dirs) <= keep {
@@ -228,8 +239,8 @@ func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdou
 	if err := json.Unmarshal(body, &manifest); err != nil {
 		return err
 	}
-	if manifest.SchemaVersion != SchemaVersion {
-		return fmt.Errorf("schema de backup no soportado: %d", manifest.SchemaVersion)
+	if err := validateGeneration(manifest); err != nil {
+		return err
 	}
 	manifestTarget, err := platform.ResolveTargetPath(manifest.TargetRoot)
 	if err != nil {
@@ -247,6 +258,9 @@ func (s Service) Restore(target, backupPath string, dryRun bool, yes bool, stdou
 		return fmt.Errorf("restore requiere --yes para aplicar mutaciones reales; usa --dry-run para revisar el plan sin escribir")
 	}
 	if err := validateBackupHashes(manifestPath, manifest.Files); err != nil {
+		return err
+	}
+	if err := validateRuntimePayload(manifestPath, manifest.Files); err != nil {
 		return err
 	}
 	recoveryBackup := ""
@@ -331,8 +345,8 @@ func RestoreCapturedFiles(target, backupPath string, stdout io.Writer) (int, err
 	if err := json.Unmarshal(body, &manifest); err != nil {
 		return 0, err
 	}
-	if manifest.SchemaVersion != SchemaVersion {
-		return 0, fmt.Errorf("schema de backup no soportado: %d", manifest.SchemaVersion)
+	if err := validateGeneration(manifest); err != nil {
+		return 0, err
 	}
 	manifestTarget, err := platform.ResolveTargetPath(manifest.TargetRoot)
 	if err != nil {
@@ -376,10 +390,6 @@ type backupItem struct {
 }
 
 func resolveBackupReference(target, backupPath string) (string, error) {
-	if strings.HasPrefix(backupPath, "legacy:") {
-		id := strings.TrimPrefix(backupPath, "legacy:")
-		return platform.SafeJoin(target, filepath.Join(lufypaths.LegacyBackups, id))
-	}
 	absBackup, err := platform.ResolveTargetPath(backupPath)
 	if err == nil {
 		if _, statErr := os.Stat(absBackup); statErr == nil {
@@ -399,12 +409,12 @@ func resolveBackupReference(target, backupPath string) (string, error) {
 
 func backupItems(target string) ([]backupItem, error) {
 	var out []backupItem
-	roots, err := lufypaths.ExistingPaths(target, lufypaths.Backups, lufypaths.LegacyBackups)
+	root, err := platform.SafeJoin(target, lufypaths.Backups)
 	if err != nil {
 		return nil, err
 	}
-	for _, root := range roots {
-		entries, err := os.ReadDir(root.Path)
+	for _, root := range []string{root} {
+		entries, err := os.ReadDir(root)
 		if os.IsNotExist(err) {
 			continue
 		}
@@ -415,19 +425,16 @@ func backupItems(target string) ([]backupItem, error) {
 			if !entry.IsDir() {
 				continue
 			}
-			manifestPath := filepath.Join(root.Path, entry.Name(), "manifest.json")
+			manifestPath := filepath.Join(root, entry.Name(), "manifest.json")
 			body, err := os.ReadFile(manifestPath)
 			if err != nil {
 				continue
 			}
 			var manifest Manifest
-			if err := json.Unmarshal(body, &manifest); err != nil || manifest.SchemaVersion != SchemaVersion {
+			if err := json.Unmarshal(body, &manifest); err != nil || validateGeneration(manifest) != nil {
 				continue
 			}
 			id := entry.Name()
-			if root.Legacy {
-				id = "legacy:" + id
-			}
 			out = append(out, backupItem{ID: id, CreatedAt: manifest.CreatedAt, ManifestPath: manifestPath})
 		}
 	}
@@ -448,7 +455,11 @@ func validateBackupHashes(manifestPath string, files []FileItem) error {
 		if err != nil {
 			return err
 		}
-		actualHash, err := assets.FileSHA256(filepath.Join(filepath.Dir(manifestPath), backupRel))
+		source, err := platform.SafeJoin(filepath.Dir(manifestPath), backupRel)
+		if err != nil {
+			return err
+		}
+		actualHash, err := assets.FileSHA256(source)
 		if err != nil {
 			return err
 		}
@@ -513,7 +524,17 @@ func managedExistingFiles(target string) ([]string, error) {
 			rels = append(rels, clean)
 		}
 	}
-	return rels, nil
+
+	for _, rel := range []string{"AGENTS.md", lufypaths.InstallState, lufypaths.ProjectConfig} {
+		path, err := platform.SafeJoin(target, rel)
+		if err != nil {
+			return nil, err
+		}
+		if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
+			rels = append(rels, rel)
+		}
+	}
+	return uniqueStrings(rels), nil
 }
 
 func copyFile(src, targetRoot, targetRel string) error {
@@ -556,4 +577,43 @@ func shortHash(hash string) string {
 		return hash
 	}
 	return hash[:12]
+}
+
+func validateGeneration(manifest Manifest) error {
+	if manifest.SchemaVersion != SchemaVersion || manifest.RuntimeStateSchema != state.SchemaVersion {
+		return fmt.Errorf("generación de backup no soportada: backup=%d state=%d; restaurá esa generación junto con su ejecutable", manifest.SchemaVersion, manifest.RuntimeStateSchema)
+	}
+	return nil
+}
+
+// La recuperación pública valida payload antes de escribir. El rollback interno
+// conserva preimágenes opacas para poder deshacer una operación sobre estado dañado.
+func validateRuntimePayload(manifestPath string, files []FileItem) error {
+	for _, file := range files {
+		if file.Status != "captured" {
+			continue
+		}
+		path := filepath.ToSlash(file.Path)
+		if path != lufypaths.InstallState && path != lufypaths.ProjectConfig {
+			continue
+		}
+		source, err := platform.SafeJoin(filepath.Dir(manifestPath), file.BackupPath)
+		if err != nil {
+			return err
+		}
+		if path == lufypaths.InstallState {
+			body, err := os.ReadFile(source)
+			if err != nil {
+				return err
+			}
+			if _, err := state.Decode(body); err != nil {
+				return fmt.Errorf("payload de backup: %w", err)
+			}
+		} else {
+			if _, err := projectconfig.Load(source); err != nil {
+				return fmt.Errorf("payload de backup: %w", err)
+			}
+		}
+	}
+	return nil
 }

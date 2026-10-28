@@ -1,0 +1,8 @@
+{
+  "head_unchanged": true,
+  "branch_unchanged": true,
+  "cached_diff_empty": true,
+  "index_initial_sha256": "0a7f263acf6fd4307aa8d6565c63b83c641944525a3abc0024e687276c46fb09",
+  "index_final_sha256": "b6a29265bb68e6a9da6d8e1da756bafeee8b353a0e3ea0757f1288fa3c4adedb",
+  "note": "Hash del índice distinto en cierre; sin cambios staged. Se preserva el índice actual."
+}

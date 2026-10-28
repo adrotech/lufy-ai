@@ -9,10 +9,10 @@ import (
 
 func TestMinimalContentAndRecommendedAction(t *testing.T) {
 	body := string(MinimalContent())
-	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") || !strings.Contains(body, ".codex/lufy-agent-mapping.md") {
+	if !strings.Contains(body, "# AGENTS.md") || !strings.Contains(body, BeginMarker) || !strings.Contains(body, "Lufy AI Harness") || !strings.Contains(body, ".lufy/contracts/work.md") {
 		t.Fatalf("minimal content missing expected managed block: %q", body)
 	}
-	if !strings.Contains(body, "@orchestrator") || !strings.Contains(body, "spawn/wait/close") || !strings.Contains(body, "no conviertas silenciosamente") {
+	if !strings.Contains(body, "inline") || !strings.Contains(body, "execution.delegation") || strings.Contains(body, "T1/T2/T3") {
 		t.Fatalf("minimal content missing Codex delegation guardrails: %q", body)
 	}
 
@@ -23,8 +23,8 @@ func TestMinimalContentAndRecommendedAction(t *testing.T) {
 }
 
 func TestContainsReference(t *testing.T) {
-	if !ContainsReference([]byte("before " + Reference + " after")) {
-		t.Fatalf("expected legacy reference to be detected")
+	if ContainsReference([]byte("before " + RetiredReference + " after")) {
+		t.Fatalf("retired alias must not count as integration")
 	}
 	if !ContainsReference([]byte(ManagedBlock())) {
 		t.Fatalf("expected managed block to be detected")
@@ -42,7 +42,7 @@ func TestStatusMissingPresentAndUnsafe(t *testing.T) {
 		t.Fatalf("missing status = exists:%v ref:%v err:%v", exists, hasReference, err)
 	}
 
-	if err := os.WriteFile(filepath.Join(target, AgentsFile), []byte("# Team\n"+Reference+"\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(target, AgentsFile), []byte("# Team\n"+ManagedBlock()), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	exists, hasReference, err = Status(target)
@@ -117,7 +117,7 @@ func TestInsertReferenceRejectsSymlink(t *testing.T) {
 
 func TestRemoveReferencePreservesUserContent(t *testing.T) {
 	target := t.TempDir()
-	original := "# Existing\n\nKeep this\n" + ManagedBlock() + "\n" + Reference + "\n\nKeep after\n"
+	original := "# Existing\n\nKeep this\n" + ManagedBlock() + "\n" + RetiredReference + "\n\nKeep after\n"
 	if err := os.WriteFile(filepath.Join(target, AgentsFile), []byte(original), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestRemoveReferencePreservesUserContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(body)
-	if strings.Contains(got, Reference) || strings.Contains(got, BeginMarker) || strings.Contains(got, EndMarker) {
+	if !strings.Contains(got, RetiredReference) || strings.Contains(got, BeginMarker) || strings.Contains(got, EndMarker) {
 		t.Fatalf("integration remained: %q", got)
 	}
 	for _, want := range []string{"# Existing", "Keep this", "Keep after"} {
@@ -149,5 +149,24 @@ func TestRemoveReferencePreservesUserContent(t *testing.T) {
 	}
 	if changed {
 		t.Fatal("idempotent RemoveReference() changed = true")
+	}
+}
+
+func TestRetiredReferenceIsRejectedWithoutConvertingOrRemovingUserText(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, AgentsFile)
+	before := "# User\n" + RetiredReference + "\n"
+	if err := os.WriteFile(path, []byte(before), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := InsertReference(root); err == nil {
+		t.Fatal("retired reference accepted")
+	}
+	if changed, err := RemoveReference(root); err != nil || changed {
+		t.Fatalf("retired integration modified: %v %v", changed, err)
+	}
+	after, _ := os.ReadFile(path)
+	if string(after) != before {
+		t.Fatal("user content changed")
 	}
 }

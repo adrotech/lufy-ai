@@ -1,0 +1,242 @@
+Plan de instalación para /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-dry-run
+Source root: /private/tmp/lufy-inline-20261026
+Scope: project projectRoot=/private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-dry-run
+- [mkdir] .agents (directorio padre requerido)
+- [mkdir] .agents/skills (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-check (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-capture (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-connect (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-document (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-search (directorio gestionado ausente)
+- [mkdir] .codex (directorio gestionado ausente)
+- [mkdir] .codex/rules (directorio gestionado ausente)
+- [mkdir] .lufy (directorio padre requerido)
+- [mkdir] .lufy/contracts (directorio gestionado ausente)
+- [copy] .agents/skills/lufy-check/SKILL.md (archivo gestionado ausente) source=44bba1be6761
+- [copy] .agents/skills/lufy-mem-capture/SKILL.md (archivo gestionado ausente) source=9b55ac6ec7d2
+- [copy] .agents/skills/lufy-mem-connect/SKILL.md (archivo gestionado ausente) source=ce089e0a3182
+- [copy] .agents/skills/lufy-mem-document/SKILL.md (archivo gestionado ausente) source=10869cf3c02c
+- [copy] .agents/skills/lufy-mem-search/SKILL.md (archivo gestionado ausente) source=a8e67af93c27
+- [copy] .codex/README.md (archivo gestionado ausente) source=4bea5573a4e9
+- [copy] .codex/config.toml (archivo gestionado ausente) source=f8c302bce8bd
+- [copy] .codex/hooks.json (archivo gestionado ausente) source=ce2d32e84b4e
+- [copy] .codex/lufy-agent-mapping.md (archivo gestionado ausente) source=5b20738ee5d2
+- [copy] .codex/rules/lufy.rules (archivo gestionado ausente) source=d0a8954f7963
+- [copy] .lufy/README.md (archivo gestionado ausente) source=90d936189360
+- [copy] .lufy/contracts/README.md (archivo gestionado ausente) source=48e6989d0376
+- [copy] .lufy/contracts/delivery.md (archivo gestionado ausente) source=05ef443014f3
+- [copy] .lufy/contracts/evidence.md (archivo gestionado ausente) source=b9f69a1f0797
+- [copy] .lufy/contracts/work.md (archivo gestionado ausente) source=90947f7e8e70
+- [copy] lufy-ia.harness.md (archivo gestionado ausente) source=5748a9fdcb2f
+- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea integración mínima al harness)
+- [verify] /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-dry-run (verificación estructural posterior a install)
+Modo dry-run: sin mutaciones en filesystem
+Plan de instalación para /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-install
+Source root: /private/tmp/lufy-inline-20261026
+Scope: project projectRoot=/private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-install
+- [mkdir] .agents (directorio padre requerido)
+- [mkdir] .agents/skills (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-check (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-capture (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-connect (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-document (directorio gestionado ausente)
+- [mkdir] .agents/skills/lufy-mem-search (directorio gestionado ausente)
+- [mkdir] .codex (directorio gestionado ausente)
+- [mkdir] .codex/rules (directorio gestionado ausente)
+- [mkdir] .lufy/contracts (directorio gestionado ausente)
+- [copy] .agents/skills/lufy-check/SKILL.md (archivo gestionado ausente) source=44bba1be6761
+- [copy] .agents/skills/lufy-mem-capture/SKILL.md (archivo gestionado ausente) source=9b55ac6ec7d2
+- [copy] .agents/skills/lufy-mem-connect/SKILL.md (archivo gestionado ausente) source=ce089e0a3182
+- [copy] .agents/skills/lufy-mem-document/SKILL.md (archivo gestionado ausente) source=10869cf3c02c
+- [copy] .agents/skills/lufy-mem-search/SKILL.md (archivo gestionado ausente) source=a8e67af93c27
+- [copy] .codex/README.md (archivo gestionado ausente) source=4bea5573a4e9
+- [copy] .codex/config.toml (archivo gestionado ausente) source=f8c302bce8bd
+- [copy] .codex/hooks.json (archivo gestionado ausente) source=ce2d32e84b4e
+- [copy] .codex/lufy-agent-mapping.md (archivo gestionado ausente) source=5b20738ee5d2
+- [copy] .codex/rules/lufy.rules (archivo gestionado ausente) source=d0a8954f7963
+- [copy] .lufy/README.md (archivo gestionado ausente) source=90d936189360
+- [copy] .lufy/contracts/README.md (archivo gestionado ausente) source=48e6989d0376
+- [copy] .lufy/contracts/delivery.md (archivo gestionado ausente) source=05ef443014f3
+- [copy] .lufy/contracts/evidence.md (archivo gestionado ausente) source=b9f69a1f0797
+- [copy] .lufy/contracts/work.md (archivo gestionado ausente) source=90947f7e8e70
+- [copy] lufy-ia.harness.md (archivo gestionado ausente) source=5748a9fdcb2f
+- [agents-reference-create] AGENTS.md (AGENTS.md user-owned ausente; se crea integración mínima al harness)
+- [verify] /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-install (verificación estructural posterior a install)
+- [project-config] .lufy/config/project.yaml
+- [mkdir] .agents
+- [mkdir] .agents/skills
+- [mkdir] .agents/skills/lufy-check
+- [mkdir] .agents/skills/lufy-mem-capture
+- [mkdir] .agents/skills/lufy-mem-connect
+- [mkdir] .agents/skills/lufy-mem-document
+- [mkdir] .agents/skills/lufy-mem-search
+- [mkdir] .codex
+- [mkdir] .codex/rules
+- [mkdir] .lufy/contracts
+- [copy] .agents/skills/lufy-check/SKILL.md
+- [copy] .agents/skills/lufy-mem-capture/SKILL.md
+- [copy] .agents/skills/lufy-mem-connect/SKILL.md
+- [copy] .agents/skills/lufy-mem-document/SKILL.md
+- [copy] .agents/skills/lufy-mem-search/SKILL.md
+- [copy] .codex/README.md
+- [copy] .codex/config.toml
+- [copy] .codex/hooks.json
+- [copy] .codex/lufy-agent-mapping.md
+- [copy] .codex/rules/lufy.rules
+- [copy] .lufy/README.md
+- [copy] .lufy/contracts/README.md
+- [copy] .lufy/contracts/delivery.md
+- [copy] .lufy/contracts/evidence.md
+- [copy] .lufy/contracts/work.md
+- [copy] lufy-ia.harness.md
+- [agents-reference-create] AGENTS.md
+- [write] .lufy/managed-state/install-state.json
+ok: configuración project-local: .lufy/config/project.yaml
+ok: archivo crítico: .lufy/managed-state/install-state.json
+ok: JSON parseable: .codex/hooks.json
+warn: memory provider=obsidian initialized=false availability=not_available; recovery: lufy-ai memory init --target <repo>: .lufy/memory
+warn: context graph not_available: context graph not_available; ejecuta lufy-ai context build; recovery: lufy-ai context build: .lufy/context/graph.json
+ok: estructura merge-managed: .codex/config.toml
+ok: install-state.json schema=4 assets=16: install-state.json
+ok: directorio crítico: .agents
+ok: directorio crítico: .agents/skills
+ok: directorio crítico: .agents/skills/lufy-check
+ok: directorio crítico: .agents/skills/lufy-mem-capture
+ok: directorio crítico: .agents/skills/lufy-mem-connect
+ok: directorio crítico: .agents/skills/lufy-mem-document
+ok: directorio crítico: .agents/skills/lufy-mem-search
+ok: directorio crítico: .codex
+ok: directorio crítico: .codex/rules
+ok: directorio crítico: .lufy
+ok: directorio crítico: .lufy/contracts
+ok: archivo crítico: .agents/skills/lufy-check/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-capture/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-connect/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-document/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-search/SKILL.md
+ok: archivo crítico: .codex/README.md
+ok: archivo crítico: .codex/config.toml
+ok: archivo crítico: .codex/hooks.json
+ok: archivo crítico: .codex/lufy-agent-mapping.md
+ok: archivo crítico: .codex/rules/lufy.rules
+ok: archivo crítico: .lufy/README.md
+ok: archivo crítico: .lufy/contracts/README.md
+ok: archivo crítico: .lufy/contracts/delivery.md
+ok: archivo crítico: .lufy/contracts/evidence.md
+ok: archivo crítico: .lufy/contracts/work.md
+ok: archivo crítico: lufy-ia.harness.md
+ok: integración LUFY presente: AGENTS.md
+ok: sha256=44bba1be6761: .agents/skills/lufy-check/SKILL.md
+ok: sha256=9b55ac6ec7d2: .agents/skills/lufy-mem-capture/SKILL.md
+ok: sha256=ce089e0a3182: .agents/skills/lufy-mem-connect/SKILL.md
+ok: sha256=10869cf3c02c: .agents/skills/lufy-mem-document/SKILL.md
+ok: sha256=a8e67af93c27: .agents/skills/lufy-mem-search/SKILL.md
+ok: sha256=4bea5573a4e9: .codex/README.md
+ok: sha256=f8c302bce8bd: .codex/config.toml
+ok: sha256=ce2d32e84b4e: .codex/hooks.json
+ok: sha256=5b20738ee5d2: .codex/lufy-agent-mapping.md
+ok: sha256=d0a8954f7963: .codex/rules/lufy.rules
+ok: sha256=90d936189360: .lufy/README.md
+ok: sha256=48e6989d0376: .lufy/contracts/README.md
+ok: sha256=05ef443014f3: .lufy/contracts/delivery.md
+ok: sha256=b9f69a1f0797: .lufy/contracts/evidence.md
+ok: sha256=90947f7e8e70: .lufy/contracts/work.md
+ok: sha256=5748a9fdcb2f: lufy-ia.harness.md
+info: archivo extra en directorio gestionado: .lufy/config/project.yaml
+info: archivo extra en directorio gestionado: .lufy/managed-state/.lock
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-check/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-capture/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-connect/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-document/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-search/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/config.toml
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/hooks.json
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/lufy-agent-mapping.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/rules/lufy.rules
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/delivery.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/evidence.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/work.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/lufy-ia.harness.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/install-state.json
+ok: verify estructural completo
+- [verify] /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-install
+Skill registry: ready
+Path: /private/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/tmp.DiLd29JXPa/wrapper-install/.lufy/skill-registry.json
+Tool: codex; skills: 5; roots: 3; warnings: 0
+Acción: registry actualizado
+Install real completado
+ok: configuración project-local: .lufy/config/project.yaml
+ok: archivo crítico: .lufy/managed-state/install-state.json
+ok: JSON parseable: .codex/hooks.json
+warn: memory provider=obsidian initialized=false availability=not_available; recovery: lufy-ai memory init --target <repo>: .lufy/memory
+warn: context graph not_available: context graph not_available; ejecuta lufy-ai context build; recovery: lufy-ai context build: .lufy/context/graph.json
+ok: estructura merge-managed: .codex/config.toml
+ok: install-state.json schema=4 assets=16: install-state.json
+ok: directorio crítico: .agents
+ok: directorio crítico: .agents/skills
+ok: directorio crítico: .agents/skills/lufy-check
+ok: directorio crítico: .agents/skills/lufy-mem-capture
+ok: directorio crítico: .agents/skills/lufy-mem-connect
+ok: directorio crítico: .agents/skills/lufy-mem-document
+ok: directorio crítico: .agents/skills/lufy-mem-search
+ok: directorio crítico: .codex
+ok: directorio crítico: .codex/rules
+ok: directorio crítico: .lufy
+ok: directorio crítico: .lufy/contracts
+ok: archivo crítico: .agents/skills/lufy-check/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-capture/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-connect/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-document/SKILL.md
+ok: archivo crítico: .agents/skills/lufy-mem-search/SKILL.md
+ok: archivo crítico: .codex/README.md
+ok: archivo crítico: .codex/config.toml
+ok: archivo crítico: .codex/hooks.json
+ok: archivo crítico: .codex/lufy-agent-mapping.md
+ok: archivo crítico: .codex/rules/lufy.rules
+ok: archivo crítico: .lufy/README.md
+ok: archivo crítico: .lufy/contracts/README.md
+ok: archivo crítico: .lufy/contracts/delivery.md
+ok: archivo crítico: .lufy/contracts/evidence.md
+ok: archivo crítico: .lufy/contracts/work.md
+ok: archivo crítico: lufy-ia.harness.md
+ok: integración LUFY presente: AGENTS.md
+ok: sha256=44bba1be6761: .agents/skills/lufy-check/SKILL.md
+ok: sha256=9b55ac6ec7d2: .agents/skills/lufy-mem-capture/SKILL.md
+ok: sha256=ce089e0a3182: .agents/skills/lufy-mem-connect/SKILL.md
+ok: sha256=10869cf3c02c: .agents/skills/lufy-mem-document/SKILL.md
+ok: sha256=a8e67af93c27: .agents/skills/lufy-mem-search/SKILL.md
+ok: sha256=4bea5573a4e9: .codex/README.md
+ok: sha256=f8c302bce8bd: .codex/config.toml
+ok: sha256=ce2d32e84b4e: .codex/hooks.json
+ok: sha256=5b20738ee5d2: .codex/lufy-agent-mapping.md
+ok: sha256=d0a8954f7963: .codex/rules/lufy.rules
+ok: sha256=90d936189360: .lufy/README.md
+ok: sha256=48e6989d0376: .lufy/contracts/README.md
+ok: sha256=05ef443014f3: .lufy/contracts/delivery.md
+ok: sha256=b9f69a1f0797: .lufy/contracts/evidence.md
+ok: sha256=90947f7e8e70: .lufy/contracts/work.md
+ok: sha256=5748a9fdcb2f: lufy-ia.harness.md
+info: archivo extra en directorio gestionado: .lufy/config/project.yaml
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-check/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-capture/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-connect/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-document/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.agents/skills/lufy-mem-search/SKILL.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/config.toml
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/hooks.json
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/lufy-agent-mapping.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.codex/rules/lufy.rules
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/README.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/delivery.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/evidence.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/.lufy/contracts/work.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/ancestors/lufy-ia.harness.md
+info: archivo extra en directorio gestionado: .lufy/managed-state/install-state.json
+info: archivo extra en directorio gestionado: .lufy/skill-registry.json
+ok: verify estructural completo
+Smoke wrapper completado

@@ -13,4 +13,4 @@
 
 ## Trazabilidad
 
-- Issue/OpenSpec:
+- Pedido, criterio de aceptación o decisión relevante:

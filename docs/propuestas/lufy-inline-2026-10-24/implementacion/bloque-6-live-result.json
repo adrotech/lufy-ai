@@ -1,0 +1,21 @@
+{
+  "status": "validated",
+  "schemaVersion": 4,
+  "execution": {
+    "mode": "inline",
+    "delegation": "off"
+  },
+  "assets": 16,
+  "binary_sha256": "306c90c65a6eac53370870773d506d34555426031e586af3bcf1e75266820f64",
+  "protected_files_unchanged": 7867,
+  "intentional_protected_changes": [
+    ".lufy/memory/index/backlinks.json"
+  ],
+  "git": {
+    "head": "d7f6b090d2c1ec6323ffd6abcb6812bb9847bbba",
+    "branch": "codex/feat-adaptive-role-allocation",
+    "staged": ""
+  },
+  "deep_verify": "passed",
+  "sync": "passed"
+}

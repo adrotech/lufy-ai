@@ -19,3 +19,7 @@ No se intenta rollback automático de instalaciones iniciales sin backup porque 
 - Los errores parciales después de backup requieren menos recuperación manual.
 - Si el rollback automático falla, el error conserva la ruta del backup para restauración manual.
 - Un diseño two-phase puede evaluarse en el futuro si aparece una necesidad más fuerte.
+
+## Generación inline
+
+Los backups actuales usan schema 2 y declaran `runtimeStateSchema: 4`. Restore público rechaza otras generaciones y payload inválido antes de escribir; rollback interno permite conservar preimágenes dañadas. La recuperación entre generaciones usa un snapshot conjunto con el ejecutable correspondiente, fuera del runtime.

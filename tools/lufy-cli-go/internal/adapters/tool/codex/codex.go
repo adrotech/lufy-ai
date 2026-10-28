@@ -50,15 +50,20 @@ func (Adapter) SkillRoots(target ports.Target, env ports.Env) []ports.SkillRoot 
 }
 
 func (Adapter) RenderSurface(ports.HarnessModel) ([]ports.AssetSpec, error) {
-	return []ports.AssetSpec{
-		{ID: "codex.skills", TargetRel: ".agents/skills", Policy: "managed", Scope: "project"},
-		{ID: "codex.project-config", TargetRel: ".codex", Policy: "managed", Scope: "project"},
-	}, nil
+	paths := []string{".codex/README.md", ".codex/config.toml", ".codex/hooks.json", ".codex/rules/lufy.rules", ".codex/lufy-agent-mapping.md"}
+	for _, skill := range []string{"lufy-check", "lufy-mem-search", "lufy-mem-capture", "lufy-mem-connect", "lufy-mem-document"} {
+		paths = append(paths, ".agents/skills/"+skill)
+	}
+	out := make([]ports.AssetSpec, 0, len(paths))
+	for _, path := range paths {
+		out = append(out, ports.AssetSpec{ID: path, TargetRel: path, Policy: "managed", Scope: "project"})
+	}
+	return out, nil
 }
 
 func (Adapter) Verify(ports.Target) ([]ports.Check, error) {
 	return []ports.Check{
 		{Level: "info", Message: "codex adapter verification is structural in the installer layer"},
-		{Level: "info", Message: "codex Lufy roles should use native waited delegation when discovered; explicit emulated/inline fallback is documented in .codex/lufy-agent-mapping.md"},
+		{Level: "info", Message: "Principal inline; delegación según execution.delegation y capacidades efectivas del host"},
 	}, nil
 }

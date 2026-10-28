@@ -10,7 +10,6 @@ const (
 	ActionUpdateManaged       ActionKind = "update-managed"
 	ActionMergeBlock          ActionKind = "merge-block"
 	ActionWriteLufyNew        ActionKind = "write-lufy-new"
-	ActionMergeJSON           ActionKind = "merge-json"
 	ActionRetired             ActionKind = "retired"
 	ActionWarnAgentsReference ActionKind = "warn-agents-reference"
 	ActionPinnedSkip          ActionKind = "pinned-skip"
@@ -23,7 +22,6 @@ var actionOrder = map[ActionKind]int{
 	ActionUpdateManaged:       2,
 	ActionMergeBlock:          3,
 	ActionWriteLufyNew:        4,
-	ActionMergeJSON:           5,
 	ActionRetired:             6,
 	ActionWarnAgentsReference: 7,
 	ActionPinnedSkip:          8,
@@ -33,7 +31,7 @@ var actionOrder = map[ActionKind]int{
 func validateActionKinds(actions []Action) error {
 	for _, action := range actions {
 		switch action.Kind {
-		case ActionBackup, ActionCreateManaged, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionMergeJSON, ActionRetired, ActionWarnAgentsReference, ActionPinnedSkip, ActionSkip:
+		case ActionBackup, ActionCreateManaged, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionRetired, ActionWarnAgentsReference, ActionPinnedSkip, ActionSkip:
 			continue
 		default:
 			return fmt.Errorf("acción sync no soportada: %s", action.Kind)
@@ -45,7 +43,7 @@ func validateActionKinds(actions []Action) error {
 func requiresConfirmation(actions []Action) bool {
 	for _, action := range actions {
 		switch action.Kind {
-		case ActionCreateManaged, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionBackup, ActionMergeJSON:
+		case ActionCreateManaged, ActionUpdateManaged, ActionMergeBlock, ActionWriteLufyNew, ActionBackup:
 			return true
 		}
 	}

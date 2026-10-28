@@ -13,7 +13,7 @@ import (
 const (
 	AgentsFile        = "AGENTS.md"
 	HarnessFile       = "lufy-ia.harness.md"
-	Reference         = "@lufy-ia.harness.md"
+	RetiredReference  = "@lufy-ia.harness.md"
 	BeginMarker       = "<!-- LUFY:BEGIN codex-harness -->"
 	EndMarker         = "<!-- LUFY:END codex-harness -->"
 	IntegrationPolicy = "bloque gestionado LUFY en AGENTS.md"
@@ -28,7 +28,7 @@ func RecommendedInstallAction() string {
 }
 
 func ContainsReference(body []byte) bool {
-	return bytes.Contains(body, []byte(Reference)) || ContainsManagedBlock(body)
+	return ContainsManagedBlock(body)
 }
 
 func ContainsManagedBlock(body []byte) bool {
@@ -36,25 +36,20 @@ func ContainsManagedBlock(body []byte) bool {
 }
 
 func ManagedBlock() string {
-	return BeginMarker + `
+	return `<!-- LUFY:BEGIN codex-harness -->
 # Lufy AI Harness
 
-- Responde en español para comunicación humana.
-- Trata este repo como un proyecto gobernado por Lufy.
-- Antes de cambios no triviales, clasifica el trabajo como T1/T2/T3.
-- T1: arquitectura, contratos públicos, seguridad, cambios transversales o alta incertidumbre; usar workflow SDD completo.
-- T2: cambio funcional acotado, bug relevante, agente/skill o refactor controlado; usar SDD Lite o handoff estructurado.
-- T3: cambio trivial, mecánico, documental o local; permite ejecución directa con validación proporcional.
-- Usa skills repo-locales en .agents/skills cuando apliquen.
-- Si existe '.codex/lufy-agent-mapping.md', declara 'agent_execution_mode' como 'native', 'emulated' o 'inline' antes de delegar roles Lufy.
-- En Codex, '@orchestrator' o '@<rol-lufy>' es una solicitud de delegacion: usa subagent tooling con spawn/wait/close cuando este disponible; no respondas como ese rol en el mismo hilo para luego seguir ejecutando.
-- Si Codex no expone subagent tooling para una delegacion solicitada o requerida, reporta el bloqueo y no conviertas silenciosamente la solicitud en ejecucion inline.
-- No afirmes haber usado subagentes Lufy nativos si el runtime solo expone roles genericos como 'default', 'explorer' o 'worker'.
-- No hagas commit, push, PR ni delivery sin autorización explícita.
-- Reporta siempre comandos de validación reales y resultados reales.
-- No asumas tooling no detectado en el repo.
-- Preserva trabajo local no relacionado.
-` + EndMarker + "\n"
+- Responde en español y trabaja como agente principal inline.
+- Lee execution en .lufy/config/project.yaml y aplica .lufy/contracts/work.md.
+- Entiende el resultado pedido y el contexto existente; actúa dentro del alcance autorizado hasta comprobarlo.
+- Adapta la evidencia a análisis, propuestas, escritura, código, datos u operaciones. No exijas tiers, metodología ni handoffs para avanzar.
+- Delega según execution.delegation: off, on_request o auto. Una instrucción inline del usuario prevalece; delegar nunca amplía permisos.
+- Usa capacidades y skills locales pertinentes, con contexto mínimo, sin imponer una cadena de roles.
+- Consulta sólo decisiones materiales que no puedas resolver; continúa el trabajo independiente mientras esperas.
+- Preserva trabajo ajeno, comprueba el resultado y reporta evidencia real y límites pendientes.
+- Commit, push, PR, publicación y operaciones externas requieren autorización explícita; aplica .lufy/contracts/delivery.md cuando corresponda.
+<!-- LUFY:END codex-harness -->
+`
 }
 
 func Status(targetRoot string) (exists bool, hasReference bool, err error) {
@@ -76,7 +71,7 @@ func Status(targetRoot string) (exists bool, hasReference bool, err error) {
 	if err != nil {
 		return true, false, err
 	}
-	return true, ContainsReference(body), nil
+	return true, bytes.Contains(body, []byte(ManagedBlock())), nil
 }
 
 func InsertReference(targetRoot string) error {
@@ -91,8 +86,11 @@ func InsertReference(targetRoot string) error {
 	if err != nil {
 		return err
 	}
-	if ContainsReference(body) {
+	if bytes.Contains(body, []byte(ManagedBlock())) {
 		return nil
+	}
+	if ContainsManagedBlock(body) || bytes.Contains(body, []byte(RetiredReference)) {
+		return fmt.Errorf("bloque LUFY no vigente en AGENTS.md; reemplázalo por la política inline antes de instalar")
 	}
 	updated := appendReference(body)
 	return writeAgentsFile(path, updated)
@@ -139,15 +137,7 @@ func appendReference(body []byte) []byte {
 
 func removeReferenceLines(body []byte) []byte {
 	text := removeManagedBlocks(string(body))
-	lines := strings.Split(text, "\n")
-	filtered := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if strings.TrimSpace(line) == Reference {
-			continue
-		}
-		filtered = append(filtered, line)
-	}
-	text = strings.Join(filtered, "\n")
+
 	for strings.Contains(text, "\n\n\n") {
 		text = strings.ReplaceAll(text, "\n\n\n", "\n\n")
 	}

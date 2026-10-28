@@ -1,0 +1,71 @@
+{
+  "reviews": [
+    {
+      "case": "explain-code",
+      "directory": "/private/tmp/lufy-inline-pilot-20261026-c/explain-code",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "needs_review",
+      "record_sha256": "766765d9f52abc2d1e5a89344ae81e27cb46fde5449e3fdfe3fb1e88752a68d7",
+      "artifact_sha256": "79cca12391467c5cce748575c27df4741bec01d8fafe428db0d17b0b681a5a38",
+      "observation": "Fuente price.py: factor 1.21, round(...,2); la respuesta obtiene 121 para 100. Sin cambios en el fixture.",
+      "end_to_end_claim": "not_claimed"
+    },
+    {
+      "case": "propose-export",
+      "directory": "/private/tmp/lufy-inline-pilot-20261027-d/propose-export",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "needs_review",
+      "record_sha256": "ca84599fbbeccb1bf62af94060672fe6514be84db31132f43209b71212327799",
+      "artifact_sha256": "f81c3062d05b7fa15ea09fe1677ad1adcd8ad148044f91d0aaeb8b194e4dd193",
+      "observation": "El brief pide planillas y filtros, sin correo ni almacenamiento. Compara CSV/XLSX/asíncrono, recomienda CSV y explicita volumen/campos desconocidos; no implementa.",
+      "end_to_end_claim": "not_claimed"
+    },
+    {
+      "case": "write-guide",
+      "directory": "/private/tmp/lufy-inline-families-20261027-e/write-guide",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "inconclusive",
+      "record_sha256": "d52356498bf57d7acea2690332829b42d006080af11628bd8b000428ae02deea",
+      "artifact_sha256": "c557dd0df01f3648ec15d5e8c5ca5beb6ab58985ff5bbe42c7bdcb6dab9476b2",
+      "observation": "guide.md conserva el comando exacto, indica directorio actual y no inventa instalación, correo ni subida. reference.md conserva su hash.",
+      "end_to_end_claim": "not_claimed"
+    },
+    {
+      "case": "translate-guide",
+      "directory": "/private/tmp/lufy-inline-families-20261027-f/translate-guide",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "inconclusive",
+      "record_sha256": "a625e08b3917370f9aaa05888ad64e77e47a64fb10a0864b125e504f2954a13d",
+      "artifact_sha256": "da38d92f3f8384af710c8f69d239d97ce2d01973da6790826db4cdbea103a340",
+      "observation": "Traduce título, exportación filtrada, ejemplo y ubicación. Conserva literalmente report --filter paid --format csv y el original.",
+      "end_to_end_claim": "not_claimed"
+    },
+    {
+      "case": "fix-filter",
+      "directory": "/private/tmp/lufy-inline-families-20261027-g/fix-filter",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "passed",
+      "record_sha256": "7a26b953cb941ceb8a7cc8c6c5d2bb37e4834b503093aeb4f513b57c2c7b6147",
+      "artifact_sha256": "da4cebf35f8f3e05d9f4e07b79e6fa9829f53f329d8d62dfe471cb92b43f59e6",
+      "observation": "El modelo modificó sólo app.py y ejecutó los tests visibles. Oráculo externo previo falló y posterior pasó para paid/pending/missing/other/None/entrada vacía, preservando orden y datos.",
+      "end_to_end_claim": "passed"
+    },
+    {
+      "case": "analyze-join",
+      "directory": "/private/tmp/lufy-inline-families-20261027-g/analyze-join",
+      "reviewer": "agente principal, revisión posterior de contenido",
+      "content_result": "supported",
+      "automated_status_preserved": "inconclusive",
+      "record_sha256": "32c6644059ecfd92908a80c796a5f95c3f4f0b4e6f81ceb0baa90b2d24fdff18",
+      "artifact_sha256": "c70f53fa74348978e82addecea38301472ca10c90536da0451da377454d9a282",
+      "observation": "Explica multiplicidad uno a muchos; el revisor comprobó en SQLite en memoria 200 tras JOIN y 100 con suma de ventas/EXISTS. Contraejemplo de dos ventas iguales confirma el defecto de SUM(DISTINCT amount).",
+      "end_to_end_claim": "not_claimed"
+    }
+  ],
+  "limits": "La revisión posterior no cambia veredictos históricos ni completa observación de comandos desconocidos; no es un par A/B/C ni una segunda modificación."
+}

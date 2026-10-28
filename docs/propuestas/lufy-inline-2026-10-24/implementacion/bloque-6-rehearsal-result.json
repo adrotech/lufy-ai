@@ -1,0 +1,8 @@
+{
+  "drift_blocks_before_writes": "passed",
+  "joint_restore_before_state": "passed",
+  "joint_restore_after_state": "passed",
+  "resume_and_repeat": "passed",
+  "deep_verify_and_memory": "passed",
+  "full_restore_after_success_and_sync": "passed"
+}

@@ -19,7 +19,7 @@ func TestCaptureRejectsUninitializedGitlinkWithoutChildRepository(t *testing.T) 
 	if fixtureGit(t, root, "status", "--porcelain") != "" {
 		t.Fatal("fixture must show a clean but uninitialized gitlink")
 	}
-	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 		t.Fatal("uninitialized gitlink must not be accepted as a fully observed clean candidate")
 	}
 }

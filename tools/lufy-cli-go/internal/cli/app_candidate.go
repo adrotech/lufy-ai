@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/candidateevidence"
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/resultcontract"
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/evidence"
 )
 
 func runCandidate(args []string, deps Dependencies) int {
@@ -16,7 +16,7 @@ func runCandidate(args []string, deps Dependencies) int {
 		printCandidateHelp(deps.Stderr)
 		return ExitUsageErr
 	}
-	if resultHelpRequested(args) {
+	if args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
 		printCandidateHelp(deps.Stdout)
 		return ExitOK
 	}
@@ -28,37 +28,22 @@ func runCandidate(args []string, deps Dependencies) int {
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Repositorio target")
 	base := fs.String("base", "", "Base Git explícita")
-	evidence := fs.String("evidence", "", "Result Contract de evidencia")
-	role := fs.String("role", "reviewer", "Rol registrado del claim")
+	evidencePath := fs.String("evidence", "", "Archivo JSON de comprobaciones declaradas")
 	bindingPath := fs.String("binding", "", "Sidecar JSON; sólo verify")
 	jsonOutput := fs.Bool("json", false, "Emitir JSON; capture siempre emite JSON")
-	if err := fs.Parse(args[1:]); err != nil || len(fs.Args()) != 0 || *base == "" || *evidence == "" || (args[0] == "verify") != (*bindingPath != "") {
+	if err := fs.Parse(args[1:]); err != nil || len(fs.Args()) != 0 || *base == "" || *evidencePath == "" || (args[0] == "verify") != (*bindingPath != "") {
 		printCandidateHelp(deps.Stderr)
 		return ExitUsageErr
 	}
-	input, closeInput, err := resultInput(false, *evidence, deps)
+	record, err := readEvidence(*evidencePath)
 	if err != nil {
-		fmt.Fprintln(deps.Stderr, "evidencia no disponible")
-		return ExitRuntimeErr
-	}
-	defer closeInput()
-	contract, err := resultcontract.Decode(input)
-	if err != nil {
-		fmt.Fprintln(deps.Stderr, "Result Contract inválido")
+		fmt.Fprintln(deps.Stderr, err)
 		return ExitResultRejected
 	}
-	claim := resultcontract.EvaluateClaim(contract, *role, resultRolePolicy(), resultEvidencePolicy())
-	if !claim.Accepted {
-		fmt.Fprintln(deps.Stderr, "claim del rol rechazado")
-		return ExitResultRejected
-	}
-	canonical, err := resultcontract.Canonicalize(contract)
-	if err != nil {
-		fmt.Fprintln(deps.Stderr, "evidencia no canonicalizable")
-		return ExitResultRejected
-	}
+	fingerprint := evidence.Fingerprint(record)
+
 	if args[0] == "capture" {
-		binding, err := candidateevidence.Capture(backgroundContext(), *target, *base, canonical.Fingerprint, *role)
+		binding, err := candidateevidence.Capture(backgroundContext(), *target, *base, fingerprint)
 		if err != nil {
 			fmt.Fprintln(deps.Stderr, err)
 			return ExitResultRejected
@@ -79,7 +64,7 @@ func runCandidate(args []string, deps Dependencies) int {
 		fmt.Fprintln(deps.Stderr, err)
 		return ExitResultRejected
 	}
-	if err := candidateevidence.Verify(backgroundContext(), *target, *base, canonical.Fingerprint, *role, binding); err != nil {
+	if err := candidateevidence.Verify(backgroundContext(), *target, *base, fingerprint, binding); err != nil {
 		fmt.Fprintln(deps.Stderr, err)
 		return ExitResultRejected
 	}
@@ -88,12 +73,12 @@ func runCandidate(args []string, deps Dependencies) int {
 			return ExitRuntimeErr
 		}
 	} else {
-		fmt.Fprintln(deps.Stdout, "candidate verify: current; sin avance de gates")
+		fmt.Fprintln(deps.Stdout, "candidate verify: current; vinculación vigente; las comprobaciones siguen siendo declaradas")
 	}
 	return ExitOK
 }
 
 func printCandidateHelp(out io.Writer) {
-	fmt.Fprintln(out, "Uso: lufy-ai candidate <capture|verify> --target <repo> --base <ref> --evidence <Result Contract> [--role reviewer] [--binding <sidecar.json>] [--json]")
-	fmt.Fprintln(out, "capture emite sidecar JSON por stdout; verify exige --binding. Requiere candidato comprometido limpio; no avanza gates.")
+	fmt.Fprintln(out, "Uso: lufy-ai candidate <capture|verify> --target <repo> --base <ref> --evidence <comprobaciones.json> [--binding <sidecar.json>] [--json]")
+	fmt.Fprintln(out, "capture emite sidecar JSON por stdout; verify exige --binding. Requiere candidato comprometido limpio; no ejecuta comprobaciones ni concede autorización.")
 }

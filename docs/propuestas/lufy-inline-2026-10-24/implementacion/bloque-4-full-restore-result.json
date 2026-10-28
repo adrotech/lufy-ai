@@ -1,0 +1,7 @@
+{
+  "resources_loaded_from_durable_backup": "passed",
+  "candidate_binaries_config_manifest_and_projections_replaced_before_failure": "passed",
+  "all_754_files_restored_with_modes": "passed",
+  "all_269_directories_restored_with_modes": "passed",
+  "previous_cli_reads_restored_state": "passed"
+}

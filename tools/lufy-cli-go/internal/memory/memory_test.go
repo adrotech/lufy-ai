@@ -129,7 +129,7 @@ Buscar con rg antes de duplicar notas.
 
 func TestStatusConfiguredButUninitializedReportsRecovery(t *testing.T) {
 	target := t.TempDir()
-	writeFile(t, target, ".lufy/config/project.yaml", "memory:\n  provider: obsidian\n  root: .lufy/memory\n  schema_version: 1\n")
+	writeFile(t, target, ".lufy/config/project.yaml", "schema_version: 2\nmemory:\n  provider: obsidian\n  root: .lufy/memory\n  schema_version: 1\n")
 	report, err := NewService().BuildStatus(Options{Target: target})
 	if err != nil {
 		t.Fatalf("BuildStatus() error = %v", err)
@@ -200,10 +200,10 @@ func TestStatusAndValidateReportMissingMemory(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(target, ".lufy"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	writeFile(t, target, ".lufy/config/project.yaml", `schema_version: 1
+	writeFile(t, target, ".lufy/config/project.yaml", `schema_version: 2
 detected_at: 2026-05-20T14:00:00Z
-tool: opencode
-methodology_by_tier: {}
+tool: codex
+execution: {mode: inline, delegation: auto}
 project_profile:
   surfaces: []
 stacks: []

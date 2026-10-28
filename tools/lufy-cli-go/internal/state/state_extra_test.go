@@ -46,3 +46,11 @@ func TestLoadMissingAndInvalidState(t *testing.T) {
 		t.Fatalf("invalid state should fail")
 	}
 }
+
+func TestAssetMapUsesNativePathKeys(t *testing.T) {
+	st := InstallState{Assets: []AssetState{{TargetRel: ".codex/rules/lufy.rules", TargetSHA256: "expected"}}}
+	got := st.AssetMap()[filepath.Join(".codex", "rules", "lufy.rules")]
+	if got.TargetSHA256 != "expected" {
+		t.Fatalf("native lookup failed for slash path: %#v", got)
+	}
+}

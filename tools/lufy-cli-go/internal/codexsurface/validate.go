@@ -67,7 +67,10 @@ func validateHooks(path string) []Check {
 	if err := json.Unmarshal(body, &config); err != nil {
 		return []Check{{Level: "fail", Path: rel, Message: "hooks Codex JSON inválido: " + err.Error()}}
 	}
-	for _, event := range []string{"SessionStart", "SubagentStop", "Stop", "SessionEnd"} {
+	if len(config.Hooks) != 1 {
+		return []Check{{Level: "fail", Path: rel, Message: "el perfil inline requiere únicamente orientación SessionStart"}}
+	}
+	for _, event := range []string{"SessionStart"} {
 		groups := config.Hooks[event]
 		if len(groups) == 0 {
 			return []Check{{Level: "fail", Path: rel, Message: "lifecycle Codex incompleto: falta " + event}}
@@ -84,7 +87,7 @@ func validateHooks(path string) []Check {
 			return []Check{{Level: "fail", Path: rel, Message: event + " no declara comando portable lufy-ai lifecycle codex"}}
 		}
 	}
-	return []Check{{Level: "ok", Path: rel, Message: "lifecycle Codex configurado para SessionStart, SubagentStop, Stop y SessionEnd"}}
+	return []Check{{Level: "ok", Path: rel, Message: "orientación Codex configurada para SessionStart"}}
 }
 
 func validateRules(path string) []Check {

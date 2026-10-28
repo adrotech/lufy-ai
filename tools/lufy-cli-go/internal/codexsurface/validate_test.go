@@ -9,7 +9,7 @@ import (
 func TestValidateAcceptsLifecycleConfigAndConservativeRules(t *testing.T) {
 	target := t.TempDir()
 	writeSurfaceFile(t, filepath.Join(target, ".codex", "config.toml"), "[features]\nmulti_agent = true\nhooks = true\n")
-	writeSurfaceFile(t, filepath.Join(target, ".codex", "hooks.json"), `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"lufy-ai lifecycle codex","commandWindows":"lufy-ai lifecycle codex"}]}],"SubagentStop":[{"hooks":[{"type":"command","command":"lufy-ai lifecycle codex","commandWindows":"lufy-ai lifecycle codex"}]}],"Stop":[{"hooks":[{"type":"command","command":"lufy-ai lifecycle codex","commandWindows":"lufy-ai lifecycle codex"}]}],"SessionEnd":[{"hooks":[{"type":"command","command":"lufy-ai lifecycle codex","commandWindows":"lufy-ai lifecycle codex"}]}]}}`)
+	writeSurfaceFile(t, filepath.Join(target, ".codex", "hooks.json"), `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"lufy-ai lifecycle codex","commandWindows":"lufy-ai lifecycle codex"}]}]}}`)
 	writeSurfaceFile(t, filepath.Join(target, ".codex", "rules", "lufy.rules"), `prefix_rule(
 pattern = ["git", ["commit", "push", "merge", "tag"]],
 decision = "prompt",

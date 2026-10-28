@@ -79,6 +79,9 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if err := validateRuntimeContract(checksumsBody); err != nil {
+		return err
+	}
 	artifactBody, err := fetchURL(artifactURL)
 	if err != nil {
 		return err
@@ -94,7 +97,7 @@ func (s Service) Run(opts Options, stdout io.Writer) error {
 		return err
 	}
 	fmt.Fprintf(stdout, "lufy-ai actualizado en %s\n", execPath)
-	fmt.Fprintln(stdout, "Siguiente paso recomendado: lufy-ai setup --target . --check-new-features")
+	fmt.Fprintln(stdout, "Siguiente paso recomendado: lufy-ai verify --target . y lufy-ai sync --target . --dry-run")
 	return nil
 }
 

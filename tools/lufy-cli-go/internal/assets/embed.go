@@ -8,7 +8,6 @@ import (
 	"io/fs"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
@@ -89,12 +88,6 @@ func expandEmbeddedDir(sourceRel, targetRel string, policy Policy, scope Scope) 
 		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
-		}
-		if sourceRel == "openspec" && (rel == "changes" || strings.HasPrefix(rel, "changes/")) {
-			if d.IsDir() {
-				return fs.SkipDir
-			}
-			return nil
 		}
 		src := filepath.Join(sourceRel, rel)
 		dst := filepath.Join(targetRel, rel)
