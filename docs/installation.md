@@ -1,23 +1,30 @@
-# Instalación y recuperación
+# Instalación, sincronización y recuperación
 
-La reestructuración inline está en desarrollo, sin nueva release publicada. La referencia estable `v0.6.25` corresponde al modelo anterior. Compilá únicamente desde el checkout que contiene esta implementación; no reemplaces el ejecutable actual con una compilación de una rama vieja.
+El modelo inline está integrado en `develop` y todavía no tiene release publicada. La referencia estable `v0.6.25` corresponde al modelo anterior. Compilá un checkout actualizado de `develop`; no descargues ese stable para reemplazar una instalación inline.
+
+## Compilar e instalar
+
+Requiere Go según `tools/lufy-cli-go/go.mod` (actualmente 1.24.2). Desde la raíz, en un shell POSIX:
 
 ```sh
-go -C tools/lufy-cli-go build -o /tmp/lufy-ai ./cmd/lufy-ai
-/tmp/lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --dry-run
-/tmp/lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --yes
-/tmp/lufy-ai verify --target /ruta/al/proyecto --deep
+mkdir -p "$HOME/.local/bin"
+go -C tools/lufy-cli-go build -o "$HOME/.local/bin/lufy-ai" ./cmd/lufy-ai
+export PATH="$HOME/.local/bin:$PATH"
+lufy-ai version --runtime-contract
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --dry-run
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --yes
+lufy-ai verify --target /ruta/al/proyecto --deep
 ```
 
-`scripts/install.sh` sólo ejecuta la CLI Go disponible en el binario local o PATH. No instala herramientas Node ni busca un motor alternativo.
+El ejemplo supone un ejecutable de destino libre o un reemplazo previamente respaldado de la misma generación. Para Windows, compilá `./cmd/lufy-ai` a una ruta persistente `lufy-ai.exe` y agregá su directorio al PATH del host. Go se comprueba en Linux, macOS y Windows; los smokes Bash de instalación corren en Ubuntu.
 
-## Formatos actuales
+Conservá el PATH también en el entorno desde el que se inicia Codex: el hook busca `lufy-ai`. El ejemplo fija delegación `off`; el default es `auto`, con `on_request` como tercera opción. Ver [configuración](configuration.md).
 
-Configuración: `.lufy/config/project.yaml`, schema 2, tool codex y execution inline. Manifest: `.lufy/managed-state/install-state.json`, schema 4. Los assets incluyen ownership/hashes, no metodología. Los formatos anteriores o mezclados se rechazan sin traducción silenciosa.
+La superficie soportada es el proyecto con Codex. Se distribuyen 16 assets y se genera el bloque gestionado de `AGENTS.md`; una guía existente se preserva fuera de ese bloque. `scripts/install.sh` es un wrapper estricto de la CLI Go local/PATH y no descarga ni ejecuta motores alternativos.
 
-La sustitución de la instalación propia es un procedimiento puntual vinculado al snapshot real: inventario, hashes, preview sin escrituras, backup conjunto, journal, aplicación y verificación. No es un migrador del runtime. Con drift se detiene en el archivo concreto y conserva los datos.
+`init` y `scan` detectan configuración; `setup` orquesta además memoria, grafo y verificación. Mientras stable pertenece al modelo anterior, para probar el checkout local con `setup` usá `--skip-version-check` y revisá primero `--dry-run`.
 
-## Sincronización y conflictos
+## Sincronizar y resolver drift
 
 ```sh
 lufy-ai sync --target /ruta/al/proyecto --dry-run
@@ -26,16 +33,31 @@ lufy-ai sync --target /ruta/al/proyecto --yes
 lufy-ai verify --target /ruta/al/proyecto --deep
 ```
 
-Una edición local no se sobrescribe por una coincidencia de nombre: ownership, hashes y políticas deciden la acción. Los archivos propios fuera del manifest se conservan. Sync no descubre ni reinstala roles o metodologías por carpetas históricas.
+Ownership, hashes y policies determinan qué actualizar. Los archivos ajenos se preservan. Una edición local puede generar conflicto y un candidato `.lufy-new`; inspeccioná ambos antes de resolver con `merge`. `--accept-ours` conserva el local y `--accept-theirs` adopta el candidato; ninguna elección es automática. `pin <path>` congela un asset gestionado y `unpin <path>` permite volver a sincronizarlo.
 
-## Backup y restauración
+`sync` no agrega automáticamente assets nuevos ausentes que nunca estuvieron en el manifest. Una ruta nueva del catálogo que colisione con un archivo local se trata como conflicto. Ver [ADR 0004](adr/0004-sync-new-catalog-assets.md). Los extras no adquieren ownership por estar en directorios gestionados.
 
-`backup` y `restore` trabajan con manifest/archivos del formato actual y la raíz `.lufy/managed-state/backups`. `restore --list` enumera sólo esa raíz; no existe alias `legacy:` ni búsqueda automática en ubicaciones retiradas.
+## Formatos y backups
 
-La sustitución de una generación requiere respaldo conjunto del binario, configuración, manifest, ancestors y proyecciones. El restore mínimo de archivos no sustituye ese respaldo. La recuperación puntual rechaza cambios posteriores para no sobrescribir nuevo trabajo.
+| Dato | Formato actual |
+| --- | --- |
+| `.lufy/config/project.yaml` | Schema 2, `codex`, ejecución `inline` |
+| `.lufy/managed-state/install-state.json` | Schema 4; ownership, hashes y ancestors |
+| `.lufy/managed-state/backups/*/manifest.json` | Schema 2, `runtimeStateSchema: 4` |
 
-`upgrade` exige que el artefacto declare el contrato actual antes de reemplazar el ejecutable. Esta declaración y checksum comprueban formato e integridad; no son una firma ni evidencia de calidad del código descargado.
+```sh
+lufy-ai backup --target /ruta/al/proyecto
+lufy-ai restore --target /ruta/al/proyecto --list
+lufy-ai restore --target /ruta/al/proyecto --backup /ruta/al/backup --dry-run
+lufy-ai restore --target /ruta/al/proyecto --backup /ruta/al/backup --yes
+```
 
-La instalación personal y el código fuente se identifican por separado. El código de la refactorización permanece en el checkout aislado hasta integrarlo; no se sobrescribe trabajo local ajeno ni se publica automáticamente.
+`backup` devuelve la ruta creada. `restore --list` sólo enumera `.lufy/managed-state/backups`; no busca ubicaciones retiradas. El restore público valida generación, hashes y payload de configuración/estado antes de escribir. La retención conserva carpetas desconocidas y generaciones anteriores. El rollback interno puede recuperar una preimagen dañada si una mutación respaldada falla; si no lo logra, conservá el backup indicado y diagnosticá el error.
 
-Los backups actuales usan schema 2 y `runtimeStateSchema: 4`. La retención preserva carpetas desconocidas y generaciones anteriores. Restore público comprueba también el payload de configuración y estado antes de escribir. Los backups históricos se conservan como datos; la recuperación de otra generación requiere su ejecutable y snapshot conjunto.
+Un backup mínimo de archivos gestionados no incluye todo el proyecto ni reemplaza el respaldo del ejecutable, memoria y datos propios. Antes de reemplazar una generación se necesita un snapshot conjunto de ejecutable, configuración, manifest, ancestors y datos/proyecciones que deban recuperarse.
+
+## Instalaciones del modelo retirado
+
+Los formatos anteriores o mezclados se rechazan. No hay migrador genérico, aliases ni lectores de compatibilidad. La sustitución personal del [bloque 6](propuestas/lufy-inline-2026-10-24/implementacion/bloque-6.md) fue una operación puntual con inventario, backup conjunto, journal y verificación; no es un comando reutilizable del producto. Para volver a otra generación se requiere su ejecutable y snapshot conjunto.
+
+`upgrade --to <version>` comprueba el contrato de generación antes de reemplazar el ejecutable y verifica SHA-256. Header y checksum no son firmas ni prueban calidad del código. La [seguridad de releases](release-security.md) describe verificaciones adicionales. Esta guía no publica una release ni modifica una instalación personal por sí sola.

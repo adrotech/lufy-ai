@@ -1,14 +1,13 @@
 ---
 name: lufy-mem-connect
-description: Connect existing Lufy Obsidian memory notes with safe backlinks and avoid broken links.
+description: Conecta notas existentes de memoria Obsidian de Lufy con enlaces y backlinks válidos.
 ---
 
-# Lufy Memory Connect
+# Conectar memoria
 
-Use when memory notes need links, map updates, or relationship cleanup.
+Usá esta capacidad al relacionar notas existentes, actualizar mapas o corregir enlaces.
 
-1. Search existing `.lufy/memory` notes before adding links.
-2. Prefer `lufy-ai memory connect --target <repo> [--bidirectional] <from-slug> <to-slug>` for safe links.
-3. Rebuild backlinks with `lufy-ai memory index` if relationships were edited manually.
-4. Do not invent notes or stronger evidence than repo files/commands.
-5. Validate memory structure after edits.
+- Buscá las notas antes de agregar vínculos; no inventes destinos.
+- Preferí `lufy-ai memory connect --target <repo> [--bidirectional] <slug-origen> <slug-destino>`.
+- Si se editaron enlaces manualmente, reconstruí backlinks con `lufy-ai memory index --target <repo>`.
+- Comprobá `lufy-ai memory validate --target <repo>` después. Los enlaces no vuelven más fuerte una afirmación que sus fuentes.

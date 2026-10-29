@@ -1,5 +1,7 @@
 # Inventario: conservar, modificar y retirar
 
+> Snapshot de investigación y planificación de la propuesta del 24/10/2026. Para el estado posterior a su implementación, ver [entrega](entrega.md) y [estado actual](../../status.md). No convierte referencias o pendientes históricos en instrucciones vigentes.
+
 Parte de la [propuesta Lufy inline](README.md). Snapshot de referencia: `1cc18d4647afc61ea1f6b1cb726ba74128fded5f` (`origin/develop`, `v0.6.25`). Los paths identifican las áreas de responsabilidad, no una lista exhaustiva de archivos que se editarán. Este documento no elimina ni modifica los componentes enumerados.
 
 ## 1. Regla de disposición

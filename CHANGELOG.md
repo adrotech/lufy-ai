@@ -13,6 +13,24 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
+### Changed
+
+- Flujo Codex inline integrado: el principal adapta trabajo y evidencia al resultado; delegación configurable `off`, `on_request` o `auto`.
+- Catálogo de 16 assets y cinco skills. Configuración schema 2, manifest 4 y backups 2 ligados a estado 4; formatos incompatibles sin migrador genérico.
+- Contexto lexical v3, memoria portable y registros explícitos opcionales; el hook sólo orienta `SessionStart`.
+- Documentación reorganizada por uso, configuración, comandos, recuperación y publicación, con navegación histórica y defaults contrastados con `develop`.
+
+### Removed
+
+- Selección de metodología por tiers, motores SDD/OpenSpec, roles instalables obligatorios y Result Contract.
+- Adapters OpenCode/Claude Code, parsers de artifacts y lectores de formatos anteriores.
+- Guías duplicadas o vigentes que todavía dependían de roles, envelopes o integración pendiente.
+
+### Fixed
+
+- Identidad de paths nativos y con slash en manifest/verificación para Windows.
+- Clasificador de ensayos `command-effects/v2`: argumentos literales, operadores acotados, diagnósticos y procedencia de helpers. La reevaluación offline conserva veredictos históricos y comandos desconocidos como inconclusos.
+
 ## [v0.6.25] - 2026-10-23
 
 ### Added

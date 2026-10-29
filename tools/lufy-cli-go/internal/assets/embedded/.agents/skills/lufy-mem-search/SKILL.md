@@ -1,13 +1,13 @@
 ---
 name: lufy-mem-search
-description: Search portable Lufy Obsidian memory for compact hints without treating memory as primary evidence.
+description: Busca contexto histórico compacto en la memoria Obsidian de Lufy y contrástalo con fuentes actuales.
 ---
 
-# Lufy Memory Search
+# Buscar memoria
 
-Úsalo cuando el contexto histórico pueda aportar decisiones o aprendizajes relevantes al pedido actual.
+Usá esta capacidad cuando decisiones o aprendizajes históricos puedan aportar al pedido actual.
 
-1. Search with short queries by issue, spec, path, concept, or blocker.
-2. Return compact hints: path, line when available, status, relevance.
-3. Treat memory as context only; verify against repo files or commands.
-4. If memory is unavailable, continue with explicit limitation.
+- Buscá con consultas cortas por ruta, concepto, issue o bloqueo usando `lufy-ai memory search --target <repo> <consulta>`.
+- Conservá sólo pistas pertinentes: path, línea si está disponible, estado y relevancia.
+- Tratá la memoria como contexto; verificá contra archivos, comandos e instrucciones actuales.
+- Si no está disponible, continuá con las fuentes accesibles y explicitá la limitación pertinente.

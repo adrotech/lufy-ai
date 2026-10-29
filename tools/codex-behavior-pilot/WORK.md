@@ -1,6 +1,6 @@
 # Piloto del trabajo inline
 
-Piloto de la [propuesta de evolución](../../docs/propuestas/lufy-inline-2026-10-24/README.md), iniciado en el bloque 1. Los bloques 2–4 ya activaron la configuración y la instalación personal inline. Este piloto conserva sus fixtures aislados; el [bloque 5](FAMILIES.md) audita evidencia por familias sin reescribir las ejecuciones anteriores.
+Piloto de la [propuesta de evolución](../../docs/propuestas/lufy-inline-2026-10-24/README.md), iniciado en el bloque 1. Los bloques de implementación ya están integrados en `develop`; la instalación personal se verificó por separado. Este piloto conserva sus fixtures aislados; el [bloque 5](FAMILIES.md) audita evidencia por familias sin reescribir las ejecuciones anteriores.
 
 La fuente neutral es `.lufy/contracts/work.md`. Su copia embedded distribuye el mismo contenido; no es otra fuente editorial. Cada fixture recibe sólo esa política y los límites de su caso en `AGENTS.md`, sin roles, contratos de delivery antiguos ni instrucciones metodológicas contradictorias.
 
@@ -55,4 +55,4 @@ Interfaces contrastadas con la [documentación oficial de ejecución no interact
 
 ## Límite del bloque
 
-Esto implementa fixtures, evaluador y runner. No acredita paralelismo nativo, una comparación causal de metodologías ni ahorro de recursos. La configuración, catálogo e instalación actuales ya usan inline; la eliminación general de módulos retirados sigue en el bloque 6. El baseline de comparación se conserva en Git, sin ser un requisito de compatibilidad del producto.
+Esto implementa fixtures, evaluador y runner. No acredita paralelismo nativo, una comparación causal de metodologías ni ahorro de recursos. La configuración, catálogo e instalación actuales ya usan inline; la eliminación general de módulos retirados se completó en el bloque 6. El baseline de comparación se conserva en Git, sin ser un requisito de compatibilidad del producto.

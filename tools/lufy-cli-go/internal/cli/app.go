@@ -167,7 +167,7 @@ func runSkillsCommand(command string, args []string, deps Dependencies) int {
 	fs := flag.NewFlagSet("skills "+command, flag.ContinueOnError)
 	fs.SetOutput(deps.Stderr)
 	target := fs.String("target", ".", "Repositorio target")
-	toolValue := fs.String("tool", "", "Tool adapter efectivo; por default usa project.yaml u opencode")
+	toolValue := fs.String("tool", "", "Tool adapter efectivo; por default usa project.yaml o codex")
 	jsonOutput := fs.Bool("json", false, "Emitir salida JSON")
 	fs.Usage = func() {
 		fmt.Fprintf(deps.Stderr, "Uso: lufy-ai skills %s [--target <dir>] [--tool %s] [--json]\n", command, writableToolUsage())
@@ -1482,7 +1482,7 @@ func printGeneralHelp(out io.Writer) {
 	fmt.Fprintln(out, "  init      Genera .lufy/config/project.yaml stack-aware")
 	fmt.Fprintln(out, "  scan      Escanea stacks/superficies y actualiza project.yaml")
 	fmt.Fprintln(out, "  plan      Resuelve superficies y validaciones para un cambio")
-	fmt.Fprintln(out, "  install   Instala/planifica assets (slice inicial)")
+	fmt.Fprintln(out, "  install   Instala/planifica assets Codex del proyecto")
 	fmt.Fprintln(out, "  uninstall Remueve assets gestionados por Lufy con backup")
 	fmt.Fprintln(out, "  verify    Verifica estado mínimo instalado")
 	fmt.Fprintln(out, "  backup    Crea backup mínimo")

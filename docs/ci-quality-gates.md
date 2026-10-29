@@ -1,4 +1,4 @@
-# CI quality gates
+# Validación local y gates de CI
 
 Este repositorio valida el producto real desde la CLI Go en `tools/lufy-cli-go`. No existe suite Node/TS global en la raíz.
 
@@ -14,6 +14,7 @@ El comando ejecuta:
 
 - whitespace check con rango/base de PR;
 - pinning de GitHub Actions en workflows;
+- consistencia de `RELEASE_VERSION`, referencias documentales y pruebas del guard de versiones;
 - sintaxis YAML de workflows mediante helper Go local;
 - ShellCheck para scripts versionados cuando `shellcheck` está instalado;
 - regresiones Python offline, paridad del payload y tests Go con coverage y threshold objetivo;
@@ -26,7 +27,7 @@ Si `shellcheck` no está instalado localmente, el gate lo reporta explícitament
 
 El threshold objetivo es `80.0%`, medido con `go test ./... -coverprofile=<archivo>` y agregado por `go tool cover`.
 
-El bloque inline conserva el umbral de 80%; no se reduce para compensar el retiro de código.
+El flujo inline conserva el umbral de 80%. Las regresiones Python son offline: no invocan modelos ni ejecutan ensayos live. El script no comprueba formato Go con gofmt; si cambia Go, revisá su formato aparte.
 
 ## Multi-plataforma
 

@@ -1,25 +1,49 @@
-# Trabajo inline
+# Trabajo inline, autonomía y colaboración
 
-El principal entiende el resultado, consulta fuentes pertinentes, actúa dentro del alcance y comprueba lo obtenido. Puede combinar análisis, propuesta, escritura, implementación, datos y operación sin representar roles sucesivos.
+El agente principal conserva el contexto y la responsabilidad del resultado. Entiende qué se pide, revisa las fuentes relevantes y actúa dentro del alcance autorizado hasta comprobarlo. Puede investigar, proponer, escribir, implementar o revisar según lo que haga falta; esas acciones no son etapas obligatorias.
 
-- «Analizá» autoriza análisis; no vuelve una recomendación permiso para modificar datos.
-- «Analizá y corregí» permite continuar hacia la corrección sin pedir otra aprobación por su propio plan.
-- Una tarea grande puede necesitar acuerdos y entregas revisables. Se escriben para resolver incertidumbre y continuidad, sin formularios universales.
-- Las consultas humanas resuelven decisiones materiales pendientes. El agente continúa trabajo independiente mientras espera; el silencio no concede autorización.
-- El riesgo se explica mediante consecuencias y evidencia. La cantidad de archivos o la extensión Markdown no determina por sí sola seguridad ni complejidad.
+## Interacción con el usuario
 
-## Comprobar
+Un pedido claro autoriza el trabajo local necesario para concretarlo. El agente resuelve decisiones reversibles de implementación, comunica hallazgos materiales y comprueba sus efectos. Pregunta cuando falta una decisión que cambie el resultado, el alcance o los permisos y que no pueda resolver con evidencia disponible. Mientras espera, puede avanzar con trabajo independiente.
 
-Código: comportamiento y regresiones. Texto: fidelidad y exactitud, incluyendo los rótulos alrededor de ejemplos. Investigación: fuentes e inferencias. Datos: procedencia, granularidad, nulos y efectos. Operaciones: estado posterior y recuperación observada. Propuestas: coherencia, alternativas y límites.
+Un análisis termina con un diagnóstico sustentado. Una propuesta termina con alternativas y una recomendación viable; implementarla requiere estar dentro del pedido. Commit, push, PR, publicación y cambios externos se rigen por [la política de entrega](../.lufy/contracts/delivery.md). Una autorización vigente se conserva dentro de su alcance.
 
-Invocar una skill, ejecutar un comando o repetir como assertion la salida elegida no demuestra que el resultado sea correcto. Un defecto crítico no se compensa con un score ni con tokens ahorrados. Se distingue observado, fallido, inconcluso y no aplicable.
+## La evidencia depende del resultado
 
-## Capacidades opcionales
+| Pedido | Trabajo y comprobación pertinentes |
+| --- | --- |
+| Explicar código o investigar | Leer fuentes, contrastar afirmaciones y distinguir observaciones de inferencias. |
+| Crear o modificar software | Entender dependencias, implementar y comprobar comportamiento, regresiones y contratos afectados. |
+| Redactar o traducir | Conservar significado, fuentes, tono, restricciones y formato; revisar el texto resultante. |
+| Analizar datos | Explicar procedencia, granularidad, nulos, duplicados, unidades y consultas reproducibles. |
+| Proponer una idea | Evaluar necesidad, alternativas, factibilidad, riesgos y preguntas abiertas. |
+| Ejecutar una operación | Confirmar autorización, observar el estado posterior y registrar errores pendientes. |
 
-Memoria Obsidian guarda decisiones durables; contexto indexa archivos y dependencias; ledger registra operaciones explícitas e idempotentes; evidencia/candidate/review sirven a integraciones que las necesitan. Nada de eso obliga a una metodología ni concede permisos.
+El principal puede usar TDD, revisión independiente o una prueba exploratoria cuando resuelvan una incertidumbre. Agrupa suites completas en un momento útil; cambiar la fuente o el candidato invalida las comprobaciones afectadas. Una respuesta ordinaria puede describir resultado, evidencia y límites en prosa. Los [registros estructurados](evidence.md) son opcionales.
 
-`context query/path/diff` orientan búsquedas. `context review` informa carga con límites canónicos de `workflow_limits.review`, sin afirmar calidad ni pedir una aprobación metodológica. Un grafo ausente o stale no bloquea el trabajo; se puede volver a archivos/búsqueda y regenerarlo si aporta valor.
+## Delegación y paralelismo
 
-La política `execution.delegation` permite off/on_request/auto. Delega sólo con tooling real, independencia útil, contexto y propiedad claros, y comprueba el resultado integrado. El principal sigue siendo responsable.
+`execution.mode` es `inline`. El [default de delegación](configuration.md) es `auto`:
 
-La configuración usa schema 2 y el manifest actual schema 4, sin metadatos metodológicos ni lectores de generaciones anteriores. El cierre de una tarea informa resultado, evidencia y límites; una operación no termina por haberla lanzado.
+- `off`: el principal realiza todo el trabajo.
+- `on_request`: sólo delega ante un pedido explícito del usuario.
+- `auto`: puede delegar una parte útil cuando haya herramientas reales disponibles y permisos suficientes.
+
+Una instrucción del usuario de trabajar inline prevalece. La configuración no crea agentes ni habilita herramientas del host. Cambiar el nombre de un rol en una respuesta no acredita delegación.
+
+Para paralelizar, cada tarea necesita un resultado acotado, contexto mínimo, ownership de archivos y una forma de integrar los resultados. Dos investigaciones independientes o cambios en módulos separados pueden avanzar juntos. Una decisión compartida, escrituras sobre los mismos archivos o una operación de entrega necesitan coordinación secuencial. El principal revisa el resultado combinado y valida después de integrarlo. `parallel_execution` orienta esa colaboración; no es un scheduler automático.
+
+## Ejemplo: agregar un filtro
+
+Pedido: «Agregá un filtro por estado y conservá la paginación».
+
+1. El principal inspecciona filtro, datos, interfaz y pruebas. Si una ambigüedad cambia la UX, la consulta y continúa lo que no dependa de ella.
+2. Implementa el comportamiento. Con delegación permitida y archivos independientes, podría encargar una investigación acotada sobre casos de paginación; conserva la decisión y la integración.
+3. Comprueba filtrado, estados vacíos y paginación, y revisa el diff. Reporta el resultado y sus límites reales.
+4. Si el pedido también autorizó commit, push y PR, realiza esa entrega y observa sus checks. Si no, entrega el cambio local comprobado.
+
+El usuario interviene ante decisiones materiales y acciones que requieren autorización. No completa formularios de tiers ni aprueba cada paso interno.
+
+## Proyecto desde cero
+
+El principal aclara el resultado mínimo y las restricciones que cambien una decisión importante, elige una estructura acorde al pedido y construye una primera porción funcional comprobable. Después amplía el producto preservando lo ya validado. La configuración stack-aware tiene sentido cuando existe el toolchain; no se inventan comandos ni se exige documentación de un sistema que todavía no existe. Decisiones sobre servicios externos, datos y publicación conservan sus permisos propios.

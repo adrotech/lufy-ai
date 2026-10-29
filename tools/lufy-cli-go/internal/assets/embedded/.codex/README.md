@@ -8,3 +8,5 @@ El principal trabaja con `execution.mode: inline` y la política de delegación 
 - `lufy-agent-mapping.md` describe la ejecución y las capacidades reales.
 
 La política de trabajo y comprobación vive en `.lufy/contracts/work.md` y `.lufy/contracts/evidence.md`. Los datos y decisiones explícitas del proyecto viven en `.lufy/config/project.yaml`. Usa capacidades de `.agents/skills` cuando sean pertinentes; un registro estructurado no es requisito para responder al usuario.
+
+El hook puede refrescar el registry derivado de skills mediante `skills ensure`; no modifica notas de memoria ni reconstruye el grafo.

@@ -14,7 +14,7 @@ La fuente de verdad son eventos inmutables `lufy-run-event/v1` bajo `.lufy/runti
 
 Receipts de idempotencia, bindings de adapters y proyecciones son derivados reconstruibles. Los eventos son append-only: `run verify --repair` puede regenerar una proyección, pero nunca reescribe eventos fuente.
 
-`.lufy/runtime/` es estado local ignorado por Git, no es un asset gestionado y no se exporta por red.
+`.lufy/runtime/` es estado local, no es un asset gestionado y no se exporta por red. En este repositorio está ignorado por Git; al integrar Lufy en otro proyecto, comprobá su política de versionado. El instalador no crea un `.gitignore` raíz del proyecto.
 
 ## CLI
 
@@ -30,8 +30,6 @@ Registrar un checkpoint:
 lufy-ai run checkpoint \
   --run run-local \
   --status validated \
-  --gate validation \
-  --next-owner reviewer \
   --idempotency-key run-local:validated \
   --json
 ```
@@ -66,11 +64,11 @@ El schema usa allow-list y no contiene un body libre. Se rechazan prompts, respu
 
 La integración Codex consume solo `session_id`, `turn_id`, `agent_id`, `agent_type` y el nombre del lifecycle event. No abre `transcript_path` ni persiste `last_assistant_message`.
 
-## Lifecycle Codex y degradación
+## Productores explícitos y hook instalado
 
-Codex mapea `SessionStart`, `SubagentStart`, `SubagentStop`, `Stop` y `SessionEnd` a runs y eventos locales. Los hooks son best-effort: un fallo de configuración, permisos, lock o filesystem produce un warning compacto, mantiene `continue=true` y no avanza gates SDD, validación, delivery ni archive.
+La CLI conserva `run record` y `run checkpoint` para productores locales explícitos. El hook distribuido de Codex sólo invoca orientación de `SessionStart`: no registra runs, subagentes, reviews ni conversaciones. La configuración del ledger habilitada no significa instrumentación automática.
 
-Otros adapters usan la frontera portable descrita en `.lufy/contracts/run-ledger-producer.md`; su instrumentación automática queda fuera de esta fase.
+Los checkpoints registran estados declarados; no avanzan el trabajo, ejecutan comprobaciones ni autorizan entrega. Los vínculos entre runs necesitan eventos efectivamente registrados, no inferencias desde el nombre de un rol. Las métricas describen únicamente esa historia local.
 
 ## Configuración y límites
 
@@ -96,12 +94,10 @@ La raíz configurada debe permanecer dentro de `.lufy/runtime`. Configuración a
 
 Deshabilitar productores automáticos no borra historia. La remoción manual de `.lufy/runtime/` es una operación separada y destructiva.
 
-## Relación con OpenTelemetry y Observatory
+## Alcance de observabilidad
 
-El ledger es una fuente local de dominio Lufy, no un reemplazo de OpenTelemetry ni un backend de tracing distribuido. Su envelope causal puede alimentar una futura exportación explícita, pero actualmente no realiza networking.
-
-Agent Observatory sigue siendo una proyección TUI efímera orientada a OpenCode. Puede consumir resúmenes del ledger en una etapa futura; no es autoridad sobre eventos, receipts ni gates.
+El ledger es una fuente local de eventos, sin networking ni backend de tracing distribuido. No mide actividad no instrumentada, calidad, tokens o costo humano ausentes. El Observatory de OpenCode fue retirado; no es una proyección disponible en el catálogo Codex actual.
 
 ## Compatibilidad cross-platform
 
-El store evita `flock` y usa primitives de filesystem portables. La CI existente ejecuta `go test ./...` y build en Ubuntu, macOS y Windows; localmente `scripts/validate.sh` cubre tests, coverage, build, assets y contratos.
+El store evita `flock` y usa primitives de filesystem portables. La CI existente ejecuta `go test ./...` y build en Ubuntu, macOS y Windows; localmente `scripts/validate.sh` cubre tests, coverage, build, assets y políticas.
