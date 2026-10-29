@@ -32,3 +32,9 @@ Registro vivo de aprendizajes operativos que no ameritan ADR completa, pero sí 
 - **Contexto:** los informes de implementación pueden seguir diciendo «pendiente de integración» después del merge.
 - **Aprendizaje:** cada estado necesita fecha y fuente propia. Un formato usado personalmente no convierte esa generación en una release pública ni su configuración en default.
 - **Aplicación:** el estado vigente enlaza PRs y evidencia; los informes fechados conservan sus resultados originales.
+
+### Actualizar la documentación preservando su presentación y cobertura
+
+- **Contexto:** una reescritura del README puede explicar el modelo nuevo y aun así perder el banner, navegación y orientación operativa útiles.
+- **Aprendizaje:** comparar el documento anterior antes de sustituirlo; actualizar el contenido de las secciones que siguen aportando al producto y conservar su identidad visual.
+- **Aplicación:** el README mantiene el banner original, navegación y una vista de arquitectura y operación, con comandos y conceptos del flujo inline. La brevedad por sí sola no demuestra una mejor documentación.

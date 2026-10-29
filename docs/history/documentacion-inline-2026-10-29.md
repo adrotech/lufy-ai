@@ -29,3 +29,9 @@ Los smokes observaron dry-run sin crear assets, instalación/verificación, dele
 La evidencia temporal está bajo `/private/tmp/lufy-docs-20261029`: ayudas capturadas, validación, scripts, salidas y fixtures sintéticos. No contiene nuevas ejecuciones de modelos ni modifica la instalación personal. Los commits de fixtures son locales, sin remotos ni entrega del producto.
 
 No se actualizó `RELEASE_VERSION`, no se creó tag, release ni promoción a `main`. La publicación requiere preparar y comprobar un candidato de versión según [la guía vigente](../releasing.md).
+
+## Revisión de presentación del README
+
+Se contrastó el README con el de la última release estable y se restauró la referencia al banner original, cuyo blob Git sigue siendo `2d8fef2f52e070c1fa10531745a56e98b9a164f9`. Se recuperaron navegación, panorama de arquitectura, catálogo, operación local, setup/menu, recuperación, estado, documentación y licencia, actualizando sus conceptos al flujo inline.
+
+La revisión comprobó 187 enlaces Markdown locales y nueve referencias HTML del encabezado, incluyendo anclas e imagen. Dos smokes adicionales verificaron `setup --skip-version-check` con dry-run sin escrituras y aplicación real en un fixture externo. La validación final y checks remotos de entrega corresponden al commit publicado en el PR; no se atribuyen a esta revisión los checks de un candidato anterior.
