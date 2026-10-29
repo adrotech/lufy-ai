@@ -8,6 +8,8 @@ Fecha de propuesta: 24 de octubre de 2026. Implementación del 27/10: [bloque 1,
 
 [Entrega de la rama](entrega.md): commit y push autorizados el 28/10/2026 sobre `codex/lufy-inline`; integración a `develop` y publicación fuera de este pedido. Los informes anteriores conservan el estado observado en su fecha.
 
+[Mejora posterior del evaluador, 29/10](implementacion/mejora-evaluador-2026-10-29.md): gramática de comandos ampliada, diagnósticos por evento y procedencia; 13 comandos antes desconocidos ahora reconocidos como lecturas. Validada localmente; entrega autorizada mediante la rama `codex/improve-inline-evaluator` y PR hacia `develop`.
+
 Revisión de alcance: Lufy tiene un único usuario, su autor. Por instrucción explícita suya, no hay requisito de retrocompatibilidad. La propuesta permite cambios incompatibles de configuración, comandos, formatos y estructura; no conserva motores ni consumidores históricos para atender instalaciones ajenas.
 
 Base técnica: `origin/develop`, commit `1cc18d4647afc61ea1f6b1cb726ba74128fded5f`, versión `v0.6.25`. El análisis usa ese snapshot porque el checkout local está atrasado y contiene trabajo ajeno a esta propuesta. Elaboración inline, sin delegación, sin crear un change de OpenSpec y sin ejecutar el workflow que se propone retirar.

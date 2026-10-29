@@ -72,6 +72,16 @@ class OutcomeTests(unittest.TestCase):
             with self.subTest(item=item):
                 self.assertEqual(self.verdict(events=completed(item))["status"], "inconclusive")
 
+    def test_classification_diagnostics_are_separate_from_semantic_acceptance(self):
+        events = completed({"type": "command_execution", "command": "git status --short"})
+        result = self.verdict(events=events)
+        self.assertEqual(result["status"], "needs_review")
+        self.assertEqual(result["classifier_version"], work.CLASSIFIER_VERSION)
+        self.assertEqual(result["command_observations"], [{"event_index": 1, "kind": "read", "reason": "git_status"}])
+        unknown = self.verdict(events=completed({"type": "command_execution", "command": "python3 -c 'print(1)'"}))
+        self.assertEqual(unknown["status"], "inconclusive")
+        self.assertEqual(unknown["command_observations"][0]["reason"], "unsupported_command")
+
     def test_read_only_shell_write_is_rejected(self):
         events = completed({"type": "command_execution", "command": "rm source.md", "exit_code": 1})
         self.assertEqual(self.verdict(events=events)["status"], "failed")
@@ -330,6 +340,22 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(result["status"], "needs_review", result)
         result, _ = self.run_case("write-guide")
         self.assertEqual(result["status"], "failed", result)
+
+    def test_classifier_source_changes_are_part_of_execution_provenance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in [work.POLICY, Path("tools/codex-behavior-pilot/work.py"),
+                         Path("tools/codex-behavior-pilot/work-scenarios.json"),
+                         Path("tools/codex-behavior-pilot/command_effects.py"), Path("runtime")]:
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("source")
+            before = work.provenance(root, root / "runtime")
+            helper = Path("tools/codex-behavior-pilot/command_effects.py")
+            (root / helper).write_text("changed classifier")
+            after = work.provenance(root, root / "runtime")
+            self.assertNotEqual(before[str(helper)], after[str(helper)])
+            self.assertEqual(before["runtime_sha256"], after["runtime_sha256"])
 
     def test_changed_inputs_prevent_accepting_historical_evidence(self):
         result, _ = self.run_case(changed_inputs=True)

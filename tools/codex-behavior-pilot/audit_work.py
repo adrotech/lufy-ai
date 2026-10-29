@@ -42,6 +42,7 @@ def audit(directory):
     directory = Path(directory)
     result = {"directory": str(directory), "case": None, "family": "unknown", "original_status": None,
               "audit_status": "inconclusive", "scope_checks_passed": False, "reasons": [],
+              "classifier_version": work.CLASSIFIER_VERSION, "command_observations": [],
               "metrics": usage([]), "fingerprints": {}, "comparison_eligible": False, "execution": "not_available"}
     try:
         raw = read_regular(directory / "result.json", 4 * 1024 * 1024)
@@ -90,6 +91,7 @@ def audit(directory):
                     and record.get("timed_out") is False and not record.get("launch_error")
                     and any(isinstance(e, dict) and e.get("type") == "turn.completed" for e in events))
         result.update(execution="completed" if complete else "incomplete", audit_status=verdict["status"], scope_checks_passed=verdict["scope_checks_passed"],
+                      classifier_version=verdict["classifier_version"], command_observations=verdict["command_observations"],
                       reasons=verdict["reasons"], metrics=usage(events), policy_sha256=record.get("policy_sha256"),
                       runtime_sha256=inputs.get("runtime_sha256"), model_identity_verified=record.get("model_identity_verified") is True,
                       oracle_reexecuted=False, semantic_review="required" if case.get("manual_review") else "recorded_oracle")

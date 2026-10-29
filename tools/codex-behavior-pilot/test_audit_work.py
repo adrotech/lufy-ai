@@ -44,6 +44,20 @@ class AuditTests(unittest.TestCase):
         self.assertFalse(result["comparison_eligible"])
         self.assertEqual(before, (self.root / "result.json").read_bytes())
 
+    def test_new_command_analysis_keeps_original_verdict_and_missing_costs(self):
+        self.events.insert(0, {"type": "item.completed", "item": {"type": "command_execution", "command": "git status --short"}})
+        self.write()
+        before = (self.root / "result.json").read_bytes()
+        result = audit_work.audit(self.root)
+        self.assertEqual(result["original_status"], "inconclusive")
+        self.assertEqual(result["audit_status"], "needs_review")
+        self.assertEqual(result["classifier_version"], work.CLASSIFIER_VERSION)
+        self.assertEqual(result["command_observations"][0]["reason"], "git_status")
+        self.assertFalse(result["comparison_eligible"])
+        self.assertFalse(result["oracle_reexecuted"])
+        self.assertIsNone(result["metrics"]["human_interventions"])
+        self.assertEqual(before, (self.root / "result.json").read_bytes())
+
     def test_unknown_metrics_stay_missing_and_booleans_are_not_token_counts(self):
         result = audit_work.audit(self.root)
         self.assertEqual(result["metrics"]["input_tokens"], 10)
