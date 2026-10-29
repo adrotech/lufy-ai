@@ -21,7 +21,7 @@ Preserva los datos y archivos ajenos. Comprueba el resultado pertinente y report
 Consulta decisiones materiales sin respuesta disponible. No publiques ni hagas delivery sin autorización.
 """
 ORDERS = ["ABC", "BCA", "CAB", "ABC", "BCA", "CAB"]
-SOURCE_FILES = ["comparison.py", "work.py", "work-scenarios.json", "audit_work.py"]
+SOURCE_FILES = ["command_effects.py", "comparison.py", "work.py", "work-scenarios.json", "audit_work.py"]
 
 
 def sources():

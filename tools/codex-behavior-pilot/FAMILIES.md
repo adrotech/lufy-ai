@@ -33,3 +33,9 @@ Antes de esa comparación, fijar casos/repeticiones, orden alternado, política 
 Grafo, memoria y delegación requieren comparaciones con/sin la capacidad en tareas que la necesiten. Este piloto no mide su valor y no justifica activarlas siempre ni retirarlas por ausencia de uso en fixtures pequeños.
 
 La [comparación posterior](../../docs/propuestas/lufy-inline-2026-10-24/implementacion/bloque-5-comparacion.md) completó 24 turnos con `comparison.py`. Sus datos no se mezclan con el piloto. El estudio terminó con límites explícitos y sin adopción automática.
+
+## Cobertura del clasificador, 29/10/2026
+
+La revisión `command-effects/v2` mejora la gramática y agrega diagnósticos por evento. En una lectura offline de los 24 registros existentes (79 comandos completados), 13 de los 33 comandos antes desconocidos se reconocen como lecturas. Los otros 20 siguen inconclusos: 12 heredocs, dos expansiones, cuatro comandos no soportados y dos diffs Git sin desactivación explícita de helpers.
+
+Esto mide cobertura de clasificación. No se ejecutaron modelos ni código de candidatos, no se reejecutaron oráculos y no se modificaron trazas, registros o veredictos históricos. El auditor informa su versión actual y mantiene `original_status`, métricas ausentes y `comparison_eligible: false`. La comparación original conserva su conclusión inconclusa sobre ventaja general y costo humano.

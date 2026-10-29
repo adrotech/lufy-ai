@@ -2,6 +2,7 @@
 
 - [WORK.md](WORK.md): fixtures y runner opt-in por familia.
 - [FAMILIES.md](FAMILIES.md): auditoría y límites de la evidencia.
+- `command_effects.py`: gramática de comandos acotada, sin ejecución, con diagnósticos versionados.
 - `comparison.py`: comparación aislada de snapshots/instalaciones A/B/C y seguimientos. La variante histórica se proporciona mediante un ejecutable externo; no mantiene un motor de compatibilidad en el producto.
 
 Listar casos con `python3 tools/codex-behavior-pilot/work.py` no invoca modelos ni escribe evidencia. Una ejecución real requiere `--live` y output externo nuevo; no se activa desde validación, hooks ni instalación. Conservar métricas ausentes como null y no declarar adopción automática.

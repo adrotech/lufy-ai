@@ -16,6 +16,14 @@ El candidato se ejecuta mediante `codex sandbox` con `sandbox_mode="read-only"`,
 
 En análisis, propuesta y redacción, pasar los controles de alcance y ejemplos literales produce `needs_review`, no una aprobación de calidad automática. Se incluyen criterios para contrastar el contenido. Ese estado pertenece al experimento y no obliga a pedirle aprobación al usuario en el producto: el evaluador o revisor del ensayo documenta qué pudo comprobar. No se aplica cobertura de código a un texto.
 
+## Clasificación de comandos
+
+`command_effects.py` implementa `command-effects/v2`: distingue operadores del shell de argumentos literales entre comillas. Reconoce secuencias simples, lecturas, checksums, `git status` con opciones acotadas y `git --no-pager diff --no-ext-diff --no-textconv` sin helpers. La configuración Git explícita, opciones desconocidas, pipes, expansiones, heredocs y Python arbitrario continúan inconclusos; los comandos de comprobación declarados se reconocen por argv exacto. Las mutaciones y delivery conocidos conservan su clasificación aunque aparezcan en una secuencia.
+
+Cada evaluación registra `classifier_version` y `command_observations` con índice del evento, clase y motivo; no duplica los argumentos del comando en ese diagnóstico. El helper participa en los fingerprints de procedencia del runner y de la comparación. Una lectura reconocida sólo despeja esa incertidumbre de alcance: un texto sigue requiriendo revisión semántica y un cambio de código sigue necesitando su oráculo.
+
+La clasificación es estática y acotada. No ejecuta comandos, no atesta binarios, configuración, entorno ni permisos efectivos y no sustituye el aislamiento. Las construcciones fuera de su gramática no se aceptan por descarte. Los resultados históricos se conservan; cualquier reevaluación identifica la versión actual por separado.
+
 ## Uso
 
 Listar casos no ejecuta modelos, carga autenticación ni crea evidencia:

@@ -1,0 +1,37 @@
+{
+  "baseline_commit": "64303ff3f2c03e895b5f8b83c66faf913113320d",
+  "classifier_version": "command-effects/v2",
+  "records": 24,
+  "commands": 79,
+  "current": {
+    "read": 55,
+    "check": 4,
+    "unknown": 20
+  },
+  "transitions": {
+    "read -> read": 42,
+    "unknown -> read": 13,
+    "check -> check": 4,
+    "unknown -> unknown": 20
+  },
+  "unresolved_reasons": {
+    "unsupported_heredoc": 12,
+    "shell_expansion": 2,
+    "unsupported_command": 4,
+    "git_helpers_not_disabled": 2
+  },
+  "records_and_traces_unchanged": true,
+  "models_invoked": false,
+  "candidate_code_executed": false,
+  "historical_quality_verdicts_changed": false,
+  "sources": {
+    "work.py": "ae5d3357d5992ded5ec09e018521eae92558017d0ee3955991a14e4925584359",
+    "command_effects.py": "f6411ef7d3d61bb3069300124aab67fc452adda418294e97749f2d85036b03ce",
+    "audit_work.py": "e2943807900a126fedaf5ea892f26410e504aecfac492d6d1222148031acdad3",
+    "comparison.py": "541daf7e4424973d83e3ef532d22a22605bdcb3ed4d987de5a8ee2467b99999f"
+  },
+  "limitations": [
+    "Cobertura de clasificación, no medición de calidad, tiempo ni costo humano.",
+    "Las configuraciones, binarios y el entorno efectivos no están atestados por esta gramática."
+  ]
+}
