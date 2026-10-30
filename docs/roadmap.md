@@ -6,6 +6,6 @@ Los bloques inline y la ampliación del clasificador ya están integrados en `de
 - Evaluar delegación cuando existan entregables independientes, ownership y una integración verificable.
 - Mejorar búsqueda contextual si el índice lexical resulta insuficiente, conservando fuentes inspeccionables.
 - Evaluar la utilidad de asignación adaptativa antes de ampliar su uso experimental.
-- Preparar la primera release inline: versión coherente, distribución, recuperación y promoción autorizada a `main`. No implica mantener lectores de formatos anteriores.
+- Mantener distribución y recuperación reproducibles en cada release inline, con promoción autorizada a `main` y verificación del artifact publicado.
 
 No hay compromiso de conservar motores o abstracciones por su antigüedad. Tampoco se agregan frameworks ni procesos sin evidencia de utilidad.

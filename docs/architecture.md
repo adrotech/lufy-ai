@@ -1,6 +1,6 @@
 # Arquitectura inline
 
-`develop` contiene el modelo incompatible descrito en [el flujo vigente](harness-workflow.md). La release estable anterior no instala este modelo.
+La generación inline usa el modelo descrito en [el flujo vigente](harness-workflow.md). Sus formatos son incompatibles con las instalaciones del modelo anterior.
 
 La CLI Go concentra operaciones locales; el agente trabaja inline y elige exploración, propuesta, implementación y comprobaciones según el resultado solicitado. La configuración admite `execution.mode: inline` y delegación `off`, `on_request` o `auto` (default). No se instala un router ni un catálogo de roles o metodologías.
 

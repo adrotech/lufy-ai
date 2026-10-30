@@ -55,6 +55,8 @@ generate_provenance() {
     printf '{"_type":"https://in-toto.io/Statement/v1","predicateType":"https://slsa.dev/provenance/v1","subject":['
     while read -r hash file; do
       [ -n "$hash" ] || continue
+      # Los comentarios, incluido el contrato de runtime, no son artifacts.
+      [[ "$hash" == \#* ]] && continue
       if [ "$first" = "true" ]; then
         first="false"
       else

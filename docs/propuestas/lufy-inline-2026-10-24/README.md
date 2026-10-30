@@ -1,6 +1,6 @@
 # Propuesta: Lufy centrado en resultados, con ejecución inline
 
-Propuesta original del 24/10/2026. **Implementada e integrada en `develop`**: PR #256 (flujo inline y retiro) y PR #257 (evaluador). La [entrega](entrega.md) registra commits y checks observados al 29/10. Todavía no hay una release inline.
+Propuesta original del 24/10/2026. **Implementada e integrada en `develop`**: PR #256 (flujo inline y retiro) y PR #257 (evaluador). La [entrega](entrega.md) registra commits y checks observados al 29/10. El estado posterior de publicación se consulta en [estado actual](../../status.md); los informes siguientes conservan su checkpoint histórico.
 
 La guía operativa vigente está en [el índice de documentación](../../README.md). El texto siguiente conserva el diagnóstico y la dirección de la propuesta sobre su snapshot original; sus tiempos verbales y bloques planificados no describen pendientes actuales.
 

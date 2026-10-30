@@ -30,7 +30,7 @@ Ese resultado puede ser una app desde cero, una nueva funcionalidad, una correcc
 
 El flujo actual usa ejecución inline. Puede incorporar TDD, exploración, diseño, revisión, memoria y colaboración cuando ayuden al trabajo. Una propuesta puede terminar sin implementación y una explicación puede terminar sin escribir archivos.
 
-**Disponibilidad:** el flujo inline ya está integrado en `develop` y todavía no tiene release publicada. La última referencia estable, `v0.6.25`, pertenece al modelo anterior. Los formatos son incompatibles; para usar el modelo actual, compilá desde `develop` siguiendo el quickstart.
+**Versión de esta documentación: `v0.7.0`**, primera generación Codex inline. Los binarios, checksums y firmas se distribuyen en [GitHub Releases](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0). Sus formatos son incompatibles con el modelo anterior; revisá [instalación y recuperación](docs/installation.md) antes de reemplazar una instalación existente.
 
 ## Qué problema busca resolver
 
@@ -49,18 +49,26 @@ Las capacidades son herramientas para esas necesidades. No hay selección obliga
 
 ## Quickstart
 
-### 1. Compilar el código actual
+### 1. Instalar el binario de la release
 
-Requiere Go según [go.mod](tools/lufy-cli-go/go.mod), actualmente 1.24.2. Desde un checkout actualizado de `develop`, en un shell POSIX:
+En macOS o Linux, descargá y revisá el bootstrap antes de ejecutarlo con una versión fija:
 
 ```sh
-mkdir -p "$HOME/.local/bin"
-go -C tools/lufy-cli-go build -o "$HOME/.local/bin/lufy-ai" ./cmd/lufy-ai
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.7.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+less /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version v0.7.0 --install-dir "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"
 lufy-ai version --runtime-contract
 ```
 
-Usá un destino libre o respaldá el ejecutable existente antes de reemplazarlo. El hook de Codex necesita `lufy-ai` en el PATH del entorno que inicia el host. Para Windows, PATH y recuperación entre generaciones, consultá [instalación](docs/installation.md).
+El bootstrap verifica SHA-256 y coloca sólo el ejecutable. Usá un destino libre o respaldá el existente antes de reemplazarlo. El hook de Codex necesita `lufy-ai` en el PATH del host. Para Windows, firmas y recuperación entre generaciones, consultá [instalación](docs/installation.md).
+
+Para compilar desde un checkout del tag `v0.7.0`, usá Go según [go.mod](tools/lufy-cli-go/go.mod), actualmente 1.24.2:
+
+```sh
+mkdir -p "$HOME/.local/bin"
+go -C tools/lufy-cli-go build -o "$HOME/.local/bin/lufy-ai" ./cmd/lufy-ai
+```
 
 ### 2. Revisar, instalar y verificar
 
@@ -243,11 +251,11 @@ lufy-ai plan --target /ruta/al/proyecto --base origin/develop --json
 
 ### Setup y command palette
 
-`setup` puede orquestar instalación, configuración, memoria, grafo y verify. Para trabajar con el código inline mientras la release estable corresponde al modelo anterior:
+`setup` puede orquestar instalación, configuración, memoria, grafo y verify. Revisá primero el preview con el ejecutable de esta generación:
 
 ```sh
-lufy-ai setup --target /ruta/al/proyecto --skip-version-check --dry-run
-lufy-ai setup --target /ruta/al/proyecto --skip-version-check --yes
+lufy-ai setup --target /ruta/al/proyecto --dry-run
+lufy-ai setup --target /ruta/al/proyecto --yes
 ```
 
 Revisá el preview y la configuración existente antes de aplicar. `lufy-ai menu` abre el command palette en una terminal interactiva. El help del ejecutable y de sus subcomandos describe los flags disponibles; la [referencia de CLI](docs/cli.md) explica sus efectos y precondiciones.
@@ -315,7 +323,7 @@ Integrar código a `develop` y publicar una nueva versión son acciones distinta
 | Memoria y contexto | Obsidian portable e índice lexical v3; su uso depende de la necesidad. |
 | Evidencia y ledger | Integraciones explícitas opcionales; sus registros no demuestran por sí solos calidad o autoría. |
 | Asignación adaptativa | Experimental y deshabilitada por default. |
-| Publicación | La generación inline todavía no tiene release publicada. |
+| Distribución | Generación `v0.7.0`; artifacts y evidencia de publicación en GitHub Releases. |
 
 Se retiraron motores SDD/OpenSpec, selección de metodología por tiers, Result Contract y adapters anteriores. Sus informes permanecen como historia y no se distribuyen como motores activos.
 

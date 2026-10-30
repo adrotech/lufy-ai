@@ -5,7 +5,7 @@
 - [PR #256](https://github.com/adrotech/lufy-ai/pull/256): seis bloques inline y corrección de paths Windows, integrados en `develop` mediante `64303ff3f2c03e895b5f8b83c66faf913113320d`. Cinco checks previos aprobados; el [run posterior a la integración](https://github.com/adrotech/lufy-ai/actions/runs/40782741597) también concluyó correctamente.
 - [PR #257](https://github.com/adrotech/lufy-ai/pull/257): mejora del evaluador, integrada mediante `3b6470a71f982f426c2fa17dee013d9f27275878`. Sus cinco checks concluyeron correctamente en [CI](https://github.com/adrotech/lufy-ai/actions/runs/40971950443).
 
-No se publicó una release inline ni se promovió esta generación a `main`. La [guía de releases](../../releasing.md) describe el trabajo futuro de publicación.
+Al cierre de esta entrega todavía no se había publicado una release inline ni promovido esta generación a `main`. El estado posterior se consulta en [estado actual](../../status.md); la [guía de releases](../../releasing.md) describe el proceso de publicación.
 
 ## Trazabilidad de los informes anteriores
 

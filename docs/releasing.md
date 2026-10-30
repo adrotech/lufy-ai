@@ -1,6 +1,6 @@
 # Preparar una nueva release
 
-Esta guía describe el flujo existente; ejecutarlo requiere autorización explícita. El modelo inline integrado en `develop` todavía no se publicó. Actualizar documentación no crea una versión, tag o promoción.
+Esta guía describe el workflow de cada nueva release; ejecutarlo requiere autorización explícita. La generación inline se distribuye con los formatos actuales y sin migrador de las generaciones retiradas. Actualizar documentación no crea por sí solo una versión, tag o promoción.
 
 ## Preparación del candidato
 
