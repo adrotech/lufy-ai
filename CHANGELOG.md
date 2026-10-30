@@ -15,6 +15,8 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ### Changed
 
+- Manual HTML de uso con ocho recorridos ilustrativos, conversaciones, diagramas, skills y visor de delegación, usando los recursos visuales originales de Lufy.
+
 - Flujo Codex inline integrado: el principal adapta trabajo y evidencia al resultado; delegación configurable `off`, `on_request` o `auto`.
 - Catálogo de 16 assets y cinco skills. Configuración schema 2, manifest 4 y backups 2 ligados a estado 4; formatos incompatibles sin migrador genérico.
 - Contexto lexical v3, memoria portable y registros explícitos opcionales; el hook sólo orienta `SessionStart`.

@@ -2,6 +2,8 @@
 
 El agente principal conserva el contexto y la responsabilidad del resultado. Entiende qué se pide, revisa las fuentes relevantes y actúa dentro del alcance autorizado hasta comprobarlo. Puede investigar, proponer, escribir, implementar o revisar según lo que haga falta; esas acciones no son etapas obligatorias.
 
+Para recorrer ejemplos ilustrativos con conversaciones, diagramas, pasos y resultados finales por tipo de pedido, consultá el [manual visual e interactivo](manual/README.md).
+
 ## Interacción con el usuario
 
 Un pedido claro autoriza el trabajo local necesario para concretarlo. El agente resuelve decisiones reversibles de implementación, comunica hallazgos materiales y comprueba sus efectos. Pregunta cuando falta una decisión que cambie el resultado, el alcance o los permisos y que no pueda resolver con evidencia disponible. Mientras espera, puede avanzar con trabajo independiente.

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Manual de uso de Lufy: pedidos, ejemplos de conversación, recorridos, autonomía, subagentes y skills del flujo inline.">
+  <meta name="referrer" content="no-referrer">
+  <title>Cómo trabaja Lufy · Manual de campo</title>
+  <link rel="stylesheet" href="manual.css">
+  <script src="scenarios.js" defer></script>
+  <script src="manual.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <header class="masthead">
+    <a class="wordmark" href="#inicio" aria-label="Lufy, inicio del manual"><span class="lighthouse" aria-hidden="true">◈</span><strong>LUFY</strong><span class="wordmark-rule"></span><span>Manual de campo</span></a>
+    <nav aria-label="Navegación principal"><a href="#recorridos">Los pedidos</a><a href="#tripulacion">Quién participa</a><a href="#preguntas">Dudas frecuentes</a></nav>
+    <a class="header-link" href="../../README.md">El proyecto <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main id="contenido">
+    <section class="hero wrap" id="inicio" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="signal"></span> Lufy inline · Guía de uso</p>
+        <h1 id="hero-title">Tu pedido.<br>Un rumbo <em>claro.</em></h1>
+        <p class="hero-lead">Entendé qué pedir, cómo avanza el agente y qué esperar al terminar. Explorá el trabajo de Lufy, paso a paso.</p>
+        <div class="hero-actions"><a class="button primary" href="#recorridos">Explorar un pedido <span aria-hidden="true">↓</span></a><a class="text-link" href="#como-pedir">Empezar por lo básico <span aria-hidden="true">↗</span></a></div>
+        <p class="hero-note">Un principal a cargo. Las herramientas que hagan falta. Evidencia acorde al resultado.</p>
+      </div>
+      <figure class="hero-art">
+        <img src="../assets/brand/lufy-ai-harness-banner.png" width="1942" height="809" alt="El universo de Lufy: robots colaboran entre islas conectadas y un faro marca el rumbo." fetchpriority="high">
+        <figcaption><span class="chart-mark" aria-hidden="true">✦</span> El destino lo marcás vos.<span>El principal conserva el rumbo.</span></figcaption>
+      </figure>
+    </section>
+
+    <div class="chapter-nav"><nav class="wrap" aria-label="Capítulos del manual"><a href="#como-pedir"><span>01</span> Hacer un pedido</a><a href="#recorridos"><span>02</span> Ver un recorrido</a><a href="#tripulacion"><span>03</span> Conocer a la tripulación</a><a href="#colaboracion"><span>04</span> Explorar la colaboración</a><a href="#cierre"><span>05</span> Reconocer el resultado</a></nav></div>
+
+    <section class="wrap chapter" id="como-pedir" aria-labelledby="pedir-title">
+      <div class="section-heading"><p class="eyebrow">01 / El punto de partida</p><h2 id="pedir-title">Un buen pedido empieza<br>por el resultado.</h2><p>Conversá con el agente principal en Codex, dentro del proyecto con Lufy instalado. Contale lo que buscás y el contexto que importa. El agente puede completar detalles con las fuentes del proyecto.</p></div>
+      <div class="request-parts">
+        <article><span class="part-number">A</span><h3>Qué querés obtener</h3><p>Una explicación, una corrección, una propuesta, un documento o algo que funcione.</p><small>«Encontrá por qué se repiten las ventas».</small></article>
+        <article><span class="part-number">B</span><h3>Sobre qué trabajar</h3><p>El proyecto, una ruta, un archivo, datos o material que el agente pueda consultar.</p><small>«Usá este reporte y estas consultas».</small></article>
+        <article><span class="part-number">C</span><h3>Qué límites importan</h3><p>Restricciones reales: conservar un contrato, trabajar localmente o terminar con un análisis.</p><small>«Sólo lectura; explicá la causa».</small></article>
+      </div>
+      <div class="note-strip"><span aria-hidden="true">↳</span><p>Son pistas para conversar, no un formulario obligatorio. Podés empezar con un pedido corto. El principal pregunta cuando falta una decisión material y puede avanzar con lo que no dependa de ella.</p></div>
+      <div class="prompt-workbench">
+        <div><p class="eyebrow">Probá cómo lo pedirías</p><h3>Un punto de partida para tu próxima conversación.</h3><label for="prompt-kind">Tipo de pedido</label><select id="prompt-kind"></select></div>
+        <div class="prompt-editor"><label for="prompt-text">Tu mensaje al agente</label><textarea id="prompt-text" rows="4" spellcheck="true"></textarea><div class="editor-footer"><span>Podés editarlo. El manual no envía este texto.</span><button class="button small" id="copy-prompt" type="button">Copiar pedido <span aria-hidden="true">↗</span></button></div></div>
+      </div>
+      <p id="copy-status" class="live-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="voyage-section" id="recorridos" aria-labelledby="recorridos-title">
+      <div class="wrap chapter">
+        <div class="section-heading"><p class="eyebrow">02 / Ocho destinos, distintas maneras de avanzar</p><h2 id="recorridos-title">Elegí un pedido.<br>Seguí lo que pasa.</h2><p>Cambiá de caso y recorré la conversación. Cada paso muestra qué verías, qué hace el principal y qué necesita comprobar.</p></div>
+        <p class="example-label"><span class="outline-dot" aria-hidden="true"></span> Ejemplos ilustrativos con datos ficticios. No ejecutan agentes, modelos, pruebas ni comandos.</p>
+        <div class="scenario-tabs" id="scenario-tabs" role="tablist" aria-label="Tipos de pedido"></div>
+        <article class="scenario" id="scenario-panel" role="tabpanel" tabindex="0" aria-labelledby="scenario-tab-analysis">
+          <header class="scenario-intro"><div><p class="eyebrow" id="scenario-kicker">El recorrido</p><h3 id="scenario-title">Un análisis para entender.</h3><p id="scenario-summary"></p></div><div class="scope-stamp"><span class="signal"></span><span id="scenario-scope">Lectura</span></div></header>
+          <div class="opening-message"><span class="portrait captain" role="img" aria-label="Personaje capitán del banner, representa al usuario"></span><div><p class="speaker">VOS <span>El pedido inicial</span></p><blockquote id="scenario-prompt"></blockquote></div></div>
+          <div class="journey-label"><p class="eyebrow">Mapa del recorrido <span>· podés saltar a cualquier paso</span></p><span id="step-count"></span></div>
+          <ol class="journey" id="journey" aria-label="Pasos del caso"></ol>
+          <div class="step-stage" id="step-stage" aria-live="polite" aria-atomic="true">
+            <div class="conversation-panel"><p class="panel-label">Lo que verías en la conversación</p><div class="agent-message"><span class="portrait principal" aria-hidden="true"></span><div><p class="speaker">PRINCIPAL <span id="step-context"></span></p><p id="step-message"></p></div></div><div id="human-turn" class="human-turn" hidden><p class="speaker">VOS <span>Una decisión necesaria</span></p><p id="human-reply"></p></div><p class="conversation-note">Mensaje de ejemplo. El agente adapta su respuesta al contexto real.</p></div>
+            <aside class="reasoning-panel" aria-labelledby="step-title"><p class="panel-label">Qué ocurre en este paso</p><h4 id="step-title"></h4><dl><dt>Acción</dt><dd id="step-action"></dd><dt>Evidencia que busca</dt><dd id="step-evidence"></dd></dl><div class="skill-touch"><span aria-hidden="true">✧</span><p id="step-skill"></p></div></aside>
+          </div>
+          <div class="step-controls"><button class="button small" id="step-prev" type="button"><span aria-hidden="true">←</span> Anterior</button><span id="step-position"></span><button class="button small primary" id="step-next" type="button">Siguiente paso <span aria-hidden="true">→</span></button><button class="text-link" id="show-result" type="button">Ver resultado final <span aria-hidden="true">↘</span></button></div>
+          <details class="result-panel" id="scenario-result"><summary><span class="result-mark" aria-hidden="true">✓</span><span>Cómo podría terminar este pedido</span><span class="details-plus" aria-hidden="true">+</span></summary><div class="result-body"><p class="example-label">Respuesta final ilustrativa · no representa una ejecución real</p><blockquote id="final-message"></blockquote><div class="result-columns"><div><h4>Qué recibís</h4><p id="final-artifact"></p></div><div><h4>Qué permite darlo por terminado</h4><p id="final-acceptance"></p></div><div><h4>Qué conserva su límite</h4><p id="final-boundary"></p></div></div></div></details>
+          <p class="scenario-boundary" id="scenario-boundary"></p>
+        </article>
+        <noscript><div class="note-strip"><p>Los recorridos interactivos necesitan JavaScript. Las secciones de actores, skills y preguntas se pueden leer sin él; la <a href="../harness-workflow.md">guía de flujo en Markdown</a> contiene una explicación estática.</p></div></noscript>
+      </div>
+    </section>
+
+    <section class="wrap chapter" id="tripulacion" aria-labelledby="tripulacion-title">
+      <div class="section-heading"><p class="eyebrow">03 / Quién participa de verdad</p><h2 id="tripulacion-title">Un principal a cargo.<br>Ayuda cuando aporta.</h2><p>Los personajes pertenecen al universo visual de Lufy. Acá representan participantes y recursos; no son un catálogo de agentes instalados ni una cadena de roles obligatoria.</p></div>
+      <div class="crew-list">
+        <article class="crew-member"><span class="portrait captain large" role="img" aria-label="Capitán del banner de Lufy"></span><div><span class="crew-label">VOS / DIRECCIÓN</span><h3>Elegís el destino y las decisiones materiales.</h3><p>Explicás el resultado y las restricciones. Intervenís cuando hace falta resolver producto, alcance o acceso, y autorizás la entrega o las operaciones externas cuando correspondan. No necesitás dirigir cada archivo o prueba.</p></div><span class="crew-index" aria-hidden="true">01</span></article>
+        <article class="crew-member"><span class="portrait principal large" role="img" aria-label="Robot explorador del banner de Lufy"></span><div><span class="crew-label">PRINCIPAL / RESPONSABILIDAD</span><h3>Conserva el contexto y comprueba el conjunto.</h3><p>Investiga, diseña, escribe, implementa y revisa según el pedido. Elige la próxima acción, informa avances, consulta lo que no puede resolver e integra cualquier trabajo delegado. Puede hacer todo inline.</p></div><span class="crew-index" aria-hidden="true">02</span></article>
+        <article class="crew-member"><span class="portrait helper large" role="img" aria-label="Robot constructor del banner de Lufy"></span><div><span class="crew-label">SUBAGENTE / COLABORACIÓN POSIBLE</span><h3>Resuelve una tarea independiente y acotada.</h3><p>Existe sólo si el host ofrece herramientas reales y la delegación está permitida. Recibe objetivo, contexto mínimo, permisos, ownership y aceptación. Sus resultados vuelven al principal; su autorreporte no acredita éxito por sí solo.</p></div><span class="crew-index" aria-hidden="true">03</span></article>
+        <article class="crew-member"><span class="portrait knowledge large" role="img" aria-label="Robot con conocimiento local del banner de Lufy"></span><div><span class="crew-label">SKILLS Y HERRAMIENTAS / CAPACIDADES</span><h3>Aportan instrucciones o acciones concretas.</h3><p>Una skill es una guía que el agente lee cuando resulta pertinente. Una herramienta permite observar o actuar dentro de los permisos del host. Usar una skill no crea un subagente; ninguna de las dos amplía la autorización recibida.</p></div><span class="crew-index" aria-hidden="true">04</span></article>
+      </div>
+      <div class="skills-section"><div><p class="eyebrow">Las cinco skills distribuidas</p><h3>Capacidades que acompañan el trabajo.</h3><p>El registry local permite resolver sus rutas. El principal elige las pertinentes; no tiene que invocarlas todas ni seguir una secuencia fija.</p></div><div class="skill-accordions">
+        <details><summary><code>lufy-check</code><span>Comprobar el resultado</span><span aria-hidden="true">+</span></summary><p>Ayuda a elegir evidencia pertinente: comportamiento para código, fuentes para investigación, fidelidad para texto, consultas para datos y estado posterior para operaciones. Puede usarla el mismo ejecutor. <a href="../../.agents/skills/lufy-check/SKILL.md">Leer la skill ↗</a></p></details>
+        <details><summary><code>lufy-mem-search</code><span>Recuperar contexto útil</span><span aria-hidden="true">+</span></summary><p>Busca decisiones o aprendizajes con consultas cortas. Devuelve pistas compactas y las contrasta con archivos e instrucciones actuales. La memoria es contexto, no evidencia superior. <a href="../../.agents/skills/lufy-mem-search/SKILL.md">Leer la skill ↗</a></p></details>
+        <details><summary><code>lufy-mem-capture</code><span>Conservar un aprendizaje</span><span aria-hidden="true">+</span></summary><p>Captura una decisión, regla o aprendizaje durable cuando el proyecto usa memoria Obsidian. Una corrección importante puede merecer una nota; cada turno rutinario, no. <a href="../../.agents/skills/lufy-mem-capture/SKILL.md">Leer la skill ↗</a></p></details>
+        <details><summary><code>lufy-mem-connect</code><span>Relacionar notas existentes</span><span aria-hidden="true">+</span></summary><p>Conecta notas con destinos reales y backlinks válidos. No inventa relaciones ni vuelve más fuerte una afirmación que sus fuentes. <a href="../../.agents/skills/lufy-mem-connect/SKILL.md">Leer la skill ↗</a></p></details>
+        <details><summary><code>lufy-mem-document</code><span>Documentar una decisión</span><span aria-hidden="true">+</span></summary><p>Convierte decisiones y flujos durables en conocimiento reutilizable. Conserva motivos, fuentes y límites; puede usar capture y connect, sin obligar a pasar por todas las skills. <a href="../../.agents/skills/lufy-mem-document/SKILL.md">Leer la skill ↗</a></p></details>
+      </div></div>
+    </section>
+
+    <section class="collaboration-section" id="colaboracion" aria-labelledby="colaboracion-title"><div class="wrap chapter">
+      <div class="section-heading"><p class="eyebrow">04 / Explorar la colaboración</p><h2 id="colaboracion-title">¿Todo inline<br>o tareas en paralelo?</h2><p>Después de cerrar las decisiones compartidas, una funcionalidad podría dividirse entre módulos independientes. El principal conserva la integración y comprueba el resultado reunido.</p></div>
+      <div class="collaboration-lab">
+        <fieldset class="delegation-settings"><legend>Explorar una política</legend><label for="delegation-mode">Delegación del ejemplo</label><select id="delegation-mode"><option value="off">off · todo en el principal</option><option value="on_request">on_request · ante un pedido</option><option value="auto">auto · cuando aporte valor</option></select><label class="check-row"><input id="delegation-request" type="checkbox"><span>En on_request, el usuario pidió delegar esta tarea.</span></label><label class="check-row"><input id="host-agents" type="checkbox" checked><span>El host tiene herramientas de subagentes.</span></label><label class="check-row"><input id="force-inline" type="checkbox"><span>El usuario indicó trabajar todo inline.</span></label><p>Este visor sólo cambia la explicación. El default del producto es <code>auto</code>; acá empezamos por <code>off</code> para ver el caso más directo.</p></fieldset>
+        <div class="delegation-result" aria-live="polite"><div class="route-start"><span class="portrait captain" aria-hidden="true"></span><span>Vos definís resultado y alcance</span></div><div class="route-line" aria-hidden="true"></div><div class="route-principal"><span class="portrait principal" aria-hidden="true"></span><div><strong>Principal</strong><span>Resuelve decisiones compartidas</span></div></div><div class="parallel-branches" id="parallel-branches" hidden><div class="branch"><span class="portrait helper" aria-hidden="true"></span><strong>Tarea A</strong><span>Interfaz en módulo A<br>Archivos propios</span></div><div class="branch"><span class="portrait knowledge" aria-hidden="true"></span><strong>Tarea B</strong><span>Servicio en módulo B<br>Archivos propios</span></div></div><div class="inline-branch" id="inline-branch"><span>El principal realiza ambas tareas</span><span aria-hidden="true">↓</span></div><div class="route-join"><span class="result-mark" aria-hidden="true">✓</span><div><strong>Integrar y comprobar</strong><span>El principal observa la evidencia del conjunto</span></div></div><p id="delegation-explanation"></p></div>
+      </div>
+      <details class="handoff-example"><summary>Cómo se conversa con una tarea delegada <span aria-hidden="true">+</span></summary><div><p class="example-label">Intercambio ilustrativo · sólo cuando la delegación corresponde</p><ol><li><span class="eyebrow">Principal → tarea A</span><p>«Construí la interfaz sobre el contrato acordado. Tus archivos son los del módulo A. Conservá el resto y reportá cambios, comprobaciones y límites. Sin acciones Git».</p></li><li><span class="eyebrow">Principal → tarea B</span><p>«Implementá el servicio del módulo B según el mismo contrato. Trabajá sólo en tus archivos. Indicá qué verificaste y qué queda pendiente. Sin modificar el contrato compartido».</p></li><li><span class="eyebrow">Tareas → principal</span><p>Devuelven su resultado y evidencia. Por ejemplo: «El cambio local está aplicado; esta comprobación no pudo ejecutarse por falta de una dependencia». Lo pendiente conserva su estado.</p></li><li><span class="eyebrow">Principal → vos</span><p>Integra, inspecciona los cambios y comprueba el recorrido conjunto. La respuesta final distingue lo observado de lo pendiente; no declara éxito sólo porque las tareas dijeron «listo».</p></li></ol></div></details>
+      <p class="diagram-caption">Diagrama de una colaboración posible, no un scheduler automático. Si las tareas comparten archivos o dependen de una decisión abierta, primero se reorganiza el trabajo. La delegación nunca concede permisos nuevos.</p>
+    </div></section>
+
+    <section class="wrap chapter" id="cierre" aria-labelledby="cierre-title"><div class="section-heading"><p class="eyebrow">05 / Llegar a puerto</p><h2 id="cierre-title">Terminar es poder explicar<br>qué quedó resuelto.</h2><p>Una respuesta útil conecta el resultado con su evidencia y deja visibles los límites. El formato se adapta al pedido; no hay un reporte universal obligatorio.</p></div>
+      <div class="finish-grid"><article><span class="finish-number">01</span><h3>Resultado</h3><p>Qué se entendió, decidió, escribió, construyó o recuperó. Una propuesta puede estar terminada aunque no se implemente.</p></article><article><span class="finish-number">02</span><h3>Evidencia</h3><p>Qué fuentes o comprobaciones sostienen lo dicho. Ejecutar un comando, guardar un registro o decir «listo» no prueba su efecto.</p></article><article><span class="finish-number">03</span><h3>Límites</h3><p>Qué no se pudo comprobar, qué decisión falta o qué acción requiere autorización. Un resultado inconcluso se informa como tal.</p></article></div>
+      <div class="delivery-note"><span class="chart-mark" aria-hidden="true">⚑</span><div><h3>¿Y commit, push, PR o publicación?</h3><p>Son acciones de entrega que deben estar cubiertas por autorización explícita. Si el pedido las incluye, el principal continúa con sus controles y observa los checks remotos pertinentes. Resolver el código no implica publicar automáticamente.</p><a href="../../.lufy/contracts/delivery.md">Consultar la política de entrega <span aria-hidden="true">↗</span></a></div></div>
+    </section>
+
+    <section class="wrap chapter faq-section" id="preguntas" aria-labelledby="preguntas-title"><div class="section-heading"><p class="eyebrow">Antes de tu próximo pedido</p><h2 id="preguntas-title">Dudas de navegación.</h2></div><div class="faq-list">
+      <details><summary>¿Tengo que nombrar roles o elegir una metodología?<span aria-hidden="true">+</span></summary><p>Pedí el resultado que necesitás. El flujo inline no exige tiers, una cadena de roles, una metodología ni envelopes para avanzar. Los nombres de agentes disponibles dependen del host; el catálogo actual de Lufy no instala esos roles.</p></details>
+      <details><summary>¿Tengo que decir qué skill usar?<span aria-hidden="true">+</span></summary><p>El principal puede elegir una skill pertinente a partir de su descripción y el pedido. También podés solicitar una skill disponible explícitamente. Leerla orienta una acción; no reemplaza el juicio ni garantiza el resultado.</p></details>
+      <details><summary>¿Cuándo me va a preguntar?<span aria-hidden="true">+</span></summary><p>Cuando falte una decisión material de producto, alcance o acceso que no pueda resolver con el contexto disponible. Puede seguir con trabajo independiente. El silencio no autoriza las acciones que dependan de la respuesta.</p></details>
+      <details><summary>¿La memoria y el contexto se usan siempre?<span aria-hidden="true">+</span></summary><p>Se usan cuando aportan valor y están disponibles. El hook instalado orienta el inicio de sesión y puede refrescar el registry de skills; no registra conversaciones ni captura todas las decisiones. El grafo es lexical y la memoria puede estar desactualizada: se contrastan con fuentes actuales.</p></details>
+      <details><summary>¿Qué pasa si una prueba falla o falta acceso?<span aria-hidden="true">+</span></summary><p>El principal diagnostica y corrige dentro del alcance. Si no puede avanzar por una dependencia, permiso o decisión, informa el bloqueo concreto y la recuperación necesaria. Las comprobaciones afectadas se repiten después de cambiar su fuente; una comprobación omitida no se presenta como aprobada.</p></details>
+      <details><summary>¿Estos ejemplos prueban cómo respondió un modelo real?<span aria-hidden="true">+</span></summary><p>Son recorridos didácticos, escritos para explicar el comportamiento previsto por las políticas actuales. No son trazas, benchmarks ni resultados reales. La respuesta concreta depende del pedido, las fuentes, las herramientas y los permisos disponibles.</p></details>
+      <details><summary>¿Cómo abro o comparto este manual?<span aria-hidden="true">+</span></summary><p>Está versionado en <code>docs/manual/</code>. Abrí <code>index.html</code> con sus archivos y assets dentro del checkout, o serví la raíz como sitio estático. GitHub muestra el código HTML; subirlo al repositorio no crea un hosting público. La guía técnica tiene las instrucciones. <a href="README.md">Cómo abrirlo y mantenerlo ↗</a></p></details>
+    </div></section>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-top"><div><a class="wordmark" href="#inicio"><strong>LUFY</strong><span class="wordmark-rule"></span><span>El rumbo lo marcás vos.</span></a><p>Manual del flujo inline · Codex<br>Ejemplos didácticos, contexto local y evidencia pertinente.</p></div><div><span class="eyebrow">Fuentes de esta guía</span><a href="../../.lufy/contracts/work.md">Política de trabajo ↗</a><a href="../../.lufy/contracts/evidence.md">Política de evidencia ↗</a><a href="../configuration.md">Configuración y defaults ↗</a><a href="../README.md">Toda la documentación ↗</a></div></div><div class="wrap footer-bottom"><span>Personajes y banner originales de Lufy. Los retratos reutilizan la misma imagen.</span><a href="../../LICENSE">MIT</a><a href="#inicio">Volver arriba ↑</a></div></footer>
+</body>
+</html>

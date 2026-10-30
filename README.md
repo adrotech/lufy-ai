@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="#qué-es-lufy">Qué es</a> •
+  <a href="docs/manual/README.md">Manual visual</a> •
   <a href="#quickstart">Quickstart</a> •
   <a href="#flujo-de-trabajo">Flujo</a> •
   <a href="#autonomía-y-paralelismo">Autonomía</a> •
@@ -94,6 +95,8 @@ lufy-ai skills ensure --target /ruta/al/proyecto
 La memoria conserva conocimiento durable; el grafo ayuda a localizar relaciones lexicales entre fuentes; el registry resuelve las skills instaladas. Podés consultar [memoria y contexto](docs/memory-context.md) antes de activar o modificar datos existentes.
 
 ## Flujo de trabajo
+
+El [manual visual e interactivo](docs/manual/README.md) permite explorar ocho pedidos con conversaciones, pasos, diagramas y resultados finales de ejemplo. Se abre como HTML desde el checkout.
 
 El principal decide el siguiente paso a partir del pedido, las dependencias y la evidencia disponible. El ciclo admite volver atrás, acotar una hipótesis o cambiar de estrategia:
 
@@ -322,6 +325,7 @@ La evaluación con fixtures de seis familias y una comparación de 24 turnos no 
 
 | Guía | Contenido |
 | --- | --- |
+| [Manual visual](docs/manual/README.md) | Recorridos interactivos por tipo de pedido, participantes y resultados. |
 | [Índice](docs/README.md) | Navegación y fuentes canónicas de documentación. |
 | [Flujo](docs/harness-workflow.md) | Trabajo inline, tipos de pedido, autonomía y ejemplos. |
 | [Instalación](docs/installation.md) | Compilación, PATH, sync, conflictos y recuperación. |
