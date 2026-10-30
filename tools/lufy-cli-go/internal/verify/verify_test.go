@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/agentsref"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/assets"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/memory"
@@ -24,7 +25,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		content := verifyFileContent(rel)
 		writeVerifyFile(t, filepath.Join(target, rel), content)
 	}
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "# Proyecto\n\n@lufy-ia.harness.md\n")
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), string(agentsref.MinimalContent()))
 	var states []state.AssetState
 	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
@@ -32,7 +33,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 			t.Fatal(err)
 		}
 		policy := "managed"
-		if rel == "tui.json" {
+		if rel == ".codex/hooks.json" {
 			policy = "no-replace"
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
@@ -58,7 +59,7 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 		t.Fatalf("drift output unexpected: %s", out.String())
 	}
 
-	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "plugins", "agent-observatory.tsx"))); err != nil {
+	if err := os.Remove(filepath.Join(target, filepath.Join(".codex", "hooks.json"))); err != nil {
 		t.Fatal(err)
 	}
 	out.Reset()
@@ -73,9 +74,9 @@ func TestVerifyDetectsMissingAndHashMismatch(t *testing.T) {
 func TestVerifyFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
 	target := validVerifyTarget(t)
 	cfg := projectconfig.ProjectConfig{
-		SchemaVersion:     projectconfig.SchemaVersion,
-		Tool:              domain.ToolCodex,
-		MethodologyByTier: domain.DefaultMethodologyByTier(),
+		SchemaVersion: projectconfig.SchemaVersion,
+		Tool:          domain.ToolCodex,
+		Execution:     domain.ExecutionConfig{Mode: domain.ExecutionInline, Delegation: domain.DelegationOff},
 	}
 	if err := (projectconfig.ConfigStore{}).Write(projectconfig.Path(target), cfg); err != nil {
 		t.Fatal(err)
@@ -83,7 +84,7 @@ func TestVerifyFailsWhenProjectHarnessAndInstallStateDisagree(t *testing.T) {
 
 	var out bytes.Buffer
 	err := NewService().Run(Options{Target: target}, &out)
-	if err == nil || !strings.Contains(out.String(), "tool project=codex install-state=opencode") || !strings.Contains(out.String(), "Recovery") {
+	if err == nil || !strings.Contains(out.String(), "execution.delegation project=off install-state=auto") || !strings.Contains(out.String(), "--delegation") {
 		t.Fatalf("expected harness mismatch failure, err=%v output=%s", err, out.String())
 	}
 }
@@ -116,36 +117,9 @@ func TestCheckBuilderFeedsSameReportToJSONPresenter(t *testing.T) {
 	}
 }
 
-func TestVerifyWarnsForNoReplaceDriftWithLufyNew(t *testing.T) {
-	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), "{\"user\":true}\n")
-	writeVerifyFile(t, filepath.Join(target, "tui.json.lufy-new"), "{\"new\":true}\n")
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, JSON: true}, &out); err != nil {
-		t.Fatalf("Run() error = %v body=%s", err, out.String())
-	}
-	var report Report
-	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
-		t.Fatal(err)
-	}
-	if !report.OK || report.Warnings == 0 {
-		t.Fatalf("expected ok report with warning, got %#v", report)
-	}
-	found := false
-	for _, check := range report.Checks {
-		if check.Path == "tui.json" && check.Policy == "no-replace" && check.RecommendedAction == "review-lufy-new" {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("missing no-replace lufy-new check: %#v", report.Checks)
-	}
-}
-
 func TestVerifyReportsGuardrailDriftRecoveryAndDoesNotMutateUserOwnedState(t *testing.T) {
 	target := validVerifyTarget(t)
-	agentRel := filepath.Join(".opencode", "agents", "orchestrator.md")
+	agentRel := filepath.Join(".codex", "config.toml")
 	writeVerifyFile(t, filepath.Join(target, agentRel), "managed orchestrator\n")
 	addVerifyManagedAsset(t, target, agentRel, "managed")
 	agentsBefore := readVerifyFile(t, filepath.Join(target, "AGENTS.md"))
@@ -201,54 +175,6 @@ func TestReportRecorderUsesStableSlashPaths(t *testing.T) {
 	}
 }
 
-func TestVerifyDetectsCodexPRReviewerMissingHTMLContract(t *testing.T) {
-	target := validVerifyTarget(t)
-	skillRel := filepath.Join(".agents", "skills", "pr-reviewer", "SKILL.md")
-	writeVerifyFile(t, filepath.Join(target, skillRel), `---
-name: pr-reviewer
-description: Review a PR or branch.
----
-
-# PR Reviewer
-
-1. Lead with findings.
-2. Do not edit files.
-`)
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(light pr reviewer) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "skill Codex PR review no cumple contrato HTML Lufy") || !strings.Contains(out.String(), "pr_review/") {
-		t.Fatalf("missing PR review contract failure, output=%s", out.String())
-	}
-
-	writeVerifyFile(t, filepath.Join(target, skillRel), `---
-name: pr-reviewer
-description: Review a PR or branch and generate the Lufy HTML report.
----
-
-# PR Reviewer
-
-Load references/review-framework.md as the canonical checklist.
-Create pr_review/ and write pr-review-<number>-<yyyyMMdd-HHmm>.html.
-Use assets/report.html when available.
-Check ignored paths with lufy-ai pr guard --base <base> or git check-ignore -v --no-index --stdin.
-Include Desk check and Scoring.
-Return:
-Reporte generado: [pr_review/pr-review-<...>.html](pr_review/pr-review-<...>.html)
-Abrir: `+"`"+`open pr_review/pr-review-<...>.html`+"`"+`
-`)
-
-	out.Reset()
-	if err := NewService().Run(Options{Target: target}, &out); err != nil {
-		t.Fatalf("Run(full pr reviewer) error = %v, output=%s", err, out.String())
-	}
-	if !strings.Contains(out.String(), "skill Codex PR review conserva contrato HTML Lufy") {
-		t.Fatalf("missing PR review contract ok, output=%s", out.String())
-	}
-}
-
 func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	target := t.TempDir()
 	writeVerifyDirs(t, target)
@@ -257,7 +183,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	}
 	var states []state.AssetState
 	for _, rel := range fallbackRequiredManagedFiles {
-		if rel == "tui.json" {
+		if rel == ".codex/hooks.json" {
 			continue
 		}
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
@@ -265,7 +191,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 			t.Fatal(err)
 		}
 		policy := "managed"
-		if rel == "tui.json" {
+		if rel == ".codex/hooks.json" {
 			policy = "no-replace"
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
@@ -273,7 +199,7 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "skills"))); err != nil {
+	if err := os.RemoveAll(filepath.Join(target, filepath.Join(".codex", "rules"))); err != nil {
 		t.Fatal(err)
 	}
 
@@ -281,10 +207,10 @@ func TestVerifyDetectsMissingCriticalDirectoryAndManifestEntry(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(invalid structure) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/skills") {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .codex/rules") {
 		t.Fatalf("missing directory output unexpected: %s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: asset clave no está en manifest: tui.json") {
+	if !strings.Contains(out.String(), "fail: asset clave no está en manifest: .codex/hooks.json") {
 		t.Fatalf("missing manifest output unexpected: %s", out.String())
 	}
 }
@@ -306,7 +232,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Remove(filepath.Join(target, filepath.Join(".opencode", "templates"))); err != nil {
+	if err := os.RemoveAll(filepath.Join(target, filepath.Join(".codex", "rules"))); err != nil {
 		t.Fatal(err)
 	}
 
@@ -314,7 +240,7 @@ func TestVerifyDetectsMissingTemplatesDirectory(t *testing.T) {
 	if err := NewService().Run(Options{Target: target}, &out); err == nil {
 		t.Fatalf("Run(missing templates) expected error, output=%s", out.String())
 	}
-	if !strings.Contains(out.String(), "fail: falta directorio crítico: .opencode/templates") {
+	if !strings.Contains(out.String(), "fail: falta directorio crítico: .codex/rules") {
 		t.Fatalf("missing templates output unexpected: %s", out.String())
 	}
 }
@@ -344,7 +270,7 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 			t.Fatal(err)
 		}
 		policy := "managed"
-		if rel == "tui.json" {
+		if rel == ".codex/hooks.json" {
 			policy = "no-replace"
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
@@ -359,114 +285,24 @@ func TestVerifyFailsCorruptManifestAndMovedTarget(t *testing.T) {
 	}
 }
 
-func TestVerifyFailsInvalidTUIJSON(t *testing.T) {
-	target := t.TempDir()
-	writeVerifyDirs(t, target)
-	for _, rel := range fallbackRequiredManagedFiles {
-		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
-	}
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), "tui.json\n")
-
-	var states []state.AssetState
-	for _, rel := range fallbackRequiredManagedFiles {
-		hash, err := assets.FileSHA256(filepath.Join(target, rel))
-		if err != nil {
-			t.Fatal(err)
-		}
-		policy := "managed"
-		if rel == "tui.json" {
-			policy = "no-replace"
-		}
-		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
-	}
-	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
-		t.Fatal(err)
-	}
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(invalid tui.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "fail: JSON inválido en tui.json") {
-		t.Fatalf("invalid tui.json output unexpected: %s", out.String())
-	}
-}
-
-func TestVerifyFailsInvalidOrIncompleteMergeManagedOpenCode(t *testing.T) {
+func TestVerifyRejectsInvalidHooksJSON(t *testing.T) {
 	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{bad-json`)
+	writeVerifyFile(t, filepath.Join(target, ".codex", "hooks.json"), "{broken")
 	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(invalid opencode.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "fail: JSON inválido en opencode.json") || !strings.Contains(out.String(), "estructura gestionada inválida") {
-		t.Fatalf("invalid opencode.json output unexpected: %s", out.String())
-	}
-
-	target = validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":"https://opencode.ai/config.json"}`)
-	out.Reset()
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(incomplete opencode.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "falta clave gestionada mínima plugin") {
-		t.Fatalf("incomplete opencode.json output unexpected: %s", out.String())
-	}
-}
-
-func TestVerifyFailsUnsafeOrInvalidManagedOpenCodeStructure(t *testing.T) {
-	target := validVerifyTarget(t)
-	outside := filepath.Join(t.TempDir(), "opencode.json")
-	writeVerifyFile(t, outside, `{"$schema":"https://opencode.ai/config.json","plugin":[]}`)
-	if err := os.Remove(filepath.Join(target, "opencode.json")); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink(outside, filepath.Join(target, "opencode.json")); err != nil {
-		t.Skipf("symlink no soportado en este entorno: %v", err)
-	}
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(symlink opencode.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "opencode.json") || !strings.Contains(out.String(), "symlink no permitido") {
-		t.Fatalf("symlink opencode.json output unexpected: %s", out.String())
-	}
-
-	target = validVerifyTarget(t)
-	if err := os.Remove(filepath.Join(target, "opencode.json")); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Mkdir(filepath.Join(target, "opencode.json"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	out.Reset()
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(directory opencode.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "archivo regular seguro") {
-		t.Fatalf("directory opencode.json output unexpected: %s", out.String())
-	}
-
-	target = validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "opencode.json"), `{"$schema":123,"plugin":[]}`)
-	out.Reset()
-	if err := NewService().Run(Options{Target: target}, &out); err == nil {
-		t.Fatalf("Run(invalid managed type opencode.json) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "$schema debe ser string") {
-		t.Fatalf("invalid managed type output unexpected: %s", out.String())
+	if err := NewService().Run(Options{Target: target}, &out); err == nil || !strings.Contains(out.String(), "JSON inválido") {
+		t.Fatalf("invalid hooks accepted: %s", out.String())
 	}
 }
 
 func TestVerifyReportsExtraFilesInManagedDirsAsInfo(t *testing.T) {
 	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, ".opencode", "agents", "local-agent.md"), "local\n")
+	writeVerifyFile(t, filepath.Join(target, ".codex", "local-agent.md"), "local\n")
 
 	var out bytes.Buffer
 	if err := NewService().Run(Options{Target: target}, &out); err != nil {
 		t.Fatalf("Run() error = %v, output=%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: .opencode/agents/local-agent.md") {
+	if !strings.Contains(out.String(), "info: archivo extra en directorio gestionado: .codex/local-agent.md") {
 		t.Fatalf("extra managed dir file not reported: %s", out.String())
 	}
 }
@@ -548,51 +384,6 @@ func TestVerifyVerboseReportsDerivedRequirements(t *testing.T) {
 	}
 }
 
-func TestVerifyDeepValidatesPluginReferences(t *testing.T) {
-	target := validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":["./.opencode/plugins/agent-observatory.tsx"]}`)
-	refreshVerifyAssetHash(t, target, "tui.json")
-
-	var out bytes.Buffer
-	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err != nil {
-		t.Fatalf("Run(deep valid) error = %v, output=%s", err, out.String())
-	}
-	if !strings.Contains(out.String(), "plugin referenciado por tui.json") {
-		t.Fatalf("deep output missing plugin ok: %s", out.String())
-	}
-
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":["../evil.ts"]}`)
-	out.Reset()
-	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
-		t.Fatalf("Run(deep invalid) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "plugin path inseguro") {
-		t.Fatalf("deep invalid output unexpected: %s", out.String())
-	}
-
-	target = validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":{}}`)
-	refreshVerifyAssetHash(t, target, "tui.json")
-	out.Reset()
-	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
-		t.Fatalf("Run(deep non-array plugin) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "plugin debe ser array") {
-		t.Fatalf("deep non-array output unexpected: %s", out.String())
-	}
-
-	target = validVerifyTarget(t)
-	writeVerifyFile(t, filepath.Join(target, "tui.json"), `{"plugin":[123,"./.opencode/plugins/missing.ts"]}`)
-	refreshVerifyAssetHash(t, target, "tui.json")
-	out.Reset()
-	if err := NewService().Run(Options{Target: target, Deep: true}, &out); err == nil {
-		t.Fatalf("Run(deep bad plugin entries) expected error, output=%s", out.String())
-	}
-	if !strings.Contains(out.String(), "plugin contiene entrada no string") || !strings.Contains(out.String(), "plugin referenciado no existe") {
-		t.Fatalf("deep bad entries output unexpected: %s", out.String())
-	}
-}
-
 func TestVerifyDeepReportsMissingRegistryWithoutRepairingIt(t *testing.T) {
 	target := validVerifyTarget(t)
 	registryPath := filepath.Join(target, ".lufy", "skill-registry.json")
@@ -634,20 +425,20 @@ Aprendizaje durable.
 	if !strings.Contains(out.String(), "memoria Obsidian schema=1 notas=1") {
 		t.Fatalf("deep memory output unexpected: %s", out.String())
 	}
-	if !strings.Contains(out.String(), "context graph not_available") || !strings.Contains(out.String(), "OpenCode cargará plugin local") {
+	if !strings.Contains(out.String(), "context graph not_available") || !strings.Contains(out.String(), "SessionStart") {
 		t.Fatalf("deep memory/context integration output unexpected: %s", out.String())
 	}
 }
 
 func TestCatalogRequirementsIncludeRegisteredCatalogAssets(t *testing.T) {
 	st := state.NewWithHarness(t.TempDir(), nil, []state.AssetState{
-		{TargetRel: filepath.Join(".opencode", "agents", "orchestrator.md")},
+		{TargetRel: filepath.Join(".codex", "config.toml")},
 	}, "test", domain.DefaultHarnessConfig())
 	dirs, files := catalogRequirements(&st)
-	if !containsString(files, filepath.Join(".opencode", "agents", "orchestrator.md")) {
+	if !containsString(files, filepath.Join(".codex", "config.toml")) {
 		t.Fatalf("catalog registered file not required: %#v", files)
 	}
-	if !containsString(dirs, filepath.Join(".opencode", "agents")) {
+	if !containsString(dirs, filepath.Join(".codex")) {
 		t.Fatalf("catalog registered file parent dir not required: %#v", dirs)
 	}
 }
@@ -660,7 +451,7 @@ func validVerifyTarget(t *testing.T) string {
 	for _, rel := range fallbackRequiredManagedFiles {
 		writeVerifyFile(t, filepath.Join(target, rel), verifyFileContent(rel))
 	}
-	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), "# Proyecto\n\n@lufy-ia.harness.md\n")
+	writeVerifyFile(t, filepath.Join(target, "AGENTS.md"), string(agentsref.MinimalContent()))
 	var states []state.AssetState
 	for _, rel := range fallbackRequiredManagedFiles {
 		hash, err := assets.FileSHA256(filepath.Join(target, rel))
@@ -668,7 +459,7 @@ func validVerifyTarget(t *testing.T) string {
 			t.Fatal(err)
 		}
 		policy := "managed"
-		if rel == "tui.json" {
+		if rel == ".codex/hooks.json" {
 			policy = "no-replace"
 		}
 		states = append(states, state.AssetState{ID: rel, SourceRel: rel, TargetRel: rel, SourceSHA256: hash, TargetSHA256: hash, Policy: policy, Scope: "project", LastAction: "copy"})
@@ -676,7 +467,7 @@ func validVerifyTarget(t *testing.T) string {
 	if err := state.WriteAtomic(target, state.New(target, nil, states, "test-fingerprint")); err != nil {
 		t.Fatal(err)
 	}
-	if err := skillregistry.NewService().Ensure(skillregistry.Options{Target: target, Tool: domain.ToolInitialDefault}, &bytes.Buffer{}); err != nil {
+	if err := skillregistry.NewService().Ensure(skillregistry.Options{Target: target, Tool: domain.ToolCodex}, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
 	return target
@@ -763,11 +554,54 @@ func writeVerifyFile(t *testing.T, path, content string) {
 }
 
 func verifyFileContent(rel string) string {
-	if rel == "tui.json" {
+	c, err := assets.BuildEmbeddedCatalog()
+	if err == nil {
+		b, e := assets.ReadSourceFile(c.SourceRoot, rel)
+		if e == nil {
+			return string(b)
+		}
+	}
+	if rel == ".codex/hooks.json" {
 		return "{}\n"
 	}
 	if rel == filepath.Join("openspec", "UPSTREAM.json") {
 		return "{}\n"
 	}
 	return rel + "\n"
+}
+
+func TestVerifyAcceptsNativeAndSlashManifestPaths(t *testing.T) {
+	for name, normalize := range map[string]func(string) string{"native": filepath.FromSlash, "slash": filepath.ToSlash} {
+		t.Run(name, func(t *testing.T) {
+			target := validVerifyTarget(t)
+			st, err := state.Load(target)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i := range st.Assets {
+				st.Assets[i].TargetRel = normalize(st.Assets[i].TargetRel)
+			}
+			if err := state.WriteAtomic(target, *st); err != nil {
+				t.Fatal(err)
+			}
+			var out bytes.Buffer
+			if err := NewService().Run(Options{Target: target, JSON: true}, &out); err != nil {
+				t.Fatalf("verify: %v\n%s", err, out.String())
+			}
+			var report Report
+			if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+				t.Fatal(err)
+			}
+			for _, check := range report.Checks {
+				if check.Message != "archivo extra en directorio gestionado" {
+					continue
+				}
+				for _, asset := range st.Assets {
+					if check.Path == filepath.ToSlash(asset.TargetRel) {
+						t.Fatalf("managed file reported as extra: %#v", check)
+					}
+				}
+			}
+		})
+	}
 }

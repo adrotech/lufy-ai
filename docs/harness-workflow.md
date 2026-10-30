@@ -1,158 +1,51 @@
-# Flujo sistémico del harness
+# Trabajo inline, autonomía y colaboración
 
-`lufy-ai` convierte una intención humana en software verificable mediante un ciclo gobernado. Cada componente aporta una señal concreta; ninguno reemplaza por sí solo la decisión humana, el código actual o la evidencia de validación.
+El agente principal conserva el contexto y la responsabilidad del resultado. Entiende qué se pide, revisa las fuentes relevantes y actúa dentro del alcance autorizado hasta comprobarlo. Puede investigar, proponer, escribir, implementar o revisar según lo que haga falta; esas acciones no son etapas obligatorias.
 
-## Ciclo principal
+Para recorrer ejemplos ilustrativos con conversaciones, diagramas, pasos y resultados finales por tipo de pedido, consultá el [manual visual e interactivo](manual/README.md).
 
-```mermaid
-flowchart LR
-    Intent["Intención humana"] --> Plan["Plan: superficies y contratos"]
-    Plan --> Route["Route: T1 / T2 / T3"]
-    Route --> Execute["Execute: roles y metodología"]
-    Execute --> Verify["Verify: evidencia y review"]
-    Verify --> Learn["Learn: memoria y contexto"]
-    Learn --> Deliver["Deliver: Git / PR / release"]
-    Deliver --> Observe["Observe: Run Ledger y métricas"]
-    Observe --> Plan
+## Interacción con el usuario
 
-    Guard["Policies + Result Contract"] --> Route
-    Guard --> Verify
-    Guard --> Deliver
-```
+Un pedido claro autoriza el trabajo local necesario para concretarlo. El agente resuelve decisiones reversibles de implementación, comunica hallazgos materiales y comprueba sus efectos. Pregunta cuando falta una decisión que cambie el resultado, el alcance o los permisos y que no pueda resolver con evidencia disponible. Mientras espera, puede avanzar con trabajo independiente.
 
-## Componentes y responsabilidades
+Un análisis termina con un diagnóstico sustentado. Una propuesta termina con alternativas y una recomendación viable; implementarla requiere estar dentro del pedido. Commit, push, PR, publicación y cambios externos se rigen por [la política de entrega](../.lufy/contracts/delivery.md). Una autorización vigente se conserva dentro de su alcance.
 
-| Componente | Pregunta que responde | Fuente/CLI |
-| --- | --- | --- |
-| Project profile | ¿Qué stacks, superficies, arquitectura y comandos existen? | `.lufy/config/project.yaml`, `init`, `scan` |
-| Surface Execution Plan | ¿Qué parte del sistema está activa y cómo se valida? | `lufy-ai plan` |
-| SDD router | ¿Cuál es el menor flujo seguro? | T1 Full, T2 Lite, T3 Express |
-| Methodology adapter | ¿Qué artifacts y gates organizan el cambio? | OpenSpec o Lufy SDD Full/Lite |
-| Roles | ¿Quién explora, implementa, prueba, valida, revisa y entrega? | ocho roles estables del harness |
-| Result Contract | ¿Qué estado, evidencia, riesgo y siguiente acción deja un actor? | `lufy-ai result` |
-| Run Ledger | ¿Qué ocurrió, en qué orden causal y con qué checkpoint? | `lufy-ai run` |
-| Context Graph | ¿Dónde buscar y qué relaciones/coverage revisar? | `lufy-ai context` |
-| Memoria Obsidian | ¿Qué decisión o aprendizaje durable debe sobrevivir sesiones? | `lufy-ai memory` |
-| Adaptive routing | ¿Hay una capacidad temporal útil dentro de límites seguros? | `lufy-ai adaptive` |
-| Delivery policy | ¿Puede pasar a Git/PR/release? | `.lufy/contracts/delivery.md`, rol `delivery` |
+## La evidencia depende del resultado
 
-## Secuencia recomendada
+| Pedido | Trabajo y comprobación pertinentes |
+| --- | --- |
+| Explicar código o investigar | Leer fuentes, contrastar afirmaciones y distinguir observaciones de inferencias. |
+| Crear o modificar software | Entender dependencias, implementar y comprobar comportamiento, regresiones y contratos afectados. |
+| Redactar o traducir | Conservar significado, fuentes, tono, restricciones y formato; revisar el texto resultante. |
+| Analizar datos | Explicar procedencia, granularidad, nulos, duplicados, unidades y consultas reproducibles. |
+| Proponer una idea | Evaluar necesidad, alternativas, factibilidad, riesgos y preguntas abiertas. |
+| Ejecutar una operación | Confirmar autorización, observar el estado posterior y registrar errores pendientes. |
 
-### 1. Preparar el repositorio
+El principal puede usar TDD, revisión independiente o una prueba exploratoria cuando resuelvan una incertidumbre. Agrupa suites completas en un momento útil; cambiar la fuente o el candidato invalida las comprobaciones afectadas. Una respuesta ordinaria puede describir resultado, evidencia y límites en prosa. Los [registros estructurados](evidence.md) son opcionales.
 
-```bash
-lufy-ai setup --target <repo> --dry-run
-lufy-ai setup --target <repo> --yes
-lufy-ai verify --target <repo> --deep
-```
+## Delegación y paralelismo
 
-Para seleccionar explícitamente tool o metodología:
+`execution.mode` es `inline`. El [default de delegación](configuration.md) es `auto`:
 
-```bash
-lufy-ai install --target <repo> --tool codex --methodology-tier T1:lufy-sdd/full --yes
-```
+- `off`: el principal realiza todo el trabajo.
+- `on_request`: sólo delega ante un pedido explícito del usuario.
+- `auto`: puede delegar una parte útil cuando haya herramientas reales disponibles y permisos suficientes.
 
-### 2. Entender el alcance
+Una instrucción del usuario de trabajar inline prevalece. La configuración no crea agentes ni habilita herramientas del host. Cambiar el nombre de un rol en una respuesta no acredita delegación.
 
-```bash
-lufy-ai context status --target <repo> --json
-lufy-ai context query --target <repo> --json "<concepto>"
-lufy-ai plan --target <repo> --base origin/develop --json
-```
+Para paralelizar, cada tarea necesita un resultado acotado, contexto mínimo, ownership de archivos y una forma de integrar los resultados. Dos investigaciones independientes o cambios en módulos separados pueden avanzar juntos. Una decisión compartida, escrituras sobre los mismos archivos o una operación de entrega necesitan coordinación secuencial. El principal revisa el resultado combinado y valida después de integrarlo. `parallel_execution` orienta esa colaboración; no es un scheduler automático.
 
-El grafo orienta; `plan` produce el contrato de superficie. Si el grafo falta o está stale, se reporta y se continúa con archivos, Git diff y configuración actual.
+## Ejemplo: agregar un filtro
 
-### 3. Elegir profundidad
+Pedido: «Agregá un filtro por estado y conservá la paginación».
 
-| Tier | Uso | Salida mínima |
-| --- | --- | --- |
-| T1 Full SDD | arquitectura, seguridad, contratos o alta incertidumbre | proposal, design, specs, tasks, validación, sync y archive |
-| T2 SDD Lite | comportamiento acotado o refactor controlado | mini-spec/proposal, criterios WHEN/THEN y validación agrupada |
-| T3 Express | cambio trivial, local o documental | edición acotada y evidencia proporcional |
+1. El principal inspecciona filtro, datos, interfaz y pruebas. Si una ambigüedad cambia la UX, la consulta y continúa lo que no dependa de ella.
+2. Implementa el comportamiento. Con delegación permitida y archivos independientes, podría encargar una investigación acotada sobre casos de paginación; conserva la decisión y la integración.
+3. Comprueba filtrado, estados vacíos y paginación, y revisa el diff. Reporta el resultado y sus límites reales.
+4. Si el pedido también autorizó commit, push y PR, realiza esa entrega y observa sus checks. Si no, entrega el cambio local comprobado.
 
-T1/T2 con varios riesgos se dividen en `review_slices` cuando eso reduce la carga humana. El paralelismo sólo aplica a slices con archivos independientes, plan de join y validación agrupada.
+El usuario interviene ante decisiones materiales y acciones que requieren autorización. No completa formularios de tiers ni aprueba cada paso interno.
 
-El tier responde a riesgo, incertidumbre e impacto; el volumen informa workload y review. Un cambio mecánico entendido puede abarcar muchos archivos sin aumentar de tier por esa cifra. Si aparece riesgo nuevo, se vuelve a evaluar la clasificación por esa evidencia.
+## Proyecto desde cero
 
-El contrato canónico [delivery.md](../.lufy/contracts/delivery.md) define archivo significativo como aquel que requiere una decisión sustantiva de comportamiento, aceptación, contrato, configuración operacional o instrucciones del harness; ser documental no lo excluye. Al alcanzar cuatro significativos se comprueba cobertura por un plan/slice vigente con alcance, aceptación y validación. Sin cobertura, o con alcance nuevo no cubierto, se pausa en una frontera segura antes de continuar escrituras amplias. Al estimar cinco archivos, el router justifica una decisión de workload y si conviene dividir; no se exigen slices artificiales para T3.
-
-Alcance y autorización dentro de los invariantes del harness, gates independientes, configuración canónica `workflow_limits` y checkpoints declarados se combinan conservadoramente. Un plan puede cubrir amplitud, pero no concede aprobación post-plan ni desactiva seguridad, validación, delivery o una stop rule. Si falta configuración, sus paths son `not_available`: los checkpoints siguen siendo guardrails del harness, no budgets leídos ni defaults efectivos. Ante configuración inválida o ambigüedad que afecte autorización o seguridad, preservar restricciones y pedir diagnóstico/decisión concreta.
-
-#### Matriz de decisiones del contrato
-
-| Caso | Resultado esperado | Prohibido |
-| --- | --- | --- |
-| AC1: ocho archivos con sustitución mecánica sin riesgo | Tier proporcional y workload justificado | Escalar a Full por recuento aislado |
-| AC2: una línea de auth runtime o configuración sensible | Router previo, al menos T2 y `fast_path_allowed: false` | T3 por tamaño |
-| AC3: cuatro significativos con plan suficiente | Registrar cobertura y continuar sólo con gates independientes satisfechos | Repetir aprobación sólo por recuento o saltar un gate |
-| AC3: cuatro significativos sin plan suficiente o con alcance nuevo no cubierto | Pausa segura y decisión de workload/plan | Escritura amplia silenciosa |
-| AC4: cinco estimados mecánicos | Decisión de workload; una unidad si se justifica que dividir no aporta valor | Slices artificiales obligatorios |
-| AC5: config ausente | `not_available` y guardrails explícitos del harness | Budget inventado desde defaults o aliases legacy |
-| AC6: plan cubierto con stop rule activa | `blocked` o `escalated`, regla, evidencia y recovery | Usar el plan para ignorar la stop rule |
-| AC6: auto-chain sin aprobación post-plan | Esperar la aprobación requerida | Interpretar metadata como permiso |
-| AC7: cambio en fuente y mirror | Misma decisión lógica, diff real y churn completos; comprobar paridad | Excluir mirror del review ejecutable |
-
-Esta matriz guía la revisión de instrucciones. Las pruebas textuales y de paridad comprueban reglas documentadas y distribución; no evalúan la conducta de un agente real ni demuestran menor latencia o ahorro de tokens. Una evaluación conductual requiere un piloto separado.
-
-### 4. Ejecutar y verificar
-
-Los roles mantienen ownership separado. Implementar no autoriza delivery; validar no autoriza editar; review no sustituye tests. Cada handoff sustantivo usa Result Contract v1 y puede validarse con:
-
-```bash
-lufy-ai result validate --file result.yaml --role implementer --json
-lufy-ai result transition --file transition.yaml --target <repo> --record --json
-```
-
-Las transiciones se deciden por schema, estado, policy y evidencia. Un substring o una afirmación en lenguaje natural nunca avanza un gate.
-
-### 5. Aprender sin acumular ruido
-
-- Context Graph guarda estado derivado y regenerable bajo `.lufy/context/`.
-- Run Ledger guarda eventos causales content-free bajo `.lufy/runtime/`.
-- Obsidian guarda sólo decisiones, reglas, flows, lessons y conceptos durables bajo `.lufy/memory/`.
-- Los artifacts SDD/specs versionados conservan el contrato del producto.
-
-### 6. Entregar
-
-Delivery requiere autorización explícita, branch safety, validación proporcional, `pr guard`, checks remotos y trazabilidad. El flujo normal integra en `develop`; `main` se reserva para promoción estable y releases desde tags `v*` alcanzables.
-
-## Adaptive routing sin pérdida de control
-
-`adaptive_routing` está `disabled` por default:
-
-- `shadow` calcula y puede registrar recomendaciones, pero no asigna recursos;
-- `advisory` permite `assign` y `yield` explícitos con idempotencia, capacity/budget y lease fenced;
-- `role_hint` es una sugerencia temporal, no una identidad ni permiso;
-- un yield libera recursos sólo después de un checkpoint durable;
-- delivery, seguridad, contratos públicos, schema y migraciones destructivas escalan al humano antes del scoring.
-
-Si adaptive, ledger o configuración no están disponibles, el routing T1/T2/T3 determinístico continúa siendo autoritativo.
-
-## Estados locales
-
-| Ruta | Naturaleza | Política |
-| --- | --- | --- |
-| `.lufy/config/project.yaml` | configuración canónica del proyecto | user-managed |
-| `.lufy/managed-state/` | manifest, ancestors y backups | gestionado por CLI |
-| `.lufy/workflows/sdd/` | metodología y changes Lufy SDD | bootstrap managed; changes user-owned |
-| `.lufy/context/` | grafo y cache derivados | regenerable |
-| `.lufy/runtime/` | ledger causal local | privado, content-free, ignorado por Git |
-| `.lufy/memory/` | memoria Obsidian | privada y user-owned |
-| `.lufy/skill-registry.json` | índice local de skills | derivado y regenerable |
-
-## Invariantes
-
-1. La intención humana y el alcance explícito tienen precedencia.
-2. Los roles no ganan permisos por necesidad operativa.
-3. Los estados derivados no sustituyen evidencia primaria.
-4. Ningún mecanismo adaptativo avanza gates.
-5. La privacidad usa allow-lists y referencias por digest.
-6. Los cambios grandes se diseñan para revisión humana, no sólo para throughput de agentes.
-7. El sistema degrada explícitamente a `not_available`, `stale`, `blocked` o flujo determinístico; no inventa continuidad.
-
-## Lecturas relacionadas
-
-- [`architecture.md`](architecture.md): capas, paquetes y ownership.
-- [`run-ledger.md`](run-ledger.md): causalidad, privacidad, retención y recovery.
-- [`status.md`](status.md): matriz de capacidades publicadas.
-- [`roadmap.md`](roadmap.md): hipótesis futuras separadas del estado actual.
+El principal aclara el resultado mínimo y las restricciones que cambien una decisión importante, elige una estructura acorde al pedido y construye una primera porción funcional comprobable. Después amplía el producto preservando lo ya validado. La configuración stack-aware tiene sentido cuando existe el toolchain; no se inventan comandos ni se exige documentación de un sistema que todavía no existe. Decisiones sobre servicios externos, datos y publicación conservan sus permisos propios.

@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "root": "/var/folders/r3/kvrxdk592w93b15v971_n_v80000gn/T/lufy-inline-smoke-c0w2wji1",
+  "checks": [
+    "fresh install",
+    "current schemas",
+    "selected assets",
+    "single orientation hook",
+    "info/status/verify",
+    "idempotency",
+    "drift without writes",
+    "policy persistence without asset changes",
+    "custom values preserved",
+    "old models rejected without writes",
+    "source discovery without historical hosts",
+    "embedded install",
+    "uninstall/reinstall"
+  ]
+}

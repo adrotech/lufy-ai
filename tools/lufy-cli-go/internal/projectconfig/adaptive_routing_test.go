@@ -29,7 +29,7 @@ func TestScanEmitsDisabledAdaptiveRoutingDefaults(t *testing.T) {
 func TestLoadPartialAdaptiveRoutingCompletesDefaultsAndPreservesExtras(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "project.yaml")
-	body := []byte("schema_version: 1\nadaptive_routing:\n  enabled: true\n  max_candidates: 7\n  future_policy: keep\n")
+	body := []byte("schema_version: 2\nadaptive_routing:\n  enabled: true\n  max_candidates: 7\n  future_policy: keep\n")
 	if err := os.WriteFile(path, body, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestLoadRejectsInvalidAdaptiveRouting(t *testing.T) {
 		field := field
 		t.Run(strings.ReplaceAll(field, " ", "_"), func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "project.yaml")
-			body := []byte("schema_version: 1\nadaptive_routing:\n  enabled: true\n  " + field + "\n")
+			body := []byte("schema_version: 2\nadaptive_routing:\n  enabled: true\n  " + field + "\n")
 			if err := os.WriteFile(path, body, 0o600); err != nil {
 				t.Fatal(err)
 			}

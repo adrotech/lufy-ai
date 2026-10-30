@@ -313,20 +313,10 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 			Action{Kind: kind, Source: asset.SourceRel, Target: asset.TargetRel, Policy: asset.Policy, Scope: asset.Scope, Reason: reason, Risk: "medium", SourceHash: asset.SourceSHA256, CurrentHash: currentHash, PreviousInstalledHash: prev.TargetSHA256},
 		)
 	}
-	if legacy, ok := previousAssets[agentsref.AgentsFile]; ok {
-		exists, hasReference, err := agentsref.Status(target)
-		if err != nil {
-			plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: err.Error(), Risk: "high", CurrentHash: legacy.TargetSHA256, SourceHash: legacy.SourceSHA256})
-		} else if exists && !hasReference {
-			currentHash, hashErr := assets.FileSHA256(filepath.Join(target, agentsref.AgentsFile))
-			if hashErr != nil {
-				return Plan{}, hashErr
-			}
-			if currentHash != legacy.TargetSHA256 {
-				plan.Conflicts = append(plan.Conflicts, Conflict{Path: agentsref.AgentsFile, Reason: "AGENTS.md legacy gestionado tiene drift local y falta integración LUFY; preservado, agrega el bloque gestionado manualmente", Risk: "high", CurrentHash: currentHash, SourceHash: legacy.SourceSHA256})
-			}
-		}
+	if _, ok := previousAssets[agentsref.AgentsFile]; ok {
+		return Plan{}, fmt.Errorf("AGENTS.md registrado como asset completo: formato de instalación no soportado; preservado sin convertir")
 	}
+
 	if !hasConflictForPath(plan.Conflicts, agentsref.AgentsFile) {
 		exists, hasReference, err := agentsref.Status(target)
 		if err != nil {
@@ -361,20 +351,6 @@ func (b PlanBuilder) Build(opts Options) (Plan, error) {
 				plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: asset.TargetRel, Reason: "backup solicitado explícitamente", Risk: "low", CurrentHash: asset.TargetSHA256})
 			}
 		}
-	}
-	configPlan, err := toolruntime.PlanProjectConfig(harness.Tool, target)
-	if err != nil {
-		return Plan{}, err
-	}
-	if configPlan.Action != "" {
-		if configPlan.Action == string(ActionMergeJSON) && managedio.FileExists(filepath.Join(target, configPlan.File)) {
-			plan.Actions = append(plan.Actions, Action{Kind: ActionBackup, Target: configPlan.File, Reason: "opencode.json existente será mergeado", Risk: "medium"})
-		}
-		reason := "configuración de tool gestionada"
-		if harness.Tool == domain.ToolInitialDefault {
-			reason = "configuración OpenCode gestionada con merge conservador"
-		}
-		plan.Actions = append(plan.Actions, Action{Kind: ActionKind(configPlan.Action), Target: configPlan.File, Reason: reason, Risk: "low"})
 	}
 	plan.Actions = append(plan.Actions, Action{Kind: ActionVerify, Target: target, Reason: "verificación estructural posterior a install", Risk: "none"})
 	sort.SliceStable(plan.Actions, func(i, j int) bool {
@@ -453,12 +429,6 @@ func (e ActionExecutor) Apply(plan Plan, stdout io.Writer) error {
 			}
 			applied++
 			fmt.Fprintf(stdout, "- [write-lufy-new] %s\n", action.Target)
-		case ActionMergeJSON:
-			if _, err := toolruntime.EnsureProjectConfig(plan.Harness.Tool, plan.TargetRoot); err != nil {
-				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
-			}
-			applied++
-			fmt.Fprintf(stdout, "- [merge-json] %s\n", action.Target)
 		case ActionAgentsReferenceCreate, ActionAgentsReferenceInsert:
 			if err := agentsref.InsertReference(plan.TargetRoot); err != nil {
 				return installRecoveryError(err, plan.TargetRoot, recoveryBackup, applied)
@@ -542,9 +512,9 @@ func harnessConfigChanged(previous *state.InstallState, current domain.HarnessCo
 	if previous == nil {
 		return true
 	}
-	prev := domain.HarnessConfig{Tool: previous.Tool, MethodologyByTier: previous.MethodologyByTier}.WithDefaults()
+	prev := domain.HarnessConfig{Tool: previous.Tool, Execution: previous.Execution}.WithDefaults()
 	next := current.WithDefaults()
-	return prev.Tool != next.Tool || !reflect.DeepEqual(prev.MethodologyByTier, next.MethodologyByTier)
+	return prev.Tool != next.Tool || !reflect.DeepEqual(prev.Execution, next.Execution)
 }
 
 func hasConflictForPath(conflicts []Conflict, path string) bool {
@@ -595,7 +565,7 @@ func buildAssetStates(plan Plan) ([]state.AssetState, error) {
 		if action == "" {
 			action = "record"
 		}
-		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Methodology: string(asset.Methodology), Component: asset.Component, InstalledAt: now, LastAction: action}
+		assetState := state.AssetState{ID: asset.ID, SourceRel: asset.SourceRel, TargetRel: asset.TargetRel, SourceSHA256: asset.SourceSHA256, TargetSHA256: targetHash, Policy: string(asset.Policy), Scope: string(asset.Scope), Tool: string(asset.Tool), Component: asset.Component, InstalledAt: now, LastAction: action}
 		if prev, ok := previous[asset.TargetRel]; ok {
 			assetState.InstalledAt = prev.InstalledAt
 			assetState.AncestorRel = prev.AncestorRel

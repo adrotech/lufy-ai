@@ -23,7 +23,7 @@ permission:
 
 body
 `)
-	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, `schema_version: 1
+	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, `schema_version: 2
 validation:
   allowed_commands:
     implementer:
@@ -57,7 +57,7 @@ permission:
     "*": deny
 ---
 `)
-	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, "schema_version: 1\nvalidation:\n  allowed_commands:\n    implementer:\n      - pnpm test*\n      - \"bad\\ncommand\"\n")
+	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, "schema_version: 2\nvalidation:\n  allowed_commands:\n    implementer:\n      - pnpm test*\n      - \"bad\\ncommand\"\n")
 
 	body, err := Render(source, implementerAgentRel, target, implementerAgentRel)
 	if err != nil {
@@ -122,7 +122,7 @@ permission:
 ---
 `)
 	writeManagedContentTestFile(t, source, "README.md", "readme\n")
-	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, `schema_version: 1
+	writeManagedContentTestFile(t, target, projectconfig.ProjectConfigPath, `schema_version: 2
 validation:
   allowed_commands:
     implementer:

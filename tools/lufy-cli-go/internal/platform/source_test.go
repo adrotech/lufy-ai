@@ -35,9 +35,7 @@ func TestSafeJoinRejectsSymlinkParent(t *testing.T) {
 func TestResolveSourceRootRequiresGoModuleMarker(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "AGENTS.md"), "# test\n")
-	mkdir(t, filepath.Join(root, ".opencode"))
-	mkdir(t, filepath.Join(root, "openspec"))
-	writeFile(t, filepath.Join(root, "openspec", "config.yaml"), "specs: []\n")
+	writeFile(t, filepath.Join(root, "lufy-ia.harness.md"), "inline\n")
 
 	if _, err := ResolveSourceRoot(root); err == nil {
 		t.Fatal("ResolveSourceRoot() expected error without tools/lufy-cli-go/go.mod marker")

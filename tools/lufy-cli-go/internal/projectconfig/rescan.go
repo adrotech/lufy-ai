@@ -142,36 +142,12 @@ func (m RescanMerger) Build(current, detected ProjectConfig) RescanPlan {
 }
 
 func mergeHarnessConfig(merged *ProjectConfig, current ProjectConfig) (DriftItem, bool) {
-	if merged.Tool == "" {
-		merged.Tool = domain.ToolInitialDefault
-	}
-	if len(merged.MethodologyByTier) == 0 {
-		merged.MethodologyByTier = domain.DefaultMethodologyByTier()
-	}
-	before := domain.HarnessConfig{
-		Tool:              current.Tool,
-		MethodologyByTier: current.MethodologyByTier,
-	}.WithDefaults()
-	if current.Tool != "" {
-		merged.Tool = current.Tool
-	}
-	if len(current.MethodologyByTier) > 0 {
-		merged.MethodologyByTier = current.MethodologyByTier.WithDefaults()
-	}
-	after := domain.HarnessConfig{
-		Tool:              merged.Tool,
-		MethodologyByTier: merged.MethodologyByTier,
-	}.WithDefaults()
-	if current.Tool != "" && len(current.MethodologyByTier) >= len(domain.DefaultMethodologyByTier()) && reflect.DeepEqual(before, after) {
+	before := domain.HarnessConfig{Tool: current.Tool, Execution: current.Execution}.WithDefaults()
+	merged.Tool, merged.Execution = before.Tool, before.Execution
+	if current.Tool != "" && current.Execution == before.Execution {
 		return DriftItem{}, false
 	}
-	return DriftItem{
-		Category:        "harness",
-		Severity:        "info",
-		Path:            "tool,methodology_by_tier",
-		Status:          "applied",
-		SuggestedAction: "Se completaron defaults de tool y methodology_by_tier preservando overrides compatibles.",
-	}, true
+	return DriftItem{Category: "harness", Severity: "info", Path: "tool,execution", Status: "applied", SuggestedAction: "Se completaron defaults inline conservando la política de delegación."}, true
 }
 
 func sanitizedTopLevelExtra(extra map[string]any) map[string]any {
@@ -244,9 +220,6 @@ func mergeWorkflowReviewLimits(current, defaults WorkflowReviewLimits) WorkflowR
 	}
 	if current.MaxConcurrentSlices != 0 {
 		merged.MaxConcurrentSlices = current.MaxConcurrentSlices
-	}
-	if current.MinEvidenceItems != 0 {
-		merged.MinEvidenceItems = current.MinEvidenceItems
 	}
 	if len(current.Extra) > 0 {
 		merged.Extra = current.Extra

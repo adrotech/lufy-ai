@@ -57,7 +57,7 @@ func TestRenderSurfaceIsManagedProjectSurface(t *testing.T) {
 		}
 		targets[asset.TargetRel] = true
 	}
-	for _, want := range []string{".agents/skills", ".codex"} {
+	for _, want := range []string{".agents/skills/lufy-mem-search", ".codex/config.toml"} {
 		if !targets[want] {
 			t.Fatalf("codex surface missing %s: %+v", want, assets)
 		}
@@ -89,7 +89,7 @@ func TestDetectAndVerifyExplainWritableAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(checks) < 2 || !strings.Contains(checks[0].Message, "structural") || !strings.Contains(checks[1].Message, "waited delegation") || !strings.Contains(checks[1].Message, "lufy-agent-mapping.md") {
+	if len(checks) < 2 || !strings.Contains(checks[0].Message, "structural") || !strings.Contains(checks[1].Message, "inline") || !strings.Contains(checks[1].Message, "execution.delegation") {
 		t.Fatalf("checks = %+v", checks)
 	}
 }

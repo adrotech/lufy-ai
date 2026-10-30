@@ -80,16 +80,15 @@ func ParseScope(value string) (Scope, error) {
 }
 
 type Asset struct {
-	ID           string               `json:"id"`
-	SourceRel    string               `json:"sourceRel"`
-	TargetRel    string               `json:"targetRel"`
-	Kind         Kind                 `json:"kind"`
-	Policy       Policy               `json:"policy"`
-	Scope        Scope                `json:"scope"`
-	Tool         domain.ToolID        `json:"tool,omitempty"`
-	Methodology  domain.MethodologyID `json:"methodology,omitempty"`
-	Component    string               `json:"component,omitempty"`
-	SourceSHA256 string               `json:"sourceSHA256,omitempty"`
+	ID           string        `json:"id"`
+	SourceRel    string        `json:"sourceRel"`
+	TargetRel    string        `json:"targetRel"`
+	Kind         Kind          `json:"kind"`
+	Policy       Policy        `json:"policy"`
+	Scope        Scope         `json:"scope"`
+	Tool         domain.ToolID `json:"tool,omitempty"`
+	Component    string        `json:"component,omitempty"`
+	SourceSHA256 string        `json:"sourceSHA256,omitempty"`
 }
 
 type Catalog struct {
@@ -128,27 +127,10 @@ type entry struct {
 
 var allowedEntries = []entry{
 	{sourceRel: lufypaths.Readme, targetRel: lufypaths.Readme, kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".lufy/sdd", targetRel: lufypaths.LufySDD, kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".lufy/contracts", targetRel: ".lufy/contracts", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".agents/skills", targetRel: ".agents/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".lufy/contracts/pr-review/review-framework.md", targetRel: ".agents/skills/pr-reviewer/references/review-framework.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".lufy/contracts/pr-review/report.html", targetRel: ".agents/skills/pr-reviewer/assets/report.html", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: ".codex", targetRel: ".codex", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/agents", targetRel: ".opencode/agents", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/commands", targetRel: ".opencode/commands", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/hooks", targetRel: ".opencode/hooks", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/skills", targetRel: ".opencode/skills", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/templates", targetRel: ".opencode/templates", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/policies", targetRel: ".opencode/policies", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/plugins", targetRel: ".opencode/plugins", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/agent-observatory", targetRel: ".opencode/agent-observatory", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/README.md", targetRel: ".opencode/README.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/package.json", targetRel: ".opencode/package.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/package-lock.json", targetRel: ".opencode/package-lock.json", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: ".opencode/.gitignore", targetRel: ".opencode/.gitignore", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
 	{sourceRel: "lufy-ia.harness.md", targetRel: "lufy-ia.harness.md", kind: KindFile, policy: PolicyManaged, scope: ScopeProject},
-	{sourceRel: "tui.json", targetRel: "tui.json", kind: KindFile, policy: PolicyNoReplace, scope: ScopeProject},
-	{sourceRel: "openspec", targetRel: "openspec", kind: KindDir, policy: PolicyManaged, scope: ScopeProject},
 }
 
 func BuildCatalog(sourceRoot string) (Catalog, error) {
@@ -207,12 +189,6 @@ func expandDir(sourceRoot, sourceRel, targetRel string, policy Policy, scope Sco
 		if err != nil {
 			return err
 		}
-		if sourceRel == "openspec" && rel == "changes" && d.IsDir() {
-			return filepath.SkipDir
-		}
-		if sourceRel == "openspec" && strings.HasPrefix(rel, "changes"+string(filepath.Separator)) {
-			return nil
-		}
 		src := filepath.Join(sourceRel, rel)
 		dst := filepath.Join(targetRel, rel)
 		src, err = platform.EnsureRelativeSafe(src)
@@ -246,46 +222,13 @@ func fileAsset(sourceRoot, sourceRel, targetRel string, policy Policy, scope Sco
 }
 
 func withOwnership(asset Asset) Asset {
-	asset.Tool = domain.ToolInitialDefault
-	asset.Methodology = domain.MethodologyNone
+	asset.Tool = domain.ToolCodex
 	asset.Component = "harness-core"
-	switch {
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), lufypaths.LufySDD+"/") || filepath.ToSlash(asset.TargetRel) == lufypaths.LufySDD:
-		asset.Methodology = domain.MethodologyLufyWorkflow
-		asset.Component = "methodology-surface"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), "openspec/") || filepath.ToSlash(asset.TargetRel) == "openspec":
-		asset.Methodology = domain.MethodologySpecWorkflow
-		asset.Component = "methodology-surface"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/sdd-workflow/") || filepath.ToSlash(asset.TargetRel) == ".opencode/skills/sdd-workflow":
-		asset.Methodology = domain.MethodologySpecWorkflow
-		asset.Component = "methodology-skill"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/skills/lufy-sdd-workflow/") || filepath.ToSlash(asset.TargetRel) == ".opencode/skills/lufy-sdd-workflow":
-		asset.Methodology = domain.MethodologyLufyWorkflow
-		asset.Component = "methodology-skill"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/opsx-"):
-		asset.Methodology = domain.MethodologySpecWorkflow
-		asset.Component = "methodology-command"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/commands/lufy.sdd-"):
-		asset.Methodology = domain.MethodologyLufyWorkflow
-		asset.Component = "methodology-command"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/") || filepath.ToSlash(asset.TargetRel) == ".agents/skills":
-		asset.Tool = domain.ToolCodex
+	path := filepath.ToSlash(asset.TargetRel)
+	if strings.HasPrefix(path, ".agents/skills/") || path == ".agents/skills" || strings.HasPrefix(path, ".codex/") || path == ".codex" {
 		asset.Component = "instruction-surface"
-		if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/openspec-") {
-			asset.Methodology = domain.MethodologySpecWorkflow
-			asset.Component = "methodology-skill"
-		} else if strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".agents/skills/lufy-sdd-") {
-			asset.Methodology = domain.MethodologyLufyWorkflow
-			asset.Component = "methodology-skill"
-		}
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".codex/") || filepath.ToSlash(asset.TargetRel) == ".codex":
-		asset.Tool = domain.ToolCodex
-		asset.Component = "instruction-surface"
-	case strings.HasPrefix(filepath.ToSlash(asset.TargetRel), ".opencode/"):
-		asset.Component = "instruction-surface"
-	case filepath.ToSlash(asset.TargetRel) == "tui.json":
-		asset.Component = "tool-ui"
-	case filepath.ToSlash(asset.TargetRel) == "lufy-ia.harness.md":
+	}
+	if path == "lufy-ia.harness.md" {
 		asset.Component = "harness-reference"
 	}
 	return asset

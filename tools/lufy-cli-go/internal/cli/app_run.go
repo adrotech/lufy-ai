@@ -96,7 +96,7 @@ func runRunCheckpoint(args []string, deps Dependencies) int {
 	runID := fs.String("run", "", "Run ID")
 	parentRunID := fs.String("parent-run", "", "Parent run ID opcional")
 	causedBy := fs.String("caused-by", "", "Event ID causal opcional")
-	status := fs.String("status", "", "Estado Result Contract")
+	status := fs.String("status", "", "Estado declarado, sin avanzar workflow")
 	gate := fs.String("gate", "", "Gate opcional")
 	nextOwner := fs.String("next-owner", "", "Siguiente owner opcional")
 	taskRef := fs.String("task", "", "Task ref opcional")

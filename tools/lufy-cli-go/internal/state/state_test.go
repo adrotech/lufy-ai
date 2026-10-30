@@ -25,10 +25,10 @@ func TestWriteAtomicAndLoad(t *testing.T) {
 	if got.Assets[0].Policy != "managed" || got.Assets[0].Scope != "project" {
 		t.Fatalf("Load() did not default policy/scope: %#v", got.Assets[0])
 	}
-	if got.Tool != domain.ToolInitialDefault || got.MethodologyByTier[domain.TierT1].ID != domain.MethodologySpecWorkflow {
+	if got.Tool != domain.ToolCodex || got.Execution != domain.DefaultExecutionConfig() {
 		t.Fatalf("Load() did not default harness metadata: %#v", got)
 	}
-	if got.Assets[0].Tool != string(domain.ToolInitialDefault) || got.Assets[0].Methodology != string(domain.MethodologyNone) || got.Assets[0].Component != "legacy" {
+	if got.Assets[0].Tool != string(domain.ToolCodex) || got.Assets[0].Component != "managed" {
 		t.Fatalf("Load() did not default asset ownership: %#v", got.Assets[0])
 	}
 }
@@ -41,46 +41,23 @@ func TestLoadRejectsUnsupportedSchema(t *testing.T) {
 	}
 }
 
-func TestLoadMigratesLegacyStatePolicyAndScope(t *testing.T) {
-	target := t.TempDir()
-	body := `{
-  "schemaVersion": 1,
-  "toolVersion": "dev",
-  "sourceChangeID": "old",
-  "sourceRootFingerprint": "old",
-  "installedAt": "2026-05-11T00:00:00Z",
-  "updatedAt": "2026-05-11T00:00:00Z",
-  "targetRoot": "` + strings.ReplaceAll(target, `\`, `\\`) + `",
-  "assets": [
-    {
-      "id": "AGENTS.md",
-      "sourceRel": "AGENTS.md.template",
-      "targetRel": "AGENTS.md",
-      "sourceSHA256": "abc",
-      "targetSHA256": "abc",
-      "installedAt": "2026-05-11T00:00:00Z",
-      "lastAction": "copy"
-    }
-  ]
-}`
-	writeStateFixture(t, target, body)
-
-	got, err := Load(target)
-	if err != nil {
-		t.Fatalf("Load() error = %v", err)
-	}
-	if got.SchemaVersion != SchemaVersion {
-		t.Fatalf("SchemaVersion = %d, want %d", got.SchemaVersion, SchemaVersion)
-	}
-	asset := got.Assets[0]
-	if asset.Policy != "managed" || asset.Scope != "project" || asset.TargetSHA256 != "abc" || asset.Tool != string(domain.ToolInitialDefault) || asset.Methodology != string(domain.MethodologyNone) || asset.Component != "legacy" {
-		t.Fatalf("legacy asset not migrated safely: %#v", asset)
+func TestLoadRejectsOldOrMixedStateWithoutWriting(t *testing.T) {
+	for _, body := range []string{`{"schemaVersion":1}`, `{"schemaVersion":2}`, `{"schemaVersion":3,"tool":"codex","execution":{"mode":"inline","delegation":"auto"},"methodologyByTier":{}}`, `{"schemaVersion":3,"tool":"codex","execution":{"mode":"inline","delegation":"off","extra":true}}`} {
+		target := t.TempDir()
+		writeStateFixture(t, target, body)
+		if _, err := Load(target); err == nil {
+			t.Fatalf("accepted %s", body)
+		}
+		after, err := os.ReadFile(Path(target))
+		if err != nil || string(after) != body {
+			t.Fatal("state mutated")
+		}
 	}
 }
 
 func TestLoadRejectsUnsupportedOwnership(t *testing.T) {
 	target := t.TempDir()
-	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"project","tool":"other"}]}`
+	body := `{"schemaVersion":4,"tool":"codex","execution":{"mode":"inline","delegation":"auto"},"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"project","tool":"other"}]}`
 	writeStateFixture(t, target, body)
 
 	_, err := Load(target)
@@ -91,7 +68,7 @@ func TestLoadRejectsUnsupportedOwnership(t *testing.T) {
 
 func TestLoadRejectsUnknownPolicy(t *testing.T) {
 	target := t.TempDir()
-	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"surprise","scope":"project"}]}`
+	body := `{"schemaVersion":4,"tool":"codex","execution":{"mode":"inline","delegation":"auto"},"assets":[{"targetRel":"AGENTS.md","policy":"surprise","scope":"project"}]}`
 	writeStateFixture(t, target, body)
 
 	_, err := Load(target)
@@ -102,7 +79,7 @@ func TestLoadRejectsUnknownPolicy(t *testing.T) {
 
 func TestLoadRejectsUnknownScope(t *testing.T) {
 	target := t.TempDir()
-	body := `{"schemaVersion":2,"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"elsewhere"}]}`
+	body := `{"schemaVersion":4,"tool":"codex","execution":{"mode":"inline","delegation":"auto"},"assets":[{"targetRel":"AGENTS.md","policy":"managed","scope":"elsewhere"}]}`
 	writeStateFixture(t, target, body)
 
 	_, err := Load(target)

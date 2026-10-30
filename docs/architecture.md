@@ -1,255 +1,32 @@
-# Arquitectura
+# Arquitectura inline
 
-`lufy-ai` es un harness neutral con adapters. La release `v0.6.24` instala OpenCode como default y Codex como adapter escribible project-local; el dominio separa lo que pertenece a Lufy de lo que pertenece a una tool o metodología concreta.
+La generación inline usa el modelo descrito en [el flujo vigente](harness-workflow.md). Sus formatos son incompatibles con las instalaciones del modelo anterior.
 
-## Objetivo arquitectónico
+La CLI Go concentra operaciones locales; el agente trabaja inline y elige exploración, propuesta, implementación y comprobaciones según el resultado solicitado. La configuración admite `execution.mode: inline` y delegación `off`, `on_request` o `auto` (default). No se instala un router ni un catálogo de roles o metodologías.
 
-Lufy debe ser el harness:
+## Componentes
 
-- decide tier, workflow, permisos, validación y contrato de salida;
-- mantiene roles, skills, policies y Result Contract;
-- administra assets instalados con manifest, hashes, backups y rollback;
-- permite elegir metodología por tier;
-- evita que los agentes principales y secundarios queden hardcodeados a OpenCode/OpenSpec.
-
-La tool debe ser un adapter:
-
-- hoy `opencode` es el adapter escribible default;
-- `codex` existe como adapter escribible core para superficie project-local;
-- `claude-code` existe como dry-run/preview para perfilar capabilities y contratos futuros;
-- ningún adapter futuro debe duplicar el dominio de tiers, roles o delivery.
-
-La metodología también debe ser un adapter:
-
-- `openspec` es la metodología principal actual;
-- `lufy-sdd` ofrece lifecycle Full/Lite nativo, con overview HTML derivado, deltas, validación, sync y archive;
-- `none` es válido solo donde la policy lo permite, típicamente T3.
-
-## Capas
-
-```mermaid
-flowchart TD
-    CLI["cmd/lufy-ai + internal/cli"] --> App["Casos de uso: lifecycle + adaptive recommend/assign/yield/status"]
-    App --> Domain["Core domain"]
-    Domain --> Ports["Ports neutrales"]
-    Ports --> ToolAdapters["Tool adapters"]
-    Ports --> MethodAdapters["Methodology adapters"]
-    App --> Assets["Assets catalog + state + backup"]
-
-    Domain --> D1["tiers T1/T2/T3"]
-    Domain --> D2["roles y contracts"]
-    Domain --> D3["methodologyByTier"]
-    Domain --> D4["workflow policies"]
-
-    ToolAdapters --> OC["opencode: paths, agents, commands, plugin"]
-    ToolAdapters --> CX["codex: .agents + .codex"]
-    ToolAdapters --> CC["claude-code: dry-run/preview"]
-
-    MethodAdapters --> OS["openspec"]
-    MethodAdapters --> LS["lufy-sdd"]
-    MethodAdapters --> NN["none"]
-
-    Assets --> FS["target repo filesystem"]
-```
-
-## Paquetes principales
-
-| Paquete | Responsabilidad |
+| Componente | Responsabilidad |
 | --- | --- |
-| `internal/core/domain` | Modelos neutrales: harness, tiers, roles, methodology por tier y routing policy. |
-| `internal/adapters/tool/opencode` | Adapter escribible actual para OpenCode. |
-| `internal/adapters/tool/codex` | Adapter escribible core para Codex con `.agents/skills`, custom agents en `.codex/agents`, `.codex/lufy-agent-mapping.md`, hooks/rules/config y `AGENTS.md` gestionado. |
-| `internal/adapters/tool/claudecode` | Adapter dry-run para capabilities y preview conceptual de Claude Code. |
-| `internal/adapters/methodology/openspec` | Adapter OpenSpec para superficie full/lite. |
-| `internal/adapters/methodology/lufysdd` | Adapter instalable para `.lufy/workflows/sdd`. |
-| `internal/lufysdd` | Lifecycle Full/Lite, parser delta, sync/archive seguro y renderer HTML integrado. |
-| `internal/adapters/methodology/none` | Adapter explícito para tiers sin metodología. |
-| `internal/instructions/registry` | Contratos neutrales de roles, skills y bindings. |
-| `internal/instructions/render` | Render de superficies de instrucción sin paths hardcodeados al dominio. |
-| `internal/assets` | Catálogo, policies, assets embebidos y hashing SHA-256. |
-| `internal/state` | `.lufy/managed-state/install-state.json` versionado. |
-| `internal/installer` | Plan/apply de instalación idempotente. |
-| `internal/uninstaller` | Plan/apply de desinstalación gestionada con backup y protección por drift. |
-| `internal/syncer` | Sincronización conservadora de assets ya gestionados. |
-| `internal/verify` | Verificación estructural, manifest, hashes, JSON y referencias críticas. |
-| `internal/status` | Estado humano/JSON de instalación y drift. |
-| `internal/backup` | Backup/restore multiasset con manifest. |
-| `internal/config` | Merge conservador de `opencode.json`. |
-| `internal/projectconfig` | Scanner stack-aware para `.lufy/config/project.yaml`. |
-| `internal/adaptive/domain` | Contratos bounded, strict decode, eligibility, scoring entero determinista y protected-boundary preemption. |
-| `internal/adaptive/application` | Casos de uso `recommend`, `assign`, `yield` y `status`; consume ports sin avanzar gates. |
-| `internal/adaptive/adapters` | Integración content-free con Run Ledger para persistencia causal, leases fenced y proyección reconstruible. |
-| `internal/runledger` | Fuente append-only de eventos causales y metadata adaptativa allow-listed. |
-| `internal/surfaceplan` | Resuelve superficies activas y compone contratos/validaciones read-only mediante Strategy, Factory y adapters de config/Git. |
-| `internal/opsx` | Resolución stay-updated de OpenSpec: PATH, cache local y baseline embebida. |
-| `internal/contextgraph` | Grafo local determinístico: extractores, almacenamiento `.lufy/context/`, consultas lexicales, path/explain y diff impact. |
-| `internal/platform` | Path safety, locks y resolución portable de targets. |
+| `internal/core/domain`, `projectconfig` | Ejecución y configuración schema 2; rechazan formatos retirados. |
+| `internal/adapters/tool/codex`, `harnesscatalog` | Una superficie project-local, 16 archivos seleccionados y bloque gestionado en AGENTS.md. |
+| `internal/assets`, `state` | Catálogo, SHA-256, policies, ancestors y manifest schema 4. |
+| `installer`, `syncer`, `uninstaller`, `verify`, `status` | Planificación, aplicación y diagnóstico conservando archivos ajenos. |
+| `backup`, `upgrade` | Backups schema 2 vinculados al estado 4 y comprobación de generación antes de actualizar. |
+| `contextgraph` | Índice lexical de archivos, símbolos y referencias, impacto Git y métricas opcionales de eventos. |
+| `surfaceplan` | Plan read-only de superficies, contratos y comandos declarados; no los ejecuta. |
+| `memory`, `skills` | Memoria Obsidian y registro derivado de cinco skills locales. |
+| `evidence`, `reviewevents`, `runledger` | Evidencia explícita opcional, vinculada al candidato cuando corresponde; no autoriza acciones. |
+| `adaptive` | Experimento opt-in de asignaciones acotadas; está deshabilitado por default. |
 
-## Context Graph
+## Fuentes y datos derivados
 
-`lufy-ai context` agrega un índice local determinístico para orientar exploración, routing y review sin depender de servicios externos. La configuración canónica vive en `.lufy/config/project.yaml` bajo `context_graph` y `memory`; los archivos bajo `context_graph.root` son artefactos derivados/regenerables:
+Los archivos humanos de la raíz son la fuente de los assets; `internal/assets/embedded` es su mirror de distribución. El chequeo de acoplamiento exige paridad y rechaza archivos embebidos extra.
 
-```bash
-lufy-ai context scan --target <repo>
-lufy-ai context build --target <repo>
-lufy-ai context status --target <repo> --json
-lufy-ai context query --target <repo> "service"
-lufy-ai context path --target <repo> <from> <to>
-lufy-ai context explain --target <repo> <node-or-edge>
-lufy-ai context diff --target <repo> --base origin/develop
-lufy-ai context coverage --target <repo>
-lufy-ai context trace --target <repo> <node>
-lufy-ai context review --target <repo> --base origin/develop
-lufy-ai context metrics --target <repo>
-```
+La configuración y la memoria son fuentes persistentes. Context Graph y el registro de skills se reconstruyen. El grafo usa extractores v3: los índices previos quedan stale. Ya no interpreta escenarios SDD ni calcula cobertura scenario-task-test; `context review` combina observaciones Git y límites de revisión declarados, con estado del índice orientativo.
 
-Los artefactos persistidos por defecto viven bajo `.lufy/context/` (`graph.json`, `graph-summary.md`, `GRAPH_REPORT.md`, `manifest.json` y `cache/`). El manifest y cache no son configuración: se regeneran desde `project.yaml` y el workspace. Los agentes consumen el grafo como índice secundario para `context_graph_hints`; si falta o está stale, degradan a `not_available`/`stale` y siguen con inspección de archivos, diff y validación normal. La salida incluye ranking, comunidades determinísticas, nodos importantes, preguntas sugeridas y vecinos acotados para ahorrar lecturas/tokens iniciales. La semántica/LLM es una fase futura opcional: el comportamiento actual es conservador y local, por lo que ninguna inferencia del grafo reemplaza evidencia directa de archivos actuales, tests, logs o comandos.
+## Recuperación
 
-## Surface-aware execution plans
+Las mutaciones conservan locks, hashes, rechazo de symlinks, conflictos explícitos y backups. Un restore público valida generación, hashes y payload de configuración/estado antes de escribir. El rollback interno puede recuperar exactamente un preimage dañado. La retención sólo elimina backups reconocidos de la generación actual.
 
-`lufy-ai plan` transforma `project_profile.surfaces` en un contrato operativo `surface-execution-plan/v1`. La selección explícita tiene precedencia; en modo automático se comparan los archivos del diff con las roots más específicas y se usa la composición `fullstack` declarada cuando el alcance cruza superficies o modifica un contrato conectado.
-
-```mermaid
-flowchart LR
-    Input["--surface / --files / git diff"] --> Resolver["SurfaceResolverStrategy"]
-    Config["project.yaml"] --> Adapter["ProjectConfigAdapter"]
-    Adapter --> Resolver
-    Resolver --> Active["single o composed"]
-    Active --> Factory["ValidationPlanFactory"]
-    Stacks["stack commands"] --> Factory
-    Capabilities["realtime / rendering / offline / persistence / desktop"] --> Factory
-    Factory --> Plan["surface-execution-plan/v1"]
-```
-
-El plan registra decisiones, evidencias, conexiones frontend/backend y reglas tipadas. Los comandos encontrados en la configuración se reportan como sugerencias; planificar nunca implica autorización ni ejecución. Las capacidades son ortogonales al tipo de producto, de modo que un juego, editor o dashboard en tiempo real puede compartir políticas sin agregar ramas específicas al dominio.
-
-## Lifecycle de assets
-
-```mermaid
-flowchart LR
-    Plan["install --dry-run"] --> Install["install --yes"]
-    Install --> State[".lufy/managed-state/install-state.json"]
-    State --> Verify["verify"]
-    State --> Status["status"]
-    State --> Sync["sync"]
-    State --> Uninstall["uninstall"]
-    Sync --> Backup["backup previo"]
-    Uninstall --> Backup
-    Backup --> Restore["restore"]
-    Uninstall --> Reinstall["install --yes"]
-    Reinstall --> Verify
-```
-
-`install-state.json` usa schema v2 y registra:
-
-- `tool`, actualmente `opencode` o `codex` en instalaciones reales;
-- `methodologyByTier`;
-- ownership por asset: `tool`, `methodology`, `component`, `policy` y `scope`;
-- hashes SHA-256 de source/target;
-- ancestors cuando la policy requiere merge o recovery.
-
-Estados legacy schema v1 siguen siendo legibles y se normalizan con defaults compatibles durante `verify`, `status` y `sync`.
-
-## Ownership de archivos
-
-| Archivo/ruta | Ownership | Comportamiento |
-| --- | --- | --- |
-| `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/templates`, `.opencode/policies`, `.opencode/plugins` | Managed | Se copian/sincronizan por catálogo y SHA-256. |
-| `openspec/` | Managed por metodología `openspec` | Se instala cuando la metodología lo requiere. |
-| `.lufy/workflows/sdd/` | Bootstrap managed y changes user-owned por metodología `lufy-sdd` | Se instala según mode full/lite; cada change materializa un overview HTML derivado. |
-| `lufy-ia.harness.md` | Managed | Se actualiza por manifest y hash. |
-| `tui.json` | Managed/no-replace según policy | Se preserva ante drift y puede generar `.lufy-new`. |
-| `AGENTS.md` | User-owned con bloque gestionado | `install` agrega el bloque LUFY gestionado y reconoce la referencia legacy `@lufy-ia.harness.md`; `uninstall` remueve solo esa integración. |
-| `opencode.json` | User-owned/merge-managed | Se mergea conservadoramente; no se registra como asset completo por hash. |
-| `.lufy/config/project.yaml` | User-managed | Lo crea `init`; no entra en sync por hash. |
-
-## Contrato de adapters
-
-Un tool adapter debe responder:
-
-- capabilities disponibles;
-- superficie de instrucciones que puede renderizar;
-- paths y archivos que controla;
-- restricciones de escritura;
-- contrato esperado para agentes y subagentes;
-- mapping de skills disponibles o requeridas.
-
-Un methodology adapter debe responder:
-
-- modes soportados: `full`, `lite` o `none`;
-- assets requeridos por mode;
-- comandos/skills que habilita;
-- criterios de validación;
-- compatibilidad por tier.
-
-Esta separación es clave para no duplicar texto de agentes y skills cuando agreguemos Codex o Claude Code. Los textos de agentes deben depender de roles, contracts y skills neutrales; los adapters solo renderizan la superficie específica de cada tool.
-
-## Harness instalado
-
-Los presets OpenCode y Codex instalan el mismo núcleo de roles:
-
-- `orchestrator`: coordinación y routing general;
-- `sdd-router`: clasificación T1/T2/T3 en modo read-only/no-shell;
-- `explorer`: investigación read-only;
-- `implementer`: cambios acotados sin delivery;
-- `test-writer`: soporte TDD stack-aware para T1/T2 sustantivos;
-- `validator`: validación y diagnóstico read-only;
-- `reviewer`: revisión stack-aware con severidades y scoring;
-- `delivery`: Git/GitHub solo con autorización explícita.
-
-El núcleo compartido se instala desde `.lufy/contracts/`: delivery, Result Contract y recursos de PR review. OpenCode conserva overlays de compatibilidad; Codex proyecta los recursos necesarios dentro de cada skill para progressive disclosure.
-
-### Adaptive role allocation
-
-El allocator separa identidad pseudónima, capacidades actuales y `role_hint` temporal. Una recomendación ayuda a planificar cuál de los roles existentes puede aportar una capacidad, pero no crea roles, no amplía permisos, no cambia ownership y siempre conserva `gate_advanced=false`. El contrato neutral vive en `.lufy/contracts/adaptive-routing.md`.
-
-```mermaid
-flowchart LR
-    Demand["DemandSignal + CapabilityProfile"] --> Score["deterministic-v1"]
-    Score --> Protected{"protected boundary?"}
-    Protected -->|sí| Human["human/orchestrator escalation"]
-    Protected -->|no| Recommend["recommendation"]
-    Recommend --> Shadow["shadow: observation only"]
-    Recommend --> Advisory["advisory: explicit assign"]
-    Advisory --> Ledger["Run Ledger append-only"]
-    Ledger --> Yield["durable checkpoint before release"]
-    Yield --> Waiting["bounded waiting pool / requeue"]
-```
-
-`disabled` es el default. `shadow` puede observar/registrar evidencia sin assignment, budget ni ownership; `advisory` exige una mutación explícita con idempotencia y lease. La confirmación vuelve a comprobar dentro del CAS que la recommendation sigue siendo el último evento y que capacidad global y budget del actor continúan disponibles. Delivery, seguridad, contratos públicos, schema de base de datos y migraciones destructivas preemptan el score. Si config, CLI, ledger o adapter no soportan la capacidad, el harness informa `not_available`/`disabled` y conserva el routing SDD determinista existente.
-
-Yield significa liberación segura y auditable, no sacrificio opaco: el checkpoint conserva solo referencias/digests content-free y libera lease/budget después de `recorded` o `duplicate_noop` equivalente. Conflictos, lease stale, owner mismatch, storage unavailable o un yield ordinario después del vencimiento mantienen la assignment activa. Una lease vencida solo se recupera con fencing exacto y un checkpoint durable `lease_expiring` que vuelve la demanda a `waiting`; el reloj nunca libera recursos por sí solo.
-
-### Context Graph y Review Workload Harness
-
-El Context Graph conecta artefactos SDD, tareas, tests, archivos y metadata content-free del Run Ledger mediante referencias explícitas. `lufy-ai context coverage` detecta gaps scenario/task/test; `context review --base <ref>` combina numstat directo, trazabilidad y `workflow_limits.review`; `context metrics` deriva duración de review, rework y defectos reabiertos desde nombres de evento reconocidos.
-
-Estas salidas son evidencia secundaria y bounded. Un grafo missing/stale conserva observaciones Git directas pero marca trazabilidad `unknown`; el runtime nunca entra al discovery genérico. Ningún resultado del grafo reemplaza archivos, tests, reviewer, autorización de delivery, checks remotos, sync o cierre.
-
-También instala:
-
-- template `sdd-lite.md` específico de OpenCode y Result Contract neutral;
-- contrato neutral de delivery;
-- skills `sdd-workflow`;
-- comandos `/opsx-*`;
-- comandos `/lufy.*`;
-- plugin Agent Observatory.
-
-OpenCode renderiza ese núcleo bajo `.opencode`. Codex renderiza la paridad core bajo `.agents/skills` y `.codex`, proyecta references/assets desde `.lufy/contracts/` y mantiene lifecycle/rules nativos, sin comandos slash ni plugin Observatory todavía.
-
-## Decisiones vigentes
-
-- El wrapper `scripts/install.sh` delega estrictamente en la CLI Go.
-- No se reintroduce fallback legacy.
-- No se asume tooling Node/TS en la raíz.
-- Releases estables se publican desde tags `v*` alcanzables desde `main`.
-- Delivery requiere autorización explícita.
-- `codex` es escribible core project-local; `claude-code` sigue dry-run/preview.
-
-## ADRs relacionados
-
-- [`docs/adr/0001-managed-asset-source-of-truth.md`](adr/0001-managed-asset-source-of-truth.md)
-- [`docs/adr/0002-managed-directories-extra-files.md`](adr/0002-managed-directories-extra-files.md)
-- [`docs/adr/0003-opencode-json-ownership.md`](adr/0003-opencode-json-ownership.md)
-- [`docs/adr/0004-sync-new-catalog-assets.md`](adr/0004-sync-new-catalog-assets.md)
-- [`docs/adr/0005-recovery-and-rollback.md`](adr/0005-recovery-and-rollback.md)
+La sustitución de una instalación anterior se ensaya y ejecuta como operación puntual conjunta de ejecutable, estado y proyecciones; no hay lector de estados anteriores ni migrador en el runtime. Ver [instalación](installation.md) y [estado y decisiones preservadas](status.md).

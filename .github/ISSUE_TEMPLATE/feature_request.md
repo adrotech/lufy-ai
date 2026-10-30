@@ -1,5 +1,5 @@
 ---
-name: Feature request
+name: Proponer una mejora
 about: Proponer una mejora o cambio de comportamiento
 labels: enhancement
 ---

@@ -1,0 +1,5 @@
+--- FAIL: TestPublicRestoreRejectsPreviousGenerationBeforeWriting (0.01s)
+    retirement_test.go:39: backup de generación retirada aceptado
+FAIL
+FAIL	github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/backup	0.652s
+FAIL

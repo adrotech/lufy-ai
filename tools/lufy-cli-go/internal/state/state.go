@@ -1,8 +1,10 @@
 package state
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,24 +17,21 @@ import (
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/version"
 )
 
-const (
-	LegacySchemaVersion = 1
-	SchemaVersion       = 2
-)
+const SchemaVersion = 4
 
 type InstallState struct {
-	SchemaVersion         int                      `json:"schemaVersion"`
-	ToolVersion           string                   `json:"toolVersion"`
-	ToolCommit            string                   `json:"toolCommit,omitempty"`
-	ToolBuildDate         string                   `json:"toolBuildDate,omitempty"`
-	SourceChangeID        string                   `json:"sourceChangeID"`
-	SourceRootFingerprint string                   `json:"sourceRootFingerprint"`
-	Tool                  domain.ToolID            `json:"tool"`
-	MethodologyByTier     domain.MethodologyByTier `json:"methodologyByTier"`
-	InstalledAt           string                   `json:"installedAt"`
-	UpdatedAt             string                   `json:"updatedAt"`
-	TargetRoot            string                   `json:"targetRoot"`
-	Assets                []AssetState             `json:"assets"`
+	SchemaVersion         int                    `json:"schemaVersion"`
+	ToolVersion           string                 `json:"toolVersion"`
+	ToolCommit            string                 `json:"toolCommit,omitempty"`
+	ToolBuildDate         string                 `json:"toolBuildDate,omitempty"`
+	SourceChangeID        string                 `json:"sourceChangeID"`
+	SourceRootFingerprint string                 `json:"sourceRootFingerprint"`
+	Tool                  domain.ToolID          `json:"tool"`
+	Execution             domain.ExecutionConfig `json:"execution"`
+	InstalledAt           string                 `json:"installedAt"`
+	UpdatedAt             string                 `json:"updatedAt"`
+	TargetRoot            string                 `json:"targetRoot"`
+	Assets                []AssetState           `json:"assets"`
 }
 
 type AssetState struct {
@@ -44,7 +43,6 @@ type AssetState struct {
 	Policy       string `json:"policy,omitempty"`
 	Scope        string `json:"scope,omitempty"`
 	Tool         string `json:"tool,omitempty"`
-	Methodology  string `json:"methodology,omitempty"`
 	Component    string `json:"component,omitempty"`
 	AncestorRel  string `json:"ancestorRel,omitempty"`
 	AncestorHash string `json:"ancestorSHA256,omitempty"`
@@ -60,11 +58,12 @@ func Path(targetRoot string) string {
 }
 
 func ExistingPath(targetRoot string) (string, error) {
-	resolved, err := lufypaths.ResolveExisting(targetRoot, lufypaths.InstallState, lufypaths.LegacyInstallState)
-	if err != nil {
+	if _, err := os.Lstat(filepath.Join(targetRoot, lufypaths.RetiredInstallState)); err == nil {
+		return "", fmt.Errorf("install-state en ruta retirada; respalda la instalación antes de sustituirla")
+	} else if !os.IsNotExist(err) {
 		return "", err
 	}
-	return resolved.Path, nil
+	return Path(targetRoot), nil
 }
 
 func Load(targetRoot string) (*InstallState, error) {
@@ -79,12 +78,25 @@ func Load(targetRoot string) (*InstallState, error) {
 	if err != nil {
 		return nil, err
 	}
+	return Decode(body)
+}
+
+// Decode valida exclusivamente el formato actual, sin traducir generaciones previas.
+func Decode(body []byte) (*InstallState, error) {
 	var st InstallState
-	if err := json.Unmarshal(body, &st); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&st); err != nil {
 		return nil, fmt.Errorf("install-state.json inválido: %w", err)
 	}
-	if st.SchemaVersion != SchemaVersion && st.SchemaVersion != LegacySchemaVersion {
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return nil, fmt.Errorf("install-state.json debe contener un único objeto")
+	}
+	if st.SchemaVersion != SchemaVersion {
 		return nil, fmt.Errorf("schema de install-state.json no soportado: %d", st.SchemaVersion)
+	}
+	if st.Tool == "" || st.Execution.Mode == "" || st.Execution.Delegation == "" {
+		return nil, fmt.Errorf("install-state.json requiere tool y execution explícitos")
 	}
 	if err := normalize(&st); err != nil {
 		return nil, err
@@ -94,12 +106,12 @@ func Load(targetRoot string) (*InstallState, error) {
 
 func normalize(st *InstallState) error {
 	st.SchemaVersion = SchemaVersion
-	cfg := domain.HarnessConfig{Tool: st.Tool, MethodologyByTier: st.MethodologyByTier}.WithDefaults()
+	cfg := domain.HarnessConfig{Tool: st.Tool, Execution: st.Execution}.WithDefaults()
 	if err := cfg.ValidateSupported(); err != nil {
 		return err
 	}
 	st.Tool = cfg.Tool
-	st.MethodologyByTier = cfg.MethodologyByTier
+	st.Execution = cfg.Execution
 	for i := range st.Assets {
 		asset := &st.Assets[i]
 		if asset.Policy == "" {
@@ -120,17 +132,11 @@ func normalize(st *InstallState) error {
 		if !domain.ToolID(asset.Tool).Valid() {
 			return fmt.Errorf("tool de install-state.json no soportada para %s: %s", asset.TargetRel, asset.Tool)
 		}
-		if asset.Methodology == "" {
-			asset.Methodology = string(domain.MethodologyNone)
-		}
-		if !domain.MethodologyID(asset.Methodology).Valid() {
-			return fmt.Errorf("methodology de install-state.json no soportada para %s: %s", asset.TargetRel, asset.Methodology)
-		}
 		if asset.Component == "" {
-			asset.Component = "legacy"
+			asset.Component = "managed"
 		}
-		if strings.HasPrefix(filepath.ToSlash(asset.AncestorRel), lufypaths.LegacyAncestors+"/") {
-			asset.AncestorRel = lufypaths.Ancestors + strings.TrimPrefix(filepath.ToSlash(asset.AncestorRel), lufypaths.LegacyAncestors)
+		if strings.HasPrefix(filepath.ToSlash(asset.AncestorRel), lufypaths.RetiredAncestors+"/") {
+			return fmt.Errorf("ancestor en ruta retirada: %s", asset.AncestorRel)
 		}
 	}
 	return nil
@@ -140,7 +146,7 @@ func WriteAtomic(targetRoot string, st InstallState) error {
 	if st.SchemaVersion == 0 {
 		st.SchemaVersion = SchemaVersion
 	}
-	if st.SchemaVersion != SchemaVersion && st.SchemaVersion != LegacySchemaVersion {
+	if st.SchemaVersion != SchemaVersion {
 		return fmt.Errorf("schema de install-state.json no soportado: %d", st.SchemaVersion)
 	}
 	if err := normalize(&st); err != nil {
@@ -170,7 +176,7 @@ func NewWithHarness(targetRoot string, previous *InstallState, assets []AssetSta
 	}
 	info := version.Current()
 	cfg = cfg.WithDefaults()
-	st := InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, Tool: cfg.Tool, MethodologyByTier: cfg.MethodologyByTier, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
+	st := InstallState{SchemaVersion: SchemaVersion, ToolVersion: info.Version, ToolCommit: info.Commit, ToolBuildDate: info.BuildDate, SourceChangeID: sourceRootFingerprint, SourceRootFingerprint: sourceRootFingerprint, Tool: cfg.Tool, Execution: cfg.Execution, InstalledAt: installedAt, UpdatedAt: now, TargetRoot: targetRoot, Assets: assets}
 	_ = normalize(&st)
 	return st
 }
@@ -178,7 +184,7 @@ func NewWithHarness(targetRoot string, previous *InstallState, assets []AssetSta
 func (s InstallState) AssetMap() map[string]AssetState {
 	out := make(map[string]AssetState, len(s.Assets))
 	for _, asset := range s.Assets {
-		out[asset.TargetRel] = asset
+		out[filepath.Clean(asset.TargetRel)] = asset
 	}
 	return out
 }

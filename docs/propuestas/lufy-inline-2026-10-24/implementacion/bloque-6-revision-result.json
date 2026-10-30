@@ -1,0 +1,7 @@
+{
+  "status": "completed",
+  "revised_files": 4,
+  "binary_sha256": "306c90c65a6eac53370870773d506d34555426031e586af3bcf1e75266820f64",
+  "original_joint_snapshot_preserved": true,
+  "interrupted_revision_recoverable_by_exact_postimages": true
+}

@@ -1,0 +1,9 @@
+{
+  "fixture": {
+    "join": 200,
+    "sales": 100,
+    "exists": 100
+  },
+  "equal_amount_counterexample": "SUM(DISTINCT amount) pierde una venta distinta; EXISTS conserva 200",
+  "fixture_files_modified": false
+}

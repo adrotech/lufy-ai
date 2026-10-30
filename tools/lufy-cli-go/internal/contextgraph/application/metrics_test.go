@@ -56,8 +56,8 @@ func TestBuildProjectsLedgerMetadataWithoutRuntimeContent(t *testing.T) {
 	}
 	var hasRun, hasEvidence, hasVerify bool
 	for _, node := range graph.Nodes {
-		hasRun = hasRun || node.Type == "workflow_run"
-		hasEvidence = hasEvidence || node.Type == "workflow_evidence"
+		hasRun = hasRun || node.Type == "run"
+		hasEvidence = hasEvidence || node.Type == "run_evidence"
 	}
 	for _, edge := range graph.Edges {
 		hasVerify = hasVerify || edge.Type == "verifies"

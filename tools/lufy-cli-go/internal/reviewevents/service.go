@@ -52,8 +52,8 @@ func (s Service) Record(ctx context.Context, opts Options) (runledger.AppendResu
 		}
 		switch opts.Action {
 		case "complete":
-			if result != "passed" && result != "failed" {
-				return runledger.AppendResult{}, fmt.Errorf("complete requiere resultado passed o failed")
+			if result != "passed" && result != "failed" && result != "inconclusive" && result != "not_applicable" {
+				return runledger.AppendResult{}, fmt.Errorf("complete requiere un resultado observado soportado")
 			}
 		case "rework", "reopen":
 			if result != "" {
@@ -122,7 +122,7 @@ func (s Service) Record(ctx context.Context, opts Options) (runledger.AppendResu
 		}
 		if opts.Action != "start" {
 			draft.CausedByEventID = start.EventID
-			draft.ArtifactRefs = []runledger.ArtifactRef{{Kind: "result-contract", PathSHA256: runledger.HashReference("result-contract:" + opts.EvidenceSHA256), ContentSHA256: opts.EvidenceSHA256}}
+			draft.ArtifactRefs = []runledger.ArtifactRef{{Kind: "evidence", PathSHA256: runledger.HashReference("evidence:" + opts.EvidenceSHA256), ContentSHA256: opts.EvidenceSHA256}}
 		}
 		appended, err := s.Store.Append(ctx, runledger.AppendRequest{Draft: draft, IdempotencyKey: key, ExpectedLocalSequence: &sequence})
 		if errors.Is(err, runledger.ErrVersionConflict) || errors.Is(err, runledger.ErrIdempotencyConflict) && existing == nil {

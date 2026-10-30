@@ -1,7 +1,9 @@
 package projectconfig
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/core/domain"
@@ -17,8 +19,13 @@ func Load(path string) (ProjectConfig, error) {
 		return ProjectConfig{}, err
 	}
 	var node yaml.Node
-	if err := yaml.Unmarshal(data, &node); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	if err := decoder.Decode(&node); err != nil {
 		return ProjectConfig{}, err
+	}
+	var trailing yaml.Node
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return ProjectConfig{}, fmt.Errorf("project config requiere un único documento YAML")
 	}
 	if len(node.Content) == 0 || node.Content[0].Kind != yaml.MappingNode {
 		return ProjectConfig{}, fmt.Errorf("formato inválido: se esperaba un mapa YAML")
@@ -26,6 +33,12 @@ func Load(path string) (ProjectConfig, error) {
 	var cfg ProjectConfig
 	if err := node.Content[0].Decode(&cfg); err != nil {
 		return ProjectConfig{}, err
+	}
+	if err := validateInlineNode(node.Content[0]); err != nil {
+		return ProjectConfig{}, err
+	}
+	if cfg.SchemaVersion != SchemaVersion {
+		return ProjectConfig{}, fmt.Errorf("schema_version no soportada: %d; usa el formato inline actual (2)", cfg.SchemaVersion)
 	}
 	cfg = applyMissingDefaults(cfg)
 	if err := validateHarnessConfig(cfg); err != nil {
@@ -41,6 +54,19 @@ func Load(path string) (ProjectConfig, error) {
 }
 
 func Marshal(cfg ProjectConfig) ([]byte, error) {
+	if cfg.SchemaVersion == 0 {
+		cfg.SchemaVersion = SchemaVersion
+	}
+	cfg = applyMissingDefaults(cfg)
+	if cfg.SchemaVersion != SchemaVersion {
+		return nil, fmt.Errorf("schema_version no soportada: %d", cfg.SchemaVersion)
+	}
+	if err := validateHarnessConfig(cfg); err != nil {
+		return nil, err
+	}
+	if err := validateReviewLimits(cfg.WorkflowLimits.Review); err != nil {
+		return nil, err
+	}
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return nil, err
@@ -72,13 +98,21 @@ func (s ConfigStore) Write(path string, cfg ProjectConfig) error {
 }
 
 func validateHarnessConfig(cfg ProjectConfig) error {
+	for _, key := range []string{"methodology_by_tier", "methodologyByTier", "methodology"} {
+		if _, exists := cfg.Extra[key]; exists {
+			return fmt.Errorf("campo retirado: %s; usa execution", key)
+		}
+	}
 	return domain.HarnessConfig{
-		Tool:              cfg.Tool,
-		MethodologyByTier: cfg.MethodologyByTier,
+		Tool:      cfg.Tool,
+		Execution: cfg.Execution,
 	}.ValidateSupported()
 }
 
 func validateReviewLimits(limits WorkflowReviewLimits) error {
+	if _, exists := limits.Extra["min_evidence_items"]; exists {
+		return fmt.Errorf("workflow_limits.review.min_evidence_items fue retirado; usa comprobaciones pertinentes al resultado")
+	}
 	fields := []struct {
 		name  string
 		value int
@@ -86,7 +120,6 @@ func validateReviewLimits(limits WorkflowReviewLimits) error {
 		{name: "max_files_per_slice", value: limits.MaxFilesPerSlice},
 		{name: "max_churn_lines_per_slice", value: limits.MaxChurnLinesPerSlice},
 		{name: "max_concurrent_slices", value: limits.MaxConcurrentSlices},
-		{name: "min_evidence_items", value: limits.MinEvidenceItems},
 	}
 	for _, field := range fields {
 		if field.value < 0 {
@@ -123,6 +156,10 @@ func validateAdaptiveRouting(config AdaptiveRoutingConfig) error {
 }
 
 func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
+	if cfg.Tool == "" {
+		cfg.Tool = domain.ToolCodex
+	}
+	cfg.Execution = cfg.Execution.WithDefaults()
 	if cfg.ContextGraph.Root == "" && cfg.ContextGraph.Report == "" && len(cfg.ContextGraph.SensitivePatterns) == 0 && len(cfg.ContextGraph.Exclude) == 0 {
 		cfg.ContextGraph = DefaultContextGraphConfig()
 	}
@@ -183,4 +220,25 @@ func applyMissingDefaults(cfg ProjectConfig) ProjectConfig {
 		cfg.AdaptiveRouting.StarvationAfterCycles = adaptiveDefaults.StarvationAfterCycles
 	}
 	return cfg
+}
+
+func validateInlineNode(node *yaml.Node) error {
+	for i := 0; i < len(node.Content); i += 2 {
+		key, value := node.Content[i].Value, node.Content[i+1]
+		switch key {
+		case "methodology_by_tier", "methodologyByTier", "methodology":
+			return fmt.Errorf("campo retirado: %s; usa execution con el formato actual", key)
+		case "execution":
+			if value.Kind != yaml.MappingNode {
+				return fmt.Errorf("execution debe ser un mapa con mode y delegation")
+			}
+			for j := 0; j < len(value.Content); j += 2 {
+				name := value.Content[j].Value
+				if name != "mode" && name != "delegation" {
+					return fmt.Errorf("campo de execution no soportado: %s", name)
+				}
+			}
+		}
+	}
+	return nil
 }

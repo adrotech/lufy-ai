@@ -78,6 +78,9 @@ main() {
   log "Release version tests"
   "$REPO_ROOT/scripts/test-release-version.sh"
 
+  log "Release metadata tests"
+  "$REPO_ROOT/scripts/test-release-metadata.sh"
+
   log "Workflow YAML"
   (cd "$CLI_ROOT" && go run ./cmd/check-workflows-yaml --root "$REPO_ROOT")
 
@@ -86,9 +89,6 @@ main() {
 
   log "Shell lint"
   "$REPO_ROOT/scripts/check-shell.sh"
-
-  log "Format dispatch hook smoke"
-  "$REPO_ROOT/tools/lufy-cli-go/scripts/smoke-format-dispatch.sh"
 
   log "Go quality"
   "$REPO_ROOT/scripts/quality-go.sh"

@@ -12,7 +12,7 @@ import (
 func TestRunContextReviewHumanAndJSON(t *testing.T) {
 	root, base := prepareCLIReviewRepo(t, true)
 	var stdout, stderr bytes.Buffer
-	args := []string{"context", "review", "--target", root, "--base", base, "--concurrent-slices", "1", "--evidence-items", "2"}
+	args := []string{"context", "review", "--target", root, "--base", base, "--concurrent-slices", "1"}
 	if code := Run(args, Dependencies{Stdout: &stdout, Stderr: &stderr}); code != ExitOK || !strings.Contains(stdout.String(), "context review: proceed") || !strings.Contains(stdout.String(), "files=1") {
 		t.Fatalf("review human code/output = %s stderr=%s", stdout.String(), stderr.String())
 	}
@@ -31,7 +31,7 @@ func TestRunContextReviewHumanAndJSON(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &got); err != nil {
 		t.Fatalf("invalid review JSON: %v\n%s", err, stdout.String())
 	}
-	if got.Action != "proceed" || got.GraphStatus != "ready" || got.Observations.Files != 1 || got.Observations.Churn == 0 || len(got.TracedFiles) != 1 {
+	if got.Action != "proceed" || got.GraphStatus != "ready" || got.Observations.Files != 1 || got.Observations.Churn == 0 {
 		t.Fatalf("review JSON = %#v", got)
 	}
 }
@@ -51,7 +51,7 @@ func TestRunContextReviewUnknownUsageHelpAndGitError(t *testing.T) {
 			Files int `json:"files"`
 		} `json:"observations"`
 	}
-	if err := json.Unmarshal(stdout.Bytes(), &unknown); err != nil || unknown.Action != "escalate" || unknown.GraphStatus != "not_available" || unknown.Traceability != "unknown" || unknown.Observations.Files != 1 {
+	if err := json.Unmarshal(stdout.Bytes(), &unknown); err != nil || unknown.Action != "proceed" || unknown.GraphStatus != "not_available" || unknown.Observations.Files != 1 {
 		t.Fatalf("unknown graph result = %#v err=%v body=%s", unknown, err, stdout.String())
 	}
 
@@ -85,8 +85,8 @@ func prepareCLIReviewRepo(t *testing.T, buildGraph bool) (string, string) {
 	t.Helper()
 	root := t.TempDir()
 	writeContextCLITestFile(t, filepath.Join(root, ".lufy/config/project.yaml"), strings.Join([]string{
-		"schema_version: 1", "workflow_limits:", "  review:", "    max_files_per_slice: 8",
-		"    max_churn_lines_per_slice: 800", "    max_concurrent_slices: 3", "    min_evidence_items: 2", "",
+		"schema_version: 2", "workflow_limits:", "  review:", "    max_files_per_slice: 8",
+		"    max_churn_lines_per_slice: 800", "    max_concurrent_slices: 3", "",
 	}, "\n"))
 	writeContextCLITestFile(t, filepath.Join(root, ".lufy/workflows/sdd/changes/review-cli/tasks.md"), "# Tasks\n- [ ] 1.1 Review CLI\n")
 	writeContextCLITestFile(t, filepath.Join(root, "pkg/review.go"), "package pkg\n\n// lufy:implements task:review-cli#1.1\nfunc Review() {}\n")

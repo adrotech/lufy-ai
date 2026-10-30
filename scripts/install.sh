@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper de compatibilidad para instalar lufy-ai mediante la CLI Go.
+# Wrapper estricto para instalar lufy-ai mediante la CLI Go.
 
 set -euo pipefail
 
@@ -9,7 +9,7 @@ LOCAL_BIN="$REPO_ROOT/tools/lufy-cli-go/bin/lufy-ai"
 
 usage() {
     cat <<'EOF'
-Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--scope project|global|both] [--tool opencode] [--methodology-tier T3:none] [--dry-run] [--yes] [--backup]
+Uso: scripts/install.sh [target-project-dir] [--target <dir>] [--scope project|global|both] [--tool codex] [--delegation auto|on_request|off] [--dry-run] [--yes] [--backup]
 
 Este script solo delega en la CLI Go:
   lufy-ai install
@@ -62,7 +62,7 @@ main() {
                 args+=("--target" "$2")
                 shift 2
                 ;;
-            --scope|--tool|--methodology-tier)
+            --scope|--tool|--delegation)
                 if [ "$#" -lt 2 ] || [[ "$2" == --* ]]; then
                     echo "Error: falta valor para $1" >&2
                     exit 2
@@ -97,6 +97,13 @@ main() {
     local cli
     cli="$(find_lufy_ai)" || fail_missing_cli
 
+    local expected_contract='# lufy-runtime: execution=inline config=2 state=4 backup=2'
+    local actual_contract
+    actual_contract="$("$cli" version --runtime-contract 2>/dev/null)" || actual_contract=""
+    if [ "$actual_contract" != "$expected_contract" ]; then
+        printf '%s\n' 'Error: la CLI disponible no declara el contrato inline actual; compilá desde el checkout vigente o restaurá el conjunto de instalación.' >&2
+        exit 1
+    fi
     exec "$cli" install "${args[@]}"
 }
 

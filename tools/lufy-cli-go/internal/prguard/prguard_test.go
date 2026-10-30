@@ -11,14 +11,14 @@ import (
 
 func TestGuardDetectsTrackedIgnoredFileInDiff(t *testing.T) {
 	repo := initRepo(t)
-	writeFile(t, filepath.Join(repo, ".gitignore"), "openspec/\n")
+	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/private/\n")
 	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
 	git(t, repo, "add", ".gitignore", "README.md")
 	git(t, repo, "commit", "-m", "base")
 	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
 
-	writeFile(t, filepath.Join(repo, "openspec", "changes", "demo", "proposal.md"), "ignored but tracked\n")
-	git(t, repo, "add", "-f", "openspec/changes/demo/proposal.md")
+	writeFile(t, filepath.Join(repo, ".lufy", "private", "changes", "demo", "proposal.md"), "ignored but tracked\n")
+	git(t, repo, "add", "-f", ".lufy/private/changes/demo/proposal.md")
 	git(t, repo, "commit", "-m", "add ignored openspec file")
 
 	report, err := NewService().Build(Options{Target: repo, Base: base})
@@ -28,10 +28,10 @@ func TestGuardDetectsTrackedIgnoredFileInDiff(t *testing.T) {
 	if report.OK {
 		t.Fatalf("guard should fail: %#v", report)
 	}
-	if len(report.IgnoredMatches) != 1 || report.IgnoredMatches[0].Pattern != "openspec/" || report.IgnoredMatches[0].Path != "openspec/changes/demo/proposal.md" {
+	if len(report.IgnoredMatches) != 1 || report.IgnoredMatches[0].Pattern != ".lufy/private/" || report.IgnoredMatches[0].Path != ".lufy/private/changes/demo/proposal.md" {
 		t.Fatalf("ignored match unexpected: %#v", report.IgnoredMatches)
 	}
-	if len(report.InternalMatches) != 1 || report.InternalMatches[0].Pattern != "openspec/" {
+	if len(report.InternalMatches) != 1 || report.InternalMatches[0].Pattern != ".lufy/" {
 		t.Fatalf("internal match unexpected: %#v", report.InternalMatches)
 	}
 
@@ -40,7 +40,7 @@ func TestGuardDetectsTrackedIgnoredFileInDiff(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Run() expected error, output=%s", out.String())
 	}
-	for _, want := range []string{"git check-ignore -v --no-index --stdin", "openspec/", ".gitignore", "cherry-pick", "git rm --cached"} {
+	for _, want := range []string{"git check-ignore -v --no-index --stdin", ".lufy/private/", ".gitignore", "cherry-pick", "git rm --cached"} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("Run() output missing %q: %s", want, out.String())
 		}
@@ -49,7 +49,7 @@ func TestGuardDetectsTrackedIgnoredFileInDiff(t *testing.T) {
 
 func TestGuardPassesWithoutIgnoredOrInternalPaths(t *testing.T) {
 	repo := initRepo(t)
-	writeFile(t, filepath.Join(repo, ".gitignore"), "openspec/\n")
+	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/private/\n")
 	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
 	git(t, repo, "add", ".gitignore", "README.md")
 	git(t, repo, "commit", "-m", "base")
@@ -68,83 +68,18 @@ func TestGuardPassesWithoutIgnoredOrInternalPaths(t *testing.T) {
 	}
 }
 
-func TestInternalFilesAllowsOnlyVersionableLufyArtifacts(t *testing.T) {
-	files := []string{
-		".lufy/contracts/delivery.md",
-		".lufy/contracts/result-contract.md",
-		".lufy/sdd/config.yaml",
-		".lufy/sdd/actions/propose.md",
-		".lufy/workflows/sdd/changes/add-audit/proposal.md",
-		".lufy/workflows/sdd/specs/audit/spec.md",
-		".lufy/workflows/sdd/decisions/0001-audit.md",
-		".lufy/workflows/sdd/verification/add-audit/report.md",
-		".lufy/workflows/sdd/archive/2026-08-18-add-audit/change-overview.html",
-		".lufy/workflows/sdd/config.yaml",
-		".lufy/managed-state/install-state.json",
-		".lufy/context/graph.json",
-	}
+func TestInternalFilesAllowsOnlyCurrentPublicLufyArtifacts(t *testing.T) {
+	files := []string{".lufy/README.md", ".lufy/contracts/work.md", ".lufy/managed-state/install-state.json", ".lufy/context/graph.json"}
 	matches := internalFiles(files)
-	want := []string{
-		".lufy/workflows/sdd/config.yaml",
-		".lufy/managed-state/install-state.json",
-		".lufy/context/graph.json",
+	if len(matches) != 2 || matches[0].Path != files[2] || matches[1].Path != files[3] {
+		t.Fatalf("matches: %#v", matches)
 	}
-	if len(matches) != len(want) {
-		t.Fatalf("internal matches = %#v", matches)
-	}
-	for index, path := range want {
-		if matches[index].Path != path || matches[index].Pattern != ".lufy/" {
-			t.Fatalf("match %d = %#v want %s", index, matches[index], path)
-		}
+	if got := internalFileEntries([]changedFile{{Path: files[2], Status: "D"}}); len(got) != 0 {
+		t.Fatalf("deletion blocked: %#v", got)
 	}
 }
 
-func TestInternalFilesAllowsOpenSpecArchiveAndCanonicalSpecs(t *testing.T) {
-	files := []string{
-		"openspec/specs/native-context-graph/spec.md",
-		"openspec/changes/archive/2026-08-18-add-native-context-graph/tasks.md",
-		"openspec/changes/add-native-context-graph/tasks.md",
-		"openspec/README.md",
-	}
-	matches := internalFiles(files)
-	want := []string{
-		"openspec/changes/add-native-context-graph/tasks.md",
-		"openspec/README.md",
-	}
-	if len(matches) != len(want) {
-		t.Fatalf("internal matches = %#v", matches)
-	}
-	for index, path := range want {
-		if matches[index].Path != path || matches[index].Pattern != "openspec/" {
-			t.Fatalf("match %d = %#v want %s", index, matches[index], path)
-		}
-	}
-}
-
-func TestGuardAllowsOpenSpecArchivePattern(t *testing.T) {
-	repo := initRepo(t)
-	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
-	writeFile(t, filepath.Join(repo, "openspec", "changes", "demo", "tasks.md"), "- [x] done\n")
-	git(t, repo, "add", "README.md", "openspec/changes/demo/tasks.md")
-	git(t, repo, "commit", "-m", "base")
-	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
-
-	git(t, repo, "rm", "openspec/changes/demo/tasks.md")
-	writeFile(t, filepath.Join(repo, "openspec", "changes", "archive", "2026-08-18-demo", "tasks.md"), "- [x] done\n")
-	writeFile(t, filepath.Join(repo, "openspec", "specs", "demo", "spec.md"), "### Requirement: Demo\n")
-	git(t, repo, "add", "openspec/changes/archive/2026-08-18-demo/tasks.md", "openspec/specs/demo/spec.md")
-	git(t, repo, "commit", "-m", "archive demo")
-
-	report, err := NewService().Build(Options{Target: repo, Base: base})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !report.OK || len(report.InternalMatches) != 0 {
-		t.Fatalf("OpenSpec archive pattern should pass: %#v", report)
-	}
-}
-
-func TestGuardStillBlocksExplicitlyIgnoredLufySDDArtifact(t *testing.T) {
+func TestGuardStillBlocksExplicitlyIgnoredPublicContract(t *testing.T) {
 	repo := initRepo(t)
 	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/\n")
 	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
@@ -152,10 +87,10 @@ func TestGuardStillBlocksExplicitlyIgnoredLufySDDArtifact(t *testing.T) {
 	git(t, repo, "commit", "-m", "base")
 	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
 
-	path := filepath.Join(repo, ".lufy", "workflows", "sdd", "changes", "demo", "proposal.md")
+	path := filepath.Join(repo, ".lufy", "contracts", "work.md")
 	writeFile(t, path, "# Proposal\n")
-	git(t, repo, "add", "-f", ".lufy/workflows/sdd/changes/demo/proposal.md")
-	git(t, repo, "commit", "-m", "add ignored sdd artifact")
+	git(t, repo, "add", "-f", ".lufy/contracts/work.md")
+	git(t, repo, "commit", "-m", "add ignored contract")
 
 	report, err := NewService().Build(Options{Target: repo, Base: base})
 	if err != nil {
@@ -168,14 +103,14 @@ func TestGuardStillBlocksExplicitlyIgnoredLufySDDArtifact(t *testing.T) {
 
 func TestGuardIncludeWorktreeDetectsPendingIgnoredFile(t *testing.T) {
 	repo := initRepo(t)
-	writeFile(t, filepath.Join(repo, ".gitignore"), "openspec/\n")
+	writeFile(t, filepath.Join(repo, ".gitignore"), ".lufy/private/\n")
 	writeFile(t, filepath.Join(repo, "README.md"), "base\n")
 	git(t, repo, "add", ".gitignore", "README.md")
 	git(t, repo, "commit", "-m", "base")
 	base := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
 
-	writeFile(t, filepath.Join(repo, "openspec", "changes", "demo", "tasks.md"), "pending ignored\n")
-	git(t, repo, "add", "-f", "openspec/changes/demo/tasks.md")
+	writeFile(t, filepath.Join(repo, ".lufy", "private", "changes", "demo", "tasks.md"), "pending ignored\n")
+	git(t, repo, "add", "-f", ".lufy/private/changes/demo/tasks.md")
 
 	report, err := NewService().Build(Options{Target: repo, Base: base, IncludeWorktree: true})
 	if err != nil {

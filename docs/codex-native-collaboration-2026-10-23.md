@@ -1,3 +1,5 @@
+> Informe histórico del modelo anterior. Sus resultados se conservan; sus comandos y roles no describen la rama inline actual. Ver [estado vigente](status.md).
+
 # Verificación del perfil collaboration
 
 El seguimiento aprobado añade un perfil diagnóstico opt-in para la API observada, preservando el ensayo legacy y su criterio de cierre completo. Una prueba parcial no se publica como verificación integral.

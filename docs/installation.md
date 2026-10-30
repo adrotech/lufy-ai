@@ -1,433 +1,79 @@
-# Instalación de lufy-ai
+# Instalación, sincronización y recuperación
 
-Esta guía cubre:
+Esta guía corresponde a `v0.7.0`, la primera generación Codex inline. Los formatos actuales se describen abajo; las instalaciones del modelo anterior requieren respaldo conjunto y no tienen conversión automática.
 
-- instalación del binario `lufy-ai`;
-- configuración de `PATH`;
-- instalación de assets en un repositorio destino;
-- verificación, sync, uninstall y reinstall;
-- troubleshooting básico.
+## Instalar el binario publicado
 
-Release estable actual: `v0.6.25`.
+En macOS o Linux, con una versión fija:
 
-## Requisitos
-
-- Un directorio escribible para el binario, por ejemplo `~/.local/bin`.
-- Acceso a una GitHub Release publicada con artifacts y checksums.
-- Un repositorio destino donde instalar el harness.
-- OpenCode si vas a usar el adapter escribible actual.
-
-El bootstrap Bash aplica a macOS, Linux y WSL. En Windows nativo usa el binario publicado para Windows si la release lo incluye.
-
-## Instalar el binario
-
-Usa una versión explícita. `latest` existe como conveniencia, pero no es reproducible.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+```sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.7.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.25 --install-dir "$HOME/.local/bin"
-```
-
-El bootstrap:
-
-1. detecta OS/arch;
-2. descarga el artifact `lufy-ai_<version>_<os>_<arch>`;
-3. verifica SHA-256 contra checksums de la release;
-4. instala solo el binario;
-5. no ejecuta `lufy-ai install` contra ningún proyecto.
-
-Atajo directo, solo si ya revisaste el script:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh \
-  | bash -s -- --version v0.6.25 --install-dir "$HOME/.local/bin"
-```
-
-## PATH por shell
-
-### bash/zsh
-
-```bash
+bash /tmp/lufy-bootstrap.sh --version v0.7.0 --install-dir "$HOME/.local/bin"
 export PATH="$HOME/.local/bin:$PATH"
+lufy-ai version --runtime-contract
 ```
 
-Guárdalo en `~/.bashrc`, `~/.bash_profile` o `~/.zshrc` según tu shell.
+El bootstrap verifica SHA-256 del archive y sólo instala el ejecutable. La instalación de assets se realiza después con `install` o `setup`. Elegí un destino libre o respaldá primero el binario existente.
 
-### fish
+En Windows, descargá el ZIP de la arquitectura correspondiente desde [la release](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0), contrastá su SHA-256 con el archivo de checksums y extraé `lufy-ai.exe` a un directorio de tu PATH. El bootstrap Bash cubre macOS y Linux; los archives Windows se distribuyen por separado. La [guía de seguridad](release-security.md) explica la verificación adicional de firmas.
 
-```fish
-fish_add_path $HOME/.local/bin
+## Compilar desde fuente e instalar assets
+
+Requiere Go según `tools/lufy-cli-go/go.mod` (actualmente 1.24.2). Desde la raíz de un checkout del tag `v0.7.0`, en un shell POSIX:
+
+```sh
+mkdir -p "$HOME/.local/bin"
+go -C tools/lufy-cli-go build -o "$HOME/.local/bin/lufy-ai" ./cmd/lufy-ai
+export PATH="$HOME/.local/bin:$PATH"
+lufy-ai version --runtime-contract
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --dry-run
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --yes
+lufy-ai verify --target /ruta/al/proyecto --deep
 ```
 
-Alternativa:
+El ejemplo supone un ejecutable de destino libre o un reemplazo previamente respaldado de la misma generación. Para Windows, compilá `./cmd/lufy-ai` a una ruta persistente `lufy-ai.exe` y agregá su directorio al PATH del host. Go se comprueba en Linux, macOS y Windows; los smokes Bash de instalación corren en Ubuntu.
 
-```fish
-set -gx PATH $HOME/.local/bin $PATH
+Conservá el PATH también en el entorno desde el que se inicia Codex: el hook busca `lufy-ai`. El ejemplo fija delegación `off`; el default es `auto`, con `on_request` como tercera opción. Ver [configuración](configuration.md).
+
+La superficie soportada es el proyecto con Codex. Se distribuyen 16 assets y se genera el bloque gestionado de `AGENTS.md`; una guía existente se preserva fuera de ese bloque. `scripts/install.sh` es un wrapper estricto de la CLI Go local/PATH y no descarga ni ejecuta motores alternativos.
+
+`init` y `scan` detectan configuración; `setup` orquesta además memoria, grafo y verificación. Revisá primero `setup --dry-run`. `--skip-version-check` permite probar una compilación local sin consultar releases; no es necesario para el uso habitual del binario publicado.
+
+## Sincronizar y resolver drift
+
+```sh
+lufy-ai sync --target /ruta/al/proyecto --dry-run
+lufy-ai conflicts plan --target /ruta/al/proyecto --json
+lufy-ai sync --target /ruta/al/proyecto --yes
+lufy-ai verify --target /ruta/al/proyecto --deep
 ```
 
-### Windows nativo
+Ownership, hashes y policies determinan qué actualizar. Los archivos ajenos se preservan. Una edición local puede generar conflicto y un candidato `.lufy-new`; inspeccioná ambos antes de resolver con `merge`. `--accept-ours` conserva el local y `--accept-theirs` adopta el candidato; ninguna elección es automática. `pin <path>` congela un asset gestionado y `unpin <path>` permite volver a sincronizarlo.
 
-1. Descarga `lufy-ai_v0.6.25_windows_amd64.zip` o `lufy-ai_v0.6.25_windows_arm64.zip`.
-2. Descarga `lufy-ai_v0.6.25_checksums.txt`.
-3. Verifica el hash:
+`sync` no agrega automáticamente assets nuevos ausentes que nunca estuvieron en el manifest. Una ruta nueva del catálogo que colisione con un archivo local se trata como conflicto. Ver [ADR 0004](adr/0004-sync-new-catalog-assets.md). Los extras no adquieren ownership por estar en directorios gestionados.
 
-   ```powershell
-   Get-FileHash .\lufy-ai_v0.6.25_windows_amd64.zip -Algorithm SHA256
-   ```
+## Formatos y backups
 
-4. Extrae `lufy-ai.exe` en un directorio de usuario.
-5. Agrega ese directorio al `Path` de usuario.
-6. Abre una terminal nueva.
+| Dato | Formato actual |
+| --- | --- |
+| `.lufy/config/project.yaml` | Schema 2, `codex`, ejecución `inline` |
+| `.lufy/managed-state/install-state.json` | Schema 4; ownership, hashes y ancestors |
+| `.lufy/managed-state/backups/*/manifest.json` | Schema 2, `runtimeStateSchema: 4` |
 
-## Instalar en un repositorio
-
-Primero revisa la versión:
-
-```bash
-lufy-ai version
+```sh
+lufy-ai backup --target /ruta/al/proyecto
+lufy-ai restore --target /ruta/al/proyecto --list
+lufy-ai restore --target /ruta/al/proyecto --backup /ruta/al/backup --dry-run
+lufy-ai restore --target /ruta/al/proyecto --backup /ruta/al/backup --yes
 ```
 
-Luego revisa el plan sin mutar:
+`backup` devuelve la ruta creada. `restore --list` sólo enumera `.lufy/managed-state/backups`; no busca ubicaciones retiradas. El restore público valida generación, hashes y payload de configuración/estado antes de escribir. La retención conserva carpetas desconocidas y generaciones anteriores. El rollback interno puede recuperar una preimagen dañada si una mutación respaldada falla; si no lo logra, conservá el backup indicado y diagnosticá el error.
 
-```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --dry-run --yes
-```
+Un backup mínimo de archivos gestionados no incluye todo el proyecto ni reemplaza el respaldo del ejecutable, memoria y datos propios. Antes de reemplazar una generación se necesita un snapshot conjunto de ejecutable, configuración, manifest, ancestors y datos/proyecciones que deban recuperarse.
 
-Aplica:
+## Instalaciones del modelo retirado
 
-```bash
-lufy-ai install --target /ruta/a/tu/proyecto --scope project --tool opencode --yes
-```
+Los formatos anteriores o mezclados se rechazan. No hay migrador genérico, aliases ni lectores de compatibilidad. La sustitución personal del [bloque 6](propuestas/lufy-inline-2026-10-24/implementacion/bloque-6.md) fue una operación puntual con inventario, backup conjunto, journal y verificación; no es un comando reutilizable del producto. Para volver a otra generación se requiere su ejecutable y snapshot conjunto.
 
-Verifica:
-
-```bash
-lufy-ai verify --target /ruta/a/tu/proyecto --scope project --tool opencode
-lufy-ai status --target /ruta/a/tu/proyecto --verbose
-lufy-ai info --target /ruta/a/tu/proyecto
-lufy-ai doctor --target /ruta/a/tu/proyecto
-```
-
-Inicializa memoria Obsidian portable cuando quieras que los agentes conserven decisiones, reglas, flows y lessons durables en el repo destino:
-
-```bash
-lufy-ai memory init --target /ruta/a/tu/proyecto
-lufy-ai memory status --target /ruta/a/tu/proyecto
-lufy-ai memory validate --target /ruta/a/tu/proyecto
-lufy-ai memory search --target /ruta/a/tu/proyecto "routing"
-lufy-ai memory capture --target /ruta/a/tu/proyecto --title "Regla de memoria" --type rule "Las correcciones del usuario a la IA se guardan como memoria durable."
-lufy-ai memory connect --target /ruta/a/tu/proyecto regla-de-memoria app-profile
-lufy-ai memory index --target /ruta/a/tu/proyecto
-```
-
-`memory init` crea `.lufy/memory` con `MEMORY.md`, `inbox/`, `knowledge/`, `maps/_app-profile.md`, `index/backlinks.json` y `.gitignore`. `memory capture` crea o actualiza notas durables, `memory connect` enlaza notas existentes sin backlinks rotos y `memory index` reconstruye el índice local. Por default las notas privadas quedan ignoradas por Git; `install` y `sync` solo gestionan comandos, skills, hooks y templates de memoria, no el contenido de `inbox/` ni `knowledge/`.
-
-## Selección de tool y metodología
-
-Los tool adapters escribibles actuales son `opencode` y `codex`. `opencode` sigue siendo el default efectivo.
-
-```bash
-lufy-ai install --target <repo> --tool opencode --yes
-lufy-ai install --target <repo> --tool codex --yes
-```
-
-Sin `--tool`, el default efectivo sigue siendo `opencode`.
-
-Las metodologías soportadas por configuración son:
-
-- `openspec`;
-- `lufy-sdd`;
-- `none`.
-
-Se seleccionan por tier:
-
-```bash
-lufy-ai install --target <repo> --methodology-tier T3:none --yes
-lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
-lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
-```
-
-`T1:lufy-sdd/full` y `T2:lufy-sdd/lite` están disponibles en la release estable. El lifecycle nativo es:
-
-```bash
-lufy-ai sdd new --change <name> --mode full --capability <name>
-lufy-ai sdd new --change <name> --mode lite
-lufy-ai sdd validate --change <name> --strict
-lufy-ai sdd sync --change <name>
-lufy-ai sdd archive --change <name>
-```
-
-Cada scaffold incluye `change-overview.html`. `validate`, `sync` y `archive` lo refrescan automáticamente desde los Markdown; no se edita ni invoca mediante un renderer separado. En Lite, `sync` devuelve `not_applicable` y archive no exige digest.
-
-Restricciones actuales:
-
-- `T1:none` está bloqueado para comandos mutantes;
-- `T2:none` está bloqueado para comandos mutantes;
-- `--tool claude-code` está bloqueado para escritura;
-- `claude-code` existe solo como dry-run/preview.
-
-## Qué queda instalado
-
-En scope `project`, la CLI gestiona:
-
-- `.opencode/agents`;
-- `.opencode/commands`;
-- `.opencode/skills`;
-- `.agents/skills` cuando `--tool codex`;
-- `.codex` cuando `--tool codex`;
-- `.opencode/templates`;
-- `.opencode/policies`;
-- `.opencode/plugins`;
-- `.opencode/agent-observatory`;
-- `lufy-ia.harness.md`;
-- `tui.json`;
-- `openspec/` cuando la metodología lo requiere;
-- `.lufy/workflows/sdd/` cuando se selecciona `lufy-sdd`;
-- `.lufy/contracts/` para contratos neutrales compartidos;
-- `.lufy/managed-state/install-state.json`.
-
-El uso del harness puede crear estado local no gestionado por `sync`: `.lufy/context/` y `.lufy/skill-registry.json` son derivados/regenerables; `.lufy/runtime/` contiene el Run Ledger content-free; `.lufy/memory/` es memoria privada user-owned.
-
-`AGENTS.md` es user-owned. `install` solo agrega la integración LUFY gestionada:
-
-```text
-<!-- LUFY:BEGIN codex-harness -->
-```
-
-La CLI sigue reconociendo la referencia legacy `@lufy-ia.harness.md` para compatibilidad. `opencode.json` es user-owned/merge-managed. La CLI preserva claves desconocidas y no lo registra como asset completo por hash.
-
-En Codex, `lufy-ai install --tool codex` instala ocho custom agents en `.codex/agents/*.toml`, habilita `features.multi_agent` y configura lifecycle project-local para `SessionStart`, `SubagentStop`, `Stop` y `SessionEnd`. Los hooks son best-effort, respetan el trust gate de Codex y no leen transcripts ni contenido privado. `doctor` y `verify --deep` validan esta superficie sin exigir plugins o hooks OpenCode.
-
-Los skills Codex son autocontenidos: sus contratos compartidos viven en `.lufy/contracts/`, el PR reviewer recibe `references/review-framework.md` y `assets/report.html`, y la metadata opcional de discovery vive en `agents/openai.yaml`. Una instalación `--tool codex` no crea `.opencode/`.
-
-La superficie instala `.codex/lufy-agent-mapping.md` y el bloque gestionado de `AGENTS.md` exige que el assistant declare si ejecuta roles en modo `native`, `emulated` o `inline`; cuando tool discovery expone el rol Lufy exacto debe usar `native`, y cuando solo existan roles genéricos usa el mapeo documentado en vez de afirmar que usó subagentes Lufy nativos. En Codex, `@orchestrator` o `@<rol-lufy>` se trata como solicitud de delegación: el assistant padre debe hacer spawn/wait/close del subagente cuando esté disponible, o reportar que la delegación no está disponible antes de continuar; no debe responder como ese rol inline y seguir ejecutando.
-
-
-
-
-## Defaults de `project.yaml`
-
-`lufy-ai init` y `lufy-ai scan --rescan` escriben o preservan estos bloques:
-
-```yaml
-memory:
-  provider: obsidian
-  root: .lufy/memory
-  git_policy: ignored
-  schema_version: 1
-  search: rg
-  backlinks_index: .lufy/memory/index/backlinks.json
-parallel_execution:
-  enabled: true
-  strategy: independent_review_slices
-  max_parallel_agents: 3
-  requires_independent_files: true
-  requires_merge_plan: true
-  validation_mode: grouped_after_join
-```
-
-El paralelismo no es un pipeline fijo: `sdd-router` lo recomienda solo para `review_slices` independientes con archivos separados y plan de merge. Delivery, migraciones, contratos públicos no cerrados y archivos compartidos quedan en ejecución secuencial.
-
-## Manifest y backups
-
-`.lufy/managed-state/install-state.json` usa schema v2 y registra:
-
-- `tool`;
-- `methodologyByTier`;
-- ownership por asset;
-- policy;
-- scope;
-- hashes SHA-256;
-- ancestors cuando corresponde.
-
-Backups se escriben en:
-
-```text
-.lufy/managed-state/backups/<timestamp>/
-```
-
-Antes de mutaciones reales, `install`, `sync`, `restore` y `uninstall` crean backups cuando corresponde.
-
-## Sync
-
-`sync` reaplica assets gestionados desde el catálogo actual hacia un target instalado. Solo actualiza archivos sin drift local y preserva assets frozen con `pin`.
-
-```bash
-lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes
-lufy-ai sync --target /ruta/a/tu/proyecto --yes
-lufy-ai verify --target /ruta/a/tu/proyecto
-```
-
-Si necesitas conservar un override local sobre un asset gestionado mientras actualizas el resto del kit:
-
-```bash
-lufy-ai pin --target /ruta/a/tu/proyecto --reason "override local" lufy-ia.harness.md
-lufy-ai sync --target /ruta/a/tu/proyecto --dry-run --yes
-lufy-ai status --target /ruta/a/tu/proyecto --verbose
-lufy-ai unpin --target /ruta/a/tu/proyecto lufy-ia.harness.md
-```
-
-Mientras el asset esté pinned/frozen, `sync` lo reporta como `pinned-skip` y no avanza sus hashes registrados.
-
-Si un asset no reemplazable tiene drift local, la CLI preserva el archivo y puede generar `<archivo>.lufy-new`.
-
-Para resolver:
-
-```bash
-lufy-ai status --target /ruta/a/tu/proyecto --verbose
-LUFY_MERGE_TOOL="tu-merge-tool" lufy-ai merge --target /ruta/a/tu/proyecto <path>
-lufy-ai merge --target /ruta/a/tu/proyecto --accept-theirs <path>
-lufy-ai merge --target /ruta/a/tu/proyecto --accept-ours <path>
-```
-
-Después de resolver, `merge` actualiza el manifest, refresca el ancestor seguro y remueve `<archivo>.lufy-new`. `doctor` falla si todavía quedan conflictos pendientes para evitar cerrar un estado parcialmente reconciliado.
-
-## Uninstall y reinstall
-
-`uninstall` remueve solo assets gestionados por Lufy cuando el hash actual coincide con el manifest. Si detecta drift, bloquea y no muta.
-
-Dry-run:
-
-```bash
-lufy-ai uninstall --target /ruta/a/tu/proyecto --dry-run
-```
-
-Aplicar:
-
-```bash
-lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
-```
-
-Comportamiento:
-
-- crea backup previo;
-- borra assets gestionados sin drift;
-- borra ancestors gestionados sin drift;
-- remueve `.lufy/managed-state/install-state.json`;
-- preserva `.lufy/managed-state/backups`;
-- preserva `opencode.json`;
-- preserva `AGENTS.md` y remueve solo la integración LUFY gestionada, ya sea el bloque nuevo o la línea legacy `@lufy-ia.harness.md`;
-- limpia directorios gestionados que queden vacíos.
-
-Reinstalar:
-
-```bash
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --quiet
-```
-
-`--keep-state` existe para diagnóstico: conserva `.lufy/managed-state/install-state.json` aunque remueva assets. No es el flujo normal.
-
-## Restore
-
-Listar backups:
-
-```bash
-lufy-ai restore --target /ruta/a/tu/proyecto --list
-```
-
-Revisar:
-
-```bash
-lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --dry-run
-```
-
-Aplicar:
-
-```bash
-lufy-ai restore --target /ruta/a/tu/proyecto --backup <id-o-ruta> --yes
-```
-
-`restore` valida `targetRoot`, paths seguros y hashes antes de escribir.
-
-## Upgrade del binario
-
-`upgrade` requiere versión fija.
-
-```bash
-lufy-ai upgrade --to v0.6.25 --dry-run
-lufy-ai upgrade --to v0.6.25
-```
-
-Descarga el artifact de la plataforma actual, verifica SHA-256 y reemplaza el ejecutable de forma atómica.
-
-## Desarrollo con clone local
-
-```bash
-git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
-cd /tmp/lufy-ai/tools/lufy-cli-go
-mkdir -p bin
-go build -o bin/lufy-ai ./cmd/lufy-ai
-```
-
-Usar el binario local:
-
-```bash
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto
-```
-
-El wrapper:
-
-```bash
-/tmp/lufy-ai/scripts/install.sh --target /ruta/a/tu/proyecto --yes
-```
-
-resuelve primero `tools/lufy-cli-go/bin/lufy-ai` y luego `lufy-ai` en `PATH`. No descarga releases ni usa fallback legacy.
-
-## Troubleshooting
-
-### `command not found: lufy-ai`
-
-```bash
-ls -l "$HOME/.local/bin/lufy-ai"
-printf '%s\n' "$PATH"
-"$HOME/.local/bin/lufy-ai" version
-```
-
-Agrega `~/.local/bin` a tu `PATH`.
-
-### `verify` falla después de instalar
-
-Revisa el error exacto. `verify` valida:
-
-- `.lufy/managed-state/install-state.json`;
-- estructura crítica;
-- hashes SHA-256;
-- JSON gestionado;
-- bloque LUFY gestionado o referencia legacy `@lufy-ia.harness.md` en `AGENTS.md`;
-- adapter esperado si usas `--tool`.
-
-Si falta la referencia en `AGENTS.md`, ejecuta:
-
-```bash
-lufy-ai install --target <dir> --yes
-```
-
-o agrégala manualmente.
-
-### `uninstall` bloquea por drift
-
-Eso es intencional. Significa que un asset gestionado fue modificado localmente. Revisa:
-
-```bash
-lufy-ai status --target <dir> --verbose
-lufy-ai doctor --target <dir>
-```
-
-Luego decide si conservar el cambio, restaurar desde backup o reinstalar sobre un estado limpio.
-
-### No existe artifact para mi plataforma
-
-Los artifacts objetivo son:
-
-- `darwin/amd64`;
-- `darwin/arm64`;
-- `linux/amd64`;
-- `linux/arm64`;
-- `windows/amd64`;
-- `windows/arm64`.
-
-Si tu plataforma no está publicada, usa un entorno soportado o compila desde clone local con Go.
+`upgrade --to <version>` comprueba el contrato de generación antes de reemplazar el ejecutable y verifica SHA-256. Header y checksum no son firmas ni prueban calidad del código. La [seguridad de releases](release-security.md) describe verificaciones adicionales. Esta guía no publica una release ni modifica una instalación personal por sí sola.

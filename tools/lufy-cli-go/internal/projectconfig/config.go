@@ -3,11 +3,11 @@ package projectconfig
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"reflect"
 	"time"
 
-	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/lufypaths"
 	"github.com/adrotech/lufy-ai/tools/lufy-cli-go/internal/platform"
 )
 
@@ -46,11 +46,12 @@ func Path(targetRoot string) string {
 }
 
 func ExistingPath(targetRoot string) (string, error) {
-	resolved, err := lufypaths.ResolveExisting(targetRoot, ProjectConfigPath, LegacyProjectConfigPath)
-	if err != nil {
+	if _, err := os.Lstat(filepath.Join(targetRoot, RetiredProjectConfigPath)); err == nil {
+		return "", fmt.Errorf("configuración en ruta retirada; respalda y sustituye por %s", ProjectConfigPath)
+	} else if !os.IsNotExist(err) {
 		return "", err
 	}
-	return resolved.Path, nil
+	return Path(targetRoot), nil
 }
 
 func NewService() Service {
@@ -81,19 +82,15 @@ func (s Service) Run(opts Options, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("resolver target: %w", err)
 	}
-	resolved, err := lufypaths.ResolveExisting(target, ProjectConfigPath, LegacyProjectConfigPath)
+	readPath, err := ExistingPath(target)
 	if err != nil {
 		return err
 	}
 	configPath := Path(target)
-	readPath := resolved.Path
-	displayPath := resolved.Rel
+	displayPath := ProjectConfigPath
 	exists, err := s.store.Exists(configPath)
 	if err != nil {
 		return err
-	}
-	if !exists && resolved.Exists {
-		exists = true
 	}
 	if exists && !opts.Force && !opts.Rescan {
 		return fmt.Errorf("%s ya existe; usa --rescan para preservar overrides o --force para reemplazarlo", displayPath)
@@ -157,14 +154,14 @@ func (s Service) Ensure(target string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("resolver target: %w", err)
 	}
-	resolved, err := lufypaths.ResolveExisting(target, ProjectConfigPath, LegacyProjectConfigPath)
+	_, err = ExistingPath(target)
 	if err != nil {
 		return false, err
 	}
 	configPath := Path(target)
 	if exists, err := s.store.Exists(configPath); err != nil {
 		return false, err
-	} else if exists || resolved.Exists {
+	} else if exists {
 		return false, nil
 	}
 	detected, err := s.scanner.Scan(target)

@@ -1,0 +1,75 @@
+[
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "version",
+      "--runtime-contract"
+    ],
+    "code": 0,
+    "stdout": "# lufy-runtime: execution=inline config=2 state=4 backup=2\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "sync",
+      "--target",
+      "/Users/adrianrojas/Desktop/projects/lufy-ai",
+      "--yes"
+    ],
+    "code": 0,
+    "stdout": "Plan de sync para /Users/adrianrojas/Desktop/projects/lufy-ai\nSource root: /Users/adrianrojas/Desktop/projects/lufy-ai\nScope: project projectRoot=/Users/adrianrojas/Desktop/projects/lufy-ai\n- [skip] .agents/skills/lufy-check/SKILL.md (source y target coinciden con el estado registrado) source=44bba1be6761 current=44bba1be6761 recordedSource=44bba1be6761 recordedTarget=44bba1be6761\n- [skip] .agents/skills/lufy-mem-capture/SKILL.md (source y target coinciden con el estado registrado) source=9b55ac6ec7d2 current=9b55ac6ec7d2 recordedSource=9b55ac6ec7d2 recordedTarget=9b55ac6ec7d2\n- [skip] .agents/skills/lufy-mem-connect/SKILL.md (source y target coinciden con el estado registrado) source=ce089e0a3182 current=ce089e0a3182 recordedSource=ce089e0a3182 recordedTarget=ce089e0a3182\n- [skip] .agents/skills/lufy-mem-document/SKILL.md (source y target coinciden con el estado registrado) source=10869cf3c02c current=10869cf3c02c recordedSource=10869cf3c02c recordedTarget=10869cf3c02c\n- [skip] .agents/skills/lufy-mem-search/SKILL.md (source y target coinciden con el estado registrado) source=a8e67af93c27 current=a8e67af93c27 recordedSource=a8e67af93c27 recordedTarget=a8e67af93c27\n- [skip] .codex/README.md (source y target coinciden con el estado registrado) source=4bea5573a4e9 current=4bea5573a4e9 recordedSource=4bea5573a4e9 recordedTarget=4bea5573a4e9\n- [skip] .codex/config.toml (source y target coinciden con el estado registrado) source=f8c302bce8bd current=f8c302bce8bd recordedSource=f8c302bce8bd recordedTarget=f8c302bce8bd\n- [skip] .codex/hooks.json (source y target coinciden con el estado registrado) source=ce2d32e84b4e current=ce2d32e84b4e recordedSource=ce2d32e84b4e recordedTarget=ce2d32e84b4e\n- [skip] .codex/lufy-agent-mapping.md (source y target coinciden con el estado registrado) source=5b20738ee5d2 current=5b20738ee5d2 recordedSource=5b20738ee5d2 recordedTarget=5b20738ee5d2\n- [skip] .codex/rules/lufy.rules (source y target coinciden con el estado registrado) source=d0a8954f7963 current=d0a8954f7963 recordedSource=d0a8954f7963 recordedTarget=d0a8954f7963\n- [skip] .lufy/README.md (source y target coinciden con el estado registrado) source=90d936189360 current=90d936189360 recordedSource=90d936189360 recordedTarget=90d936189360\n- [skip] .lufy/contracts/README.md (source y target coinciden con el estado registrado) source=48e6989d0376 current=48e6989d0376 recordedSource=48e6989d0376 recordedTarget=48e6989d0376\n- [skip] .lufy/contracts/delivery.md (source y target coinciden con el estado registrado) source=05ef443014f3 current=05ef443014f3 recordedSource=05ef443014f3 recordedTarget=05ef443014f3\n- [skip] .lufy/contracts/evidence.md (source y target coinciden con el estado registrado) source=b9f69a1f0797 current=b9f69a1f0797 recordedSource=b9f69a1f0797 recordedTarget=b9f69a1f0797\n- [skip] .lufy/contracts/work.md (source y target coinciden con el estado registrado) source=90947f7e8e70 current=90947f7e8e70 recordedSource=90947f7e8e70 recordedTarget=90947f7e8e70\n- [skip] lufy-ia.harness.md (source y target coinciden con el estado registrado) source=5748a9fdcb2f current=5748a9fdcb2f recordedSource=5748a9fdcb2f recordedTarget=5748a9fdcb2f\n- [skip] sin cambios gestionados\nSkill registry: ready\nPath: /Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/skill-registry.json\nTool: codex; skills: 5; roots: 3; warnings: 0\nSync real completado\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "verify",
+      "--target",
+      "/Users/adrianrojas/Desktop/projects/lufy-ai",
+      "--deep",
+      "--quiet"
+    ],
+    "code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "status",
+      "--target",
+      "/Users/adrianrojas/Desktop/projects/lufy-ai",
+      "--json"
+    ],
+    "code": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"targetRoot\": \"/Users/adrianrojas/Desktop/projects/lufy-ai\",\n  \"scope\": \"project\",\n  \"installed\": true,\n  \"schemaVersion\": 4,\n  \"toolVersion\": \"dev\",\n  \"toolCommit\": \"1cc18d4-inline-b6\",\n  \"toolBuildDate\": \"2026-10-28T19:25:05Z\",\n  \"tool\": \"codex\",\n  \"execution\": {\n    \"mode\": \"inline\",\n    \"delegation\": \"off\"\n  },\n  \"sourceRootFingerprint\": \"a111565488a3cde15a3653bf5cfea6c2a5e23570331653850caed5ea132e97a9\",\n  \"installedAt\": \"2026-10-27T21:48:45Z\",\n  \"updatedAt\": \"2026-10-28T19:25:05Z\",\n  \"assets\": 16,\n  \"missing\": 0,\n  \"drifted\": 0,\n  \"pinned\": 0,\n  \"conflictsPending\": 0,\n  \"errors\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "memory",
+      "validate",
+      "--target",
+      "/Users/adrianrojas/Desktop/projects/lufy-ai",
+      "--json"
+    ],
+    "code": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"targetRoot\": \"/Users/adrianrojas/Desktop/projects/lufy-ai\",\n  \"provider\": \"obsidian\",\n  \"root\": \".lufy/memory\",\n  \"status\": {\n    \"configured\": true,\n    \"initialized\": true,\n    \"availability\": \"ready\",\n    \"schemaVersion\": 1,\n    \"notes\": 18,\n    \"drafts\": 0,\n    \"deprecated\": 0,\n    \"superseded\": 0,\n    \"brokenBacklinks\": 0,\n    \"backlinksIndexed\": true\n  },\n  \"checks\": []\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/Users/adrianrojas/.local/bin/lufy-ai",
+      "skills",
+      "status",
+      "--target",
+      "/Users/adrianrojas/Desktop/projects/lufy-ai",
+      "--json"
+    ],
+    "code": 0,
+    "stdout": "{\n  \"status\": \"ready\",\n  \"path\": \"/Users/adrianrojas/Desktop/projects/lufy-ai/.lufy/skill-registry.json\",\n  \"tool\": \"codex\",\n  \"skillCount\": 5,\n  \"rootCount\": 3\n}\n",
+    "stderr": ""
+  }
+]

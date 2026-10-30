@@ -1,6 +1,6 @@
 # Seguridad de releases
 
-Este documento describe la política operativa para releases estables de `lufy-ai`.
+Este documento describe la política operativa para releases estables de `lufy-ai`. Ver [preparación de releases](releasing.md) para versión canónica, labels y promoción.
 
 ## Fuente de verdad
 
@@ -49,7 +49,7 @@ cosign verify-blob \
 
 Si `cosign` no está instalado, la firma no fue verificada localmente. En ese caso solo puede afirmarse que el checksum coincide, no que se verificó autenticidad keyless.
 
-`lufy-ai upgrade --to <version>` verifica SHA-256 contra `checksums.txt` antes de reemplazar el binario local. La verificación keyless con cosign sigue siendo un paso manual/externo para consumidores que requieran autenticidad criptográfica adicional.
+`lufy-ai upgrade --to <version>` verifica SHA-256 contra el archivo de checksums y exige el contrato de generación actual antes de reemplazar el binario local. El header declara ejecución inline, configuración 2, estado 4 y backup 2; no es una firma. La verificación keyless con cosign sigue siendo un paso manual/externo para consumidores que requieran autenticidad criptográfica adicional.
 
 ## Labels de release
 

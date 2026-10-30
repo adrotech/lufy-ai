@@ -1,452 +1,352 @@
 # lufy-ai
 
 <p align="center">
-  <img src="docs/assets/brand/lufy-ai-harness-banner.png" alt="LUFY AI: governed agentic software delivery" width="920">
+  <img src="docs/assets/brand/lufy-ai-harness-banner.png" alt="LUFY AI: agentes conectados, contexto y desarrollo de software" width="920">
 </p>
 
 <p align="center">
-  Harness operativo para planificar, ejecutar y gobernar software delivery con agentes.
+  Desarrollo con IA centrado en resultados: contexto, autonomía y comprobaciones para llevar una idea hasta un resultado verificable.
 </p>
 
 <p align="center">
-  <a href="#que-es-lufy-ai">Qué es</a> •
+  <a href="#qué-es-lufy">Qué es</a> •
+  <a href="docs/manual/README.md">Manual visual</a> •
   <a href="#quickstart">Quickstart</a> •
-  <a href="docs/harness-workflow.md">Workflow</a> •
+  <a href="#flujo-de-trabajo">Flujo</a> •
+  <a href="#autonomía-y-paralelismo">Autonomía</a> •
   <a href="#arquitectura">Arquitectura</a> •
-  <a href="#cli-y-lifecycle">CLI</a> •
-  <a href="#setup-y-command-palette">Setup</a> •
-  <a href="#estado-real">Estado</a> •
-  <a href="docs/installation.md">Instalación</a> •
-  <a href="docs/roadmap.md">Roadmap</a>
+  <a href="#cli-y-operación-local">CLI</a> •
+  <a href="#estado-actual">Estado</a> •
+  <a href="#documentación">Documentación</a>
 </p>
 
 ---
 
-## Qué es `lufy-ai`
+## Qué es Lufy
 
-`lufy-ai` es un harness instalable. No reemplaza tu stack, no genera una app y no fuerza una metodología única. Agrega una capa operativa sobre un repositorio para coordinar agentes, reglas de workflow, specs, validación, delivery, memoria local, grafo de contexto y assets gestionados.
+Lufy es un harness instalable para trabajar con IA en Codex: reúne políticas de trabajo, configuración del proyecto, skills y una CLI Go para mantener esa integración. El agente principal conserva el contexto, elige las acciones útiles y lleva el pedido hasta un resultado comprobable.
 
-La release estable `v0.6.25` ofrece **OpenCode y Codex** como tool adapters escribibles project-locales. OpenSpec y Lufy SDD Full/Lite son methodology adapters instalables por tier. El core mantiene tiers, roles, Result Contract, validación, Run Ledger, Context Graph, memoria y managed assets como dominio neutral.
+Ese resultado puede ser una app desde cero, una nueva funcionalidad, una corrección, una investigación, un análisis de datos, una propuesta o un texto. La forma de trabajar y la evidencia se adaptan a lo que pedís y a las consecuencias de equivocarse.
 
-El objetivo de producto es que Lufy sea el harness y que la tool sea reemplazable: hoy OpenCode es el preset productivo principal, Codex ya tiene adapter core escribible project-local y Claude Code sigue como preview dry-run hasta que exista una superficie validada.
+El flujo actual usa ejecución inline. Puede incorporar TDD, exploración, diseño, revisión, memoria y colaboración cuando ayuden al trabajo. Una propuesta puede terminar sin implementación y una explicación puede terminar sin escribir archivos.
 
-## Qué problema resuelve
+**Versión de esta documentación: `v0.7.0`**, primera generación Codex inline. Los binarios, checksums y firmas se distribuyen en [GitHub Releases](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0). Sus formatos son incompatibles con el modelo anterior; revisá [instalación y recuperación](docs/installation.md) antes de reemplazar una instalación existente.
 
-En proyectos reales, usar agentes sin una capa de harness suele dejar tres problemas:
+## Qué problema busca resolver
 
-- cada agente interpreta distinto el alcance, la evidencia y el estado del trabajo;
-- las specs, skills y prompts quedan acoplados a una tool concreta;
-- actualizar el kit en repositorios brownfield puede pisar configuración local o bloquearse por drift esperado.
+Trabajar con IA implica sostener el contexto, decidir qué hacer a continuación y reconocer si el resultado resuelve el pedido. También implica distinguir una acción autorizada de una ampliación de alcance y una comprobación real de una afirmación del agente.
 
-`lufy-ai` resuelve eso con:
+Lufy organiza ese trabajo alrededor de cuatro necesidades:
 
-- routing proporcional T1/T2/T3;
-- contratos de salida compactos para handoffs entre agentes;
-- skills y agentes con responsabilidades explícitas;
-- metodología por tier: `openspec`, `lufy-sdd` o `none` donde la policy lo permite;
-- CLI Go con `setup`, hashes SHA-256, manifest, backups, restore, sync, uninstall y guardrails de PR;
-- memoria Obsidian portable y grafo de contexto local como índices secundarios para ahorrar exploración repetitiva;
-- Surface Execution Plan para convertir superficies, contratos conectados y capabilities en un alcance verificable;
-- Run Ledger causal y Result Contract ejecutable para registrar evidencia y transiciones sin avanzar gates por texto libre;
-- asignación adaptativa acotada en modos `disabled`, `shadow` o `advisory`, sin ampliar permisos ni autoridad;
-- separación entre core neutral, tool adapters y methodology adapters.
+| Necesidad | Cómo la aborda |
+| --- | --- |
+| Mantener dirección durante el trabajo | El principal conserva el resultado buscado, el alcance, las decisiones y la condición de término. |
+| Elegir acciones según la tarea | Investigar, proponer, escribir, implementar o verificar se combinan según el contexto y lo observado. |
+| Comprobar lo que se entrega | La evidencia corresponde al resultado: comportamiento, fuentes, fidelidad editorial, consultas o estado posterior. |
+| Mantener la integración del proyecto | Configuración local, assets con ownership y hashes, sincronización, conflictos, backups y recuperación. |
+
+Las capacidades son herramientas para esas necesidades. No hay selección obligatoria de metodología por tier, cadenas de roles, scores de aprobación ni documentos prefijados para cada pedido. Los ensayos y sus límites se publican como evidencia, sin atribuirles una ventaja universal del proceso.
 
 ## Quickstart
 
-Release estable actual: `v0.6.25`. La guía completa por OS/shell está en [`docs/installation.md`](docs/installation.md).
+### 1. Instalar el binario de la release
 
-### 1. Instalar el binario
+En macOS o Linux, descargá y revisá el bootstrap antes de ejecutarlo con una versión fija:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.6.25/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+```sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.7.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
 less /tmp/lufy-bootstrap.sh
-bash /tmp/lufy-bootstrap.sh --version v0.6.25 --install-dir "$HOME/.local/bin"
+bash /tmp/lufy-bootstrap.sh --version v0.7.0 --install-dir "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$PATH"
+lufy-ai version --runtime-contract
 ```
 
-### 2. Revisar el plan end-to-end sobre tu repo
+El bootstrap verifica SHA-256 y coloca sólo el ejecutable. Usá un destino libre o respaldá el existente antes de reemplazarlo. El hook de Codex necesita `lufy-ai` en el PATH del host. Para Windows, firmas y recuperación entre generaciones, consultá [instalación](docs/installation.md).
 
-```bash
-lufy-ai version
-lufy-ai setup --target /ruta/a/tu/proyecto --dry-run
+Para compilar desde un checkout del tag `v0.7.0`, usá Go según [go.mod](tools/lufy-cli-go/go.mod), actualmente 1.24.2:
+
+```sh
+mkdir -p "$HOME/.local/bin"
+go -C tools/lufy-cli-go build -o "$HOME/.local/bin/lufy-ai" ./cmd/lufy-ai
 ```
 
-`setup` verifica versión, detecta qué falta y orquesta layout, install, project config, memoria, context graph y verify. Por seguridad, `--dry-run` no escribe. Sin `--yes`, las mutaciones reales se bloquean o se ofrecen en UI interactiva cuando hay TTY.
+### 2. Revisar, instalar y verificar
 
-Si necesitas controlar tool, scope o metodología por tier, usa el flujo manual de instalación:
-
-```bash
-lufy-ai init --target /ruta/a/tu/proyecto
-lufy-ai memory init --target /ruta/a/tu/proyecto
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --scope project --dry-run --yes
+```sh
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --dry-run
+lufy-ai install --target /ruta/al/proyecto --tool codex --delegation off --yes
+lufy-ai verify --target /ruta/al/proyecto --deep
 ```
 
-`init` crea `.lufy/config/project.yaml` con detección de stacks y `project_profile.surfaces`. En una terminal interactiva abre Bubble Tea por default para revisar si el proyecto es `frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra` o `library`; usa `--interactive=false` para desactivar la UI. En repos ya inicializados, `lufy-ai scan --target /ruta/a/tu/proyecto` reescanea y también abre la UI cuando hay TTY.
+El ejemplo elige `off` para trabajar completamente en el principal. El default del producto es `auto`; también podés elegir `on_request`. El preview permite revisar las acciones antes de aplicar. La instalación soportada es Codex project-local.
 
-Antes de implementar, `plan` convierte esas superficies en un alcance ejecutable y explicable:
+Estos comandos corresponden a un proyecto nuevo o de la generación actual. Los estados anteriores se rechazan y no se convierten automáticamente. Una recuperación entre generaciones requiere el ejecutable y el snapshot conjunto correspondientes.
 
-```bash
-lufy-ai plan --target /ruta/a/tu/proyecto --base origin/develop
-lufy-ai plan --target /ruta/a/tu/proyecto --files web/src/App.tsx,api/openapi.yaml --json
-lufy-ai plan --target /ruta/a/tu/proyecto --surface web-app --capabilities realtime,rendering,offline,persistent-state,desktop-shell
+### 3. Abrir el proyecto y pedir un resultado
+
+Abrí el proyecto de destino en Codex. Por ejemplo:
+
+> Analizá por qué el listado repite resultados al cambiar de página, corregí la causa y comprobá que los filtros sigan funcionando.
+
+El principal usa las instrucciones, la configuración y las skills pertinentes. Inspecciona las dependencias, reproduce el problema cuando sea posible, corrige dentro del alcance y comprueba el comportamiento. Te consulta si falta una decisión material y puede continuar con lo que no dependa de ella.
+
+Al terminar, informa qué cambió, qué observó y qué quedó pendiente. Si también autorizaste commit, push y PR, continúa con esa entrega y observa los checks remotos. Una petición de análisis por sí sola termina con el diagnóstico.
+
+### 4. Inicializar capacidades adicionales cuando hagan falta
+
+```sh
+lufy-ai memory init --target /ruta/al/proyecto
+lufy-ai context build --target /ruta/al/proyecto --json
+lufy-ai skills ensure --target /ruta/al/proyecto
 ```
 
-El comando es read-only: resuelve la superficie activa, eleva contratos conectados a una composición fullstack y propone evidencia de validación, pero no ejecuta comandos. `project_profile.surfaces[*].capabilities` permite declarar políticas portables para aplicaciones interactivas sin hardcodear un tipo de producto.
+La memoria conserva conocimiento durable; el grafo ayuda a localizar relaciones lexicales entre fuentes; el registry resuelve las skills instaladas. Podés consultar [memoria y contexto](docs/memory-context.md) antes de activar o modificar datos existentes.
 
-`memory init` crea `.lufy/memory` como memoria Obsidian portable e ignorada por Git por defecto. La configuracion canonica de memoria/vault vive en `.lufy/config/project.yaml`; el contenido privado vive en `inbox/` y `knowledge/`; el CLI valida frontmatter/backlinks, busca notas y persiste conocimiento con `lufy-ai memory validate|search|capture|connect|index`.
+## Flujo de trabajo
 
-### 3. Instalar y verificar
+El [manual visual e interactivo](docs/manual/README.md) permite explorar ocho pedidos con conversaciones, pasos, diagramas y resultados finales de ejemplo. Se abre como HTML desde el checkout.
 
-```bash
-lufy-ai setup --target /ruta/a/tu/proyecto --yes
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode
-lufy-ai status --target /ruta/a/tu/proyecto --verbose
-```
-
-Obsidian es la única memoria canónica portable. Lufy no instala ni verifica MCPs externos de memoria.
-
-### 4. Desinstalar o reinstalar si hace falta
-
-```bash
-lufy-ai uninstall --target /ruta/a/tu/proyecto --dry-run
-lufy-ai uninstall --target /ruta/a/tu/proyecto --yes
-lufy-ai install --target /ruta/a/tu/proyecto --tool opencode --yes
-```
-
-`uninstall` elimina solo assets gestionados sin drift, crea backup previo, preserva configuración user-owned y remueve solo la integración LUFY gestionada de `AGENTS.md`.
-
-## Walkthrough end-to-end
-
-Este flujo lleva un repo nuevo desde instalación hasta una primera demo T3 sin delivery:
-
-```bash
-lufy-ai version
-lufy-ai setup --target /ruta/a/tu/proyecto --dry-run
-lufy-ai setup --target /ruta/a/tu/proyecto --yes
-lufy-ai verify --target /ruta/a/tu/proyecto --tool opencode --deep
-```
-
-Luego abre o reinicia OpenCode dentro del repo destino y ejecuta:
-
-```text
-/lufy.onboard --demo --dry-run
-```
-
-El onboarding lee `.lufy/config/project.yaml`, valida estáticamente la instalación y propone un T3 dummy adaptado al stack detectado sin mutar archivos. Si aceptas aplicar una demo real, el flujo correcto es derivar a `implementer` con alcance T3, ejecutar validación proporcional y mantener commit/push/PR como delivery separado y explícitamente autorizado.
-
-Para cerrar la sesión con trazabilidad local:
-
-```text
-/lufy.timereport
-```
-
-## Lo que instala hoy
-
-| Área | Ruta | Propósito |
-| --- | --- | --- |
-| Agentes OpenCode | `.opencode/agents/` | `orchestrator`, `sdd-router`, `explorer`, `implementer`, `test-writer`, `validator`, `reviewer` y `delivery`. |
-| Comandos OpenSpec | `.opencode/commands/opsx-*.md` | Ciclo OpenSpec: explore, propose, apply, verify, sync, archive y version. |
-| Comandos Lufy | `.opencode/commands/lufy.*.md` | Ciclo `/lufy.sdd-*`, cierre, context, memoria, onboarding, PR review y time report. |
-| Memoria Obsidian | `.opencode/commands/lufy.mem-*.md`, `.opencode/skills/lufy.mem-*`, `.opencode/hooks/memory-*.sh`, `.opencode/plugins/lufy-memory-context.ts` | Captura, documenta, conecta y busca memoria portable en `.lufy/memory`; el plugin OpenCode ejecuta orientación/validación best-effort. |
-| Skills | `.opencode/skills/` | Skills locales para workflow SDD/OpenSpec, PR, onboarding, memoria y reportes instalables. |
-| Templates | `.opencode/templates/` | `sdd-lite.md`, `result-contract.md` y `memory-note.md` para T2, handoffs y notas validables. |
-| Policies | `.opencode/policies/` | Delivery, branch safety, validación, gates y permisos. |
-| Observatory | `.opencode/plugins/agent-observatory.tsx` | Plugin TUI local de observabilidad de agentes. |
-| Codex core | `.agents/skills/`, `.codex/agents/`, `.codex/hooks.json`, `.codex/rules/`, `.codex/config.toml` | Roles, skills, hooks, reglas y config project-locales cuando se instala con `--tool codex`. |
-| Contratos neutrales | `.lufy/contracts/` | Delivery, Result Contract y recursos de PR review compartidos; cada adapter conserva sólo su overlay. |
-| OpenSpec | `openspec/` | Configuración, specs base, deltas y workflow action-based. |
-| Lufy SDD | `.lufy/workflows/sdd/` | Metodología Full/Lite instalable con lifecycle `new/status/validate/sync/archive`, routing por tier y `change-overview.html` automático. |
-| Harness doc | `lufy-ia.harness.md` | Contrato operativo compartido; `AGENTS.md` usa un bloque LUFY gestionado compacto. |
-| Estado local | `.lufy/managed-state/install-state.json` | Manifest schema v2 con tool, methodology por tier, ownership y hashes. |
-
-`.lufy/memory` no es un asset gestionado por `sync`: lo crea `lufy-ai memory init` o `setup` y su contenido queda user-owned. `sync` actualiza comandos, skills, hooks, plugin y templates de memoria, pero no toca notas privadas. `doctor` y `verify --deep` reportan estado de memoria, contexto y lifecycle hooks con comandos de recuperación.
-
-`AGENTS.md` es user-owned: la CLI solo crea o mantiene un bloque LUFY gestionado compacto y sigue reconociendo la referencia legacy `@lufy-ia.harness.md`. `opencode.json` también es user-owned/merge-managed: se mergea de forma conservadora y no se registra como asset completo por hash.
-
-## Arquitectura
-
-```mermaid
-flowchart TD
-    U["Usuario / repo destino"] --> CLI["CLI Go lufy-ai"]
-    CLI --> Core["Core neutral: tiers, roles, policies, Result Contract, ownership"]
-    Core --> Tool["Tool adapters"]
-    Core --> Meth["Methodology adapters"]
-    Core --> Assets["Managed assets + manifest SHA-256"]
-
-    Tool --> OC["opencode: adapter escribible actual"]
-    Tool --> CX["codex: adapter escribible core"]
-    Tool --> CC["claude-code: dry-run preview"]
-
-    Meth --> OS["openspec: full/lite"]
-    Meth --> LS["lufy-sdd: full/lite"]
-    Meth --> NN["none: permitido solo donde la policy lo acepta"]
-
-    Assets --> Target[".opencode / .agents / .codex / openspec / .lufy / lufy-ia.harness.md"]
-    Target --> Verify["setup / verify / status / info / doctor / sync / uninstall"]
-```
-
-El dominio no debería saber de paths específicos de OpenCode, `CLAUDE.md` o `AGENTS.md`. Ese conocimiento pertenece a adapters. Esta separación evita duplicar tiers, agentes, contracts y policies cuando se agreguen tools nuevas.
-
-Más detalle técnico: [`docs/architecture.md`](docs/architecture.md).
-
-## Routing T1/T2/T3
-
-| Tier | Cuándo aplica | Metodología típica | Resultado |
-| --- | --- | --- | --- |
-| T1 Full SDD | Arquitectura, contratos públicos, seguridad, cambios transversales o alta incertidumbre. | `openspec/full` o `lufy-sdd/full`. | Proposal, design, specs, tasks, overview HTML, validación agrupada, sync y archive. |
-| T2 SDD Lite | Cambio funcional acotado, bug relevante, agente/skill o refactor controlado. | `openspec/lite`, `lufy-sdd/lite` o mini-spec. | Proposal, tasks, overview HTML automático, handoff recuperable y review enfocada. |
-| T3 Express | Cambio trivial, mecánico, local o documental. | `none` permitido. | Implementación directa y validación proporcional. |
-
-La metodología es elegible por tier, no global. Eso permite que un proyecto use OpenSpec completo para T1, Lufy SDD Lite para T2 y ningún spec para T3. La mentalidad de los agentes se ajusta con `project_profile.surfaces` en `.lufy/config/project.yaml`, separando stack técnico (`go`, `typescript`) de superficie de producto (`frontend`, `backend`, `fullstack`, `mobile`, `cli`, `infra`, `library`).
-
-`init` también escribe `parallel_execution`, que permite paralelismo gobernado solo cuando `sdd-router` detecta `review_slices` independientes, archivos no compartidos, plan de merge claro y validación agrupada tras el join. No se paraleliza delivery, migraciones de schema/db, contratos públicos no cerrados ni cambios sobre los mismos archivos.
-
-Cuando `init` o `scan` detecta o el usuario selecciona `frontend` o `fullstack`, el `agent_lens` generado favorece estructura feature-driven y ahora persiste `structural_expectations`: código de cada funcionalidad colocado en `src/features/<feature>/` con `components/`, `hooks/`, `services`, `types.ts` y un barril público `index.ts`; `src/pages/` queda para routing/layouts, y `src/components`, `src/hooks`, `src/services` y `src/utils` se reservan para piezas globales compartidas. Si un prompt pide carpetas concretas, el harness las trata como criterios de aceptación obligatorios y bloquea validación/aprobación si páginas, hooks o utilidades quedan en la raíz de la feature sin confirmación explícita del usuario.
-
-Para `backend`, `project_profile.surfaces[*].architecture` registra arquitectura detectada/preferida y `architecture.structural_expectations`. El mínimo recomendado es `controller_service_repository`; desde la interfaz Bubble Tea el usuario puede cambiar a `clean_architecture` o `hexagonal` si el proyecto ya usa esa arquitectura o si decide adoptarla. En `fullstack`, el frontend sigue feature-driven y la arquitectura backend se toma de la surface backend conectada. Los agentes deben revisar primero la arquitectura existente antes de introducir capas nuevas y validar contra la arquitectura seleccionada antes de reportar readiness.
-
-Ejemplos:
-
-```bash
-lufy-ai install --target <repo> --methodology-tier T3:none --yes
-lufy-ai install --target <repo> --methodology-tier T2:lufy-sdd/lite --yes
-lufy-ai install --target <repo> --methodology-tier T2:openspec/lite --methodology-tier T3:none --yes
-```
-
-Lufy SDD expone `lufy-ai sdd new|status|validate|sync|archive`, modes Full/Lite, deltas `ADDED|MODIFIED|REMOVED`, overview HTML integrado, backup/rollback y archive con gates. El overview se crea y refresca automáticamente sin comando o skill adicional.
-
-Por seguridad, los comandos mutantes bloquean `T1:none`, `T2:none` y `--tool claude-code`. `opencode` sigue siendo el default; `codex` ya instala una superficie project-local core con `.agents/skills`, `.codex/agents`, hooks/rules/config y `AGENTS.md` gestionado.
-
-## CLI y lifecycle
-
-| Comando | Propósito |
-| --- | --- |
-| `lufy-ai setup` | Orquesta onboarding end-to-end: chequeo de versión, layout, install, project config, memoria, context graph y verify. Usa defaults `opencode`/`project`; para customizar tool/scope/metodología usa comandos individuales. |
-| `lufy-ai menu` | Abre un command palette Bubble Tea en TTY; también aparece cuando ejecutas `lufy-ai` sin argumentos en una terminal interactiva. |
-| `lufy-ai init` | Genera `.lufy/config/project.yaml` stack-aware/surface-aware y editable; abre selector Bubble Tea por default cuando hay TTY. |
-| `lufy-ai scan` | Reescanea stacks y superficies de producto, preserva overrides y abre selector Bubble Tea por default cuando hay TTY. |
-| `lufy-ai plan` | Genera un plan read-only y determinístico de superficies, contratos, capacidades y validaciones desde selección explícita, archivos o Git diff. |
-| `lufy-ai result` | Valida, normaliza y aplica transiciones causales de Result Contract v1; las mutaciones pueden registrarse en el ledger. |
-| `lufy-ai run` | Registra, consulta, verifica, repara y poda ejecuciones causales locales sin guardar conversaciones. |
-| `lufy-ai adaptive` | Recomienda, asigna, libera y consulta capacidad adaptativa acotada; nunca avanza gates automáticamente. |
-| `lufy-ai install` | Instala assets gestionados, mergea configs user-owned y escribe manifest con SHA-256. |
-| `lufy-ai uninstall` | Remueve assets gestionados sin drift, con backup, preservando configs user-owned. |
-| `lufy-ai verify` | Valida manifest, estructura, JSON, hashes y referencias críticas. |
-| `lufy-ai status` | Resume estado instalado, drift, faltantes y detalles por asset. |
-| `lufy-ai info` | Muestra catálogo efectivo, manifest, stacks y surfaces sin mutar. |
-| `lufy-ai doctor` | Diagnostica `.lufy/config/project.yaml`, manifest y drift de forma read-only. |
-| `lufy-ai conflicts plan` | Genera un plan read-only de conflictos de instalación agrupado por categoría, riesgo, recomendación y acciones posibles. |
-| `lufy-ai pin` | Congela un asset gestionado para que `sync` lo preserve sin modificar. |
-| `lufy-ai unpin` | Remueve el freeze de un asset gestionado y permite `sync` normal. |
-| `lufy-ai sync` | Reaplica assets gestionados cuando el source cambió y el target no tiene drift local. |
-| `lufy-ai merge` | Reconcilia `.lufy-new` con edits locales cuando existe ancestor seguro. |
-| `lufy-ai backup` | Crea backup multiasset bajo `.lufy/managed-state/backups/<timestamp>/`. |
-| `lufy-ai restore` | Restaura backups validando target, paths seguros y hashes. |
-| `lufy-ai opsx render` | Genera un HTML offline/autocontenido para revisar artifacts OpenSpec. |
-| `lufy-ai sdd` | Ejecuta el lifecycle Lufy SDD Full/Lite y materializa `change-overview.html` automáticamente. |
-| `lufy-ai context` | Genera y consulta un grafo local determinístico, con hints, trazabilidad, review workload y métricas derivadas. |
-| `lufy-ai skills` | Asegura, refresca y diagnostica `.lufy/skill-registry.json` con precedencia project-over-global y paths exactos a los skills de OpenCode/Codex. |
-| `lufy-ai memory` | Inicializa, valida, busca, captura, conecta e indexa memoria Obsidian portable bajo `.lufy/memory`. |
-| `lufy-ai pr guard` | Detecta paths ignorados por `.gitignore` o metadata interna en `git diff <base>...HEAD` antes de push/PR; también aparece en la command palette. |
-| `lufy-ai upgrade` | Actualiza el binario a una versión fija con checksum. |
-| `lufy-ai version` | Muestra versión, commit, build date y plataforma. |
-
-## Setup y command palette
-
-`setup` es el flujo recomendado para un repo nuevo o para revisar capacidades disponibles que aún no estén configuradas:
-
-```bash
-lufy-ai setup --target <repo> --dry-run
-lufy-ai setup --target <repo> --yes
-lufy-ai setup --target <repo> --json --dry-run
-lufy-ai setup --target <repo> --check-new-features --dry-run
-```
-
-Comportamiento real:
-
-- consulta la última release salvo `--skip-version-check`;
-- puede bloquear con `--require-latest` si hay una versión estable más nueva o si no puede verificar releases;
-- planifica layout `.lufy`, install, project config, stack profile, SDD methodology, memoria, context graph y verify;
-- si hay conflictos de assets no gestionados, bloquea y recomienda `lufy-ai conflicts plan --target <dir>`;
-- sin `--yes`, no aplica mutaciones reales; en TTY puede abrir una checklist Bubble Tea para seleccionar acciones;
-- usa defaults `--tool opencode` y `--scope project` de forma implícita; para `codex`, `global`, `both` o overrides `--methodology-tier`, usa `install`, `sync` y `verify` directamente.
-
-`menu` expone un command palette local para ejecutar comandos comunes sin recordar flags:
-
-```bash
-lufy-ai menu
-lufy-ai
-```
-
-El palette incluye `setup`, `init`, `scan`, `install`, `sync`, `verify`, `doctor`, `status`, `info`, `upgrade`, memoria, contexto, `conflicts plan`, `pr guard`, backup/restore, `merge`, `pin`, `unpin`, `uninstall`, `opsx render` y `version`. Solo se abre cuando `stdin` y `stdout` son TTY; en scripts, `lufy-ai` sin argumentos imprime ayuda.
-
-## Conflictos y PR guard
-
-`conflicts plan` y `pr guard` son guardrails para trabajar con repos brownfield y releases.
-
-```bash
-lufy-ai conflicts plan --target <repo> --json
-lufy-ai pr guard --target <repo> --base origin/develop
-lufy-ai pr guard --target <repo> --base origin/main --include-worktree
-```
-
-`conflicts plan` no muta archivos: agrupa conflictos por categoría (`.opencode/agents`, `.opencode/skills`, `openspec/specs`, `.codex`, `.lufy`, `root/config`, etc.), asigna riesgo, recomienda `merge` o `block` y lista acciones disponibles como `keep-local`, `accept-managed`, `merge`, `backup-and-replace` o `block`.
-
-`pr guard` revisa el rango `git diff <base>...HEAD` o `git diff <base>` con `--include-worktree`. Bloquea si entran paths ignorados por `.gitignore` o metadata interna conocida: `openspec/`, `.lufy/`, `.lufy-ai/` y `pr_review/`. Los artifacts declarados user-owned de Lufy SDD bajo `changes/`, `specs/`, `decisions/`, `verification/` y `archive/` no disparan el prefijo interno genérico, aunque un `.gitignore` explícito todavía bloquea. Esto cubre el caso que `.gitignore` no evita: archivos ya trackeados o cherry-picks que entran al PR.
-
-### Overview/render de propuestas
-
-El contrato del harness exige que una propuesta o especificación lista preserve el outcome opcional de overview/render como `generated`, `offered_pending`, `skipped_by_user` o `not_available`. Para OpenSpec propose, la respuesta exitosa debe mostrar el comando exacto `lufy-ai opsx render --change <change> --format html --theme notion-dark` y preguntar explícitamente: `¿Quieres que genere ahora el reporte HTML offline de los artifacts con tema Notion dark?`
-
-`offered_pending` significa que el reporte fue ofrecido y el usuario todavía no respondió. `skipped_by_user` solo es válido cuando el usuario lo rechazó explícitamente. Esto aplica a Full SDD y SDD Lite; si la metodología o el tool adapter seleccionado no tiene una superficie de render, el resultado debe decir `not_available` en vez de omitir el paso.
-
-### Preview HTML de changes OpenSpec
-
-`lufy-ai opsx render` es la superficie concreta actual para OpenSpec: crea una vista HTML local para revisión humana de un change OpenSpec.
-
-```bash
-lufy-ai opsx render --target <repo> --change <name> --format html --theme notion-dark --output /tmp/lufy-opsx-overview.html
-```
-
-El render incluye solo Markdown directo de `openspec/changes/<name>/`: `proposal.md`, `design.md`, `plan.md`, `tasks.md` y otros `.md` top-level. Excluye `specs/**`. El HTML es autocontenido, usa diseño dark con tabs y no carga recursos remotos.
-
-El parser local soporta headings, listas, checkboxes deshabilitados, fenced code, inline code y links seguros (`http://`, `https://`, `mailto:`). HTML crudo y links inseguros como `javascript:` quedan escapados. Si un artefacto falta o está vacío, la UI muestra `No disponible` y `Este artefacto no existe o está vacío.`
-
-### Reportes HTML instalables
-
-La versión actual instala tres superficies de reporte offline/autocontenido con estética unificada basada en Notion:
-
-| Reporte | Cómo se genera | Uso |
-| --- | --- | --- |
-| Proposal overview | `lufy-ai opsx render --change <change> --format html --theme notion-dark` | Revisar artifacts OpenSpec generados antes de aplicar. |
-| Lufy SDD overview | Automático durante `sdd new`, `validate`, `sync` y `archive` | Revisar Full/Lite sin comando o skill de render separado. |
-| PR review | `/lufy.pr-review` | Generar un review HTML en español para un PR existente. |
-| Time report | `/lufy.timereport` | Resumir tiempo, actividad, fases, herramientas, subagentes, skills, ROI y limitaciones desde fuentes locales. |
-
-Los reportes no cargan recursos remotos y deben marcar faltantes o limitaciones en vez de inventar evidencia.
-
-Lifecycle recomendado:
+El principal decide el siguiente paso a partir del pedido, las dependencias y la evidencia disponible. El ciclo admite volver atrás, acotar una hipótesis o cambiar de estrategia:
 
 ```mermaid
 flowchart LR
-    D["setup --dry-run"] --> E["setup --yes"]
-    E --> V["verify"]
-    I["install --dry-run"] --> A["install --yes"]
-    A --> V
-    V --> S["status / doctor"]
-    S --> C["conflicts plan si hay bloqueo"]
-    C --> M["merge / resolución manual"]
-    M --> V
-    S --> P["pin / unpin opcional"]
-    P --> Y["sync --dry-run / sync --yes"]
-    S --> Y
-    S --> G["pr guard antes de PR"]
-    S --> U["uninstall --dry-run / uninstall --yes"]
-    U --> R["install --yes"]
-    R --> V
+    A["Pedido, contexto y alcance"] --> B["Elegir la siguiente acción"]
+    B --> C["Investigar, proponer, crear o modificar"]
+    C --> D["Comprobar lo observado"]
+    D -->|Falta resolver algo| B
+    D -->|Pedido resuelto| E["Responder con resultado, evidencia y límites"]
 ```
 
-## Desarrollo local
+El diagrama orienta el trabajo; no establece fases obligatorias ni exige implementar todos los pedidos. Una corrección pequeña puede resolverse directamente. Un trabajo incierto puede necesitar fuentes adicionales, una reproducción, una propuesta o una prueba exploratoria.
 
-```bash
-git clone https://github.com/adrotech/lufy-ai.git /tmp/lufy-ai
-cd /tmp/lufy-ai/tools/lufy-cli-go
-mkdir -p bin
-go build -o bin/lufy-ai ./cmd/lufy-ai
+### La tarea determina la evidencia
+
+| Pedido | Qué hace falta comprobar |
+| --- | --- |
+| Explicación o investigación | Fuentes pertinentes, afirmaciones contrastadas, diferencias entre hechos e inferencias y límites. |
+| Propuesta o diseño | Necesidad, alternativas, tradeoffs, factibilidad y decisiones abiertas. |
+| App desde cero | Una primera porción funcional, integración real y restricciones del producto; después ampliar preservando lo comprobado. |
+| Funcionalidad, corrección o refactor | Comportamiento solicitado, contratos afectados y regresiones relevantes. |
+| Redacción o traducción | Fidelidad, exactitud, coherencia, tono y formato. |
+| Análisis de datos | Procedencia, granularidad, nulos, duplicados, unidades y consultas reproducibles. |
+| Operación o recuperación | Efecto autorizado y estado posterior observado. |
+
+Las pruebas se eligen por lo que permiten distinguir. El mismo ejecutor puede usar TDD e implementar; una revisión independiente puede aportar otra perspectiva. Las suites completas se agrupan en un momento útil y se repite la comprobación afectada cuando cambia su fuente o candidato.
+
+### Dos pedidos sobre el mismo problema
+
+«Analizá por qué se duplican las ventas» puede resolverse identificando el join que multiplica filas, mostrando una consulta reproducible y explicando su impacto. No requiere modificar datos para que el diagnóstico esté completo.
+
+«Analizá y corregí la duplicación en el reporte» agrega una corrección dentro del alcance: revisar la granularidad, ajustar la consulta y comparar resultados con casos conocidos. Si la solución requiere una migración o una acción externa no autorizada, esa decisión se consulta antes de ejecutarla.
+
+Más criterios y ejemplos: [flujo de trabajo](docs/harness-workflow.md) y [política de evidencia](.lufy/contracts/evidence.md).
+
+## Autonomía y paralelismo
+
+El agente resuelve detalles técnicos convencionales dentro del pedido y comunica avances materiales. Consulta cuando falta una decisión de producto, alcance o acceso que no pueda resolver con las fuentes disponibles. Las actualizaciones de progreso permiten seguir el trabajo sin aprobar cada paso interno.
+
+La ejecución es `inline`: el principal conserva la responsabilidad aunque colabore con otros agentes. La política del proyecto define cuándo puede delegar:
+
+```yaml
+schema_version: 2
+tool: codex
+execution:
+  mode: inline
+  delegation: auto
 ```
 
-Probar contra un target:
+| Delegación | Comportamiento |
+| --- | --- |
+| `off` | Todo se resuelve en el principal. |
+| `on_request` | Delega ante un pedido explícito del usuario. |
+| `auto` | Puede delegar cuando aporte valor; es el default del producto. |
 
-```bash
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai setup --target /ruta/a/tu/proyecto --dry-run --skip-version-check
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --dry-run --yes
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai install --target /ruta/a/tu/proyecto --yes
-/tmp/lufy-ai/tools/lufy-cli-go/bin/lufy-ai verify --target /ruta/a/tu/proyecto
+Para paralelizar, cada tarea necesita un objetivo acotado, contexto mínimo, ownership de archivos y aceptación observable. Se resuelven primero las decisiones compartidas; después pueden avanzar investigaciones independientes o cambios en módulos separados. El principal integra los resultados y comprueba el conjunto.
+
+Las escrituras sobre los mismos archivos, decisiones de seguridad o contratos todavía abiertos y operaciones sobre estado compartido necesitan coordinación. `parallel_execution` orienta esa colaboración; no lanza agentes por sí solo. Las herramientas disponibles, los permisos del host y una instrucción del usuario de trabajar inline prevalecen.
+
+Commit, push, PR, publicación y cambios externos requieren autorización explícita. Una autorización vigente se conserva dentro de su alcance; ni delegar ni registrar un plan la amplían. Ver [configuración](docs/configuration.md) y [política de entrega](.lufy/contracts/delivery.md).
+
+## Qué instala y qué conserva
+
+El catálogo Codex contiene **16 assets y cinco skills**, además del generador del bloque de `AGENTS.md`.
+
+| Superficie | Contenido |
+| --- | --- |
+| `AGENTS.md` | Bloque Lufy gestionado; se conserva el contenido propio fuera del bloque. |
+| `.codex/` | Configuración, hook de orientación, reglas, guía y descripción de ejecución. |
+| `.agents/skills/` | `lufy-check` y cuatro skills de memoria: capture, connect, document y search. |
+| `.lufy/contracts/` | Políticas de trabajo, evidencia y entrega, con su índice. |
+| `.lufy/README.md` | Orientación sobre configuración, estado y datos locales. |
+| `lufy-ia.harness.md` | Guía compartida del trabajo inline. |
+
+La instalación mantiene ownership y hashes de los archivos seleccionados. Un archivo propio no se vuelve gestionado por estar dentro de una de esas carpetas. Las actualizaciones reconocen drift y conflictos antes de sobrescribir; la memoria personal conserva su propiedad.
+
+### Datos del proyecto
+
+| Ruta | Función |
+| --- | --- |
+| `.lufy/config/project.yaml` | Configuración schema 2: ejecución, superficies, stacks, validaciones y capacidades. |
+| `.lufy/managed-state/install-state.json` | Manifest schema 4: assets, ownership y hashes. |
+| `.lufy/managed-state/backups/` | Backups schema 2 ligados a estado 4; recuperación de la generación actual. |
+| `.lufy/memory/` | Conocimiento portable Obsidian, inicializado y mantenido aparte de los assets. |
+| `.lufy/context/` | Grafo lexical y derivados reconstruibles. |
+| `.lufy/skill-registry.json` | Registro derivado de skills disponibles. |
+| `.lufy/runtime/` | Eventos y proyecciones locales cuando se usan productores explícitos del ledger. |
+
+El único hook instalado orienta `SessionStart`: puede refrescar el registry de skills y consultar estado de memoria/contexto. No registra conversaciones, reviews o runs automáticamente. La política de Git de cada tipo de dato debe revisarse en el proyecto de destino.
+
+## Arquitectura
+
+El agente lleva el trabajo; la CLI instala y mantiene las piezas que lo orientan y permiten inspeccionar el proyecto.
+
+```mermaid
+flowchart TD
+    U["Usuario y pedido"] --> P["Agente principal en Codex"]
+    CLI["CLI Go lufy-ai"] --> A["Assets gestionados: hashes, ownership y recuperación"]
+    A --> W["Políticas, skills y configuración local"]
+    W -.-> P
+    K["Memoria y contexto local"] -.-> P
+    P --> O["Acciones y comprobaciones según el resultado"]
+    O --> R["Resultado, evidencia y límites"]
+    CLI --> D["Diagnóstico, superficies y registros explícitos"]
 ```
 
-`scripts/install.sh` es solo un wrapper estricto hacia `lufy-ai install`; no tiene fallback legacy.
+| Componente | Responsabilidad |
+| --- | --- |
+| Configuración y dominio | Ejecución inline, delegación, perfil del proyecto y validación de formatos actuales. |
+| Adapter Codex y catálogo | Renderizar la superficie project-local y el bloque gestionado de la guía. |
+| Assets y estado | Fuente/mirror, hashes, ancestors, conflictos y manifest. |
+| Instalación y recuperación | Install, sync, uninstall, backup, restore y comprobación de generación en upgrade. |
+| Memoria, skills y contexto | Conocimiento portable, descubrimiento de capacidades e índice lexical. |
+| Evidencia y observabilidad | Comprobaciones declaradas, vinculación al candidato y eventos locales explícitos. |
 
-## Validación
+Las fuentes editoriales seleccionadas viven en la raíz; `tools/lufy-cli-go/internal/assets/embedded` es su mirror de distribución. La validación exige paridad. El [detalle de arquitectura](docs/architecture.md) y los [ADRs](docs/adr/README.md) documentan decisiones e invariantes.
 
-Desde la raíz del repo:
+## CLI y operación local
 
-```bash
+| Comandos | Uso |
+| --- | --- |
+| `init`, `scan`, `plan` | Detectar configuración y superficies; resolver un plan read-only de contratos y validaciones. |
+| `install`, `sync`, `uninstall` | Mantener la integración gestionada con preview, ownership y recuperación. |
+| `status`, `info`, `doctor`, `verify` | Inspeccionar instalación, drift, configuración y hashes. |
+| `conflicts plan`, `merge`, `pin`, `unpin` | Diagnosticar conflictos, resolver candidatos o congelar assets. |
+| `backup`, `restore` | Crear y recuperar snapshots de archivos gestionados de la generación actual. |
+| `memory`, `skills`, `context` | Mantener y consultar conocimiento y derivados locales. |
+| `evidence`, `candidate`, `review`, `run` | Inspección y registros opcionales; no ejecutan una review ni conceden permisos de entrega. |
+| `adaptive` | Asignación experimental opt-in; no crea agentes. |
+| `setup`, `menu`, `version`, `upgrade` | Preparación, interfaz TTY e identidad/gestión del ejecutable. |
+| `pr guard`, `lifecycle codex` | Guardas de paths del diff y orientación de sesión. |
+
+### Inspeccionar el proyecto antes de cambiarlo
+
+```sh
+lufy-ai status --target /ruta/al/proyecto
+lufy-ai info --target /ruta/al/proyecto --json
+lufy-ai doctor --target /ruta/al/proyecto --json
+lufy-ai plan --target /ruta/al/proyecto --base origin/develop --json
+```
+
+`plan` necesita superficies configuradas y una base Git válida cuando deriva archivos del diff. También admite selección explícita con `--files`. Propone alcance y validaciones declaradas; no ejecuta esas validaciones ni autoriza cambios.
+
+### Setup y command palette
+
+`setup` puede orquestar instalación, configuración, memoria, grafo y verify. Revisá primero el preview con el ejecutable de esta generación:
+
+```sh
+lufy-ai setup --target /ruta/al/proyecto --dry-run
+lufy-ai setup --target /ruta/al/proyecto --yes
+```
+
+Revisá el preview y la configuración existente antes de aplicar. `lufy-ai menu` abre el command palette en una terminal interactiva. El help del ejecutable y de sus subcomandos describe los flags disponibles; la [referencia de CLI](docs/cli.md) explica sus efectos y precondiciones.
+
+### Sincronización, conflictos y recuperación
+
+```sh
+lufy-ai sync --target /ruta/al/proyecto --dry-run
+lufy-ai conflicts plan --target /ruta/al/proyecto --json
+lufy-ai sync --target /ruta/al/proyecto --yes
+lufy-ai verify --target /ruta/al/proyecto --deep
+```
+
+Un conflicto puede producir un candidato `.lufy-new`. Se inspecciona antes de resolverlo con `merge`; `pin` permite conservar deliberadamente un asset local. `sync` no instala automáticamente assets nuevos ausentes que nunca estuvieron registrados.
+
+```sh
+lufy-ai backup --target /ruta/al/proyecto
+lufy-ai restore --target /ruta/al/proyecto --list
+lufy-ai uninstall --target /ruta/al/proyecto --dry-run
+```
+
+El backup mínimo no sustituye una copia completa del proyecto o del ejecutable. Restore valida generación, paths, hashes y payload antes de escribir. La [guía de instalación y recuperación](docs/installation.md) desarrolla estos casos.
+
+## Desarrollar y validar Lufy
+
+Los cambios al propio Lufy siguen el mismo enfoque: entender el problema, elegir una unidad revisable, implementar lo necesario y comprobar sus efectos. Una propuesta o un plan breve ayudan cuando hay incertidumbre o alcance amplio; los arreglos pequeños pueden resolverse directamente.
+
+La CLI Go vive en `tools/lufy-cli-go`. `scripts/install.sh` es un wrapper estricto de esa CLI. Si cambia un asset distribuido, su fuente y mirror embebido deben quedar en paridad. El conocimiento histórico se conserva con sus fechas y límites, sin presentarlo como instrucciones actuales.
+
+Desde la raíz:
+
+```sh
 scripts/validate.sh
+```
+
+La validación agrupada comprueba whitespace y paths del diff, workflows, versiones, paridad de assets, regresiones Python offline y la CLI Go con coverage, vet y build. El umbral Go es 80%. ShellCheck se aplica cuando está disponible localmente y es obligatorio en el gate Ubuntu de CI. Los ensayos con modelos son opt-in y se ejecutan por separado con autorización.
+
+Para PRs contra `develop`, el whitespace debe cubrir el rango real:
+
+```sh
 git diff --check origin/develop...HEAD
-git diff --check
+# Si hay cambios pendientes:
+git diff --check origin/develop
 ```
 
-`scripts/validate.sh` ejecuta gates reales del producto: whitespace PR-aware, `lufy-ai pr guard`, pinning de Actions, versión de release en docs, YAML con helper Go, harness coupling, shell lint cuando está disponible, smoke del format dispatch hook, tests Go con coverage, `go vet` y build del CLI. No hay suite Node/TypeScript global en la raíz.
+Los [gates](docs/ci-quality-gates.md), [contribuciones](CONTRIBUTING.md) y el [README de la CLI](tools/lufy-cli-go/README.md) describen el desarrollo local y sus comprobaciones.
 
-Por defecto valida contra `origin/develop`. Para una promoción `develop` → `main`, reproduce el rango real del PR con:
+## Integración y releases
 
-```bash
-LUFY_AI_VALIDATE_BASE=main scripts/validate.sh
-git diff --check origin/main...HEAD
-```
+- `develop` es la base normal de trabajo e integración; `main` contiene la línea estable.
+- Commit, push, PR, merge y publicación se realizan dentro de la autorización recibida y con evidencia de sus resultados.
+- Un PR se integra después de observar sus checks remotos pertinentes.
+- Las releases estables usan tags `v*` sobre commits alcanzables desde `main`.
+- La promoción a `main` puede disparar tagging y publicación automática según los labels del PR; la versión preparada debe coincidir con ese cálculo.
 
-`pr guard` también puede ejecutarse directamente cuando quieras diagnosticar paths bloqueados:
+Integrar código a `develop` y publicar una nueva versión son acciones distintas. La [guía de releases](docs/releasing.md) cubre versión, changelog, distribución y E2E del artifact publicado. La [seguridad de releases](docs/release-security.md) distingue checksum, contrato de formato y firma.
 
-```bash
-(cd tools/lufy-cli-go && go run ./cmd/lufy-ai pr guard --target ../.. --base origin/main)
-```
+## Estado actual
 
-## Delivery y release
+| Área | Situación |
+| --- | --- |
+| Flujo inline | Integrado en `develop`; el principal adapta acciones y evidencia al pedido. |
+| Codex | Único adapter escribible, project-local, con delegación configurable. |
+| Instalación | 16 assets, cinco skills, configuración 2, manifest 4 y backups 2 para estado 4. |
+| Memoria y contexto | Obsidian portable e índice lexical v3; su uso depende de la necesidad. |
+| Evidencia y ledger | Integraciones explícitas opcionales; sus registros no demuestran por sí solos calidad o autoría. |
+| Asignación adaptativa | Experimental y deshabilitada por default. |
+| Distribución | Generación `v0.7.0`; artifacts y evidencia de publicación en GitHub Releases. |
 
-- `develop` es la rama normal de integración.
-- `main` es estable/productiva.
-- Las releases públicas se publican desde tags `v*` alcanzables desde `origin/main`.
-- Al mergear un PR hacia `main`, el pipeline crea el tag de release, construye y publica artifacts, checksums, SBOM, provenance, firmas y valida el artifact publicado con instalación/verificación real.
-- Delivery, commit, push, PR y promoción requieren autorización explícita.
-- PRs normales van de ramas `feature/*`, `fix/*`, `chore/*` o equivalentes hacia `develop`.
-- Promoción productiva normal: PR `develop` → `main`, con checks remotos exitosos y evidencia del rango contra `main`.
-- Antes de reportar un PR como listo, se debe revisar `mergeStateStatus`, checks remotos y guardas de paths internos/ignorados.
+Se retiraron motores SDD/OpenSpec, selección de metodología por tiers, Result Contract y adapters anteriores. Sus informes permanecen como historia y no se distribuyen como motores activos.
 
-Ver [`docs/github-branch-settings.md`](docs/github-branch-settings.md) y [`docs/release-security.md`](docs/release-security.md).
-
-## Estado real
-
-Disponible en `v0.6.25`:
-
-- OpenCode y Codex como tool adapters escribibles project-locales.
-- OpenSpec y Lufy SDD Full/Lite como metodologías instalables por tier.
-- `none` para tiers permitidos por policy, especialmente T3.
-- CLI Go con lifecycle de instalación, SDD, Result Contract, Run Ledger, Surface Execution Plan, Context Graph, memoria, skill registry y delivery guards.
-- `init` y `scan` con `.lufy/config/project.yaml`, detección stack-aware/surface-aware y selector Bubble Tea para `project_profile.surfaces`.
-- Managed assets con manifest schema v2, ownership, SHA-256, backups e idempotencia.
-- Memoria Obsidian portable bajo `.lufy/memory`, con capture/connect/index y plugin/hook OpenCode best-effort.
-- Context Graph local determinístico bajo `.lufy/context`, con exploración, trazabilidad scenario-task-test, review workload y métricas content-free derivadas del ledger.
-- Run Ledger append-only y Result Contract ejecutable con idempotencia, CAS, reparación de proyecciones y privacidad por allow-list.
-- Adaptive routing con modos seguros `disabled`, `shadow` y `advisory`, scoring determinístico, budget, leases fenced y yield durable.
-- Command palette TUI local para comandos frecuentes del CLI.
-- Guardrails de release: `pr guard`, `conflicts plan`, validación con `LUFY_AI_VALIDATE_BASE` y reportes PR HTML.
-- Reportes HTML offline: overview OpenSpec, overview Lufy SDD, PR review y time report.
-- `claude-code` solo como adapter dry-run/preview, no como instalación real.
-
-Límites vigentes:
-
-- plugin marketplace, slash commands, Observatory y reporting avanzado para Codex;
-- instalación real en Claude Code;
-- templates por stack;
-- subagentes de dominio adicionales;
-- instalación automática de skills externas.
-- configuración directa de `--tool`/`--scope` desde `lufy-ai setup`; usar comandos individuales para esos casos.
-- adaptive routing no crea roles, no amplía permisos y no reemplaza la confirmación humana en delivery, seguridad, contratos públicos, schema o migraciones destructivas.
+La evaluación con fixtures de seis familias y una comparación de 24 turnos no acredita una ventaja general ni menor costo humano. Memoria, grafo y delegación requieren evidencia contextual para atribuirles una mejora. El [estado detallado](docs/status.md), la [historia](docs/history/README.md) y las [hipótesis de evolución](docs/roadmap.md) mantienen esas distinciones.
 
 ## Documentación
 
-| Documento | Contenido |
+| Guía | Contenido |
 | --- | --- |
-| [`docs/installation.md`](docs/installation.md) | Instalación del binario, PATH, install/uninstall/reinstall y troubleshooting. |
-| [`docs/getting-started.md`](docs/getting-started.md) | Walkthrough de uso diario y flujo de repo destino. |
-| [`docs/harness-workflow.md`](docs/harness-workflow.md) | Flujo sistémico vigente: plan, route, execute, verify, learn y deliver. |
-| [`docs/architecture.md`](docs/architecture.md) | Arquitectura hexagonal, adapters, ownership y lifecycle. |
-| [`docs/run-ledger.md`](docs/run-ledger.md) | Observabilidad causal local, CLI, privacidad, retención y recovery de runs agentes. |
-| [`docs/status.md`](docs/status.md) | Estado implementado vs pendiente. |
-| [`docs/roadmap.md`](docs/roadmap.md) | Líneas futuras sin mezclar capacidades disponibles con hipótesis. |
-| [`docs/lessons/lufy-ai.md`](docs/lessons/lufy-ai.md) | Aprendizajes operativos versionados. |
-| [`tools/lufy-cli-go/README.md`](tools/lufy-cli-go/README.md) | Detalle técnico de la CLI Go. |
-| [`openspec/README.md`](openspec/README.md) | Workflow OpenSpec instalado. |
+| [Manual visual](docs/manual/README.md) | Recorridos interactivos por tipo de pedido, participantes y resultados. |
+| [Índice](docs/README.md) | Navegación y fuentes canónicas de documentación. |
+| [Flujo](docs/harness-workflow.md) | Trabajo inline, tipos de pedido, autonomía y ejemplos. |
+| [Instalación](docs/installation.md) | Compilación, PATH, sync, conflictos y recuperación. |
+| [Configuración](docs/configuration.md) | Defaults, delegación, superficies y capacidades. |
+| [CLI](docs/cli.md) | Operaciones, flags y precondiciones. |
+| [Memoria y contexto](docs/memory-context.md) | Notas durables, backlinks, skills y grafo lexical. |
+| [Evidencia](docs/evidence.md) | Comprobaciones declaradas, candidato Git y review explícita. |
+| [Run Ledger](docs/run-ledger.md) | Eventos causales locales, privacidad, retención y recuperación. |
+| [Arquitectura](docs/architecture.md) | Componentes, fuentes, derivados y decisiones. |
+| [Diagnóstico](docs/troubleshooting.md) | Drift, formatos, runtime y recuperación. |
+| [Estado](docs/status.md) y [evolución](docs/roadmap.md) | Capacidades actuales, evidencia y problemas por evaluar. |
+| [Releases](docs/releasing.md) | Preparación y verificación de publicación. |
 
 ## Licencia
 
-MIT
+[MIT](LICENSE).

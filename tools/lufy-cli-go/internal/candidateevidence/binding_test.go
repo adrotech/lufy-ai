@@ -26,7 +26,7 @@ func TestDecodeRejectsCaseAliasedFields(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, invalid := range [][]byte{
-		bytes.Replace(body, []byte(`"role"`), []byte(`"Role"`), 1),
+		append([]byte(`{"role":"reviewer",`), body[1:]...),
 		append([]byte(`{"Role":"reviewer",`), body[1:]...),
 	} {
 		if _, err := candidateevidence.Decode(bytes.NewReader(invalid)); err == nil {
@@ -82,7 +82,8 @@ func candidateFixture(t *testing.T) (string, string) {
 	fixtureGit(t, root, "config", "gc.auto", "0")
 	fixtureGit(t, root, "config", "core.filemode", "false")
 	fixtureWrite(t, root, ".lufy/contracts/delivery.md", "Política sintética de delivery.\n")
-	fixtureWrite(t, root, ".lufy/contracts/result-contract.md", "Política sintética de contratos.\n")
+	fixtureWrite(t, root, ".lufy/contracts/work.md", "Política sintética de contratos.\n")
+	fixtureWrite(t, root, ".lufy/contracts/evidence.md", "Política sintética de evidencia.\n")
 	fixtureWrite(t, root, "candidate.txt", "baseline\n")
 	fixtureGit(t, root, "add", ".")
 	fixtureGit(t, root, "-c", "core.hooksPath="+os.DevNull, "commit", "-m", "baseline")
@@ -95,7 +96,7 @@ func candidateFixture(t *testing.T) (string, string) {
 
 func captureFixture(t *testing.T, root, base string) candidateevidence.Binding {
 	t.Helper()
-	binding, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer")
+	binding, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA)
 	if err != nil {
 		t.Fatalf("candidateevidence.Capture clean candidate failed: %v", err)
 	}
@@ -140,10 +141,10 @@ func TestCaptureVerifyCurrentIsPathFreeAndDoesNotMutateGit(t *testing.T) {
 	root, base := candidateFixture(t)
 	before := fingerprintFixtureTree(t, root)
 	binding := captureFixture(t, root, base)
-	if binding.SchemaVersion != "candidate-evidence/v1" || binding.BaseCommit != base || binding.EvidenceSHA256 != fixtureEvidenceSHA || binding.Role != "reviewer" {
+	if binding.SchemaVersion != "candidate-evidence/v2" || binding.BaseCommit != base || binding.EvidenceSHA256 != fixtureEvidenceSHA {
 		t.Fatalf("candidate binding lost identity: %#v", binding)
 	}
-	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, "reviewer", binding); err != nil {
+	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, binding); err != nil {
 		t.Fatal(err)
 	}
 	body, err := json.Marshal(binding)
@@ -163,7 +164,7 @@ func TestCaptureRejectsTrackedAndUntrackedProductChanges(t *testing.T) {
 		t.Run(path, func(t *testing.T) {
 			root, base := candidateFixture(t)
 			fixtureWrite(t, root, path, "dirty content\n")
-			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 				t.Fatal("dirty product state must be rejected, including internal prefixes")
 			}
 		})
@@ -177,7 +178,7 @@ func TestVerifyRejectsNewCommitEvenWhenTreeIsIdentical(t *testing.T) {
 	if fixtureGit(t, root, "rev-parse", "HEAD^{tree}") != binding.CandidateTree {
 		t.Fatal("fixture must keep tree unchanged")
 	}
-	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, "reviewer", binding); err == nil {
+	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, binding); err == nil {
 		t.Fatal("new commit identity must invalidate even an identical tree")
 	}
 }
@@ -188,15 +189,14 @@ func TestVerifyRejectsDifferentBaseEvidenceRoleAndRepository(t *testing.T) {
 	for _, changed := range []struct{ base, evidence, role string }{
 		{binding.CandidateCommit, fixtureEvidenceSHA, "reviewer"},
 		{base, strings.Repeat("b", 64), "reviewer"},
-		{base, fixtureEvidenceSHA, "validator"},
 	} {
-		if err := candidateevidence.Verify(context.Background(), root, changed.base, changed.evidence, changed.role, binding); err == nil {
+		if err := candidateevidence.Verify(context.Background(), root, changed.base, changed.evidence, binding); err == nil {
 			t.Fatal("changed binding inputs must reject")
 		}
 	}
 	clone := t.TempDir()
 	fixtureGit(t, root, "clone", "--local", "--no-hardlinks", root, clone)
-	if err := candidateevidence.Verify(context.Background(), clone, base, fixtureEvidenceSHA, "reviewer", binding); err == nil {
+	if err := candidateevidence.Verify(context.Background(), clone, base, fixtureEvidenceSHA, binding); err == nil {
 		t.Fatal("a distinct repository must not reuse binding even with identical commits")
 	}
 }
@@ -204,16 +204,16 @@ func TestVerifyRejectsDifferentBaseEvidenceRoleAndRepository(t *testing.T) {
 func TestUntrackedExactConfigIsBoundButTrackedModifiedConfigIsDirty(t *testing.T) {
 	root, base := candidateFixture(t)
 	config := ".lufy/config/project.yaml"
-	fixtureWrite(t, root, config, "schema_version: 1\ntool: codex\n")
+	fixtureWrite(t, root, config, "schema_version: 2\ntool: codex\n")
 	binding := captureFixture(t, root, base)
-	fixtureWrite(t, root, config, "schema_version: 1\ntool: codex\n# changed\n")
-	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, "reviewer", binding); err == nil {
+	fixtureWrite(t, root, config, "schema_version: 2\ntool: codex\n# changed\n")
+	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, binding); err == nil {
 		t.Fatal("untracked exact config must be hash-bound")
 	}
 	fixtureGit(t, root, "add", config)
 	fixtureGit(t, root, "-c", "core.hooksPath="+os.DevNull, "commit", "-m", "commit-config")
-	fixtureWrite(t, root, config, "schema_version: 1\n# dirty tracked config\n")
-	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+	fixtureWrite(t, root, config, "schema_version: 2\n# dirty tracked config\n")
+	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 		t.Fatal("tracked config modifications are not the untracked exception")
 	}
 }
@@ -228,7 +228,7 @@ func TestPolicyAndCommittedFileModesAffectBinding(t *testing.T) {
 	if changed.PolicySHA256 == initial.PolicySHA256 {
 		t.Fatal("policy content change must affect policy hash")
 	}
-	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, "reviewer", initial); err == nil {
+	if err := candidateevidence.Verify(context.Background(), root, base, fixtureEvidenceSHA, initial); err == nil {
 		t.Fatal("old policy binding must reject")
 	}
 	fixtureGit(t, root, "update-index", "--chmod=+x", "candidate.txt")
@@ -254,13 +254,13 @@ func TestCaptureRejectsMissingNonRegularAndSymlinkPolicies(t *testing.T) {
 				fixtureWrite(t, root, ".lufy/contracts/delivery.md/file.txt", "not a regular policy\n")
 			}
 			if kind == "symlink" {
-				if err := os.Symlink("result-contract.md", path); err != nil {
+				if err := os.Symlink("work.md", path); err != nil {
 					t.Skip("symlink unsupported in local fixture")
 				}
 			}
 			fixtureGit(t, root, "add", "-A")
 			fixtureGit(t, root, "-c", "core.hooksPath="+os.DevNull, "commit", "-m", "invalid-policy")
-			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 				t.Fatal("required policy must be a regular non-symlink file")
 			}
 		})
@@ -299,7 +299,7 @@ func TestDecodeAcceptsCurrentBindingAndRejectsAmbiguousJSON(t *testing.T) {
 		append(append([]byte(nil), body...), []byte(" {}")...),
 		append(append([]byte(nil), body...), []byte(" trailing")...),
 		append([]byte(`{"unknown":true,`), body[1:]...),
-		append([]byte(`{"schema_version":"candidate-evidence/v1",`), body[1:]...),
+		append([]byte(`{"schema_version":"candidate-evidence/v2",`), body[1:]...),
 		append(append([]byte(nil), body...), bytes.Repeat([]byte(" "), 65537)...),
 	}
 	for index, invalid := range bad {
@@ -350,7 +350,7 @@ func TestCaptureRequiresTrackedCanonicalPoliciesEvenWhenIgnored(t *testing.T) {
 	if fixtureGit(t, root, "status", "--porcelain") != "" {
 		t.Fatal("fixture must be clean despite ignored policy")
 	}
-	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+	if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 		t.Fatal("required canonical policy must be tracked; ignored local policy cannot supply committed authority")
 	}
 }
@@ -364,7 +364,7 @@ func TestCaptureRejectsProductEditsHiddenByIndexFlags(t *testing.T) {
 			if fixtureGit(t, root, "status", "--porcelain") != "" {
 				t.Fatal("fixture must demonstrate status hiding modified source")
 			}
-			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA, "reviewer"); err == nil {
+			if _, err := candidateevidence.Capture(context.Background(), root, base, fixtureEvidenceSHA); err == nil {
 				t.Fatal("hidden product edits must not be attested as a clean committed candidate")
 			}
 		})

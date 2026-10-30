@@ -1,11 +1,11 @@
 package projectconfig
 
 func defaultTDD() TDDConfig {
-	return TDDConfig{Strict: true, TriangulateRequired: true, EdgeCaseCategories: []string{"boundary", "error_path", "concurrency", "data_shape", "time_sensitive"}}
+	return TDDConfig{Strict: false, TriangulateRequired: false, EdgeCaseCategories: []string{"boundary", "error_path", "concurrency", "data_shape", "time_sensitive"}}
 }
 
 func defaultWorkflowLimits() WorkflowLimits {
-	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "proportional-sdd"}, Review: WorkflowReviewLimits{MaxFilesPerSlice: 8, MaxChurnLinesPerSlice: 800, MaxConcurrentSlices: 3, MinEvidenceItems: 2}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
+	return WorkflowLimits{Sizing: WorkflowSizing{LOCBudget: 400}, Routing: WorkflowRouting{Strategy: "outcome"}, Review: WorkflowReviewLimits{MaxFilesPerSlice: 8, MaxChurnLinesPerSlice: 800, MaxConcurrentSlices: 3}, ProposalSlicingStrategy: "review-slices-on-multi-risk", DeliveryBatchStrategy: "ask-on-risk", StopRules: []string{"pause_on_scope_growth", "escalate_on_security_or_delivery_risk", "stop_before_unauthorized_git_or_gh"}, Preflight: []string{"read_project_config", "confirm_applicable_toolchain", "plan_grouped_validation"}}
 }
 
 func DefaultMemoryConfig() MemoryConfig {

@@ -20,7 +20,7 @@ platforms=(
 )
 
 checksum_file="$OUT_DIR/lufy-ai_${VERSION}_checksums.txt"
-: > "$checksum_file"
+go run ./cmd/release-contract > "$checksum_file"
 
 for platform in "${platforms[@]}"; do
   goos="${platform%/*}"

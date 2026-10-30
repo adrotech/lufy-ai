@@ -6,7 +6,7 @@ Aceptada.
 
 ## Contexto
 
-El catálogo gestiona directorios completos como `.opencode/agents`, `.opencode/commands`, `.opencode/skills`, `.opencode/plugins`, `.opencode/policies` y `openspec`. Los usuarios pueden necesitar personalizar esos directorios con archivos locales.
+El catálogo selecciona archivos dentro de `.agents/skills`, `.codex` y `.lufy/contracts`; no adquiere ownership de cualquier archivo que aparezca dentro de esos directorios. Los usuarios pueden necesitar personalizar esos directorios con archivos locales.
 
 ## Decisión
 

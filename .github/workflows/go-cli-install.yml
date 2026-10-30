@@ -23,9 +23,7 @@ on:
       - "README.md"
       - "docs/**"
       - "AGENTS.md"
-      - ".opencode/**"
       - ".lufy/**"
-      - "openspec/**"
   push:
     branches:
       - main
@@ -48,9 +46,7 @@ on:
       - "README.md"
       - "docs/**"
       - "AGENTS.md"
-      - ".opencode/**"
       - ".lufy/**"
-      - "openspec/**"
 
 permissions:
   contents: read
@@ -145,11 +141,3 @@ jobs:
 
       - name: Wrapper smoke
         run: tools/lufy-cli-go/scripts/smoke-wrapper.sh
-
-      - name: OpenSpec sanity
-        run: |
-          if command -v openspec >/dev/null 2>&1; then
-            openspec list --json
-          else
-            echo "::notice::openspec CLI no disponible en el runner; sanity OpenSpec omitido"
-          fi

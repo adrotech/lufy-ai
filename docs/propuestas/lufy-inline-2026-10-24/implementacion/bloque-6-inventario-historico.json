@@ -1,0 +1,3825 @@
+{
+  "documents": [
+    {
+      "path": "openspec/README.md",
+      "title": "OpenSpec",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-minimal-ci-for-go-cli-install/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-minimal-ci-for-go-cli-install/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-minimal-ci-for-go-cli-install/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CI mínima del instalador Go",
+        "Validación local reproducible"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-minimal-ci-for-go-cli-install/specs/go-cli-installer/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Validación por fases"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-minimal-ci-for-go-cli-install/tasks.md",
+      "title": "1. Workflow CI",
+      "requirements": [],
+      "tasks_done": 25,
+      "tasks_total": 25
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-safe-managed-assets-sync/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-safe-managed-assets-sync/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-safe-managed-assets-sync/specs/go-cli-installer/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Comandos base de instalación",
+        "Flags y defaults seguros",
+        "Comando sync de CLI Go",
+        "Validación de sync en CLI Go"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-safe-managed-assets-sync/specs/managed-assets-install/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Sync seguro de assets gestionados",
+        "Sync idempotente por manifest y hash",
+        "Sync preserva personalizaciones fuera de scope",
+        "Sync crea backup antes de actualizaciones gestionadas",
+        "Verify posterior a sync"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-add-safe-managed-assets-sync/tasks.md",
+      "title": "1. CLI Surface",
+      "requirements": [],
+      "tasks_done": 29,
+      "tasks_total": 29
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-align-readme-with-current-state/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-align-readme-with-current-state/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-align-readme-with-current-state/specs/current-state-documentation/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "README centrado en estado real",
+        "Quickstart basado en CLI Go actual",
+        "Separación de futuro y templates",
+        "Consistencia documental entre README y docs auxiliares",
+        "Validación documental del cambio"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-align-readme-with-current-state/tasks.md",
+      "title": "1. README Root",
+      "requirements": [],
+      "tasks_done": 9,
+      "tasks_total": 9
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-install-managed-assets-with-hash-idempotency/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-install-managed-assets-with-hash-idempotency/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-install-managed-assets-with-hash-idempotency/specs/managed-assets-install/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Catálogo completo de assets gestionados",
+        "Resolución segura de source y target",
+        "Plan de instalación fiel",
+        "Idempotencia por contenido/hash",
+        "Conflictos no se sobrescriben silenciosamente",
+        "Manifest de estado de instalación",
+        "Backup multiasset antes de mutar",
+        "Restore controlado",
+        "Verify estructural completo",
+        "Wrapper Bash permanece estricto",
+        "Seguridad y Engram portable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-install-managed-assets-with-hash-idempotency/tasks.md",
+      "title": "1. Asset catalog y manifest schema",
+      "requirements": [],
+      "tasks_done": 63,
+      "tasks_total": 63
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-migrate-installer-to-go-cli/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-migrate-installer-to-go-cli/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-migrate-installer-to-go-cli/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI Go instalable",
+        "Comandos base de instalación",
+        "Flags y defaults seguros",
+        "Plan de instalación antes de escribir",
+        "Idempotencia y preservación de trabajo del usuario",
+        "Backup y rollback con manifest",
+        "Merge conservador de opencode.json",
+        "Engram portable",
+        "Wrapper Bash estricto",
+        "Validación por fases"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-05-migrate-installer-to-go-cli/tasks.md",
+      "title": "1. Scaffolding Go y estructura base",
+      "requirements": [],
+      "tasks_done": 64,
+      "tasks_total": 64
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/specs/current-state-documentation/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Documentation migrates only after implementation",
+        "Obsolete clone/build docs removed at completion",
+        "Roadmap marks release installer as planned"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Release artifact CI",
+        "Release smoke validation",
+        "Bootstrap CI validation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Standalone asset source",
+        "Release binary preserves installer safety"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/specs/remote-bootstrap-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Remote bootstrap installer",
+        "Checksum-before-install",
+        "Version pinning",
+        "Inspectable curl workflow",
+        "PATH installation controls"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/specs/versioned-binary-distribution/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Versioned release artifacts",
+        "Release checksums",
+        "CLI version metadata",
+        "Distribution channels are layered"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-add-versioned-binary-release-installer/tasks.md",
+      "title": "1. Release binary foundation",
+      "requirements": [],
+      "tasks_done": 24,
+      "tasks_total": 24
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-define-opencode-json-merge-managed-asset/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-define-opencode-json-merge-managed-asset/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-define-opencode-json-merge-managed-asset/specs/go-cli-installer/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Merge conservador de opencode.json",
+        "Comando sync de CLI Go",
+        "`lufy-ai verify` canónico"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-define-opencode-json-merge-managed-asset/specs/managed-assets-install/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Catálogo completo de assets gestionados",
+        "Manifest de estado de instalación",
+        "Sync preserva personalizaciones fuera de scope",
+        "Verify estructural completo"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-define-opencode-json-merge-managed-asset/tasks.md",
+      "title": "1. Contrato OpenSpec",
+      "requirements": [],
+      "tasks_done": 15,
+      "tasks_total": 15
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-formalize-lufy-verify-as-install-verifier/design.md",
+      "title": "Design",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-formalize-lufy-verify-as-install-verifier/proposal.md",
+      "title": "Formalizar `lufy-ai verify` como verificador canónico de instalación",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-formalize-lufy-verify-as-install-verifier/specs/go-cli-installer/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Comandos base de instalación",
+        "`lufy-ai verify` canónico"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-06-formalize-lufy-verify-as-install-verifier/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 5,
+      "tasks_total": 5
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-add-pr-creator-skill/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-add-pr-creator-skill/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-add-pr-creator-skill/specs/pr-creator-skill/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Skill pr.creator con estructura estándar",
+        "Template de Pull Request para GitHub",
+        "Modo manual de invocación",
+        "Integración obligatoria desde delivery al crear PR",
+        "Resumen funcional derivable desde OpenSpec",
+        "Trazabilidad a ticket configurado",
+        "Evidencia de pruebas y validación",
+        "Monitors operativos",
+        "Migraciones detectadas automáticamente"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-add-pr-creator-skill/tasks.md",
+      "title": "1. Estructura del skill",
+      "requirements": [],
+      "tasks_done": 17,
+      "tasks_total": 17
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Structural hardening checks in CI"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI state metadata comes from version package",
+        "CLI filesystem writes are atomic for managed payloads",
+        "CLI validates portable path traversal",
+        "Validación por fases"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/specs/installer-structural-hardening/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Asset mirror parity gate",
+        "Portable relative path safety",
+        "Stable catalog fingerprint",
+        "Atomic managed file writes"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/specs/managed-assets-install/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Install state uses real tool metadata",
+        "Source fingerprint reflects effective catalog",
+        "Backup manifest uses real tool metadata",
+        "Managed copies are atomic",
+        "Manifest de estado de instalación",
+        "Resolución segura de source y target"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-08-hardening-structural-foundation/tasks.md",
+      "title": "1. Analisis inicial sistemico",
+      "requirements": [],
+      "tasks_done": 19,
+      "tasks_total": 19
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-add-pr-creator-skill/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-add-pr-creator-skill/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-add-pr-creator-skill/specs/pr-creator-skill/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Skill pr.creator con estructura estándar",
+        "Template de Pull Request para GitHub",
+        "Modo manual de invocación",
+        "Integración obligatoria desde delivery al crear PR",
+        "Resumen funcional derivable desde OpenSpec",
+        "Trazabilidad a ticket configurado",
+        "Evidencia de pruebas y validación",
+        "Monitors operativos",
+        "Migraciones detectadas automáticamente"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-add-pr-creator-skill/tasks.md",
+      "title": "1. Estructura del skill",
+      "requirements": [],
+      "tasks_done": 17,
+      "tasks_total": 17
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/specs/current-state-documentation/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Consistencia documental entre README y docs auxiliares"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/specs/go-cli-install-ci/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "CI mínima del instalador Go"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/specs/release-branch-flow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Flujo canónico develop-main-release",
+        "Configuración GitHub esperada"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/specs/versioned-binary-distribution/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Versioned release artifacts"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-adopt-develop-main-release-flow/tasks.md",
+      "title": "1. OpenSpec artifacts",
+      "requirements": [],
+      "tasks_done": 12,
+      "tasks_total": 12
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-auto-tag-release-on-main-pr-merge/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-auto-tag-release-on-main-pr-merge/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-auto-tag-release-on-main-pr-merge/specs/versioned-binary-distribution/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Automatic patch release tags from main PR merges",
+        "Automatic release tag target safety",
+        "Automatic release tag idempotency",
+        "Release workflow supports manual and dispatched tags safely"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-auto-tag-release-on-main-pr-merge/tasks.md",
+      "title": "1. Workflow de tagging automático",
+      "requirements": [],
+      "tasks_done": 7,
+      "tasks_total": 7
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-formalize-systemic-workflow-validation/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-formalize-systemic-workflow-validation/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-formalize-systemic-workflow-validation/specs/current-state-documentation/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Documentacion del workflow sistemico"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-formalize-systemic-workflow-validation/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Analisis inicial sistemico",
+        "Implementacion sin relecturas repetidas innecesarias",
+        "Revisión final acotada de archivos viejos modificados",
+        "Validacion final agrupada con tests y coverage",
+        "Excepciones para feedback temprano",
+        "Relacion estructura-comportamiento"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-formalize-systemic-workflow-validation/tasks.md",
+      "title": "1. Politica central",
+      "requirements": [],
+      "tasks_done": 12,
+      "tasks_total": 12
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CI validates supply-chain release artifacts",
+        "CI fails on unpinned release-sensitive actions"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/specs/release-supply-chain-security/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Release artifacts are keylessly signed",
+        "Release provenance is published",
+        "Release SBOM is published",
+        "Sensitive workflows pin third-party actions",
+        "Release workflows use minimum permissions"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/specs/release-version-governance/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Auto-tag supports explicit release bump labels",
+        "Auto-tag supports release skip",
+        "Auto-tag handles tag races safely",
+        "Release metadata is sanitized"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/specs/versioned-binary-distribution/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Release artifacts include verification material",
+        "Release verification guidance exists"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-harden-supply-chain-release/tasks.md",
+      "title": "1. Workflow Baseline And Pinning",
+      "requirements": [],
+      "tasks_done": 22,
+      "tasks_total": 22
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-improve-ci-quality-gates/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-improve-ci-quality-gates/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-improve-ci-quality-gates/specs/ci-quality-gates/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Go coverage gate",
+        "Go lint gate",
+        "Shell script lint gate",
+        "Multi-platform Go validation",
+        "Post-release E2E validation",
+        "Output and runtime regression tests"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-improve-ci-quality-gates/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CI quality gates extend installer validation",
+        "Local validation remains reproducible"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-11-improve-ci-quality-gates/tasks.md",
+      "title": "1. Coverage And Go Quality",
+      "requirements": [],
+      "tasks_done": 21,
+      "tasks_total": 21
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI scope flag for managed operations",
+        "CLI merge command",
+        "CLI restore discovery",
+        "CLI reports drift actions consistently"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/specs/install-drift-resolution/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Declarative asset policies",
+        "No-replace assets preserve user drift",
+        "Merge-block assets preserve user text",
+        "Ancestors are recorded for managed versions",
+        "Drift status is user-visible",
+        "Scope-aware installation",
+        "Merge command uses ancestor user and new versions",
+        "Restore lists and selects backups"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/specs/managed-assets-install/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Conflictos no se sobrescriben silenciosamente",
+        "Sync preserva personalizaciones fuera de scope",
+        "Manifest registra policy scope y ancestor",
+        "Catálogo declara scope efectivo"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-12-resolve-install-drift-policies/tasks.md",
+      "title": "1. Catalog And State Model",
+      "requirements": [],
+      "tasks_done": 40,
+      "tasks_total": 40
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/specs/go-cli-install-ci/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CI validates OpenSpec resolver without network dependency",
+        "Baseline sync workflow is safe for protected branches"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI provides OpenSpec resolver package",
+        "CLI uses embedded baseline as fallback",
+        "CLI validates OpenSpec cache safely"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/specs/openspec-core-v2-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Baseline participates in stay-updated resolution",
+        "Opsx version reports resolved source"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/specs/openspec-stay-updated/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "OpenSpec resolver uses three fallback layers",
+        "OpenSpec cache is versioned and manifest-backed",
+        "Cache and manifests use atomic writes",
+        "Upstream sync opens pull requests only",
+        "Resolver reports actionable diagnostics"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-add-openspec-stay-updated-fallback/tasks.md",
+      "title": "1. Resolver And Manifest Design",
+      "requirements": [],
+      "tasks_done": 24,
+      "tasks_total": 24
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI instala workflow OpenSpec core v2 standalone",
+        "CLI mantiene validación de paridad de assets OpenSpec"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/specs/managed-assets-install/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Catálogo incluye assets OpenSpec core v2",
+        "Verify cubre baseline OpenSpec core v2"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/specs/openspec-core-v2-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "OpenSpec config uses action-based core v2 schema",
+        "Change specs use delta markers",
+        "Scenarios are testable",
+        "Opsx sync applies validated deltas",
+        "Baseline metadata is installed",
+        "Opsx version reports effective workflow version"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-14-modernize-openspec-core-v2/tasks.md",
+      "title": "1. Core Assets",
+      "requirements": [],
+      "tasks_done": 21,
+      "tasks_total": 21
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-sdd-router-harness-routing/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-sdd-router-harness-routing/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-sdd-router-harness-routing/specs/sdd-harness-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Tier classification",
+        "Lightweight SDD router",
+        "Router output contract",
+        "Result contract",
+        "Proportional context",
+        "Permission minimization",
+        "T2 SDD Lite artifact",
+        "Artifact store by tier",
+        "Tier workflow mapping",
+        "Skill resolution and optional bootstrap",
+        "Subagent isolation and review workload",
+        "Review Workload Harness",
+        "Documentation and installer asset synchronization",
+        "Delivery policy separation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-sdd-router-harness-routing/tasks.md",
+      "title": "1. Agent Routing Model",
+      "requirements": [],
+      "tasks_done": 33,
+      "tasks_total": 33
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/specs/openspec-core-v2-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "OpenSpec task state semantics",
+        "Opsx command gate language"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/specs/sdd-harness-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Task/block delivery gate",
+        "Explicit task/block states",
+        "Role-separated gate execution"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Block-scoped proportional validation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-17-add-task-block-delivery-gate/tasks.md",
+      "title": "1. Policy and shared terminology",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-22-add-project-rescan-stack-drift/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-22-add-project-rescan-stack-drift/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-22-add-project-rescan-stack-drift/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI rescan drift reporting",
+        "CLI rescan validation coverage"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-22-add-project-rescan-stack-drift/specs/project-stack-config/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Rescan drift validation",
+        "Stale stack detection is non-destructive",
+        "Rescan preserves editable configuration boundaries",
+        "Rescan report is structured and actionable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-22-add-project-rescan-stack-drift/tasks.md",
+      "title": "1. Análisis local y modelo de drift",
+      "requirements": [],
+      "tasks_done": 14,
+      "tasks_total": 14
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-lufy-timereport/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-lufy-timereport/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-lufy-timereport/specs/lufy-timereport/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Slash command and skill entrypoint",
+        "Offline self-contained HTML report",
+        "OpenCode SQLite primary source",
+        "Privacy by default",
+        "Time heuristics are explicit",
+        "Git secondary metrics",
+        "Stack metadata degrades gracefully",
+        "Phase, subagent and skill summaries",
+        "Fixture-based validation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-lufy-timereport/tasks.md",
+      "title": "1. Command and Skill Skeleton",
+      "requirements": [],
+      "tasks_done": 23,
+      "tasks_total": 23
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-numeric-stop-rules-workload-guard/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-numeric-stop-rules-workload-guard/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-numeric-stop-rules-workload-guard/specs/sdd-harness-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Numeric workload guard",
+        "Canonical workflow limits propagation",
+        "Proposal slicing remains separate from delivery batching",
+        "Chain strategy routing metadata"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-numeric-stop-rules-workload-guard/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Numeric stop rules for workload guard",
+        "Stop-rule evidence in Result Contract"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-numeric-stop-rules-workload-guard/tasks.md",
+      "title": "1. OpenSpec artifacts",
+      "requirements": [],
+      "tasks_done": 18,
+      "tasks_total": 18
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-scored-stack-aware-reviewer/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-scored-stack-aware-reviewer/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-scored-stack-aware-reviewer/specs/scored-stack-aware-reviewer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Weighted reviewer scoring",
+        "L1-L5 severity gate",
+        "Stack-aware review inputs",
+        "Desk-check scenarios for substantive review"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-scored-stack-aware-reviewer/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Weighted review gate for substantive changes",
+        "Review remains separate from validation and delivery"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-scored-stack-aware-reviewer/tasks.md",
+      "title": "1. Reviewer Contract",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-stack-aware-test-writer/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-stack-aware-test-writer/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-stack-aware-test-writer/specs/stack-aware-test-writer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Stack-aware test writer agent",
+        "Observable TDD phase evidence",
+        "Stack anti-pattern enforcement",
+        "Bounded permissions and delivery separation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-stack-aware-test-writer/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "TDD delegation for substantive T1 and T2 changes",
+        "Validator gates required TDD evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-add-stack-aware-test-writer/tasks.md",
+      "title": "1. Agent Definition",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/specs/go-cli-installer/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Idempotencia y preservación de trabajo del usuario",
+        "`lufy-ai verify` canónico",
+        "Comando sync de CLI Go"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/specs/install-harness-reference-and-coexistence/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Harness Lufy gestionado por referencia",
+        "Sync actualiza harness sin mutar AGENTS",
+        "Migración legacy de AGENTS gestionado no destructiva",
+        "Coexistencia con OpenCode y OpenSpec propios",
+        "Verify diferencia harness gestionado y referencia AGENTS"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/specs/managed-assets-install/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Catálogo completo de assets gestionados",
+        "Verify estructural completo",
+        "Sync seguro de assets gestionados",
+        "Manifest de estado de instalación"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-install-harness-reference-and-coexistence/tasks.md",
+      "title": "1. Assets y catálogo",
+      "requirements": [],
+      "tasks_done": 30,
+      "tasks_total": 30
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-standardize-result-contract-workflow-decisions/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-standardize-result-contract-workflow-decisions/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-standardize-result-contract-workflow-decisions/specs/sdd-harness-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Result Contract envelope v1",
+        "Workflow-limit decision output",
+        "Delivery batching remains authorization-gated"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-standardize-result-contract-workflow-decisions/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Observable workflow-limit gates",
+        "Proportional Result Contract detail"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-standardize-result-contract-workflow-decisions/tasks.md",
+      "title": "1. Contract Definition",
+      "requirements": [],
+      "tasks_done": 14,
+      "tasks_total": 14
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-unify-workflow-limits-config/design.md",
+      "title": "Context",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-unify-workflow-limits-config/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-unify-workflow-limits-config/specs/project-stack-config/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Canonical workflow limits block",
+        "Legacy workflow limit fields are not accepted as canonical",
+        "Project stack configuration file",
+        "Rescan preserves user overrides",
+        "Top-level legacy workflow limit fields"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-unify-workflow-limits-config/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Workflow limits canonical consumption",
+        "Proposal slicing is separate from delivery batching",
+        "Workflow preflight and stop rules",
+        "Block-scoped proportional validation",
+        "Legacy workflow limit source consumption"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-24-unify-workflow-limits-config/tasks.md",
+      "title": "1. Config model and generation",
+      "requirements": [],
+      "tasks_done": 15,
+      "tasks_total": 15
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/plan.md",
+      "title": "Plan end-to-end: Lufy harness hexagonal y multi-tool",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/role-contracts.md",
+      "title": "Contratos compactos de roles y skills",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/specs/harness-adapter-architecture/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Core harness neutrality",
+        "Tool adapter registry",
+        "Tool capability matrix",
+        "Adapter-owned paths",
+        "Backward-compatible default preset",
+        "Manifest identifies adapter ownership"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/specs/instruction-surface-rendering/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Neutral role definitions",
+        "Instruction renderer composes bindings",
+        "Textual leak checks",
+        "Rendered output golden tests",
+        "Embedded assets stay synchronized"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/specs/portable-skill-registry/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Portable skill registry",
+        "Local-first skill precedence",
+        "Tool-aware skill roots",
+        "Delegation passes skill paths",
+        "Registry refresh is non-destructive"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/specs/tier-methodology-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Methodology selection by tier",
+        "Supported methodology set",
+        "None methodology remains governed",
+        "Methodology decisions are explicit in handoffs",
+        "Unsafe none override is blocked or justified"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/tasks.md",
+      "title": "1. Análisis y propuesta",
+      "requirements": [],
+      "tasks_done": 36,
+      "tasks_total": 36
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-abstract-harness-tool-methodology-adapters/textual-audit.md",
+      "title": "Auditoria textual de acoplamientos harness/tool/metodologia",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-claude-code-dry-run-adapter/README.md",
+      "title": "add-claude-code-dry-run-adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-claude-code-dry-run-adapter/design.md",
+      "title": "Design: Claude Code dry-run adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-claude-code-dry-run-adapter/proposal.md",
+      "title": "Proposal: Claude Code dry-run tool adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-claude-code-dry-run-adapter/specs/harness-adapter-architecture/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Claude Code dry-run adapter"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-claude-code-dry-run-adapter/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-codex-dry-run-adapter/README.md",
+      "title": "add-codex-dry-run-adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-codex-dry-run-adapter/design.md",
+      "title": "Design: Codex dry-run adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-codex-dry-run-adapter/proposal.md",
+      "title": "Proposal: Codex dry-run tool adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-codex-dry-run-adapter/specs/harness-adapter-architecture/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Codex dry-run adapter"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-codex-dry-run-adapter/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 14,
+      "tasks_total": 14
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/README.md",
+      "title": "add-harness-selection-flags",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/design.md",
+      "title": "Design: seleccion explicita de tool y metodologia",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/proposal.md",
+      "title": "Proposal: CLI flags de seleccion para harness adapters",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/specs/harness-adapter-architecture/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI tool selection",
+        "JSON reports expose harness context"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/specs/tier-methodology-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "CLI methodology tier override",
+        "Unsafe methodology override is blocked"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-harness-selection-flags/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 15,
+      "tasks_total": 15
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-lufy-sdd-methodology-adapter/README.md",
+      "title": "add-lufy-sdd-methodology-adapter",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-lufy-sdd-methodology-adapter/design.md",
+      "title": "Design: Lufy SDD methodology foundation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-lufy-sdd-methodology-adapter/proposal.md",
+      "title": "Proposal: Lufy SDD methodology adapter foundation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-lufy-sdd-methodology-adapter/specs/tier-methodology-routing/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Lufy SDD methodology adapter foundation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-add-lufy-sdd-methodology-adapter/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 10,
+      "tasks_total": 10
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-enable-lufy-sdd-installable-methodology/design.md",
+      "title": "Design: Installable Lufy SDD methodology",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-enable-lufy-sdd-installable-methodology/proposal.md",
+      "title": "Proposal: Enable Lufy SDD as installable methodology",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-enable-lufy-sdd-installable-methodology/specs/tier-methodology-routing/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Lufy SDD methodology adapter foundation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-enable-lufy-sdd-installable-methodology/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 15,
+      "tasks_total": 15
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-encapsulate-opencode-runtime-config/proposal.md",
+      "title": "Proposal: encapsular runtime config de OpenCode",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-encapsulate-opencode-runtime-config/specs/harness-adapter-architecture/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Adapter-owned paths"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-encapsulate-opencode-runtime-config/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 10,
+      "tasks_total": 10
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-ensure-existing-install-upgrade-compatibility/proposal.md",
+      "title": "Proposal: garantizar compatibilidad de install/update actual",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-ensure-existing-install-upgrade-compatibility/specs/harness-adapter-architecture/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Backward-compatible default preset"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-ensure-existing-install-upgrade-compatibility/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 8,
+      "tasks_total": 8
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-route-current-preset-through-adapters/design.md",
+      "title": "Design: Effective catalog from adapters",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-route-current-preset-through-adapters/proposal.md",
+      "title": "Proposal: Route current preset through adapters",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-route-current-preset-through-adapters/specs/harness-adapter-architecture/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Backward-compatible default preset"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-30-route-current-preset-through-adapters/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-31-add-managed-uninstall-command/proposal.md",
+      "title": "Proposal: agregar uninstall gestionado",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-31-add-managed-uninstall-command/specs/managed-assets-install/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Uninstall gestionado de assets"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-05-31-add-managed-uninstall-command/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 13,
+      "tasks_total": 13
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-bubbletea-project-profile-ui/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-bubbletea-project-profile-ui/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-bubbletea-project-profile-ui/specs/project-stack-config/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Project surface profile",
+        "Project profile TUI adapter boundary"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-bubbletea-project-profile-ui/tasks.md",
+      "title": "1. Preparacion",
+      "requirements": [],
+      "tasks_done": 24,
+      "tasks_total": 24
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-native-context-graph/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-native-context-graph/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-native-context-graph/specs/native-context-graph/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Native context graph schema",
+        "Context graph persisted artifacts",
+        "Deterministic initial extractors",
+        "Context CLI command suite",
+        "Diff impact analysis",
+        "Context search skills for agent tooling",
+        "Agent hint integration with graceful fallback",
+        "Semantic analysis remains optional future phase",
+        "Context graph must be functionally useful"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-add-native-context-graph/tasks.md",
+      "title": "1. Preparacion OpenSpec",
+      "requirements": [],
+      "tasks_done": 36,
+      "tasks_total": 36
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-refactor-projectconfig-hexagonal/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-refactor-projectconfig-hexagonal/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-refactor-projectconfig-hexagonal/specs/project-stack-config/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Project config implementation boundaries"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-refactor-projectconfig-hexagonal/tasks.md",
+      "title": "1. Preparacion",
+      "requirements": [],
+      "tasks_done": 23,
+      "tasks_total": 23
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/specs/go-cli-installer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Use-case services stay thin and composable",
+        "Public CLI compatibility during architecture refactor"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/specs/harness-adapter-architecture/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Hexagonal application boundaries",
+        "Application service responsibility split",
+        "Typed action semantics",
+        "SOLID and clean-code review gates"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/specs/stack-aware-test-writer/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "AAA structure for substantive tests",
+        "TDD evidence for architecture refactor slices"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-18-strengthen-go-cli-hexagonal-boundaries/tasks.md",
+      "title": "1. Preparacion y baseline",
+      "requirements": [],
+      "tasks_done": 34,
+      "tasks_total": 34
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-23-enhance-lufy-sdd-methodology-depth/design.md",
+      "title": "Design: enhance-lufy-sdd-methodology-depth",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-23-enhance-lufy-sdd-methodology-depth/proposal.md",
+      "title": "Proposal: enhance-lufy-sdd-methodology-depth",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-23-enhance-lufy-sdd-methodology-depth/specs/sdd-harness-routing/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "T2 SDD Lite artifact",
+        "Lufy SDD Full artifact depth"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-23-enhance-lufy-sdd-methodology-depth/specs/tier-methodology-routing/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Lufy SDD methodology adapter foundation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-08-23-enhance-lufy-sdd-methodology-depth/tasks.md",
+      "title": "Tasks: enhance-lufy-sdd-methodology-depth",
+      "requirements": [],
+      "tasks_done": 20,
+      "tasks_total": 20
+    },
+    {
+      "path": "openspec/changes/archive/2026-09-28-add-surface-aware-execution-plans/design.md",
+      "title": "Contexto",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-09-28-add-surface-aware-execution-plans/proposal.md",
+      "title": "Why",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-09-28-add-surface-aware-execution-plans/specs/surface-aware-execution/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Deterministic active surface resolution",
+        "Typed validation plan",
+        "Interactive capability detection",
+        "Read-only CLI contract"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-09-28-add-surface-aware-execution-plans/tasks.md",
+      "title": "1. Contrato y resolución",
+      "requirements": [],
+      "tasks_done": 14,
+      "tasks_total": 14
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-bind-codex-evidence-to-candidate/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-bind-codex-evidence-to-candidate/proposal.md",
+      "title": "Bloque 5: evidencia ligada al candidato Git",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-bind-codex-evidence-to-candidate/specs/codex-candidate-evidence/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Exact candidate evidence binding"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-bind-codex-evidence-to-candidate/tasks.md",
+      "title": "Tasks — bloque 5",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-bind-codex-evidence-to-candidate/verification.md",
+      "title": "Verificación B5: evidencia ligada al candidato Git",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/design.md",
+      "title": "Diseño: decisiones proporcionales coherentes",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/proposal.md",
+      "title": "Coherencia de decisiones del workflow proporcional",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/specs/sdd-harness-routing/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Numeric workload guard",
+        "Proportional decision axes",
+        "Codex proportional decision consistency"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/specs/systemic-workflow/spec.md",
+      "title": "MODIFIED Requirements",
+      "requirements": [
+        "Numeric stop rules for workload guard",
+        "Workflow constraint provenance and precedence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/tasks.md",
+      "title": "Tasks: coherencia del workflow proporcional",
+      "requirements": [],
+      "tasks_done": 20,
+      "tasks_total": 20
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-clarify-proportional-workflow-decisions/verification.md",
+      "title": "Verificación del bloque 1",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-consolidate-codex-instruction-sources/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-consolidate-codex-instruction-sources/proposal.md",
+      "title": "Bloque 6: instrucciones Codex coherentes",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-consolidate-codex-instruction-sources/specs/codex-instruction-consistency/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Consistent Codex instruction distribution"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-consolidate-codex-instruction-sources/tasks.md",
+      "title": "Tasks — bloque 6",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-consolidate-codex-instruction-sources/verification.md",
+      "title": "Verificación B6: instrucciones Codex coherentes",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-diagnose-codex-runtime/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-diagnose-codex-runtime/proposal.md",
+      "title": "Bloque 2: diagnóstico observable de Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-diagnose-codex-runtime/specs/codex-runtime-diagnostics/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Bounded explicit runtime diagnostics",
+        "Explicit safe local activation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-diagnose-codex-runtime/tasks.md",
+      "title": "Tasks — bloque 2",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-diagnose-codex-runtime/verification.md",
+      "title": "Verificacion B2: diagnostico de runtime Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-execution-variants/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-execution-variants/proposal.md",
+      "title": "Bloque 4: optimización experimental con baseline",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-execution-variants/specs/codex-execution-experiments/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Evidence-gated execution experiments"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-execution-variants/tasks.md",
+      "title": "Tasks — bloque 4",
+      "requirements": [],
+      "tasks_done": 8,
+      "tasks_total": 8
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-execution-variants/verification.md",
+      "title": "Verificacion B4 y snapshot de delivery",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-workflow-decisions/design.md",
+      "title": "Diseño del piloto conductual de Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-workflow-decisions/proposal.md",
+      "title": "Evaluación conductual del workflow de Lufy en Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-workflow-decisions/specs/codex-behavior-pilot/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Isolated Codex behavioral scenarios",
+        "Evidence-based pilot verdicts",
+        "Pilot data isolation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-workflow-decisions/tasks.md",
+      "title": "Tasks: bloque 2, decisiones conductuales de Codex",
+      "requirements": [],
+      "tasks_done": 19,
+      "tasks_total": 19
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-evaluate-codex-workflow-decisions/verification.md",
+      "title": "Verificacion B2 y snapshot de delivery",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-produce-semantic-codex-review-events/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-produce-semantic-codex-review-events/proposal.md",
+      "title": "Bloque 4: productor explícito de eventos de review",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-produce-semantic-codex-review-events/specs/codex-semantic-review-events/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Explicit semantic review producer"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-produce-semantic-codex-review-events/tasks.md",
+      "title": "Tasks — bloque 4",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-produce-semantic-codex-review-events/verification.md",
+      "title": "Verificacion B4: eventos explicitos de review",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-regress-native-codex-integration/design.md",
+      "title": "Diseño y confianza",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-regress-native-codex-integration/proposal.md",
+      "title": "Bloque 3: regresión de integración nativa Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-regress-native-codex-integration/specs/codex-native-regression/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Observed native regression",
+        "Isolated vetted fixture"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-regress-native-codex-integration/tasks.md",
+      "title": "Tasks — bloque 3",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-regress-native-codex-integration/verification.md",
+      "title": "Verificacion B3: regresion nativa observable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-repeat-codex-efficiency-experiment/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-repeat-codex-efficiency-experiment/proposal.md",
+      "title": "Bloque 7: experimento reproducible de eficiencia Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-repeat-codex-efficiency-experiment/specs/codex-efficiency-evidence/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Comparable Codex efficiency samples"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-repeat-codex-efficiency-experiment/tasks.md",
+      "title": "Tasks — bloque 7",
+      "requirements": [],
+      "tasks_done": 6,
+      "tasks_total": 6
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-repeat-codex-efficiency-experiment/verification.md",
+      "title": "Verificación B7: eficiencia ligada a procedencia",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-run-codex-offline-regressions-in-ci/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-run-codex-offline-regressions-in-ci/proposal.md",
+      "title": "Bloque 1: regresiones offline de Codex en CI",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-run-codex-offline-regressions-in-ci/specs/codex-behavior-pilot/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Offline regression pipeline"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-run-codex-offline-regressions-in-ci/tasks.md",
+      "title": "Tasks — bloque 1",
+      "requirements": [],
+      "tasks_done": 7,
+      "tasks_total": 7
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-run-codex-offline-regressions-in-ci/verification.md",
+      "title": "Verificacion del bloque 1: regresiones offline en CI",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-verify-codex-operational-metrics/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-verify-codex-operational-metrics/proposal.md",
+      "title": "Bloque 3: observabilidad operativa de Lufy en Codex",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-verify-codex-operational-metrics/specs/systemic-workflow/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Conservative operational review metrics"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-verify-codex-operational-metrics/tasks.md",
+      "title": "Tasks — bloque 3",
+      "requirements": [],
+      "tasks_done": 9,
+      "tasks_total": 9
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-22-verify-codex-operational-metrics/verification.md",
+      "title": "Verificacion del bloque 3",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-23-verify-collaboration-native-profile/design.md",
+      "title": "Diseño",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-23-verify-collaboration-native-profile/proposal.md",
+      "title": "Perfil nativo collaboration verificable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-23-verify-collaboration-native-profile/specs/codex-native-regression/spec.md",
+      "title": "ADDED Requirements",
+      "requirements": [
+        "Explicit collaboration diagnostic profile"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-23-verify-collaboration-native-profile/tasks.md",
+      "title": "Tasks",
+      "requirements": [],
+      "tasks_done": 7,
+      "tasks_total": 7
+    },
+    {
+      "path": "openspec/changes/archive/2026-10-23-verify-collaboration-native-profile/verification.md",
+      "title": "Verificación: perfil collaboration nativo",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/ci-quality-gates/spec.md",
+      "title": "ci-quality-gates Specification",
+      "requirements": [
+        "Go coverage gate",
+        "Go lint gate",
+        "Shell script lint gate",
+        "Multi-platform Go validation",
+        "Post-release E2E validation",
+        "Output and runtime regression tests"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-behavior-pilot/spec.md",
+      "title": "codex-behavior-pilot",
+      "requirements": [
+        "Isolated Codex behavioral scenarios",
+        "Evidence-based pilot verdicts",
+        "Pilot data isolation",
+        "Offline regression pipeline"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-candidate-evidence/spec.md",
+      "title": "Codex candidate evidence",
+      "requirements": [
+        "Exact candidate evidence binding"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-efficiency-evidence/spec.md",
+      "title": "Codex efficiency evidence",
+      "requirements": [
+        "Comparable Codex efficiency samples"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-execution-experiments/spec.md",
+      "title": "codex-execution-experiments",
+      "requirements": [
+        "Evidence-gated execution experiments"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-instruction-consistency/spec.md",
+      "title": "Codex instruction consistency",
+      "requirements": [
+        "Consistent Codex instruction distribution"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-native-regression/spec.md",
+      "title": "codex-native-regression",
+      "requirements": [
+        "Observed native regression",
+        "Isolated vetted fixture",
+        "Explicit collaboration diagnostic profile"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-runtime-diagnostics/spec.md",
+      "title": "codex-runtime-diagnostics",
+      "requirements": [
+        "Bounded explicit runtime diagnostics",
+        "Explicit safe local activation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/codex-semantic-review-events/spec.md",
+      "title": "Codex semantic review events",
+      "requirements": [
+        "Explicit semantic review producer"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/current-state-documentation/spec.md",
+      "title": "current-state-documentation Specification",
+      "requirements": [
+        "README centrado en estado real",
+        "Quickstart basado en CLI Go actual",
+        "Separación de futuro y templates",
+        "Consistencia documental entre README y docs auxiliares",
+        "Validación documental del cambio",
+        "Documentation migrates only after implementation",
+        "Obsolete clone/build docs removed at completion",
+        "Roadmap marks release installer as planned",
+        "Documentacion del workflow sistemico"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/go-cli-install-ci/spec.md",
+      "title": "go-cli-install-ci Specification",
+      "requirements": [
+        "CI mínima del instalador Go",
+        "Validación local reproducible",
+        "Release artifact CI",
+        "Release smoke validation",
+        "Bootstrap CI validation",
+        "Structural hardening checks in CI",
+        "CI validates supply-chain release artifacts",
+        "CI fails on unpinned release-sensitive actions",
+        "CI quality gates extend installer validation",
+        "Local validation remains reproducible",
+        "CI validates OpenSpec resolver without network dependency",
+        "Baseline sync workflow is safe for protected branches"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/go-cli-installer/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "CLI Go instalable",
+        "Comandos base de instalación",
+        "Flags y defaults seguros",
+        "Plan de instalación antes de escribir",
+        "Idempotencia y preservación de trabajo del usuario",
+        "Backup y rollback con manifest",
+        "Merge conservador de opencode.json",
+        "Wrapper Bash estricto",
+        "Validación por fases",
+        "Comando sync de CLI Go",
+        "Validación de sync en CLI Go",
+        "`lufy-ai verify` canónico",
+        "Standalone asset source",
+        "Release binary preserves installer safety",
+        "CLI state metadata comes from version package",
+        "CLI filesystem writes are atomic for managed payloads",
+        "CLI validates portable path traversal",
+        "CLI scope flag for managed operations",
+        "CLI merge command",
+        "CLI restore discovery",
+        "CLI reports drift actions consistently",
+        "CLI instala workflow OpenSpec core v2 standalone",
+        "CLI mantiene validación de paridad de assets OpenSpec",
+        "CLI provides OpenSpec resolver package",
+        "CLI uses embedded baseline as fallback",
+        "CLI validates OpenSpec cache safely",
+        "CLI init command",
+        "CLI init write safety",
+        "CLI init validation",
+        "CLI rescan drift reporting",
+        "CLI rescan validation coverage",
+        "Use-case services stay thin and composable",
+        "Public CLI compatibility during architecture refactor"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/harness-adapter-architecture/spec.md",
+      "title": "harness-adapter-architecture Specification",
+      "requirements": [
+        "Core harness neutrality",
+        "Tool adapter registry",
+        "Tool capability matrix",
+        "Adapter-owned paths",
+        "Backward-compatible default preset",
+        "Manifest identifies adapter ownership",
+        "CLI tool selection",
+        "JSON reports expose harness context",
+        "Codex writable core adapter",
+        "Claude Code dry-run adapter",
+        "Hexagonal application boundaries",
+        "Application service responsibility split",
+        "Typed action semantics",
+        "SOLID and clean-code review gates"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/install-drift-resolution/spec.md",
+      "title": "install-drift-resolution Specification",
+      "requirements": [
+        "Declarative asset policies",
+        "No-replace assets preserve user drift",
+        "Merge-block assets preserve user text",
+        "Ancestors are recorded for managed versions",
+        "Drift status is user-visible",
+        "Scope-aware installation",
+        "Merge command uses ancestor user and new versions",
+        "Restore lists and selects backups"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/install-harness-reference-and-coexistence/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "Harness Lufy gestionado en AGENTS",
+        "Sync actualiza harness sin mutar AGENTS",
+        "Migración legacy de AGENTS gestionado no destructiva",
+        "Coexistencia con OpenCode y OpenSpec propios",
+        "Verify diferencia harness gestionado y referencia AGENTS"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/installer-structural-hardening/spec.md",
+      "title": "installer-structural-hardening Specification",
+      "requirements": [
+        "Asset mirror parity gate",
+        "Portable relative path safety",
+        "Stable catalog fingerprint",
+        "Atomic managed file writes"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/instruction-surface-rendering/spec.md",
+      "title": "instruction-surface-rendering Specification",
+      "requirements": [
+        "Neutral role definitions",
+        "Instruction renderer composes bindings",
+        "Textual leak checks",
+        "Rendered output golden tests",
+        "Embedded assets stay synchronized",
+        "Codex PR review skill preserves Lufy HTML contract"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/lufy-timereport/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "Slash command and skill entrypoint",
+        "Offline self-contained Notion-style HTML report",
+        "OpenCode SQLite primary source",
+        "Task-scoped report by default",
+        "Privacy by default",
+        "Time heuristics are explicit",
+        "Git secondary metrics",
+        "Stack metadata degrades gracefully",
+        "Phase, subagent and skill summaries",
+        "Fixture-based validation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/managed-assets-install/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "Catálogo completo de assets gestionados",
+        "Resolución segura de source y target",
+        "Plan de instalación fiel",
+        "Idempotencia por contenido/hash",
+        "Conflictos no se sobrescriben silenciosamente",
+        "Manifest de estado de instalación",
+        "Backup multiasset antes de mutar",
+        "Restore controlado",
+        "Verify estructural completo",
+        "Wrapper Bash permanece estricto",
+        "Sync seguro de assets gestionados",
+        "Sync idempotente por manifest y hash",
+        "Sync preserva personalizaciones fuera de scope",
+        "Catálogo incluye assets OpenSpec core v2",
+        "Verify cubre baseline OpenSpec core v2",
+        "Sync crea backup antes de actualizaciones gestionadas",
+        "Verify posterior a sync",
+        "Install state uses real tool metadata",
+        "Source fingerprint reflects effective catalog",
+        "Backup manifest uses real tool metadata",
+        "Managed copies are atomic",
+        "Manifest registra policy scope y ancestor",
+        "Catálogo declara scope efectivo",
+        "Uninstall gestionado de assets"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/native-context-graph/spec.md",
+      "title": "native-context-graph Specification",
+      "requirements": [
+        "Native context graph schema",
+        "Context graph persisted artifacts",
+        "Deterministic initial extractors",
+        "Context CLI command suite",
+        "Diff impact analysis",
+        "Context search skills for agent tooling",
+        "Agent hint integration with graceful fallback",
+        "Semantic analysis remains optional future phase",
+        "Context graph must be functionally useful"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/openspec-core-v2-workflow/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "OpenSpec config uses action-based core v2 schema",
+        "Change specs use delta markers",
+        "Scenarios are testable",
+        "Opsx sync applies validated deltas",
+        "Active post-spec verification",
+        "Baseline metadata is installed",
+        "Opsx version reports effective workflow version",
+        "Baseline participates in stay-updated resolution",
+        "Opsx version reports resolved source",
+        "OpenSpec task state semantics",
+        "Opsx command gate language"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/openspec-stay-updated/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "OpenSpec resolver uses three fallback layers",
+        "OpenSpec cache is versioned and manifest-backed",
+        "Cache and manifests use atomic writes",
+        "Upstream sync opens pull requests only",
+        "Resolver reports actionable diagnostics"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/portable-skill-registry/spec.md",
+      "title": "portable-skill-registry Specification",
+      "requirements": [
+        "Portable skill registry",
+        "Local-first skill precedence",
+        "Tool-aware skill roots",
+        "Delegation passes skill paths",
+        "Registry refresh is non-destructive"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/pr-creator-skill/spec.md",
+      "title": "pr-creator-skill Specification",
+      "requirements": [
+        "Skill pr.creator con estructura estándar",
+        "Template de Pull Request para GitHub",
+        "Modo manual de invocación",
+        "Integración obligatoria desde delivery al crear PR",
+        "Resumen funcional derivable desde OpenSpec",
+        "Trazabilidad a ticket configurado",
+        "Evidencia de pruebas y validación",
+        "Monitors operativos",
+        "Migraciones detectadas automáticamente"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/project-stack-config/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "Project stack configuration file",
+        "Project surface profile",
+        "Canonical workflow limits block",
+        "Legacy workflow limit fields are not accepted as canonical",
+        "Supported stack detection",
+        "Unsupported stack placeholders",
+        "Tooling and CI metadata",
+        "Stack-aware format dispatch hook",
+        "Rescan preserves user overrides",
+        "Rescan drift validation",
+        "Stale stack detection is non-destructive",
+        "Rescan preserves editable configuration boundaries",
+        "Rescan report is structured and actionable",
+        "Project config implementation boundaries",
+        "Project profile TUI adapter boundary"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/release-branch-flow/spec.md",
+      "title": "release-branch-flow Specification",
+      "requirements": [
+        "Flujo canónico develop-main-release",
+        "Configuración GitHub esperada"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/release-supply-chain-security/spec.md",
+      "title": "release-supply-chain-security Specification",
+      "requirements": [
+        "Release artifacts are keylessly signed",
+        "Release provenance is published",
+        "Release SBOM is published",
+        "Sensitive workflows pin third-party actions",
+        "Release workflows use minimum permissions"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/release-version-governance/spec.md",
+      "title": "release-version-governance Specification",
+      "requirements": [
+        "Auto-tag supports explicit release bump labels",
+        "Auto-tag supports release skip",
+        "Auto-tag handles tag races safely",
+        "Release metadata is sanitized"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/remote-bootstrap-installer/spec.md",
+      "title": "remote-bootstrap-installer Specification",
+      "requirements": [
+        "Remote bootstrap installer",
+        "Checksum-before-install",
+        "Version pinning",
+        "Inspectable curl workflow",
+        "PATH installation controls"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/scored-stack-aware-reviewer/spec.md",
+      "title": "scored-stack-aware-reviewer Specification",
+      "requirements": [
+        "Weighted reviewer scoring",
+        "L1-L5 severity gate",
+        "Stack-aware review inputs",
+        "Desk-check scenarios for substantive review"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/sdd-harness-routing/spec.md",
+      "title": "Purpose",
+      "requirements": [
+        "Tier classification",
+        "Lightweight SDD router",
+        "Router output contract",
+        "Result contract",
+        "Proportional context",
+        "Permission minimization",
+        "T2 SDD Lite artifact",
+        "Lufy SDD Full artifact depth",
+        "Artifact store by tier",
+        "Tier workflow mapping",
+        "Skill resolution and optional bootstrap",
+        "Subagent isolation and review workload",
+        "Review Workload Harness",
+        "Executable review workload assessment",
+        "Documentation and installer asset synchronization",
+        "Delivery policy separation",
+        "Task/block delivery gate",
+        "Explicit task/block states",
+        "Role-separated gate execution",
+        "Result Contract envelope v1",
+        "Workflow-limit decision output",
+        "Surface-aware routing context",
+        "Structural acceptance is a validation gate",
+        "Planning-only fast path",
+        "Delivery batching remains authorization-gated",
+        "Numeric workload guard",
+        "Canonical workflow limits propagation",
+        "Proposal slicing remains separate from delivery batching",
+        "Chain strategy routing metadata",
+        "Proportional decision axes",
+        "Codex proportional decision consistency"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/stack-aware-test-writer/spec.md",
+      "title": "stack-aware-test-writer Specification",
+      "requirements": [
+        "Stack-aware test writer agent",
+        "Observable TDD phase evidence",
+        "Stack anti-pattern enforcement",
+        "Bounded permissions and delivery separation",
+        "AAA structure for substantive tests",
+        "TDD evidence for architecture refactor slices"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/surface-aware-execution/spec.md",
+      "title": "surface-aware-execution Specification",
+      "requirements": [
+        "Deterministic active surface resolution",
+        "Typed validation plan",
+        "Interactive capability detection",
+        "Read-only CLI contract"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/systemic-workflow/spec.md",
+      "title": "systemic-workflow Specification",
+      "requirements": [
+        "Analisis inicial sistemico",
+        "Implementacion sin relecturas repetidas innecesarias",
+        "Revisión final acotada de archivos viejos modificados",
+        "Validacion final agrupada con tests y coverage",
+        "Excepciones para feedback temprano",
+        "Relacion estructura-comportamiento",
+        "Block-scoped proportional validation",
+        "Workflow limits canonical consumption",
+        "Proposal slicing is separate from delivery batching",
+        "Workflow preflight and stop rules",
+        "Observable workflow-limit gates",
+        "Proportional Result Contract detail",
+        "TDD delegation for substantive T1 and T2 changes",
+        "Validator gates required TDD evidence",
+        "Weighted review gate for substantive changes",
+        "Review remains separate from validation and delivery",
+        "Numeric stop rules for workload guard",
+        "Stop-rule evidence in Result Contract",
+        "Workflow constraint provenance and precedence",
+        "Conservative operational review metrics"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/tier-methodology-routing/spec.md",
+      "title": "tier-methodology-routing Specification",
+      "requirements": [
+        "Methodology selection by tier",
+        "Supported methodology set",
+        "None methodology remains governed",
+        "Methodology decisions are explicit in handoffs",
+        "Unsafe none override is blocked or justified",
+        "CLI methodology tier override",
+        "Unsafe methodology override is blocked",
+        "Lufy SDD methodology adapter foundation"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": "openspec/specs/versioned-binary-distribution/spec.md",
+      "title": "versioned-binary-distribution Specification",
+      "requirements": [
+        "Versioned release artifacts",
+        "Release checksums",
+        "CLI version metadata",
+        "Distribution channels are layered",
+        "Automatic patch release tags from main PR merges",
+        "Automatic release tag target safety",
+        "Automatic release tag idempotency",
+        "Release workflow supports manual and dispatched tags safely",
+        "Release artifacts include verification material",
+        "Release verification guidance exists"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/design.md",
+      "title": "Design: complete-codex-parity-and-native-integration",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/proposal.md",
+      "title": "Proposal: complete-codex-parity-and-native-integration",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/specs/codex-adapter-integrity/spec.md",
+      "title": "codex-adapter-integrity Specification Delta",
+      "requirements": [
+        "Explicit Codex selection is persisted consistently",
+        "Harness resolution has explicit precedence and provenance",
+        "Verify and doctor reconcile intent with installed reality",
+        "Project config and install state writes are failure-safe"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/specs/codex-contract-parity/spec.md",
+      "title": "codex-contract-parity Specification Delta",
+      "requirements": [
+        "Codex-only installation is contract complete",
+        "Core role semantics remain equivalent across adapters",
+        "Shared contracts have one maintained source",
+        "Codex skills use native progressive disclosure"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/specs/codex-native-lifecycle/spec.md",
+      "title": "codex-native-lifecycle Specification Delta",
+      "requirements": [
+        "Codex installation provides a useful native lifecycle",
+        "Subagent and stop hooks preserve workflow gates",
+        "Codex rules enforce conservative command policy",
+        "Deep diagnostics are adapter-aware"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/specs/codex-runtime-verification/spec.md",
+      "title": "codex-runtime-verification Specification Delta",
+      "requirements": [
+        "Codex adapter has an end-to-end installation matrix",
+        "Runtime probes distinguish unavailable from invalid",
+        "Verification asserts behavior, not only asset presence",
+        "Documentation follows executable capability evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-19-complete-codex-parity-and-native-integration/tasks.md",
+      "title": "Tasks: complete-codex-parity-and-native-integration",
+      "requirements": [],
+      "tasks_done": 38,
+      "tasks_total": 38
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/design.md",
+      "title": "Design: add-agentic-run-ledger",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/proposal.md",
+      "title": "Proposal: add-agentic-run-ledger",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/specs/agentic-run-ledger/spec.md",
+      "title": "agentic-run-ledger Specification Delta",
+      "requirements": [
+        "Versioned event contract is minimal and deterministic",
+        "Events are append-only and atomically published",
+        "Repeated delivery is idempotent and conflicts are explicit",
+        "Causal relationships survive concurrent execution",
+        "Artifacts, evidence and checkpoints are content-free references",
+        "Derived state is verifiable and rebuildable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/specs/causal-run-observability/spec.md",
+      "title": "causal-run-observability Specification Delta",
+      "requirements": [
+        "Operators can inspect a run through stable CLI surfaces",
+        "Portable producers can record typed checkpoints",
+        "Codex lifecycle metadata creates causal bindings",
+        "Verification distinguishes source integrity from derived freshness",
+        "Retention preserves active work"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/specs/run-ledger-privacy/spec.md",
+      "title": "run-ledger-privacy Specification Delta",
+      "requirements": [
+        "Sensitive and conversational content is excluded by construction",
+        "External identities and paths are pseudonymized locally",
+        "Ledger data remains local and outside version control",
+        "Observability failure does not block primary work",
+        "Retention is bounded, explicit and content-safe",
+        "Privacy properties are continuously testable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-20-add-agentic-run-ledger/tasks.md",
+      "title": "Tasks: add-agentic-run-ledger",
+      "requirements": [],
+      "tasks_done": 46,
+      "tasks_total": 46
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/design.md",
+      "title": "Design: make-result-contract-executable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/proposal.md",
+      "title": "Proposal: make-result-contract-executable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/specs/executable-result-contract/spec.md",
+      "title": "executable-result-contract Specification Delta",
+      "requirements": [
+        "Result Contract v1 is strictly parseable and bounded",
+        "Equivalent contracts have deterministic canonical identity",
+        "Role and claim validation do not fabricate evidence",
+        "Legacy normalization is explicit and conservative",
+        "Stable CLI surfaces expose validation decisions"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/specs/result-contract-ledger-correlation/spec.md",
+      "title": "result-contract-ledger-correlation Specification Delta",
+      "requirements": [
+        "Decisions correlate with Run Ledger without content",
+        "Ledger outcomes preserve idempotency and conflicts",
+        "Failure policy distinguishes observation from mutation",
+        "Lifecycle parses contracts instead of trusting substrings"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/specs/result-transition-validation/spec.md",
+      "title": "result-transition-validation Specification Delta",
+      "requirements": [
+        "Result transitions use a versioned protocol and explicit state table",
+        "Version and fingerprint fence stale writers",
+        "Ownership leases are combined with fencing",
+        "Transition retries are idempotent",
+        "Joins require terminal children and grouped evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-21-make-result-contract-executable/tasks.md",
+      "title": "Tasks: make-result-contract-executable",
+      "requirements": [],
+      "tasks_done": 48,
+      "tasks_total": 48
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-22-extend-context-graph-workflow-traceability/design.md",
+      "title": "Design: extend-context-graph-workflow-traceability",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-22-extend-context-graph-workflow-traceability/proposal.md",
+      "title": "Proposal: extend-context-graph-workflow-traceability",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-22-extend-context-graph-workflow-traceability/specs/context-graph-workflow-traceability/spec.md",
+      "title": "context-graph-workflow-traceability Specification Delta",
+      "requirements": [
+        "Semantic workflow nodes",
+        "Explicit workflow edges",
+        "Workflow coverage query",
+        "Diff traceability assessment",
+        "Typed review workload limits",
+        "Deterministic review workload decision",
+        "Freshness-aware safe fallback",
+        "Content-free run projection",
+        "Review outcome metrics",
+        "Harness consumes graph as secondary evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-22-extend-context-graph-workflow-traceability/tasks.md",
+      "title": "Tasks: extend-context-graph-workflow-traceability",
+      "requirements": [],
+      "tasks_done": 41,
+      "tasks_total": 41
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/design.md",
+      "title": "Design: experiment-adaptive-role-allocation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/proposal.md",
+      "title": "Proposal: experiment-adaptive-role-allocation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/specs/adaptive-role-allocation/spec.md",
+      "title": "adaptive-role-allocation Specification Delta",
+      "requirements": [
+        "Demand and capability contracts are strict and bounded",
+        "Roles are temporary capability hints",
+        "Deterministic scoring is explainable",
+        "Protected boundaries preempt allocation",
+        "Adaptive routing is disabled by default",
+        "Shadow and advisory modes have distinct effects",
+        "Waiting pool is bounded and starvation-visible"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/specs/adaptive-routing-safety/spec.md",
+      "title": "adaptive-routing-safety Specification Delta",
+      "requirements": [
+        "Adaptive decisions never advance workflow gates",
+        "Runtime modes fail safely",
+        "Allocation telemetry is content-free",
+        "CLI exposes explicit safe operations",
+        "Harness consumers preserve authority boundaries"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/specs/adaptive-yield-protocol/spec.md",
+      "title": "adaptive-yield-protocol Specification Delta",
+      "requirements": [
+        "Advisory assignments use fenced leases",
+        "Yield checkpoint is content-free and reusable",
+        "Release happens only after durable checkpoint",
+        "Yield is idempotent under concurrency",
+        "Disabled mode permits safe cleanup only",
+        "Projection is rebuildable from append-only events"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/archive/2026-09-28-experiment-adaptive-role-allocation/tasks.md",
+      "title": "Tasks: experiment-adaptive-role-allocation",
+      "requirements": [],
+      "tasks_done": 50,
+      "tasks_total": 50
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/adaptive-role-allocation/spec.md",
+      "title": "adaptive-role-allocation Specification",
+      "requirements": [
+        "Demand and capability contracts are strict and bounded",
+        "Roles are temporary capability hints",
+        "Deterministic scoring is explainable",
+        "Protected boundaries preempt allocation",
+        "Adaptive routing is disabled by default",
+        "Shadow and advisory modes have distinct effects",
+        "Waiting pool is bounded and starvation-visible"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/adaptive-routing-safety/spec.md",
+      "title": "adaptive-routing-safety Specification",
+      "requirements": [
+        "Adaptive decisions never advance workflow gates",
+        "Runtime modes fail safely",
+        "Allocation telemetry is content-free",
+        "CLI exposes explicit safe operations",
+        "Harness consumers preserve authority boundaries"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/adaptive-yield-protocol/spec.md",
+      "title": "adaptive-yield-protocol Specification",
+      "requirements": [
+        "Advisory assignments use fenced leases",
+        "Yield checkpoint is content-free and reusable",
+        "Release happens only after durable checkpoint",
+        "Yield is idempotent under concurrency",
+        "Disabled mode permits safe cleanup only",
+        "Projection is rebuildable from append-only events"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/agentic-run-ledger/spec.md",
+      "title": "agentic-run-ledger Specification",
+      "requirements": [
+        "Versioned event contract is minimal and deterministic",
+        "Events are append-only and atomically published",
+        "Repeated delivery is idempotent and conflicts are explicit",
+        "Causal relationships survive concurrent execution",
+        "Artifacts, evidence and checkpoints are content-free references",
+        "Derived state is verifiable and rebuildable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/causal-run-observability/spec.md",
+      "title": "causal-run-observability Specification",
+      "requirements": [
+        "Operators can inspect a run through stable CLI surfaces",
+        "Portable producers can record typed checkpoints",
+        "Codex lifecycle metadata creates causal bindings",
+        "Verification distinguishes source integrity from derived freshness",
+        "Retention preserves active work"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/codex-adapter-integrity/spec.md",
+      "title": "codex-adapter-integrity Specification",
+      "requirements": [
+        "Explicit Codex selection is persisted consistently",
+        "Harness resolution has explicit precedence and provenance",
+        "Verify and doctor reconcile intent with installed reality",
+        "Project config and install state writes are failure-safe"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/codex-contract-parity/spec.md",
+      "title": "codex-contract-parity Specification",
+      "requirements": [
+        "Codex-only installation is contract complete",
+        "Core role semantics remain equivalent across adapters",
+        "Shared contracts have one maintained source",
+        "Codex skills use native progressive disclosure"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/codex-native-lifecycle/spec.md",
+      "title": "codex-native-lifecycle Specification",
+      "requirements": [
+        "Codex installation provides a useful native lifecycle",
+        "Subagent and stop hooks preserve workflow gates",
+        "Codex rules enforce conservative command policy",
+        "Deep diagnostics are adapter-aware"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/codex-runtime-verification/spec.md",
+      "title": "codex-runtime-verification Specification",
+      "requirements": [
+        "Codex adapter has an end-to-end installation matrix",
+        "Runtime probes distinguish unavailable from invalid",
+        "Verification asserts behavior, not only asset presence",
+        "Documentation follows executable capability evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/context-graph-workflow-traceability/spec.md",
+      "title": "context-graph-workflow-traceability Specification",
+      "requirements": [
+        "Semantic workflow nodes",
+        "Explicit workflow edges",
+        "Workflow coverage query",
+        "Diff traceability assessment",
+        "Typed review workload limits",
+        "Deterministic review workload decision",
+        "Freshness-aware safe fallback",
+        "Content-free run projection",
+        "Review outcome metrics",
+        "Harness consumes graph as secondary evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/executable-result-contract/spec.md",
+      "title": "executable-result-contract Specification",
+      "requirements": [
+        "Result Contract v1 is strictly parseable and bounded",
+        "Equivalent contracts have deterministic canonical identity",
+        "Role and claim validation do not fabricate evidence",
+        "Legacy normalization is explicit and conservative",
+        "Stable CLI surfaces expose validation decisions"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/result-contract-ledger-correlation/spec.md",
+      "title": "result-contract-ledger-correlation Specification",
+      "requirements": [
+        "Decisions correlate with Run Ledger without content",
+        "Ledger outcomes preserve idempotency and conflicts",
+        "Failure policy distinguishes observation from mutation",
+        "Lifecycle parses contracts instead of trusting substrings"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/result-transition-validation/spec.md",
+      "title": "result-transition-validation Specification",
+      "requirements": [
+        "Result transitions use a versioned protocol and explicit state table",
+        "Version and fingerprint fence stale writers",
+        "Ownership leases are combined with fencing",
+        "Transition retries are idempotent",
+        "Joins require terminal children and grouped evidence"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/specs/run-ledger-privacy/spec.md",
+      "title": "run-ledger-privacy Specification",
+      "requirements": [
+        "Sensitive and conversational content is excluded by construction",
+        "External identities and paths are pseudonymized locally",
+        "Ledger data remains local and outside version control",
+        "Observability failure does not block primary work",
+        "Retention is bounded, explicit and content-safe",
+        "Privacy properties are continuously testable"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/add-agentic-run-ledger/final.md",
+      "title": "Verification final: add-agentic-run-ledger",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/add-agentic-run-ledger/slice-a.md",
+      "title": "Verification: add-agentic-run-ledger — Slice A",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/add-agentic-run-ledger/slice-b.md",
+      "title": "Verification: add-agentic-run-ledger — Slice B",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/add-agentic-run-ledger/slice-c.md",
+      "title": "Verification: add-agentic-run-ledger — Slice C",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/add-agentic-run-ledger/slice-d.md",
+      "title": "Verification: add-agentic-run-ledger — Slice D",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/complete-codex-parity-and-native-integration/final-gates.md",
+      "title": "Final gates: complete-codex-parity-and-native-integration",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/complete-codex-parity-and-native-integration/slice-a.md",
+      "title": "Verification: Slice A - Canonical harness integrity",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/complete-codex-parity-and-native-integration/slice-b.md",
+      "title": "Verification: Slice B - Native Codex lifecycle and policy",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/complete-codex-parity-and-native-integration/slice-c.md",
+      "title": "Verification: Slice C - Self-contained contracts and skill parity",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/complete-codex-parity-and-native-integration/slice-d.md",
+      "title": "Verification: Slice D - Runtime E2E, documentation and release readiness",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/deep-harness.md",
+      "title": "Verificación profunda del harness — PR #230",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/final.md",
+      "title": "Verificación final — experiment-adaptive-role-allocation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/slice-a.md",
+      "title": "Verificación Slice A — adaptive role allocation",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/slice-b.md",
+      "title": "Verificación Slice B — ledger, leases y yield adaptativo",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/slice-c.md",
+      "title": "Verificación Slice C — application service y CLI adaptativa",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/experiment-adaptive-role-allocation/slice-d.md",
+      "title": "Verificación Slice D — harness, seguridad y documentación",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/extend-context-graph-workflow-traceability/final.md",
+      "title": "Verificación final — extend-context-graph-workflow-traceability",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/extend-context-graph-workflow-traceability/slice-a.md",
+      "title": "Slice A — dominio y extracción semántica",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/extend-context-graph-workflow-traceability/slice-b.md",
+      "title": "Slice B — coverage, trace y freshness",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/extend-context-graph-workflow-traceability/slice-c.md",
+      "title": "Slice C — `workflow_limits.review` y workload assessment",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/extend-context-graph-workflow-traceability/slice-d.md",
+      "title": "Slice D — Run Ledger, métricas y harness",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/final.md",
+      "title": "Verificación final — make-result-contract-executable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/pr-readiness.md",
+      "title": "PR readiness — make-result-contract-executable",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/slice-a.md",
+      "title": "Verification: Slice A — schema, decoder y canonicalización",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/slice-b.md",
+      "title": "Verificación Slice B — Roles, evidencia y transiciones",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/slice-c.md",
+      "title": "Verificación Slice C — Ownership, leases, joins e idempotencia",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/slice-d-cli.md",
+      "title": "Verificación Slice D — CLI y normalización",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/workflows/sdd/verification/make-result-contract-executable/slice-d-lifecycle-ledger.md",
+      "title": "Verificación Slice D — Lifecycle, Run Ledger y contratos",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/README.md",
+      "title": "Lufy SDD",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/apply.md",
+      "title": "Apply",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/archive.md",
+      "title": "Archive",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/explore.md",
+      "title": "Explore",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/propose.md",
+      "title": "Propose",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/sync.md",
+      "title": "Sync",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/actions/verify.md",
+      "title": "Verify",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/design.md",
+      "title": "Design: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/proposal.md",
+      "title": "Proposal: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/spec.md",
+      "title": "<capability> Specification Delta",
+      "requirements": [
+        "<title>"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/tasks.md",
+      "title": "Tasks: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 20
+    }
+  ],
+  "active_incomplete_changes": [],
+  "discarded_templates": [
+    {
+      "path": ".lufy/sdd/templates/design.md",
+      "title": "Design: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/proposal.md",
+      "title": "Proposal: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/spec.md",
+      "title": "<capability> Specification Delta",
+      "requirements": [
+        "<title>"
+      ],
+      "tasks_done": 0,
+      "tasks_total": 0
+    },
+    {
+      "path": ".lufy/sdd/templates/tasks.md",
+      "title": "Tasks: <change>",
+      "requirements": [],
+      "tasks_done": 0,
+      "tasks_total": 20
+    }
+  ]
+}

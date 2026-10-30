@@ -10,7 +10,7 @@ La CLI Go distribuye assets gestionados desde un catálogo que puede construirse
 
 ## Decisión
 
-La raíz del repositorio sigue siendo la fuente canónica humana para `.opencode/`, `openspec/`, `AGENTS.md.template` y `tui.json`.
+La raíz del repositorio sigue siendo la fuente canónica humana para `.agents/skills/`, `.codex/`, `.lufy/contracts/`, `.lufy/README.md`, `lufy-ia.harness.md` y `AGENTS.md.template`.
 
 El árbol embebido en `tools/lufy-cli-go/internal/assets/embedded/` es un mirror de distribución y debe mantenerse en paridad con la fuente canónica mediante tests/validación.
 

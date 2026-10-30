@@ -1,3 +1,5 @@
+> Informe histórico del modelo anterior. Sus resultados se conservan; sus comandos y roles no describen la rama inline actual. Ver [estado vigente](status.md).
+
 # Bloque 3: observabilidad operativa Codex
 
 ## Resultado
