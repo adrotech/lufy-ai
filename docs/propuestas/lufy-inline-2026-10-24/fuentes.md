@@ -1,5 +1,7 @@
 # Fuentes y límites de la propuesta
 
+> Snapshot de investigación y planificación de la propuesta del 24/10/2026. Para el estado posterior a su implementación, ver [entrega](entrega.md) y [estado actual](../../status.md). No convierte referencias o pendientes históricos en instrucciones vigentes.
+
 Fecha de síntesis: 24 de octubre de 2026. Parte de la [propuesta Lufy inline](README.md).
 
 Se distinguen evidencia del producto, propuestas de autores, estudios con alcance limitado y experiencias de comunidad. Las decisiones de arquitectura de esta propuesta son inferencias y recomendaciones para Lufy; las fuentes no demuestran que ya funcionen aquí.

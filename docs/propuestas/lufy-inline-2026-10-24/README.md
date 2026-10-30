@@ -1,14 +1,12 @@
 # Propuesta: Lufy centrado en resultados, con ejecución inline
 
-Fecha de propuesta: 24 de octubre de 2026. Implementación del 27/10: [bloque 1, política y piloto](implementacion/bloque-1.md), [bloque 2, configuración y catálogo inline](implementacion/bloque-2.md), [bloque 3, evidencia y capacidades](implementacion/bloque-3.md) y [bloque 4, instalación personal](implementacion/bloque-4.md), implementados y validados. La instalación personal ya usa el flujo inline; el código permanece en el checkout aislado, pendiente de integración.
+Propuesta original del 24/10/2026. **Implementada e integrada en `develop`**: PR #256 (flujo inline y retiro) y PR #257 (evaluador). La [entrega](entrega.md) registra commits y checks observados al 29/10. Todavía no hay una release inline.
 
-[Bloque 5, comparación exploratoria y seguimientos](implementacion/bloque-5-comparacion.md): 24 turnos nuevos completados. El estudio terminó con una conclusión comparativa inconclusa para ventaja general/costo humano; la dirección inline autorizada se informa por separado. El [piloto previo](implementacion/bloque-5.md) y sus límites quedan como historia.
+La guía operativa vigente está en [el índice de documentación](../../README.md). El texto siguiente conserva el diagnóstico y la dirección de la propuesta sobre su snapshot original; sus tiempos verbales y bloques planificados no describen pendientes actuales.
 
-[Bloque 6, retiro de motores y recuperación](implementacion/bloque-6.md): fuente depurada e instalación personal actualizada a manifest 4 / backups 2. Validación agrupada aprobada, cobertura Go 80,6%, recuperación e interrupciones ensayadas. El código completo y patch acumulado siguen pendientes de integración Git; no hay release nuevo.
-
-[Entrega de la rama](entrega.md): commit y push autorizados el 28/10/2026 sobre `codex/lufy-inline`; integración a `develop` y publicación fuera de este pedido. Los informes anteriores conservan el estado observado en su fecha.
-
-[Mejora posterior del evaluador, 29/10](implementacion/mejora-evaluador-2026-10-29.md): gramática de comandos ampliada, diagnósticos por evento y procedencia; 13 comandos antes desconocidos ahora reconocidos como lecturas. Validada localmente; entrega autorizada mediante la rama `codex/improve-inline-evaluator` y PR hacia `develop`.
+- [Implementación y evidencia por bloques](implementacion/README.md): políticas, configuración, capacidades, instalación personal, evaluación y retiro.
+- [Comparación exploratoria](implementacion/bloque-5-comparacion.md): 24 turnos completados; conclusión inconclusa para ventaja general y costo humano.
+- [Mejora del evaluador](implementacion/mejora-evaluador-2026-10-29.md): replay offline que reconoce 13 comandos adicionales sin reescribir resultados históricos.
 
 Revisión de alcance: Lufy tiene un único usuario, su autor. Por instrucción explícita suya, no hay requisito de retrocompatibilidad. La propuesta permite cambios incompatibles de configuración, comandos, formatos y estructura; no conserva motores ni consumidores históricos para atender instalaciones ajenas.
 

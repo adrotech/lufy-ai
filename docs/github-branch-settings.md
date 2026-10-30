@@ -1,6 +1,6 @@
 # Configuración GitHub de ramas
 
-Esta guía documenta el estado esperado del remoto. No aplica cambios automáticamente; requiere un maintainer o `delivery` con autorización explícita.
+Esta guía documenta el estado esperado del remoto. No aplica cambios automáticamente; requiere el responsable del repositorio con autorización explícita.
 
 ## Ramas
 
@@ -28,7 +28,7 @@ Para que el release automático funcione, permitir que GitHub Actions cree y pus
 
 ## Releases
 
-- Los tags estables `v*` se crean automáticamente al mergear un PR hacia `main`: si no hay tags simples `vMAJOR.MINOR.PATCH`, el primer tag es `v0.1.0`; si ya existen, se incrementa `PATCH` sobre el mayor tag simple e ignora prereleases.
+- Al mergear un PR hacia `main`, el incremento se elige por labels: patch por default, minor, major o skip. Se calcula sobre el mayor tag estable simple y se ignoran prereleases. Ver [preparación de releases](releasing.md); el workflow no actualiza la versión canónica en archivos.
 - El tag automático es anotado, apunta al merge commit del PR y no se sobrescribe si el tag calculado ya existe localmente o en `origin`; en ese caso el workflow reporta un no-op explícito.
 - El workflow `.github/workflows/auto-release-tag.yml` no construye binarios ni publica GitHub Releases; pushea el tag y luego invoca explícitamente `.github/workflows/release.yml` mediante `workflow_dispatch` apuntando al tag creado. Si el tag ya existía, no dispara release duplicada.
 - El workflow `.github/workflows/release.yml` conserva el trigger por push de tags `v*` para tags manuales/humanos y también acepta `workflow_dispatch` con input `tag`; siempre valida que el tag sea `v*` y que su commit sea alcanzable desde `origin/main` antes de publicar assets.
@@ -37,4 +37,4 @@ Para que el release automático funcione, permitir que GitHub Actions cree y pus
 
 ## Operaciones Git/GitHub
 
-Cambios reales de settings, commits, pushes, PRs y tags quedan fuera del rol `implementer`. Usar `delivery` con autorización explícita o ejecutar manualmente como maintainer.
+Cambios reales de settings, commits, pushes, PRs y tags requieren autorización explícita. El agente principal puede ejecutarlos dentro de esa autorización y los permisos del host, siguiendo [la política de entrega](../.lufy/contracts/delivery.md). No hay un rol obligatorio para habilitar la operación.

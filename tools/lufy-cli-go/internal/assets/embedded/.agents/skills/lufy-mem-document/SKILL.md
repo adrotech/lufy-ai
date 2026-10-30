@@ -1,14 +1,13 @@
 ---
 name: lufy-mem-document
-description: Document decisions, rules, flows, and lessons in portable Lufy Obsidian memory.
+description: Documenta decisiones, reglas, flujos y aprendizajes durables en la memoria Obsidian portable de Lufy.
 ---
 
-# Lufy Memory Document
+# Documentar memoria
 
-Use when a durable decision or workflow should become reusable project memory.
+Usá esta capacidad cuando una decisión o un flujo deba quedar como conocimiento reutilizable del proyecto.
 
-1. Prefer `lufy-ai memory capture` to create or update a concise note with clear type, status, and evidence.
-2. Prefer facts from files, commands, PRs, or explicit user decisions.
-3. Use `lufy-ai memory connect` for existing related notes; avoid broken backlinks.
-4. Avoid secrets, noisy logs, and speculative conclusions.
-5. Validate memory after substantive edits.
+- Preferí `lufy-ai memory capture` con título, tipo y contenido conciso. Para una decisión, incluí el motivo.
+- Sustentá lo escrito en archivos, comandos, PRs o decisiones explícitas del usuario y conservá los límites de la evidencia.
+- Conectá notas relacionadas que ya existan con `lufy-ai memory connect`.
+- Evitá secretos, logs ruidosos y conclusiones especulativas. Validá la memoria después de cambios sustantivos.

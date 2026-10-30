@@ -1,5 +1,5 @@
 ---
-name: Bug report
+name: Reportar un problema
 about: Reportar un bug reproducible
 labels: bug
 ---

@@ -1,8 +1,8 @@
 # Arquitectura inline
 
-Esta rama contiene el modelo incompatible descrito en [el flujo vigente](harness-workflow.md). La release estable anterior no instala este modelo.
+`develop` contiene el modelo incompatible descrito en [el flujo vigente](harness-workflow.md). La release estable anterior no instala este modelo.
 
-La CLI Go concentra operaciones locales; el agente trabaja inline y elige exploración, propuesta, implementación y comprobaciones según el resultado solicitado. La configuración admite `execution.mode: inline` y delegación `off` o explícita. No se instala un router ni un catálogo de roles o metodologías.
+La CLI Go concentra operaciones locales; el agente trabaja inline y elige exploración, propuesta, implementación y comprobaciones según el resultado solicitado. La configuración admite `execution.mode: inline` y delegación `off`, `on_request` o `auto` (default). No se instala un router ni un catálogo de roles o metodologías.
 
 ## Componentes
 
@@ -17,7 +17,7 @@ La CLI Go concentra operaciones locales; el agente trabaja inline y elige explor
 | `surfaceplan` | Plan read-only de superficies, contratos y comandos declarados; no los ejecuta. |
 | `memory`, `skills` | Memoria Obsidian y registro derivado de cinco skills locales. |
 | `evidence`, `reviewevents`, `runledger` | Evidencia explícita opcional, vinculada al candidato cuando corresponde; no autoriza acciones. |
-| `adaptive` | Experimento opt-in de asignaciones acotadas; permanece deshabilitado en la instalación inline. |
+| `adaptive` | Experimento opt-in de asignaciones acotadas; está deshabilitado por default. |
 
 ## Fuentes y datos derivados
 
@@ -29,4 +29,4 @@ La configuración y la memoria son fuentes persistentes. Context Graph y el regi
 
 Las mutaciones conservan locks, hashes, rechazo de symlinks, conflictos explícitos y backups. Un restore público valida generación, hashes y payload de configuración/estado antes de escribir. El rollback interno puede recuperar exactamente un preimage dañado. La retención sólo elimina backups reconocidos de la generación actual.
 
-La sustitución de una instalación anterior se ensaya y ejecuta como operación puntual conjunta de ejecutable, estado y proyecciones; no hay lector de estados anteriores ni migrador en el runtime. Ver [instalación](installation.md) y [decisiones preservadas](estado-del-trabajo.md).
+La sustitución de una instalación anterior se ensaya y ejecuta como operación puntual conjunta de ejecutable, estado y proyecciones; no hay lector de estados anteriores ni migrador en el runtime. Ver [instalación](installation.md) y [estado y decisiones preservadas](status.md).

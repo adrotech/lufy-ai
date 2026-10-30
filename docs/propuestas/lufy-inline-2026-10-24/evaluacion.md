@@ -1,5 +1,7 @@
 # Transición, aceptación y evaluación
 
+> Snapshot de investigación y planificación de la propuesta del 24/10/2026. Para el estado posterior a su implementación, ver [entrega](entrega.md) y [estado actual](../../status.md). No convierte referencias o pendientes históricos en instrucciones vigentes.
+
 Parte de la [propuesta Lufy inline](README.md). Implementación iniciada: [estado y evidencia del bloque 1](implementacion/bloque-1.md). Las acciones siguientes describen el plan y no implican que todos los bloques estén terminados. Las comprobaciones documentales originales se registran al final; la evidencia de implementación está en el avance.
 
 Alcance corregido: un único usuario y ningún requisito de retrocompatibilidad. Se permite reemplazar interfaces y formatos internos juntos. La transición cuida la instalación propia y los datos útiles; no distribuye soporte para configuraciones o consumidores antiguos.
