@@ -1,6 +1,6 @@
 # Seguridad de releases
 
-Este documento describe la política operativa para releases estables de `lufy-ai`. El flujo inline de `develop` aún no tiene release publicada. Ver [preparación de releases](releasing.md) para versión canónica, labels y promoción.
+Este documento describe la política operativa para releases estables de `lufy-ai`. Ver [preparación de releases](releasing.md) para versión canónica, labels y promoción.
 
 ## Fuente de verdad
 

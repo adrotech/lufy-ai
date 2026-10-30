@@ -1,6 +1,6 @@
 # CLI Go de Lufy
 
-Implementación del flujo Codex inline integrado en `develop`. Los cambios incompatibles todavía no están publicados: `v0.6.25` es la referencia estable del modelo anterior.
+Implementación de `v0.7.0`, primera generación del flujo Codex inline. Los formatos actuales son incompatibles con el modelo anterior; la distribución y recuperación se documentan en la guía de instalación.
 
 Desde `tools/lufy-cli-go`, con Go según `go.mod`:
 

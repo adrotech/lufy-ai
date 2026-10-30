@@ -15,6 +15,7 @@ El comando ejecuta:
 - whitespace check con rango/base de PR;
 - pinning de GitHub Actions en workflows;
 - consistencia de `RELEASE_VERSION`, referencias documentales y pruebas del guard de versiones;
+- regresión de metadata: los comentarios de checksums no se incluyen como artifacts en el provenance;
 - sintaxis YAML de workflows mediante helper Go local;
 - ShellCheck para scripts versionados cuando `shellcheck` está instalado;
 - regresiones Python offline, paridad del payload y tests Go con coverage y threshold objetivo;

@@ -1,10 +1,26 @@
 # Instalación, sincronización y recuperación
 
-El modelo inline está integrado en `develop` y todavía no tiene release publicada. La referencia estable `v0.6.25` corresponde al modelo anterior. Compilá un checkout actualizado de `develop`; no descargues ese stable para reemplazar una instalación inline.
+Esta guía corresponde a `v0.7.0`, la primera generación Codex inline. Los formatos actuales se describen abajo; las instalaciones del modelo anterior requieren respaldo conjunto y no tienen conversión automática.
 
-## Compilar e instalar
+## Instalar el binario publicado
 
-Requiere Go según `tools/lufy-cli-go/go.mod` (actualmente 1.24.2). Desde la raíz, en un shell POSIX:
+En macOS o Linux, con una versión fija:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/adrotech/lufy-ai/v0.7.0/scripts/bootstrap.sh -o /tmp/lufy-bootstrap.sh
+less /tmp/lufy-bootstrap.sh
+bash /tmp/lufy-bootstrap.sh --version v0.7.0 --install-dir "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$PATH"
+lufy-ai version --runtime-contract
+```
+
+El bootstrap verifica SHA-256 del archive y sólo instala el ejecutable. La instalación de assets se realiza después con `install` o `setup`. Elegí un destino libre o respaldá primero el binario existente.
+
+En Windows, descargá el ZIP de la arquitectura correspondiente desde [la release](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0), contrastá su SHA-256 con el archivo de checksums y extraé `lufy-ai.exe` a un directorio de tu PATH. El bootstrap Bash cubre macOS y Linux; los archives Windows se distribuyen por separado. La [guía de seguridad](release-security.md) explica la verificación adicional de firmas.
+
+## Compilar desde fuente e instalar assets
+
+Requiere Go según `tools/lufy-cli-go/go.mod` (actualmente 1.24.2). Desde la raíz de un checkout del tag `v0.7.0`, en un shell POSIX:
 
 ```sh
 mkdir -p "$HOME/.local/bin"
@@ -22,7 +38,7 @@ Conservá el PATH también en el entorno desde el que se inicia Codex: el hook b
 
 La superficie soportada es el proyecto con Codex. Se distribuyen 16 assets y se genera el bloque gestionado de `AGENTS.md`; una guía existente se preserva fuera de ese bloque. `scripts/install.sh` es un wrapper estricto de la CLI Go local/PATH y no descarga ni ejecuta motores alternativos.
 
-`init` y `scan` detectan configuración; `setup` orquesta además memoria, grafo y verificación. Mientras stable pertenece al modelo anterior, para probar el checkout local con `setup` usá `--skip-version-check` y revisá primero `--dry-run`.
+`init` y `scan` detectan configuración; `setup` orquesta además memoria, grafo y verificación. Revisá primero `setup --dry-run`. `--skip-version-check` permite probar una compilación local sin consultar releases; no es necesario para el uso habitual del binario publicado.
 
 ## Sincronizar y resolver drift
 

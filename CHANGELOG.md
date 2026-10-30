@@ -13,9 +13,18 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ## Unreleased
 
-### Changed
+## [v0.7.0] - 2026-10-29
+
+Primera generación Codex inline. **Cambios incompatibles:** configuración schema 2, manifest 4 y backups 2 ligados a estado 4. No hay lectores de formatos anteriores ni migrador genérico. Antes de sustituir una instalación anterior, conservar ejecutable y snapshot conjunto; usar la generación actual en un proyecto nuevo o preparado para ella.
+
+Release y artifacts: [v0.7.0](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0).
+
+### Added
 
 - Manual HTML de uso con ocho recorridos ilustrativos, conversaciones, diagramas, skills y visor de delegación, usando los recursos visuales originales de Lufy.
+- Regresión de metadata de release: encabezados y comentarios de checksums no se convierten en subjects del provenance.
+
+### Changed
 
 - Flujo Codex inline integrado: el principal adapta trabajo y evidencia al resultado; delegación configurable `off`, `on_request` o `auto`.
 - Catálogo de 16 assets y cinco skills. Configuración schema 2, manifest 4 y backups 2 ligados a estado 4; formatos incompatibles sin migrador genérico.
@@ -30,8 +39,11 @@ Las releases públicas deben enlazar su tag y resumir validación relevante.
 
 ### Fixed
 
+- Generación de provenance: se excluye el encabezado de contrato runtime y otros comentarios del archivo de checksums, conservando sólo los artifacts y sus digests.
 - Identidad de paths nativos y con slash en manifest/verificación para Windows.
 - Clasificador de ensayos `command-effects/v2`: argumentos literales, operadores acotados, diagnósticos y procedencia de helpers. La reevaluación offline conserva veredictos históricos y comandos desconocidos como inconclusos.
+
+Validación del candidato: 63 pruebas Python offline, regresión de metadata de release, cobertura Go 80,6%, vet/build y whitespace/PR guard sobre el rango de promoción contra main. La publicación y sus artifacts se verifican en el workflow de release.
 
 ## [v0.6.25] - 2026-10-23
 

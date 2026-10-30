@@ -78,6 +78,9 @@ main() {
   log "Release version tests"
   "$REPO_ROOT/scripts/test-release-version.sh"
 
+  log "Release metadata tests"
+  "$REPO_ROOT/scripts/test-release-metadata.sh"
+
   log "Workflow YAML"
   (cd "$CLI_ROOT" && go run ./cmd/check-workflows-yaml --root "$REPO_ROOT")
 

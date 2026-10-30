@@ -1,6 +1,6 @@
 # Estado del producto
 
-Revisión del 29/10/2026 sobre `develop`, commit `3b6470a71f982f426c2fa17dee013d9f27275878`. La reestructuración inline y la mejora del evaluador están integradas mediante [PR #256](https://github.com/adrotech/lufy-ai/pull/256) y [PR #257](https://github.com/adrotech/lufy-ai/pull/257). El código actual todavía no tiene release publicada.
+Generación `v0.7.0` del flujo inline, revisada el 29/10/2026. La base de integración incluye [PR #256](https://github.com/adrotech/lufy-ai/pull/256), [PR #257](https://github.com/adrotech/lufy-ai/pull/257), [PR #258](https://github.com/adrotech/lufy-ai/pull/258) y [PR #259](https://github.com/adrotech/lufy-ai/pull/259): refactorización, evaluador, documentación y manual visual. Los artifacts, firmas y estado de publicación se consultan en [la release](https://github.com/adrotech/lufy-ai/releases/tag/v0.7.0).
 
 | Área | Capacidad vigente |
 | --- | --- |
@@ -27,6 +27,8 @@ El estudio comparativo completó 24 turnos con fixtures de seis familias. No dem
 
 La instalación personal fue sustituida y verificada por separado del código distribuido. Su política `off`, sus backups y sus notas no son defaults ni assets públicos. La [historia](history/README.md) conserva condiciones y límites de cada informe.
 
-## Antes de una nueva release
+## Publicación y seguimiento
 
-Se necesita preparar versión, changelog y distribución, validar el candidato y promoverlo a `main` con autorización. El merge hacia `main` puede crear un tag automáticamente según sus labels. La [guía de releases](releasing.md) describe ese flujo. No se ha creado una nueva versión en esta actualización documental.
+La versión canónica vive en `RELEASE_VERSION`. Su publicación requiere versión y changelog coherentes, validación del candidato y promoción autorizada a `main`; el workflow crea el tag y publica artifacts con checksums, SBOM, provenance y firmas, y verifica la descarga publicada. Un tag por sí solo no demuestra que ese proceso terminó.
+
+Para una nueva versión, seguir [la guía de releases](releasing.md). La instalación personal conserva ejecutable y estado propios; publicar una release no la actualiza automáticamente.
