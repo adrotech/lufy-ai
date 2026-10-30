@@ -6,6 +6,7 @@ Estas guías describen el flujo inline integrado en `develop`. La disponibilidad
 
 | Necesidad | Guía |
 | --- | --- |
+| Aprender con ejemplos, conversaciones y diagramas interactivos | [Manual visual](manual/README.md) |
 | Entender autonomía, preguntas y paralelismo | [Flujo de trabajo](harness-workflow.md) |
 | Instalar, sincronizar o recuperar | [Instalación](installation.md) |
 | Ajustar delegación, superficies y capacidades | [Configuración](configuration.md) |
